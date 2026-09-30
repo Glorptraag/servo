@@ -50,6 +50,16 @@ describe('package map (ground rule 6)', () => {
     ['parent importing app beyond its store', 'packages/parent/src/probe.ts', "export * from '@servo/app';"],
     ['schema importing any Servo package', 'packages/schema/src/probe.ts', "export * from '@servo/content';"],
     ['an eslint-disable comment', 'packages/canvas/src/probe.ts', "// eslint-disable-next-line servo/package-boundaries\nexport * from '@servo/sim-core';"],
+    // Re-review findings N1-N3 in docs/reviews/tasks/0.1.md.
+    ['a relative path through node_modules', 'packages/canvas/src/probe.ts', "export * from '../node_modules/@servo/sim-core/src/solver.ts';"],
+    ['a relative path through node_modules from a test', 'packages/canvas/test/probe.test.ts', "export * from '../node_modules/@servo/sim-core/src/solver.ts';"],
+    ['src importing test code', 'packages/canvas/src/probe.ts', "export * from '../test/helpers.ts';"],
+    ['sim-core src importing code outside src', 'packages/sim-core/src/probe.ts', "export * from '../lib/clock.ts';"],
+    ['src importing code outside src by template', 'packages/sim-core/src/probe.ts', 'export const load = (name: string) => import(`../lib/${name}.ts`);'],
+    ['src starting a worker outside src', 'packages/canvas/src/probe.ts', "export const worker = new URL('../workers/solver.ts', import.meta.url);"],
+    ['a package.json imports alias', 'packages/canvas/src/probe.ts', "export * from '#engine';"],
+    ['import.meta.glob of another package', 'packages/canvas/src/probe.ts', "export const modules = import.meta.glob('../../sim-core/src/*.ts');"],
+    ['import.meta.glob of code outside src', 'packages/canvas/src/probe.ts', "export const modules = import.meta.glob('../test/*.ts');"],
   ];
 
   it.each(bypasses)('reports %s', async (_name, filePath, code) => {
@@ -66,6 +76,9 @@ describe('package map (ground rule 6)', () => {
     ['tools importing parent', 'packages/tools/src/probe.ts', "export * from '@servo/parent';"],
     ['a test using another package', 'packages/sim-core/test/probe.test.ts', "export * from '@servo/content';"],
     ['a URL to files that are not code', 'packages/tools/src/probe.ts', "export const fixtures = new URL('../../content/fixtures/', import.meta.url);"],
+    ['src importing data outside src', 'packages/content/src/probe.ts', "import parts from '../records/parts.json' with { type: 'json' };\nexport { parts };"],
+    ['a test importing code outside src', 'packages/canvas/test/probe.test.ts', "export * from '../lib/helpers.ts';"],
+    ['import.meta.glob inside src', 'packages/canvas/src/probe.ts', "export const art = import.meta.glob(['./art/*.ts', '!./art/draft.ts']);"],
   ];
 
   it.each(allowed)('allows %s', async (_name, filePath, code) => {

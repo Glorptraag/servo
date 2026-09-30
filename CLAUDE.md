@@ -71,13 +71,21 @@ Needs Node 24 or newer and pnpm 12 (the exact version is pinned in `package.json
 
 `pnpm validate-content <path>` does not exist yet; it arrives with the content validator in `packages/tools`.
 
-Lint and tsc enforce these:
+Lint and tsc catch every ordinary way of breaking these:
 - Relative imports name the source file (`./part.ts`, never `.js` or extensionless) and stay inside their package.
+- From `src/`, relative imports of code stay inside `src/`. Data files such as JSON may sit elsewhere in the package.
 - Packages import each other by name, only through `package.json` exports, and only along the package map: canvas imports sim-core only as `@servo/sim-core/interface`, and parent imports app only as `@servo/app/store`.
 - No enums or namespaces.
-- sim-core uses no clocks, randomness or UI globals.
+- sim-core's `src/` names no clocks, randomness or UI globals.
 
-`eslint-disable` comments have no effect in `packages/`. `packages/tools/test/lint-rules.test.ts` proves each rule fires. By convention only: ESM throughout, shipped code in each package's `src/`, tests in its `test/`.
+Deliberate workarounds that lint cannot see are left to review. Examples:
+- a template path that climbs with `..` after its first `${}`
+- a committed symlink
+- an alias in tsconfig or a bundler config
+- a package export that points outside `src/`
+- a global reached indirectly (`Function('return this')()`, `Reflect.get`, `Intl` date formatting)
+
+`eslint-disable` comments have no effect in `packages/`. `packages/tools/test/lint-rules.test.ts` proves each rule fires. By convention only: ESM throughout, package exports point into `src/`, tests live in `test/`.
 
 ## Plan execution
 
