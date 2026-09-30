@@ -1,0 +1,25 @@
+{
+  "name": "@servo/app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./store": "./src/store/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@servo/canvas": "workspace:*",
+    "@servo/content": "workspace:*",
+    "@servo/schema": "workspace:*",
+    "@servo/sim-core": "workspace:*",
+    "dexie": "^4.4.6"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
