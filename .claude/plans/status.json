@@ -1,0 +1,1247 @@
+{
+  "plan": "PLAN-servo",
+  "generated": "2026-09-30T08:23:20+00:00",
+  "mode": "autonomous",
+  "source_docs": {
+    "brief": "https://claude.ai/code/artifact/08cdf597-8cae-4de4-9927-1172642f975b",
+    "plan": "https://claude.ai/code/artifact/a21cd97b-54ec-45fe-b840-fb4bdda8d268",
+    "exports": [
+      "docs/brief.md",
+      "docs/plan.md"
+    ]
+  },
+  "tasks": {
+    "0.1": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [],
+      "title": "Monorepo scaffold and CI",
+      "description": "Create the TypeScript monorepo with the seven packages named in CLAUDE.md (schema, content, sim-core, canvas, app, parent, tools), a shared tsconfig, lint, a test runner and a CI workflow. Propose the concrete libraries for the stack decisions in docs/decisions.md (2D canvas renderer, 2D physics, local-first store) in docs/stack.md and use them; do not add UI framework code yet. Extend CLAUDE.md's 'How to run' section with the real commands. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "package.json",
+        "pnpm-workspace.yaml",
+        "tsconfig.base.json",
+        ".github/workflows/ci.yml",
+        "packages/schema/package.json",
+        "packages/content/package.json",
+        "packages/sim-core/package.json",
+        "packages/canvas/package.json",
+        "packages/app/package.json",
+        "packages/parent/package.json",
+        "packages/tools/package.json"
+      ],
+      "done_when": "`pnpm install && pnpm -r test` runs an (empty) test in every package and exits 0; CI workflow runs the same on push; CLAUDE.md 'How to run' lists working commands; docs/stack.md exists.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "0.2": {
+      "status": "pending",
+      "model": "opus",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "0.1"
+      ],
+      "title": "Schema v1: types and validators",
+      "description": "Define the v1 types for Part, Port (typed power/signal/mechanical, directional where the type is), Wire, Mount, Blueprint, Arena, Challenge and RunRecord as described in docs/brief.md Section 6, plus validators for each. Include the part-record fields from the brief's Parts schema table: identity, ports, needs, behaviour rule, settings with unlock level, failure modes with teaching notes, spec-card layers. Write fixture blueprints: at least 3 valid and 10 invalid (one violation each). Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/schema/src/types/",
+        "packages/schema/src/validate/",
+        "packages/schema/fixtures/",
+        "packages/schema/README.md"
+      ],
+      "done_when": "`pnpm --filter schema test` passes; the fixture suite shows every valid fixture accepted and every invalid fixture refused with a named reason.",
+      "contracts": "Blueprint = { version: 1, parts: PlacedPart[], wires: Wire[], arena: ArenaRef, meta }. Wire joins two PortRefs of the same PortType. Export everything from packages/schema/src/index.ts.",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "0.3": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "0.2"
+      ],
+      "title": "Blueprint versioning and migrations",
+      "description": "Add a version field discipline and a migration runner to the schema package so a stored blueprint of any earlier version migrates forward to the current one. Create a synthetic v0 fixture and a v0\u2192v1 migration to prove the path. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/schema/src/migrate/",
+        "packages/schema/fixtures/v0/"
+      ],
+      "done_when": "A v0 fixture migrates to v1, validates, and round-trips (migrate \u2192 serialise \u2192 parse) byte-identically; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "0.4": {
+      "status": "pending",
+      "model": "opus",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "0.2"
+      ],
+      "title": "Package interface READMEs",
+      "description": "Write a one-page interface README and a TypeScript interface file for each package that other packages will build against: sim-core (createSimulation(blueprint, arena, seed) \u2192 step(), snapshot/restore, RunEvent stream, per-part live values), canvas (mount, load blueprint, edit events out, run events in, list-view model), app, content (loaders and validator API), parent (progress read model), tools. Name public functions, event shapes and the owning package. Nothing is implemented; stubs may throw. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/sim-core/README.md",
+        "packages/sim-core/src/interface.ts",
+        "packages/canvas/README.md",
+        "packages/canvas/src/interface.ts",
+        "packages/app/README.md",
+        "packages/content/README.md",
+        "packages/parent/README.md",
+        "packages/tools/README.md"
+      ],
+      "done_when": "Each README names its public functions, events and owning package; each interface.ts compiles; orchestrator has reviewed and signed off in the PR.",
+      "contracts": "RunEvent = { tick, partId, kind: 'value'|'motion'|'sound'|'fault', payload }. Canvas never imports sim-core internals \u2014 only packages/sim-core/src/interface.ts.",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "0.5": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "0.2"
+      ],
+      "title": "Content validator CLI",
+      "description": "Build a CLI (`pnpm validate-content <path>`) that checks a parts record, kit, arena or challenge against the schema and against a terminology list (real component names; banned character-style words). The terminology data file itself is authored in task 2.5 \u2014 read it from packages/content/terminology/ and treat a missing file as an empty list for now. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/tools/src/validate-content/"
+      ],
+      "done_when": "CLI rejects a record with a character-style name or a missing port type with a readable message and non-zero exit; accepts the schema fixtures; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "0.6": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "0.2"
+      ],
+      "title": "Placeholder-art generator and swap registry",
+      "description": "Write a generator that emits one vector (SVG) tile per part from its schema record: true proportions, schema colours, consistent three-quarter view, no faces or characters. Implement the swap registry: every part references an asset key, and the registry resolves a key to the placeholder until a final render is dropped in. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/tools/src/placeholder-art/",
+        "packages/tools/src/swap-registry/"
+      ],
+      "done_when": "Generator runs over the schema fixtures and emits one SVG per part; registry resolves every key; a missing final asset falls back to the placeholder; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "G0": {
+      "status": "pending",
+      "model": "opus",
+      "size": "micro",
+      "batch": null,
+      "blocked_by": [
+        "0.1",
+        "0.2",
+        "0.3",
+        "0.4",
+        "0.5",
+        "0.6"
+      ],
+      "title": "Gate G0 \u00b7 Foundations closed",
+      "description": "Orchestrator-closed gate. Confirm every Phase 0 done_when passes on main, tag schema v1 as frozen, and write docs/gates/G0.md with the checklist and commit hashes. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "docs/gates/G0.md"
+      ],
+      "done_when": "docs/gates/G0.md exists with every Phase 0 task ticked and the schema v1 tag recorded.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "1.1": {
+      "status": "pending",
+      "model": "opus",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "0.2",
+        "0.4"
+      ],
+      "title": "Graph builder",
+      "description": "Turn a validated blueprint into a wired graph: power nets (traced across power wires and switches), signal links (directional) and mechanical mounts (part-on-part). Live-net detection: a net is live only when it traces back to a source with both polarities. Legal-but-wrong builds must build without error; only schema-invalid input throws. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/sim-core/src/graph/"
+      ],
+      "done_when": "Nets, links and mounts match the hand-written expectations for 8 fixture builds (add them under packages/sim-core/fixtures/graph/); tests pass.",
+      "contracts": "Uses only packages/schema types; exports buildGraph(blueprint): SimGraph.",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "1.2": {
+      "status": "pending",
+      "model": "opus",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "1.1"
+      ],
+      "title": "Electrical solver",
+      "description": "Implement the lumped electrical model from docs/brief.md Section 6: sources, loads as current draws, per-net voltage, a battery whose capacity falls with draw, short-circuit detection. No transient physics. Pure functions over the SimGraph, deterministic. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/sim-core/src/electrical/"
+      ],
+      "done_when": "A motor on a 1-cell vs 2-cell pack shows the speed ratio stated in the part record; a shorted pack drains in the specified time; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "1.3": {
+      "status": "pending",
+      "model": "opus",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "1.1",
+        "2.1"
+      ],
+      "title": "Behaviour runtime",
+      "description": "Execute each part's behaviour rule from its content record every tick: inputs (net voltage, signal values, mechanical load) \u2192 outputs (shaft speed, light, sound, sensor reading) including the record's failure modes (no circuit \u2192 still; low voltage \u2192 slow + drain; overload \u2192 stall + hum; no signal \u2192 servo holds and hums). No part behaviour may be hard-coded in this package. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/sim-core/src/behaviour/"
+      ],
+      "done_when": "DC motor, LED, buzzer, switch and servo behave per their Level 1\u20132 records including every failure mode, proven by behaviour fixtures generated from the content records; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "1.4": {
+      "status": "pending",
+      "model": "opus",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "1.3"
+      ],
+      "title": "Mechanical solver",
+      "description": "Apply actuator outputs to the chassis in a 2.5D top-down arena: differential-drive kinematics, simple collision with arena props, and tipping as a centre-of-mass check. Use the small 2D physics library chosen in docs/stack.md or a hand-rolled deterministic integrator; determinism wins over realism. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/sim-core/src/mechanical/"
+      ],
+      "done_when": "A two-motor robot drives straight, turns on the spot when one motor reverses, stops at a wall, and tips with the top-heavy fixture; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "1.5": {
+      "status": "pending",
+      "model": "opus",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "1.2",
+        "1.4"
+      ],
+      "title": "Tick loop, clock, snapshot and recorder",
+      "description": "Implement createSimulation per packages/sim-core/README.md: fixed-rate ticks (1\u201330 tps selectable), the solver order electrical \u2192 program \u2192 mechanical \u2192 sensor sampling, snapshot on Run and exact restore on Stop, a RunEvent stream, and a run recorder that serialises every tick's values. Seeded; no wall clock. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/sim-core/src/loop/",
+        "packages/sim-core/src/recorder/",
+        "packages/sim-core/src/index.ts"
+      ],
+      "done_when": "Same seed produces identical run records across 100 runs of every fixture; Stop restores the snapshot byte-for-byte; the public API matches the README; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "1.6": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "1.3"
+      ],
+      "title": "Program runtime stub",
+      "description": "Add the program (brain) slot: a block-rule interface and a no-op brain so Level 3 can plug in later without changing the loop. Document the interface in the sim-core README's program section. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/sim-core/src/program/"
+      ],
+      "done_when": "Interface documented; a fixture containing a microcontroller runs without error and with no effect; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "1.7": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "1.5"
+      ],
+      "title": "Golden-run harness",
+      "description": "Build tooling that records a reference run per fixture blueprint into packages/sim-core/golden/ and a CI check that diffs the current run against it with a readable per-tick diff. Provide an explicit `--accept` path for intended solver changes. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/tools/src/golden-runs/",
+        "packages/sim-core/golden/"
+      ],
+      "done_when": "Any solver change that alters a golden run fails CI with a readable diff; `--accept` regenerates; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "G1": {
+      "status": "pending",
+      "model": "opus",
+      "size": "micro",
+      "batch": null,
+      "blocked_by": [
+        "1.1",
+        "1.2",
+        "1.3",
+        "1.4",
+        "1.5",
+        "1.6",
+        "1.7",
+        "G0"
+      ],
+      "title": "Gate G1 \u00b7 Simulation core closed",
+      "description": "Orchestrator-closed gate. Golden runs pass for every Level 1\u20132 fixture and the 100-run determinism check is green on main. Record it in docs/gates/G1.md. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "docs/gates/G1.md"
+      ],
+      "done_when": "docs/gates/G1.md exists with the golden-run and determinism results recorded.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "2.1": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "0.5"
+      ],
+      "title": "Level 1 parts records",
+      "description": "Author the Level 1 parts as schema records: battery pack, switch, DC motor, wheel, caster, frame/chassis, LED. Each has real name, family, domain, ports, needs, a plain-language behaviour rule the solvers can implement, at least two failure modes with a teaching note, settings with unlock levels, and spec-card layers 1\u20132 in the voice of docs/brief.md Section 12. No characters, no praise. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/content/parts/level-1/"
+      ],
+      "done_when": "`pnpm validate-content packages/content/parts/level-1` passes; every part has \u22652 failure modes with teaching notes and spec-card layers 1 and 2.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "2.2": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "2.1"
+      ],
+      "title": "Level 2 parts records",
+      "description": "Author the Level 2 parts: motor driver, buzzer, a second battery option, gearbox, bumper switch, a second wheel size, and a servo motor preview. Same fields and voice as Level 1, plus a popular-mechanics line on every part. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/content/parts/level-2/"
+      ],
+      "done_when": "Validator passes; spec-card layers 1\u20132 plus a popular-mechanics line on every Level 2 part.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "2.3": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "2.2"
+      ],
+      "title": "Kits: Rolling Start and Circuit Crew",
+      "description": "Define the two launch kits as content: 'Rolling Start' (Level 1) and 'Circuit Crew' (Level 2, placeholder name \u2014 see docs/decisions.md D5) listing their parts with tray grouping by family, and one working fixture robot per kit. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/content/kits/"
+      ],
+      "done_when": "Each kit validates and its fixture robot builds a valid blueprint that sim-core runs without faults.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "2.4": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "micro",
+      "batch": "B1",
+      "blocked_by": [
+        "0.2"
+      ],
+      "title": "Arena presets",
+      "description": "Author arena presets as content: open floor, wall stop, ramp, and bump props, each with floor bounds, walls, an optional line, and prop placements. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/content/arenas/"
+      ],
+      "done_when": "Each preset loads and validates.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "2.5": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "micro",
+      "batch": "B1",
+      "blocked_by": [
+        "0.5"
+      ],
+      "title": "Terminology and banned-words lists",
+      "description": "Author the terminology list (real component names with allowed plain-language glosses) and the banned-words list (character-style names, praise words, exclamation marks in system text) as data files the validator and later the UI read. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/content/terminology/"
+      ],
+      "done_when": "Validator fails a record that uses a banned word and passes one that uses only listed terms.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "2.6": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "2.2",
+        "2.4"
+      ],
+      "title": "Fixture blueprints, working and broken",
+      "description": "Author 8 working and 8 broken fixture blueprints across Levels 1\u20132 for the simulation and canvas teams. Each broken fixture has exactly one fault (reversed motor, missing return wire, servo without signal, underpowered pack, top-heavy chassis, short circuit, wrong-type wire attempt recorded as refused, loose caster) named in its metadata. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/content/fixtures/blueprints/"
+      ],
+      "done_when": "All 16 validate; each broken fixture's named fault reproduces in sim-core (a failing assertion per fixture); tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "G2": {
+      "status": "pending",
+      "model": "opus",
+      "size": "micro",
+      "batch": null,
+      "blocked_by": [
+        "2.1",
+        "2.2",
+        "2.3",
+        "2.4",
+        "2.5",
+        "2.6",
+        "G0"
+      ],
+      "title": "Gate G2 \u00b7 Parts content closed",
+      "description": "Human-assisted gate. Orchestrator confirms the validator is green for all content; Drew reads every Level 1\u20132 spec card and signs off (queue a decision with the card list; do not close without his answer). Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "docs/gates/G2.md"
+      ],
+      "done_when": "docs/gates/G2.md records validator results and Drew's sign-off on every spec card.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "3.1": {
+      "status": "pending",
+      "model": "opus",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "0.4",
+        "0.6"
+      ],
+      "title": "Canvas renderer and scene graph",
+      "description": "Build the canvas package's renderer on the 2D canvas library from docs/stack.md: scene layers in the order the brief gives (arena floor and props \u2192 grid \u2192 chassis \u2192 mechanical linkages \u2192 parts \u2192 wires \u2192 ports and handles \u2192 hints), pan, pinch/scroll zoom with limits, Fit, and a grid that fades at rest. Placeholder art via the swap registry. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/canvas/src/renderer/",
+        "packages/canvas/src/scene/"
+      ],
+      "done_when": "60 fps (16 ms frame budget) on a 25-part fixture in the e2e harness's iPad profile; layer order verified by screenshot tests; tests pass.",
+      "contracts": "Canvas imports sim-core only through packages/sim-core/src/interface.ts.",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "3.2": {
+      "status": "pending",
+      "model": "opus",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "3.1"
+      ],
+      "title": "Part placement",
+      "description": "Implement placement per docs/brief.md Section 10: drag from tray and tap-then-tap-canvas as equals; snap to a mount point or free spot within 48 px; a part dropped in the void slides to the nearest free spot; move, rotate handle, remove (drag to tray or select + bin); wires follow. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/canvas/src/placement/"
+      ],
+      "done_when": "E2E scripts for the touch path and the pointer path both place every part of every fixture; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "3.3": {
+      "status": "pending",
+      "model": "opus",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "3.2"
+      ],
+      "title": "Wiring",
+      "description": "Implement wiring: port sockets in wire colours (hollow empty, filled connected), drag-to-wire, same-type acceptance only, glow within 32 px of a matching port, push-away and right-colour glow on a wrong type, snap-back on cancel, 6 px wires with 24 px hit areas, 44 px port targets, re-route on move. Legal-but-wrong connections are allowed. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/canvas/src/wiring/"
+      ],
+      "done_when": "Every legal fixture can be wired by script in both input paths; illegal wires are refused with the glow cue; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "3.4": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "3.3"
+      ],
+      "title": "Selection and focus states",
+      "description": "Selecting a part dims everything not connected to it by one step; selecting a wire highlights both ports and labels what flows on it; selection emits a spec-card-open event for the app. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/canvas/src/selection/"
+      ],
+      "done_when": "Screenshot tests for each focus state pass; selection events are emitted with the right ids.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "3.5": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "3.3",
+        "1.5"
+      ],
+      "title": "Run-mode animation",
+      "description": "Consume the sim-core RunEvent stream and animate it: moving dots along wires (red power, yellow signal), wheel spin at simulated speed, servo sweep, LED, buzzer visual twin, stall shudder, tipping with weight, one-second spin-up on Run. Wires lock in Run; Stop returns to Build. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/canvas/src/run-animation/"
+      ],
+      "done_when": "Each failure mode in the broken fixtures is visibly distinct in a recorded run (screenshot per fixture); tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "3.6": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "3.3"
+      ],
+      "title": "List view (screen-reader path)",
+      "description": "Provide the structured parts-and-wires list ('DC motor, connected to battery pack power out') with the same actions as the canvas \u2014 place, wire, configure, remove \u2014 operable by keyboard and screen reader. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/canvas/src/list-view/"
+      ],
+      "done_when": "A fixture built entirely from the list view produces a blueprint byte-identical to the same build wired on canvas; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "3.7": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "3.3"
+      ],
+      "title": "Tidy-wires router and zoom limits",
+      "description": "Add a 'tidy wires' action that re-routes wires around part bodies, and zoom limits that keep the build on screen. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/canvas/src/routing/"
+      ],
+      "done_when": "Routed wires never cross a part body on the 25-part fixture; zoom cannot lose the build; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "3.8": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "3.1"
+      ],
+      "title": "Canvas e2e harness",
+      "description": "Build the e2e harness with touch emulation, pointer emulation, screenshot diffing, an iPad-class performance profile, and an input-path parity check that compares blueprints produced by touch, pointer and list view. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/tools/src/e2e/"
+      ],
+      "done_when": "Harness runs in CI in under 10 minutes on the fixtures available at the time; parity check reports per fixture.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "G3": {
+      "status": "pending",
+      "model": "opus",
+      "size": "micro",
+      "batch": null,
+      "blocked_by": [
+        "3.1",
+        "3.2",
+        "3.3",
+        "3.4",
+        "3.5",
+        "3.6",
+        "3.7",
+        "3.8",
+        "G1",
+        "G2"
+      ],
+      "title": "Gate G3 \u00b7 Drew wires both Level 1 robots by hand",
+      "description": "HUMAN GATE. Orchestrator prepares a tablet and laptop build with the two Level 1 kit robots and writes docs/gates/G3.md with what to try (first wire attempt, a wrong-type drop, a run, a stop, the list view). Queue a decision and wait for Drew's pass/fail. Do not dispatch a worker for this task. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "docs/gates/G3.md"
+      ],
+      "done_when": "docs/gates/G3.md records Drew's pass on tablet and laptop and any findings filed as new tasks.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "4.1": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "3.1",
+        "0.4"
+      ],
+      "title": "App shell and layout",
+      "description": "Build the app shell around the canvas per docs/brief.md Section 9: header (kit/level, one-line goal, Save, Home), part tray on the left (bottom in portrait), spec card sliding in on the right, Run bar bottom-centre, arena strip; every edge tuckable; the canvas never under 70% of the screen. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/shell/"
+      ],
+      "done_when": "Layout tests at 10-inch landscape, 13-inch and tablet portrait pass; tuck states persist across reload; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "4.2": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "2.3",
+        "4.1",
+        "G3"
+      ],
+      "title": "Part tray and library",
+      "description": "Populate the tray from the current kit, grouped by family, with big tiles; add the Library button opening the full catalogue overlay with family and domain filters. Before Level 3 the library is browse-only. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/tray/",
+        "packages/app/src/library/"
+      ],
+      "done_when": "Tray shows exactly the kit's parts; library overlay opens with working filters and no drag-out before Level 3; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "4.3": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "2.2",
+        "4.1",
+        "G3"
+      ],
+      "title": "Spec card",
+      "description": "Build the spec card: layered text by level, real name and picture, ports, needs/gives, settings as dials and sliders in child-sized steps with the real unit shown, live readouts in Run, popular-mechanics line, speak-it button (text-to-speech of the exact on-screen words). Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/spec-card/"
+      ],
+      "done_when": "Every Level 1\u20132 part renders its card at Levels 1 and 2 without truncation at the 10-inch size; live readouts match the run record values; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "4.4": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "3.5",
+        "4.1",
+        "G3"
+      ],
+      "title": "Run bar and clock",
+      "description": "One large Run/Stop toggle, slow-motion clock control (1\u201330 tps), Undo, Reset arena, one-second spin-up; Run disabled with a plain reason when nothing is placed. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/run-bar/"
+      ],
+      "done_when": "Stop restores the build exactly; slow-motion shows per-tick steps with the tick's visual twin; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "4.5": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "2.4",
+        "4.4"
+      ],
+      "title": "Challenge runner",
+      "description": "Lay a challenge over the same canvas: header goal line, arena preset, goal detection from run records, a tick when the goal is met. No separate lesson screen. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/challenges/"
+      ],
+      "done_when": "All Level 1\u20132 challenge fixtures detect success and non-success correctly; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "4.6": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "4.5"
+      ],
+      "title": "Hint ladder",
+      "description": "Implement the hint ladder drawn on the canvas: pulse the part \u2192 pulse the port \u2192 ghost wire \u2192 do it for me. Triggers after two Runs that miss the goal or on request from the button beside the goal. Hint copy per docs/brief.md Section 12. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/hints/"
+      ],
+      "done_when": "Each step renders without covering a port; 'do it for me' produces a valid wire; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "4.7": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "2.6",
+        "4.5"
+      ],
+      "title": "Level 1 challenges",
+      "description": "Author Level 1 challenges as content: 5 part introductions, 5 guided challenges with hint ladders, 2 breakdowns, 2 what-ifs, 1 unscripted build ('Cross the arena and stop at the wall'), each with goal, arena preset, kit, and fixtures. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/content/challenges/level-1/"
+      ],
+      "done_when": "Each challenge has a passing fixture and at least one failing fixture; validator passes.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "4.8": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "4.7"
+      ],
+      "title": "Level 2 challenges",
+      "description": "Author Level 2 challenges: same shape as Level 1 with 6 guided challenges, including the switch, motor driver, buzzer and gearbox. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/content/challenges/level-2/"
+      ],
+      "done_when": "Each challenge has a passing fixture and at least one failing fixture; validator passes.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "4.9": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "0.3",
+        "4.1"
+      ],
+      "title": "Blueprint save, load, duplicate; local-first store",
+      "description": "Persist blueprints in a local-first store (library from docs/stack.md): save, load, duplicate, rename; run the schema migration on load; the blueprint is the only persisted build format. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/store/"
+      ],
+      "done_when": "Round-trip of all fixtures; a v0 fixture migrates on load; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "4.10": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "4.4"
+      ],
+      "title": "Sound layer",
+      "description": "Add sounds as machine feedback only: click on wire landing, rising whir on Run, motor hum by speed, buzzer, hollow knock on collision, soft tick per step in slow motion; each has a visual twin; mute persists; no music loop. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/sound/"
+      ],
+      "done_when": "Audio events map one-to-one to run events in a recorded run; mute persists across reload; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "G4": {
+      "status": "pending",
+      "model": "opus",
+      "size": "micro",
+      "batch": null,
+      "blocked_by": [
+        "4.1",
+        "4.2",
+        "4.3",
+        "4.4",
+        "4.5",
+        "4.6",
+        "4.7",
+        "4.8",
+        "4.9",
+        "4.10",
+        "G3"
+      ],
+      "title": "Gate G4 \u00b7 Three children build a kit robot unaided",
+      "description": "HUMAN GATE. Orchestrator prepares the tablet build, the Level 1 kit and an observation sheet (first wire attempt, hint use, response to a failure state, whether an adult intervened) in docs/gates/G4.md, queues a decision and waits. Drew runs it with three children aged 6\u20138. Findings become new tasks, not patches. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "docs/gates/G4.md"
+      ],
+      "done_when": "docs/gates/G4.md records three observed sessions and Drew's pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "5.1": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "4.9"
+      ],
+      "title": "Adult account and child profiles",
+      "description": "Child profiles under one adult account: no child email, no chat, no public sharing. Profile switch keeps builds and progress separate. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/parent/src/accounts/"
+      ],
+      "done_when": "Profile switch isolates builds; no route or store query exposes another child's data (negative tests); tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "5.2": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "5.1",
+        "4.5"
+      ],
+      "title": "Progress view",
+      "description": "Parent view of progress read from run records: parts met, unscripted builds passed, faults fixed, time in sandbox; nothing extra for the child to do. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/parent/src/progress/"
+      ],
+      "done_when": "Figures reconcile to run records for all fixtures; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "5.3": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "5.1"
+      ],
+      "title": "Parts-list export",
+      "description": "Printable parts list per blueprint with real names, family, quantity and a wiring summary, so a family can buy the real kit and rebuild it. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/parent/src/export/"
+      ],
+      "done_when": "Export of each kit fixture lists every part once with its family; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "5.4": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "5.2"
+      ],
+      "title": "Name-the-part card game",
+      "description": "A two-minute adult-led card game in the parent view: show a part picture, the adult marks named/not named; used as the Level 2 check in the brief's success measures. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/parent/src/card-game/"
+      ],
+      "done_when": "Draws from Level 1\u20132 parts only; records a result per child; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "5.5": {
+      "status": "parked",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "4.9"
+      ],
+      "title": "Offline and sync",
+      "description": "Full sandbox and all downloaded levels work with no network; sync on reconnect with the conflict rule 'latest blueprint wins, both versions kept'. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/offline/",
+        "packages/app/src/sync/"
+      ],
+      "done_when": "Airplane-mode e2e passes; the conflict fixture keeps both versions; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "parked_reason": "awaiting decision D10"
+    },
+    "5.6": {
+      "status": "parked",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "5.1"
+      ],
+      "title": "Adult-to-adult sharing",
+      "description": "Read-only blueprint links between adults that open the build in replay without exposing profile data. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/sharing/"
+      ],
+      "done_when": "A shared link opens the build in replay; profile data is absent from the payload (test); tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "parked_reason": "awaiting decision D10"
+    },
+    "5.7": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "4.1",
+        "G4"
+      ],
+      "title": "Accessibility pass",
+      "description": "WCAG 2.2 AA on all chrome; colour twins for wires (solid power, dashed signal, thick grey mechanical) and port shapes (round, square, hexagon); high-contrast theme; dyslexia-friendly type option; left-handed mirror layout; read-aloud on all text. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/a11y/",
+        "packages/app/src/theme/"
+      ],
+      "done_when": "Automated a11y suite green; the manual checklist in docs/a11y-checklist.md is filled and signed by Drew (queue a decision for the sign-off).",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "G5": {
+      "status": "pending",
+      "model": "opus",
+      "size": "micro",
+      "batch": null,
+      "blocked_by": [
+        "5.1",
+        "5.2",
+        "5.3",
+        "5.4",
+        "5.5",
+        "5.6",
+        "5.7",
+        "G4"
+      ],
+      "title": "Gate G5 \u00b7 A family runs a week offline",
+      "description": "HUMAN GATE. Orchestrator prepares a build for one family with two child profiles and a one-week offline protocol in docs/gates/G5.md; queues a decision; waits. Pass = clean sync after the week and parent view matching run records. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "docs/gates/G5.md"
+      ],
+      "done_when": "docs/gates/G5.md records the week's result and Drew's pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "6.1": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "4.1",
+        "G4"
+      ],
+      "title": "Performance",
+      "description": "Hit the budgets: 25-part builds at 60 fps on a 2020 iPad and a low-end Chromebook profile; cold start under 3 s. Record measurements in docs/perf.md. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/perf/",
+        "docs/perf.md"
+      ],
+      "done_when": "Measurements recorded in docs/perf.md meet the budgets in CI profiles or manual device runs.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "6.2": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "5.2"
+      ],
+      "title": "Telemetry for the success measures only",
+      "description": "Emit only the events the brief's Section 14 measures need: run records, session start mode, hint use, export events. Document every event in the parent view's one-screen data note (docs/data-note.md, rendered in the parent view). Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/telemetry/",
+        "docs/data-note.md"
+      ],
+      "done_when": "Every emitted event is listed in the data note and nothing else is emitted (test enumerates emitters); tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "6.3": {
+      "status": "parked",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "0.1",
+        "4.1"
+      ],
+      "title": "Release pipeline",
+      "description": "Web build, versioned content bundle and tester invite codes from a tagged commit; the content version shows in Settings. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        ".github/workflows/release.yml",
+        "packages/tools/src/release/"
+      ],
+      "done_when": "A tagged commit produces a tester URL with the content version shown in Settings.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "parked_reason": "awaiting decision D10"
+    },
+    "6.4": {
+      "status": "pending",
+      "model": "opus",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "6.1",
+        "6.2",
+        "6.3",
+        "5.7",
+        "4.8",
+        "G5"
+      ],
+      "title": "Reviewer sweep against the ground rules",
+      "description": "Adversarial review of every package against CLAUDE.md rules 1\u201314; each finding logged in docs/reviews/<package>.md with severity; rule-7 (real names, no mascot/points) and rule-8 (three input paths) findings must be fixed via new tasks before G6. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "docs/reviews/"
+      ],
+      "done_when": "A review file per package exists; no open rule-7 or rule-8 findings.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "6.5": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "4.8"
+      ],
+      "title": "Copy pass on spec cards and hints",
+      "description": "Edit every spec card and hint against the voice rules in docs/brief.md Section 12: short, concrete, second person, no praise, no exclamation marks, real names; then queue a decision for Drew to sign off each card. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/content/parts/level-1/",
+        "packages/content/parts/level-2/",
+        "packages/content/challenges/level-1/",
+        "packages/content/challenges/level-2/"
+      ],
+      "done_when": "Validator passes; Drew's sign-off recorded in the decision queue.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "6.6": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "1.6",
+        "4.3"
+      ],
+      "title": "Level 3 slot behind a flag",
+      "description": "Add a feature flag and a placeholder program view; with the flag on, the servo's angle setting unlocks and drives the servo in Run. Flag off by default. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/program-view/",
+        "packages/app/src/flags/"
+      ],
+      "done_when": "Flag off by default; with it on, a servo angle can be set and the servo sweeps to it in a run; tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "G6": {
+      "status": "pending",
+      "model": "opus",
+      "size": "micro",
+      "batch": null,
+      "blocked_by": [
+        "6.1",
+        "6.2",
+        "6.3",
+        "6.4",
+        "6.5",
+        "6.6",
+        "G5"
+      ],
+      "title": "Gate G6 \u00b7 Five families, two weeks",
+      "description": "HUMAN GATE. Orchestrator ships the tester release, prepares the observation and measures sheet in docs/gates/G6.md, queues a decision and waits. Drew runs Levels 1\u20132 with five homeschool families for two weeks and reads the Section 14 measures for the first time. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "docs/gates/G6.md"
+      ],
+      "done_when": "docs/gates/G6.md records the two-week results and the measures.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    }
+  },
+  "human_gates": [
+    "G2",
+    "G3",
+    "G4",
+    "G5",
+    "G6"
+  ],
+  "decision_queue": [
+    {
+      "id": "D1",
+      "question": "Confirm the reframe (parts over story, less character) and the extended age ladder (to ~12) with Levels 1\u20132 as launch scope. Was 'too emotive' read correctly?",
+      "recommendation": "Proceed as written in docs/brief.md Section 1\u20132.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D2",
+      "question": "Stack: TypeScript web-first app, 2D canvas renderer, small 2D physics library, local-first store with sync. Confirm, or name alternatives.",
+      "recommendation": "Accept; 0.1 proposes concrete libraries in docs/stack.md.",
+      "confidence": "high",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D3",
+      "question": "Repository host and CI.",
+      "recommendation": "GitHub, private repository, GitHub Actions.",
+      "confidence": "high",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D4",
+      "question": "Name the eleventh part family (the earlier draft named ten of eleven) and confirm the Level 1\u20132 parts lists in tasks 2.1 and 2.2.",
+      "recommendation": "Proceed with ten families and the lists as written; add the eleventh when named.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D5",
+      "question": "Kit names: 'Rolling Start' (L1) and 'Circuit Crew' (L2).",
+      "recommendation": "Keep as placeholders until Drew renames.",
+      "confidence": "low",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D6",
+      "question": "Part render style and background treatment for final art (Higgsfield style sheet).",
+      "recommendation": "Vector placeholders ship to testers; decide before final art.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D7",
+      "question": "Tester families and devices for G4 and G6.",
+      "recommendation": "Orchestrator drafts observation sheets; Drew recruits.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D8",
+      "question": "Monetisation, and whether a classroom layer follows G6.",
+      "recommendation": "Nothing built; revisit after G6 measures.",
+      "confidence": "low",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D9",
+      "question": "docs/plan.md Section 1 says nothing from a later phase merges to main until the earlier gate is closed, but the pharao graph lets 4.1, 4.9, 5.1 and 5.3 run before G3. The orchestrator is proceeding on the graph: 4.1 (shell) and 4.9 (save/load) are what the G3 tablet build needs, and 5.1, 5.3 are local-first and additive. Confirm, or say which of these should wait for G3.",
+      "recommendation": "Proceed on the graph; treat docs/plan.md's sentence as satisfied by the dependency graph.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D10",
+      "question": "5.5 (sync on reconnect), 5.6 (adult-to-adult sharing links) and 6.3 (tester URL from a tagged commit) each need a backend or hosting choice that no document makes. Which backend/host should they use (for example Vercel + a small API, or Supabase), or should they wait until after G3?",
+      "recommendation": "Hold all three until Drew names the backend/host; everything else proceeds.",
+      "confidence": "medium",
+      "blocks": [
+        "5.5",
+        "5.6",
+        "6.3"
+      ],
+      "resolved": false
+    }
+  ]
+}
