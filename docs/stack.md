@@ -48,14 +48,22 @@ Module conventions: ESM everywhere, `nodenext` resolution, relative imports that
 
 `packages/tools/test/lint-rules.test.ts` lints sample files through the real config and proves each rule below fires. Extend it whenever a rule changes.
 
-- The package map in CLAUDE.md (ground rule 6). Lint checks every way a file in `packages/` loads a module: `import`, `export … from`, `import()`, `import()` types, `require()` and `new URL()` of a code file.
+- The package map in CLAUDE.md (ground rule 6). Lint checks every way a file in `packages/` loads a module: `import`, `export … from`, `import()`, `import()` types, `require()`, `new URL()` of a code file, and `import.meta.glob` patterns.
   - In `src/`, a package may import only the packages the map allows, and only through their `package.json` exports. Canvas reaches sim-core only as `@servo/sim-core/interface`, and parent reaches app only as `@servo/app/store`.
+  - From `src/`, relative imports of code (TypeScript, JavaScript, WebAssembly or an extensionless path) must stay inside `src/`. Data files such as JSON may sit elsewhere in the package.
   - Tests may import any package, but also only through its exports.
-  - Everywhere, these are errors: relative paths that leave the package, absolute paths, and specifiers computed at run time. A template that starts with `./` or `../` is checked by its fixed part.
+  - Everywhere, these are errors: relative paths that leave the package or pass through `node_modules`, absolute paths, package.json `imports` aliases (`#…`), and specifiers computed at run time.
+  - A template or glob that starts with `./` or `../` is checked by its fixed part, up to the first `${}` or wildcard.
 - Relative imports name the TypeScript file. `.js`, `.mjs`, `.cjs`, `.jsx` and extensionless relative specifiers are errors, so code that passes Vitest also runs under Node.
 - schema, content and sim-core compile without DOM or Node types. Lint bans UI, timer and I/O globals there, including `globalThis`, `self` and `global`.
-- sim-core also bans `Date`, `performance`, `Temporal`, `crypto`, `Math.random`, `WeakRef` and `FinalizationRegistry` (ground rule 2).
+- sim-core also bans `Date`, `performance`, `Temporal`, `crypto`, `Math.random`, `WeakRef` and `FinalizationRegistry` (ground rule 2). These bans cover sim-core's own `src/`. Schema code that sim-core calls follows schema's rules, which allow `Date` and `Math.random`.
 - The import rule covers `.ts`, `.tsx`, `.mts` and `.cts` files. The package-map and purity rules also cover `.js`, `.jsx`, `.mjs` and `.cjs` files, so a stray JavaScript file is no way around them. `eslint-disable` comments have no effect in `packages/`, and `pnpm lint` fails on any warning. A rule that is wrong gets fixed in `eslint.config.js`, in review.
+- Lint catches every ordinary form. Deliberate workarounds it cannot see are left to review. None of them happens by accident in ordinary code:
+  - a template path that climbs with `..` after its first `${}`
+  - a committed symlink
+  - an alias in tsconfig or a bundler config
+  - a package export that points outside `src/`
+  - a global reached indirectly (`Function('return this')()`, `Reflect.get(Math, …)`, `Intl` date formatting)
 - Left to the sim-core tasks and not linted, but needed for determinism across devices: sim-core's own maths. `Math.sin`, `cos`, `tan`, `atan2`, `exp`, `log`, `pow` and `hypot` may differ between browsers; `+ - * /` and `Math.sqrt` are exact. Keep such maths inside Rapier or one deterministic module, and iterate parts and wires in a stable order (for example sorted by id).
 
 ## Decisions queued for Drew
