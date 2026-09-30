@@ -1,0 +1,26 @@
+{
+  "name": "@servo/tools",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@servo/app": "workspace:*",
+    "@servo/canvas": "workspace:*",
+    "@servo/content": "workspace:*",
+    "@servo/parent": "workspace:*",
+    "@servo/schema": "workspace:*",
+    "@servo/sim-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

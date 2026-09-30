@@ -58,7 +58,20 @@ Never: mascot or character names for parts, "brain-y bit", "zappy wire", any rob
 
 ## How to run
 
-Filled in by task 0.1 (monorepo scaffold). Until then: `pnpm install`, `pnpm -r test`, `pnpm validate-content <path>`.
+Needs Node 24 or newer and pnpm 12 (the exact version is pinned in `package.json` `packageManager`). The stack and the reasons for it are in `docs/stack.md`.
+
+| Command | What it does |
+| --- | --- |
+| `pnpm install` | Installs every package from `pnpm-lock.yaml` (CI adds `--frozen-lockfile`) |
+| `pnpm -r test` | Runs each package's Vitest suite once (`pnpm test` does the same) |
+| `pnpm --filter @servo/sim-core test` | One package's tests; `pnpm --filter @servo/sim-core exec vitest` watches |
+| `pnpm typecheck` | `tsc --noEmit` in every package |
+| `pnpm lint` | ESLint over the repo, including the package-map import rules and sim-core's purity rules |
+| `pnpm check` | Lint, typecheck, then test: the same steps CI runs on every push (`.github/workflows/ci.yml`) |
+
+`pnpm validate-content <path>` does not exist yet; it arrives with the content validator in `packages/tools`.
+
+Conventions the toolchain enforces: ESM only; relative imports carry the `.ts` extension; no enums or namespaces; packages import each other by name (`@servo/schema`), and canvas imports sim-core only as `@servo/sim-core/interface`. Shipped code lives in each package's `src/`, tests in its `test/`.
 
 ## Plan execution
 
