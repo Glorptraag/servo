@@ -12,7 +12,7 @@
   },
   "tasks": {
     "0.1": {
-      "status": "pending",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -34,8 +34,17 @@
       ],
       "done_when": "`pnpm install && pnpm -r test` runs an (empty) test in every package and exits 0; CI workflow runs the same on push; CLAUDE.md 'How to run' lists working commands; docs/stack.md exists.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null
+      "completed_at": "2026-09-30T23:15:49+00:00",
+      "completed_by": "W-0.1",
+      "retries": 1,
+      "errors": [
+        {
+          "ts": "2026-09-30T22:41:07+00:00",
+          "by": "orchestrator",
+          "error": "Review R-0.1 FAIL (docs/reviews/tasks/0.1.md): major rule-6 lint bypasses (relative cross-package imports, dynamic import(), .tsx/.mts/.cts outside globs); minor: sim-core purity list misses crypto/Temporal/globalThis/self; '.ts extension enforced' claim untrue; parent may import all of @servo/app instead of the app store; stack.md open questions not queued."
+        }
+      ],
+      "dispatched_at": "2026-09-30T22:41:07+00:00"
     },
     "0.2": {
       "status": "pending",
@@ -919,7 +928,7 @@
       "completed_by": null
     },
     "5.5": {
-      "status": "parked",
+      "status": "pending",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -935,11 +944,10 @@
       "done_when": "Airplane-mode e2e passes; the conflict fixture keeps both versions; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null,
-      "parked_reason": "awaiting decision D10"
+      "completed_by": null
     },
     "5.6": {
-      "status": "parked",
+      "status": "pending",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -954,8 +962,7 @@
       "done_when": "A shared link opens the build in replay; profile data is absent from the payload (test); tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null,
-      "parked_reason": "awaiting decision D10"
+      "completed_by": null
     },
     "5.7": {
       "status": "pending",
@@ -1042,7 +1049,7 @@
       "completed_by": null
     },
     "6.3": {
-      "status": "parked",
+      "status": "pending",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1059,8 +1066,7 @@
       "done_when": "A tagged commit produces a tester URL with the content version shown in Settings.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null,
-      "parked_reason": "awaiting decision D10"
+      "completed_by": null
     },
     "6.4": {
       "status": "pending",
@@ -1229,7 +1235,8 @@
       "recommendation": "Proceed on the graph; treat docs/plan.md's sentence as satisfied by the dependency graph.",
       "confidence": "medium",
       "blocks": [],
-      "resolved": false
+      "resolved": true,
+      "answer": "Drew 2026-09-30: build everything without waiting on him. Proceeding on the dependency graph."
     },
     {
       "id": "D10",
@@ -1241,6 +1248,39 @@
         "5.6",
         "6.3"
       ],
+      "resolved": true,
+      "answer": "Drew 2026-09-30: build without waiting. Orchestrator default, backend-free: 5.5 pluggable SyncRemote (in-memory for tests, HTTP disabled until configured); 5.6 read-only links with the compressed blueprint in the URL fragment; 6.3 tag builds artifacts and invite codes, deploy skipped until a host secret exists. Revisit when Drew picks a backend/host."
+    },
+    {
+      "id": "D11",
+      "question": "Physics: Rapier 2D deterministic build adds ~1.3 MB gzipped WebAssembly (brief asks for a 'small' 2D physics library). It guarantees cross-platform determinism and whole-world snapshot/restore, which Matter.js and Planck.js cannot. Accept?",
+      "recommendation": "Accept Rapier; lazy-load the WASM at the first Run so cold start stays under 3 s; revisit only if task 6.1 misses the budget.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D12",
+      "question": "UI framework for the app chrome (tray, spec card, Run bar, parent view). None is named in the brief or D2.",
+      "recommendation": "React 19 with Vite in packages/app and packages/parent; packages/canvas stays framework-free (PixiJS plus a plain-DOM list-view model the app renders). Build proceeds on this default.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D13",
+      "question": "Sync host for children's builds: Dexie Cloud hosted (commercial), Dexie Cloud self-hosted (licensed), or a service of our own?",
+      "recommendation": "No host until Drew chooses; the build ships the pluggable SyncRemote from D10 with sync disabled by default.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D14",
+      "question": "Oldest iPadOS and browser versions to support (sets the build target and the WebGL/WebGPU/WebAssembly baseline).",
+      "recommendation": "iPadOS/Safari 17+, Chrome/Edge 120+, Firefox 120+; ES2023 target; WebGL2 and WebAssembly required, WebGPU optional. Build proceeds on this default.",
+      "confidence": "medium",
+      "blocks": [],
       "resolved": false
     }
   ]

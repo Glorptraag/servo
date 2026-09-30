@@ -1,2 +1,13 @@
 {"ts": "2026-09-30T09:21:59+00:00", "event": "decision_add", "id": "D9", "blocks": []}
 {"ts": "2026-09-30T09:21:59+00:00", "event": "decision_add", "id": "D10", "blocks": ["5.5", "5.6", "6.3"]}
+{"ts": "2026-09-30T09:22:45+00:00", "event": "dispatch", "tasks": ["0.1"]}
+{"ts": "2026-09-30T09:27:39+00:00", "event": "decision_resolve", "id": "D9"}
+{"ts": "2026-09-30T09:27:40+00:00", "event": "decision_resolve", "id": "D10"}
+{"ts": "2026-09-30T22:41:07+00:00", "event": "reset", "task": "0.1"}
+{"ts": "2026-09-30T22:41:07+00:00", "event": "fail", "task": "0.1", "retries": 1, "by": "orchestrator"}
+{"ts": "2026-09-30T22:41:07+00:00", "event": "decision_add", "id": "D11", "blocks": []}
+{"ts": "2026-09-30T22:41:07+00:00", "event": "decision_add", "id": "D12", "blocks": []}
+{"ts": "2026-09-30T22:41:07+00:00", "event": "decision_add", "id": "D13", "blocks": []}
+{"ts": "2026-09-30T22:41:07+00:00", "event": "decision_add", "id": "D14", "blocks": []}
+{"ts": "2026-09-30T22:41:07+00:00", "event": "dispatch", "tasks": ["0.1"]}
+{"ts": "2026-09-30T23:15:49+00:00", "event": "done", "tasks": ["0.1"], "by": "W-0.1"}
