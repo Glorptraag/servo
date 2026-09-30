@@ -167,6 +167,9 @@ catalogs:
     '@types/node':
       specifier: ^24.19.0
       version: 24.19.0
+    eslint:
+      specifier: ^10.11.0
+      version: 10.11.0
     typescript:
       specifier: ~6.0.3
       version: 6.0.3
@@ -185,7 +188,7 @@ importers:
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.11.0)
       eslint:
-        specifier: ^10.11.0
+        specifier: 'catalog:'
         version: 10.11.0
       typescript:
         specifier: 'catalog:'
@@ -319,6 +322,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.0
+      eslint:
+        specifier: 'catalog:'
+        version: 10.11.0
       typescript:
         specifier: 'catalog:'
         version: 6.0.3

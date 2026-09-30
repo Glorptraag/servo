@@ -10,12 +10,12 @@
   "scripts": {
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
-    "lint": "eslint .",
+    "lint": "eslint --config eslint.config.js --max-warnings 0 .",
     "check": "pnpm lint && pnpm typecheck && pnpm test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "eslint": "^10.11.0",
+    "eslint": "catalog:",
     "typescript": "catalog:",
     "typescript-eslint": "^8.71.0",
     "vite": "catalog:"

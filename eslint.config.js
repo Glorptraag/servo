@@ -1,76 +1,239 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import js from '@eslint/js';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
-// Which @servo packages each package's shipped code may import: the package map in CLAUDE.md.
-// Tests are exempt so they can use fixtures from other packages. tools is dev-only and unrestricted.
-const allowedImports = {
+const repoRoot = path.dirname(fileURLToPath(import.meta.url));
+const typeScriptFiles = '*.{ts,tsx,mts,cts}';
+const codeFiles = '*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}';
+
+// The package map in CLAUDE.md: which Servo packages each package's src/ may import.
+// A bare name allows every entry in that package's exports; a subpath allows that one entry.
+const packageMap = {
   schema: [],
   content: ['schema'],
   'sim-core': ['schema'],
   canvas: ['schema', 'sim-core/interface'],
   app: ['schema', 'content', 'sim-core', 'canvas'],
-  parent: ['schema', 'app'],
+  parent: ['schema', 'app/store'],
+  tools: ['schema', 'content', 'sim-core', 'canvas', 'app', 'parent'],
 };
 
-const packageBoundaries = Object.entries(allowedImports).map(([pkg, allowed]) => ({
-  files: [`packages/${pkg}/src/**/*.ts`],
-  rules: {
-    'no-restricted-imports': [
-      'error',
-      {
-        patterns: [
-          {
-            regex: allowed.length === 0 ? '^@servo/' : `^@servo/(?!(?:${allowed.join('|')})(?:/|$))`,
-            message: `packages/${pkg} may import ${
-              allowed.length === 0 ? 'no other Servo package' : allowed.map((name) => `@servo/${name}`).join(', ')
-            } (CLAUDE.md package map).`,
-          },
-        ],
-      },
-    ],
+const exportedEntries = (name) => {
+  const { exports = '.' } = JSON.parse(fs.readFileSync(path.join(repoRoot, 'packages', name, 'package.json'), 'utf8'));
+  const subpaths =
+    exports && typeof exports === 'object' && Object.keys(exports).every((key) => key.startsWith('.'))
+      ? Object.keys(exports)
+      : ['.'];
+  return subpaths.map((subpath) => `@servo/${name}${subpath.slice(1)}`);
+};
+
+const escapeRegExp = (text) => text.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+const toMatcher = (entry) => new RegExp(`^${escapeRegExp(entry).replaceAll('*', '.*')}$`);
+const entriesOf = (names) =>
+  names.flatMap((name) => (name.includes('/') ? [`@servo/${name}`] : exportedEntries(name))).map(toMatcher);
+const allowedInSource = Object.fromEntries(Object.entries(packageMap).map(([pkg, names]) => [pkg, entriesOf(names)]));
+const allowedElsewhere = entriesOf(Object.keys(packageMap));
+
+// packages/<pkg>/<area>/...; only src/ is shipped. Tests and config files may use any package's exports.
+const locate = (filename) => {
+  const [top, pkg, area] = path.relative(repoRoot, filename).split(path.sep);
+  if (top !== 'packages' || !pkg || !area) return undefined;
+  return { pkg, root: path.join(repoRoot, 'packages', pkg), shipped: area === 'src' };
+};
+
+const isRelative = (value) => value.startsWith('./') || value.startsWith('../');
+const isPathLike = (value) => value === '.' || value === '..' || isRelative(value);
+
+// A module specifier as { head, tail, exact }. A template literal keeps its static start and end.
+const specifierOf = (node) => {
+  if (node?.type === 'Literal' && typeof node.value === 'string') return { head: node.value, tail: node.value, exact: true };
+  if (node?.type === 'TemplateLiteral') {
+    return {
+      head: node.quasis[0].value.cooked ?? '',
+      tail: node.quasis.at(-1).value.cooked ?? '',
+      exact: node.expressions.length === 0,
+    };
+  }
+  return undefined;
+};
+
+const withoutQuery = (value) => value.replace(/[?#].*$/, '');
+const namesCode = (reference) => /\.[cm]?[jt]sx?$/i.test(withoutQuery(reference.tail));
+
+const isImportMetaUrl = (node) =>
+  node?.type === 'MemberExpression' &&
+  node.object.type === 'MetaProperty' &&
+  node.object.meta.name === 'import' &&
+  node.property.name === 'url';
+
+// Visits every way a file can load another module: import, export-from, import(), import types,
+// import = require, require(), and (for package boundaries) new URL() of a code file, as workers use.
+const moduleReferences = (visit, { urls }) => ({
+  ImportDeclaration: (node) => visit(node.source, specifierOf(node.source)),
+  ExportAllDeclaration: (node) => visit(node.source, specifierOf(node.source)),
+  ExportNamedDeclaration: (node) => node.source && visit(node.source, specifierOf(node.source)),
+  ImportExpression: (node) => visit(node.source, specifierOf(node.source)),
+  TSImportType: (node) => {
+    const source = node.source ?? node.argument?.literal;
+    visit(source ?? node, specifierOf(source));
   },
-}));
+  TSExternalModuleReference: (node) => visit(node.expression, specifierOf(node.expression)),
+  CallExpression: (node) => {
+    if (node.callee.type === 'Identifier' && node.callee.name === 'require') {
+      visit(node.arguments[0] ?? node, specifierOf(node.arguments[0]));
+    }
+  },
+  NewExpression: (node) => {
+    const reference = specifierOf(node.arguments[0]);
+    const isUrl = node.callee.type === 'Identifier' && node.callee.name === 'URL' && isImportMetaUrl(node.arguments[1]);
+    if (urls && isUrl && reference && namesCode(reference)) {
+      visit(node.arguments[0], reference);
+    }
+  },
+});
+
+const packageBoundaries = {
+  meta: {
+    type: 'problem',
+    schema: [],
+    messages: {
+      dynamic: 'Module specifiers must be string literals, or templates starting with ./ or ../, so the package map can be checked.',
+      absolute: "'{{specifier}}' is an absolute path. Import other packages by name.",
+      leavesPackage: "'{{specifier}}' reaches outside packages/{{pkg}}. Import other packages by name.",
+      outsideMap: "'{{specifier}}' is outside the package map: packages/{{pkg}}/src may import {{allowed}} (CLAUDE.md).",
+      notExported: "'{{specifier}}' is not an entry its package exports.",
+      unknownPackage: "'{{specifier}}' is not a Servo package.",
+    },
+  },
+  create(context) {
+    const where = locate(context.filename);
+    if (!where) return {};
+    const allowed = where.shipped ? (allowedInSource[where.pkg] ?? []) : allowedElsewhere;
+    const listed = where.shipped ? (packageMap[where.pkg] ?? []) : Object.keys(packageMap);
+    return moduleReferences(
+      (node, reference) => {
+        const report = (messageId) =>
+          context.report({
+            node,
+            messageId,
+            data: {
+              specifier: reference?.head,
+              pkg: where.pkg,
+              allowed: listed.map((name) => `@servo/${name}`).join(', ') || 'no other Servo package',
+            },
+          });
+        if (!reference || (!reference.exact && !isRelative(reference.head))) return report('dynamic');
+        const { head, exact } = reference;
+        if (isPathLike(head)) {
+          const target = path.resolve(path.dirname(context.filename), exact ? head : head.slice(0, head.lastIndexOf('/') + 1));
+          if (target !== where.root && !target.startsWith(where.root + path.sep)) report('leavesPackage');
+          return;
+        }
+        if (path.isAbsolute(head) || head.startsWith('file:')) return report('absolute');
+        if (!head.startsWith('@servo/') || allowed.some((entry) => entry.test(head))) return;
+        const name = head.split('/')[1];
+        if (!Object.hasOwn(packageMap, name)) return report('unknownPackage');
+        report(listed.includes(name) ? 'notExported' : 'outsideMap');
+      },
+      { urls: true },
+    );
+  },
+};
+
+const importExtensions = {
+  meta: {
+    type: 'problem',
+    schema: [],
+    messages: {
+      missing: "'{{specifier}}' needs the file extension, for example './part.ts'.",
+      javascript: "'{{specifier}}' names a JavaScript file. Name the TypeScript source ('.ts'), which Node runs directly.",
+    },
+  },
+  create(context) {
+    if (!locate(context.filename)) return {};
+    return moduleReferences(
+      (node, reference) => {
+        if (!reference || !isPathLike(reference.head)) return;
+        const extension = /\.([a-z0-9]+)$/i.exec(withoutQuery(reference.tail))?.[1]?.toLowerCase();
+        const data = { specifier: reference.head };
+        if (!extension) context.report({ node, messageId: 'missing', data });
+        else if (['js', 'jsx', 'mjs', 'cjs'].includes(extension)) context.report({ node, messageId: 'javascript', data });
+      },
+      { urls: false },
+    );
+  },
+};
+
+const servo = {
+  meta: { name: 'servo' },
+  rules: { 'package-boundaries': packageBoundaries, 'import-extensions': importExtensions },
+};
 
 const restrictGlobals = (names, message) => ['error', ...names.map((name) => ({ name, message }))];
 
-const uiAndIo = [
+const uiTimersAndIo = [
   'window',
+  'self',
+  'globalThis',
+  'global',
   'document',
   'navigator',
   'location',
   'localStorage',
   'sessionStorage',
   'indexedDB',
+  'caches',
   'fetch',
   'XMLHttpRequest',
+  'WebSocket',
+  'Worker',
   'requestAnimationFrame',
   'cancelAnimationFrame',
+  'requestIdleCallback',
+  'cancelIdleCallback',
   'setTimeout',
   'setInterval',
+  'setImmediate',
   'clearTimeout',
   'clearInterval',
+  'clearImmediate',
+  'queueMicrotask',
   'process',
   'Buffer',
 ];
+
+const clocksChanceAndGc = ['Date', 'performance', 'Temporal', 'crypto', 'WeakRef', 'FinalizationRegistry'];
 
 export default defineConfig(
   globalIgnores(['**/node_modules/', '**/dist/', '**/coverage/', '.claude/']),
   js.configs.recommended,
   tseslint.configs.recommended,
-  packageBoundaries,
   {
-    files: ['packages/{schema,content}/src/**/*.ts'],
+    files: [`packages/**/${codeFiles}`],
+    plugins: { servo },
+    linterOptions: { noInlineConfig: true },
+    rules: { 'servo/package-boundaries': 'error' },
+  },
+  {
+    files: [`packages/**/${typeScriptFiles}`],
+    plugins: { servo },
+    rules: { 'servo/import-extensions': 'error' },
+  },
+  {
+    files: [`packages/{schema,content}/src/**/${codeFiles}`],
     rules: {
-      'no-restricted-globals': restrictGlobals(uiAndIo, 'schema and content know nothing about the UI, timers or I/O.'),
+      'no-restricted-globals': restrictGlobals(uiTimersAndIo, 'schema and content know nothing about the UI, timers or I/O.'),
     },
   },
   {
-    files: ['packages/sim-core/src/**/*.ts'],
+    files: [`packages/sim-core/src/**/${codeFiles}`],
     rules: {
       'no-restricted-globals': restrictGlobals(
-        [...uiAndIo, 'Date', 'performance'],
-        'sim-core is pure and deterministic (ground rule 2): no UI, timers, I/O or wall clock.',
+        [...uiTimersAndIo, ...clocksChanceAndGc],
+        'sim-core is pure and deterministic (ground rule 2): no UI, timers, I/O, clocks, randomness or GC timing.',
       ),
       'no-restricted-properties': [
         'error',

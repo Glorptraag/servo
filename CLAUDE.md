@@ -66,12 +66,18 @@ Needs Node 24 or newer and pnpm 12 (the exact version is pinned in `package.json
 | `pnpm -r test` | Runs each package's Vitest suite once (`pnpm test` does the same) |
 | `pnpm --filter @servo/sim-core test` | One package's tests; `pnpm --filter @servo/sim-core exec vitest` watches |
 | `pnpm typecheck` | `tsc --noEmit` in every package |
-| `pnpm lint` | ESLint over the repo, including the package-map import rules and sim-core's purity rules |
+| `pnpm lint` | ESLint over the repo with the root config, failing on any warning. Includes the package-map, `.ts`-import and sim-core purity rules |
 | `pnpm check` | Lint, typecheck, then test: the same steps CI runs on every push (`.github/workflows/ci.yml`) |
 
 `pnpm validate-content <path>` does not exist yet; it arrives with the content validator in `packages/tools`.
 
-Conventions the toolchain enforces: ESM only; relative imports carry the `.ts` extension; no enums or namespaces; packages import each other by name (`@servo/schema`), and canvas imports sim-core only as `@servo/sim-core/interface`. Shipped code lives in each package's `src/`, tests in its `test/`.
+Lint and tsc enforce these:
+- Relative imports name the source file (`./part.ts`, never `.js` or extensionless) and stay inside their package.
+- Packages import each other by name, only through `package.json` exports, and only along the package map: canvas imports sim-core only as `@servo/sim-core/interface`, and parent imports app only as `@servo/app/store`.
+- No enums or namespaces.
+- sim-core uses no clocks, randomness or UI globals.
+
+`eslint-disable` comments have no effect in `packages/`. `packages/tools/test/lint-rules.test.ts` proves each rule fires. By convention only: ESM throughout, shipped code in each package's `src/`, tests in its `test/`.
 
 ## Plan execution
 
