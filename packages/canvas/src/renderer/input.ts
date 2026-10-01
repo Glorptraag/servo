@@ -1,7 +1,8 @@
 // One input path for mouse, touch and pen: pointer events on the canvas element (brief Section 10). Task 3.1 owns
 // the view gestures: drag on empty canvas to pan, pinch and two-finger drag to zoom and pan, the wheel to zoom.
 // There is no long-press and no double-tap. Later tasks claim pointers first through `handlers` (placing, wiring,
-// selecting); a pointer nobody claims is the view's.
+// selecting); a pointer nobody claims is the view's, and one that lifts without moving the view is offered to `taps`.
+// Two fingers always move the view, wherever they land: a second finger never goes to the handlers.
 import type { Vec2 } from '@servo/schema';
 import type { Hit } from '../scene/hit.ts';
 
@@ -10,10 +11,18 @@ export interface PointerClaim {
   move(event: PointerEvent): void;
   up(event: PointerEvent): void;
   cancel(): void;
+  /**
+   * Whether a second finger may take this pointer back for a pinch (a part pressed but not yet dragged). The claim is
+   * cancelled first. Without it, the claim keeps its pointer and a second finger is ignored.
+   */
+  yieldsToPinch?(): boolean;
 }
 
 /** Offered each new pointer, in order, with where it landed; returns a claim to take it. */
 export type PointerHandler = (event: PointerEvent, screen: Vec2, hit: Hit | null) => PointerClaim | null;
+
+/** Offered a pointer nobody claimed that lifts without panning or pinching: a tap or a click on the canvas. */
+export type TapHandler = (event: PointerEvent, screen: Vec2) => void;
 
 /** What the view gestures do to the canvas. Moving the view also wakes the grid. */
 export interface ViewGestures {
@@ -39,6 +48,8 @@ interface ViewPointer {
   readonly startY: number;
   readonly onEmpty: boolean;
   panning: boolean;
+  /** It took part in a pinch, so lifting it is not a tap. */
+  pinched?: boolean;
 }
 
 interface Pinch {
@@ -54,9 +65,13 @@ const spread = (a: ViewPointer, b: ViewPointer): number => Math.max(1, Math.hypo
 export class InputRouter {
   /** Later tasks push their handlers here; the first to claim a pointer owns it. */
   readonly handlers: PointerHandler[] = [];
+  /** Later tasks push their tap handlers here; each is told of every tap on the canvas that nobody claimed. */
+  readonly taps: TapHandler[] = [];
   private readonly element: HTMLElement;
   private readonly gestures: ViewGestures;
   private readonly claims = new Map<number, PointerClaim>();
+  /** Where each claimed pointer is now, so a claim that yields hands the pinch a true starting point. */
+  private readonly claimedAt = new Map<number, Vec2>();
   private readonly pointers = new Map<number, ViewPointer>();
   private pinch: Pinch | undefined;
   private readonly listeners: readonly [string, EventListener, AddEventListenerOptions?][];
@@ -76,15 +91,16 @@ export class InputRouter {
     for (const [type, listener, options] of this.listeners) element.addEventListener(type, listener, options);
   }
 
-  /** Whether a view gesture (pan or pinch) is under way. */
+  /** Whether a finger or the mouse button is down on the canvas: a view gesture or a claimed drag is under way. */
   get busy(): boolean {
-    return this.pointers.size > 0;
+    return this.pointers.size > 0 || this.claims.size > 0;
   }
 
   destroy(): void {
     for (const [type, listener, options] of this.listeners) this.element.removeEventListener(type, listener, options);
     for (const claim of this.claims.values()) claim.cancel();
     this.claims.clear();
+    this.claimedAt.clear();
     this.pointers.clear();
     this.pinch = undefined;
   }
@@ -97,11 +113,23 @@ export class InputRouter {
   private down(event: PointerEvent): void {
     if (event.button !== 0) return;
     const screen = this.screenOf(event);
+    if (this.claims.size > 0 || this.pointers.size > 0) {
+      // A second finger moves the view, wherever it lands. A claim that allows it gives its pointer back for the
+      // pinch; one that does not (a part already being dragged) keeps the gesture, and the new finger is ignored.
+      this.yieldClaims();
+      if (this.claims.size > 0) return;
+      event.preventDefault();
+      this.pointers.set(event.pointerId, { x: screen.x, y: screen.y, startX: screen.x, startY: screen.y, onEmpty: true, panning: false });
+      this.capture(event.pointerId);
+      if (this.pointers.size >= 2 && !this.pinch) this.startPinch();
+      return;
+    }
     const hit = this.gestures.hitTest(screen);
     for (const handler of this.handlers) {
       const claim = handler(event, screen, hit);
       if (claim) {
         this.claims.set(event.pointerId, claim);
+        this.claimedAt.set(event.pointerId, screen);
         this.capture(event.pointerId);
         return;
       }
@@ -109,12 +137,24 @@ export class InputRouter {
     event.preventDefault();
     this.pointers.set(event.pointerId, { x: screen.x, y: screen.y, startX: screen.x, startY: screen.y, onEmpty: hit === null, panning: false });
     this.capture(event.pointerId);
-    if (this.pointers.size === 2 && !this.pinch) this.startPinch();
+  }
+
+  /** Cancels every claim that yields to a pinch and makes its pointer the view's, from where it is now. */
+  private yieldClaims(): void {
+    for (const [id, claim] of [...this.claims]) {
+      if (!claim.yieldsToPinch?.()) continue;
+      this.claims.delete(id);
+      const at = this.claimedAt.get(id) ?? { x: 0, y: 0 };
+      this.claimedAt.delete(id);
+      claim.cancel();
+      this.pointers.set(id, { x: at.x, y: at.y, startX: at.x, startY: at.y, onEmpty: true, panning: true });
+    }
   }
 
   private move(event: PointerEvent): void {
     const claim = this.claims.get(event.pointerId);
     if (claim) {
+      this.claimedAt.set(event.pointerId, this.screenOf(event));
       claim.move(event);
       return;
     }
@@ -144,18 +184,26 @@ export class InputRouter {
     const claim = this.claims.get(event.pointerId);
     if (claim) {
       this.claims.delete(event.pointerId);
+      this.claimedAt.delete(event.pointerId);
       if (cancelled) claim.cancel();
       else claim.up(event);
       return;
     }
-    if (!this.pointers.delete(event.pointerId)) return;
+    const pointer = this.pointers.get(event.pointerId);
+    if (!pointer) return;
+    this.pointers.delete(event.pointerId);
     if (this.pinch?.ids.includes(event.pointerId)) {
       this.pinch = undefined;
       // A finger still down carries on panning, from where it is.
-      for (const [id, pointer] of this.pointers) {
-        this.pointers.set(id, { ...pointer, startX: pointer.x, startY: pointer.y, onEmpty: true, panning: true });
+      for (const [id, other] of this.pointers) {
+        this.pointers.set(id, { ...other, startX: other.x, startY: other.y, onEmpty: true, panning: true });
       }
       if (this.pointers.size >= 2) this.startPinch();
+      return;
+    }
+    if (!cancelled && !pointer.panning && !pointer.pinched && this.pointers.size === 0) {
+      const screen = this.screenOf(event);
+      for (const tap of this.taps) tap(event, screen);
     }
   }
 
@@ -172,6 +220,8 @@ export class InputRouter {
   private startPinch(): void {
     const [first, second] = [...this.pointers.entries()];
     if (!first || !second) return;
+    first[1].pinched = true;
+    second[1].pinched = true;
     this.pinch = {
       ids: [first[0], second[0]],
       startDistance: spread(first[1], second[1]),
