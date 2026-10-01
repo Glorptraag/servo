@@ -4,7 +4,7 @@ import type { BehaviourModel, BehaviourTick, SpeedOutput, WheelOutput } from '..
 import type { World } from '@dimforge/rapier2d-deterministic-compat';
 import { arenaModel } from './arena.ts';
 import { coast, driveStep, motorDrive } from './drive.ts';
-import type { DriveStep, MotorDrive, Velocity } from './drive.ts';
+import type { MotorDrive, Velocity } from './drive.ts';
 import { DEGREES_PER_RADIAN, atanDegrees, clamp, clean, finite, length, magnitude, wrapRadians } from './maths.ts';
 import { robotParts } from './robot.ts';
 import { decodeState, encodeState } from './snapshot.ts';
@@ -142,7 +142,6 @@ export const mechanicalTick = (model: MechanicalModel, state: MechanicalState, i
     let velocity: Velocity = state.velocity;
     let floorForce = state.floorForce;
     let fallen = state.fallen;
-    let lastDrive: DriveStep | undefined;
     let fastest = 0;
     const probeTouched = model.probes.map(() => false);
 
@@ -153,17 +152,15 @@ export const mechanicalTick = (model: MechanicalModel, state: MechanicalState, i
       if (robot && before && at && layout.robot) {
         if (fallen) {
           wanted = coast(robot, friction, velocity, substep);
-          lastDrive = undefined;
         } else {
           const stance = stanceAt(robot, points, at, model, floorForce);
           if (stance.state === 'fallen') {
             fallen = fallOf(stance.fall ?? { x: 1, y: 0 });
             wanted = coast(robot, friction, velocity, substep);
-            lastDrive = undefined;
           } else {
-            lastDrive = driveStep(robot, stance, motors, friction, velocity, substep);
-            wanted = lastDrive.velocity;
-            floorForce = lastDrive.floorForce;
+            const drive = driveStep(robot, stance, motors, friction, velocity, substep);
+            wanted = drive.velocity;
+            floorForce = drive.floorForce;
           }
         }
         const body = bodyOf(world, layout.robot.body);
@@ -219,7 +216,7 @@ export const mechanicalTick = (model: MechanicalModel, state: MechanicalState, i
       ...(fallen ? { fallen } : {}),
       touching,
     };
-    return outputs(model, inputs.behaviour, next, { at, end, stance, motors, lastDrive, probeTouched, knocked, fastest, seconds, world });
+    return outputs(model, inputs.behaviour, next, { at, end, stance, motors, probeTouched, knocked, fastest, seconds, world });
   } finally {
     world.free();
   }
@@ -231,7 +228,6 @@ interface Finish {
   /** How it stands now; undefined with no robot, or once it has fallen. */
   readonly stance: Stance | undefined;
   readonly motors: readonly (MotorDrive | undefined)[];
-  readonly lastDrive: DriveStep | undefined;
   readonly probeTouched: readonly boolean[];
   readonly knocked: boolean;
   /** The robot's top speed going into a substep this tick, mm/s, with its turning at its radius of gyration. */
@@ -243,7 +239,7 @@ interface Finish {
 /** Everything a tick gives, read from the state it leaves and how the robot stands. */
 const outputs = (model: MechanicalModel, behaviour: BehaviourTick, state: MechanicalState, finish: Finish): MechanicalTick => {
   const robot = model.robot;
-  const { at, end, stance, motors, lastDrive, seconds } = finish;
+  const { at, end, stance, motors, seconds } = finish;
   const fallen = state.fallen;
   const velocity = state.velocity;
   const parts = new Map<PlacedPartId, { needs: MechanicalVerdict[]; effects: Set<Effect>; sounds: SoundPayload[] }>(
@@ -281,8 +277,11 @@ const outputs = (model: MechanicalModel, behaviour: BehaviourTick, state: Mechan
     const motor = motors[index];
     const offset = { x: wheel.contact.x - com.x, y: wheel.contact.y - com.y };
     const ground = onFloor ? wheel.roll.x * (velocity.forward - velocity.turn * offset.y) + wheel.roll.y * (velocity.left + velocity.turn * offset.x) : 0;
+    // It slips if, as the tick ends, its motor's push at the speed it really goes beats its grip under the weight it now
+    // carries, the same grip the drive solves with: so a wall that holds the robot shows, and a slip that ended within the
+    // tick (a launch that spins its wheels for a moment) shows nothing.
     const pushAtSpeed = motor ? motor.stallForce - motor.damping * ground : 0;
-    const slipping = onFloor && seconds > 0 && ((lastDrive?.wheels[index]?.slipping ?? false) || magnitude(pushAtSpeed) > limit);
+    const slipping = onFloor && seconds > 0 && magnitude(pushAtSpeed) > limit * (1 + 1e-9);
     let rim: number;
     let motorRpm: number | undefined;
     let torque = 0;

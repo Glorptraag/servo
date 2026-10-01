@@ -79,9 +79,12 @@ The robot's own drive is worked by hand, deterministically. Rapier only stops it
 
   This is the behaviour runtime's own rule (speed ∝ volts, reduced by load). An unpowered motor still drags its wheel, like a motor at 0 V: its back-EMF line with no drive. That holds the wheel when power is cut, so a robot stops within a few centimetres.
 - **Grip.** A wheel holds across its axle. Its push is limited to grip × the floor's friction × the weight on it. Past that it slips: it pushes that much, spins faster than the ground and squeals.
-- **Supports and frame.** A caster rolls any way, dragging rollingFriction × its weight. A frame on the floor slides with the floor's friction × its weight.
+- **Supports and frame.** A caster rolls any way, dragging rollingFriction × its weight. A frame on the floor slides with the floor's friction × its weight, and never more (review R-1.4 finding 1).
 - **Slope.** Gravity along the floor pulls the robot.
-- **Solving.** The new velocity of the centre of mass (forward, sideways, turning) is solved implicitly from these, so stiff gearing never overshoots. A wheel past its grip is fixed at its limit and the rest solved again.
+- **Solving.** The new velocity of the centre of mass (forward, sideways, turning) is solved implicitly from these, so stiff gearing never overshoots.
+  - Each drag is solved as a viscous one, frozen at the substep's starting speed, so it slows its point but never past a stop.
+  - A wheel past its grip is fixed at its limit, and the rest solved again.
+  - So is a dragging point that the solve speeds up instead (the robot pulling away): it is held to exactly μN against its new motion. A robot whose frame drags so starts at once, close to a fine-step integration of the same model.
 - **Contacts.** The velocity goes to Rapier, which steps the world and stops the robot at whatever it meets. The robot's next velocity is read from how far it actually moved. Rapier's own velocity record is not physical in a stack of contacts, such as a robot pushing a box into a wall.
 
 **Time.** A tick is 4 substeps of 1/120 s. The Level 1–2 robot moves under 3 mm between collision checks.
@@ -91,8 +94,10 @@ The robot's own drive is worked by hand, deterministically. Rapier only stops it
 **At the end of a tick**, for each motor turning a wheel on the floor:
 - *Gripping:* it turns at the ground's speed, and gives the torque its line gives there.
 - *Held:* driven but turning the way it drives at under 1% of its free speed (`HELD_SHARE`). A wall, or more load than it can turn. Its load reads `Infinity`, so the behaviour runtime stalls it.
-- *Slipping:* it gives the grip's drag, grip × friction × weight × radius ÷ gearing, and turns at the speed its line allows for that.
+- *Slipping:* its push at the speed the robot really goes beats its grip under the weight it carries at the end of the tick, the same grip the drive solves with. It gives the grip's drag, grip × friction × weight × radius ÷ gearing, and turns at the speed its line allows for that.
 - *In the air, or on a fallen robot:* it turns freely, with no load.
+
+A slip is judged on the state the tick ends in. So a wall that holds the robot makes it slip, and a launch that spins the wheels for a moment shows nothing once the robot's speed has brought the push within the grip by the tick's end. A launch whose push is far past the grip (the strong test motor) slips into its first tick and shows it.
 
 Whether a wall stalls the motor or makes the wheel slip is down to the numbers:
 - A direct-drive DC motor at 2.8 V pushes 0.56 N, under its tyre's grip of about 0.69 N. It stalls and hums.
@@ -173,11 +178,12 @@ Parts with no active mechanical failure show none of them.
 
 ## Tests
 
-**`test/mechanical.test.ts`** uses the schema's example parts, blueprints and arenas only. It also uses four test variants:
+**`test/mechanical.test.ts`** uses the schema's example parts, blueprints and arenas only. It also uses five test variants:
 - a whisker switch;
 - a tall, heavy battery pack;
 - a strong motor;
-- a grippy wheel.
+- a grippy wheel;
+- the content's small wheel, which the example parts lack.
 
 Each Run steps the behaviour runtime with an ideal 2.8 V pack standing in for the electrical solver. Every Run happens twice and must give the same frames and bytes.
 
@@ -188,6 +194,7 @@ It covers:
 - a wall: the direct-drive stall and the geared slip, per the numbers;
 - pushing and fixed props;
 - the loose caster: grounded, explained, exactly one fault;
+- with no caster or a loose one (geared, or on small wheels): exactly that one fault, no slip on any tick, and the frame's drag held to μN in the solve;
 - a caster fixed out of reach of the floor: grounded, explained by its own `lifted` fault, the only one;
 - no caster: grounded, scraping, still driving;
 - the top-heavy build: the tall pack on the bumper mount falls over at once and stays down, its wheels spinning;
@@ -212,7 +219,7 @@ It covers:
 7. **A tip stands for what it lifts.** On a fallen robot the wheels show no `lifted` fault, though review 2.1 mentioned the wheel's lifted mode after a tip. So a tip records the chassis's `top-heavy` alone.
 8. **No part from the example catalogue can make a robot really fall over.** Their centres of mass lie over their footprints, and the floor's push is limited by grip at a centre of mass about 27 mm up. So the top-heavy acceptance uses a test variant: a 600 g pack with its centre of mass 250 mm up. Task 2.6's fixture will need a tall or heavy content part to tip under this rule.
 9. **Wheels and robot-level effects.** Wheels on a fallen robot show `slip`, not `tip`. Other parts on a grounded robot show no `drag`, so a part's effects are exactly its own claims. Is that the reading the effect fixtures want?
-10. **Brief slips.** A slip that ends within a tick (a geared robot's first moment) shows nothing: verdicts are taken at the end of the tick.
+10. **Brief slips.** A slip that ends within a tick (a geared robot's first moment) shows nothing: verdicts are taken on the state the tick ends in.
 11. **Sound levels.** Squeal (300 mm/s of slip is full) and knock (400 mm/s is full, 0.1 at least) are this solver's choices.
 12. **Servo arms** are read but move nothing in v1. Nothing can ride an upright arm.
 13. **No `./mechanical` export.** The optional tools test over the content robot needs a `./mechanical` entry in sim-core's package.json, which is outside this task's files. The README's public surface does not mention this file either. Task 1.5, or the orchestrator, should link it.

@@ -12,6 +12,7 @@ import { buildGraph, liveAt } from '../src/graph/index.ts';
 import type { SimGraph } from '../src/graph/index.ts';
 import {
   atanDegrees,
+  driveStep,
   initMechanics,
   loadingOf,
   mechanicalModel,
@@ -61,6 +62,12 @@ const variants: readonly PartRecord[] = [
   variant('wheel-large', 'grippy-wheel', (base) => ({ behaviour: base.behaviour.map((spec) => (spec.kind === 'wheel' ? { ...spec, grip: 3 } : spec)) })),
   // The wheel under another id and name: the solver must treat it exactly as the wheel (ground rule 1).
   variant('wheel-large', 'renamed-wheel', (base) => ({ identity: { ...base.identity, name: 'tyre', art: 'part/renamed-wheel' } })),
+  // The content's small wheel (radius 24 mm), which the example parts lack: the same tyre, smaller.
+  variant('wheel-large', 'small-wheel', (base) => ({
+    body: { grams: 15, size: { x: 48, y: 20, z: 48 }, centreOfMass: { x: 0, y: 0, z: 24 } },
+    ports: base.ports.map((port) => (port.id === 'hub' ? { ...port, at: { x: 0, y: -10, z: 24 } } : port)),
+    behaviour: base.behaviour.map((spec) => (spec.kind === 'wheel' ? { ...spec, radiusMm: 24, widthMm: 20 } : spec)),
+  })),
 ];
 
 const preset = (data: unknown): ArenaPreset => unwrap(validateArenaPreset(data));
@@ -496,6 +503,43 @@ describe('balance', () => {
     // The frame's drag holds it well under its speed on the caster.
     expect(end.forwardMmPerSecond).toBeLessThan(0.6 * robotOf(run(fixture('rolling-start'), 'open-floor', 60).last).forwardMmPerSecond);
     expect(end.forwardMmPerSecond).toBeGreaterThan(0);
+  });
+
+  it('starts at once while its frame drags: the frame slides with at most μN, so with no caster or a loose one it shows that one fault and never slips (review R-1.4)', { timeout: 30_000 }, () => {
+    const geared = (edit: Edit): Blueprint =>
+      edited('bumper-robot', {
+        preset: 'open-floor',
+        props: [],
+        ...edit,
+        wires: (wires) => wires.map((wire) => (wire.id === 'w15' ? { ...wire, from: { part: 'battery', port: 'plus' }, to: { part: 'driver', port: 'plus' } } : wire)),
+      });
+    const small: Edit = { retype: { 'wheel-left': 'small-wheel', 'wheel-right': 'small-wheel' }, move: { 'wheel-left': { x: 40, y: -76 }, 'wheel-right': { x: 40, y: 76 } } };
+    const cases = [
+      { build: geared({ removeWires: ['w8'], removeParts: ['caster'] }), faults: ['chassis: scraping'] },
+      { build: geared({ removeWires: ['w8'] }), faults: ['caster: loose'] },
+      { build: edited('rolling-start', { ...small, removeWires: ['w5'] }), faults: ['caster: loose'] },
+    ];
+    for (const { build, faults } of cases) {
+      const dragged = run(build, 'open-floor', 60);
+      expect(robotOf(dragged.last).stance).toBe('grounded');
+      expect(dragged.frames.every((frame) => [...frame.mechanics.wheels.values()].every((wheel) => !wheel.slipping))).toBe(true);
+      expect(faultsOf(dragged)).toEqual(faults);
+      // Well on its way in its first tick: a drag that grew past μN as it sped up held it back for two.
+      expect(robotOf(dragged.frames[1] as Frame).forwardMmPerSecond).toBeGreaterThan(0.5 * robotOf(dragged.last).forwardMmPerSecond);
+    }
+    // In the solve itself: from a creep, the drive pushing hard, the floor drags the frame's resting edge with exactly μ × the
+    // weight on it, however fast the substep leaves it.
+    const model = mechanicalModel(behaviourModel(buildGraph(cases[0]?.build as Blueprint, catalogue)), arena('open-floor'));
+    const robot = model.robot as RobotModel;
+    const points = stancePoints(robot);
+    const stance = stanceOf(robot, points, loadingOf(robot, points, { x: 300, y: 600, cos: 1, sin: 0 }, [], { x: 0, y: 0 }));
+    const motor = { driven: true, sense: 1, capacity: 100, freeRpm: 100, stallForce: 0.9, damping: 0, perRpm: 1 } as const;
+    const step = driveStep(robot, stance, robot.wheels.map(() => motor), model.arena.friction, { forward: 1, left: 0, turn: 0 }, 1 / 120);
+    const onFrame = stance.contacts.filter((contact) => contact.point.kind === 'body').reduce((sum, contact) => sum + contact.load, 0);
+    expect(onFrame).toBeGreaterThan(0);
+    expect(step.velocity.forward).toBeGreaterThan(10);
+    const wheels = step.wheels.reduce((sum, wheel) => sum + (wheel?.roll ?? 0), 0);
+    expect(wheels - step.floorForce.x).toBeCloseTo(model.arena.friction * onFrame, 9);
   });
 
   it('drags its frame when the caster is fixed where it cannot reach the floor: explained by the caster’s own lifted fault, the only one', () => {

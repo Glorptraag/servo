@@ -132,17 +132,20 @@ export const driveStep = (
     const offset = { x: wheel.contact.x - com.x, y: wheel.contact.y - com.y };
     return { wheel, motor: motors[index], load, limit: wheel.grip * friction * load, roll: rowAlong(wheel.roll, offset), side: rowAlong(wheel.axle, offset) };
   });
-  // Rolling drag and sliding friction, frozen at this substep's speed: each slows its point, never past a stop.
+  // Rolling drag and sliding friction: μ × the weight on the point, against its motion. Each is solved as a drag frozen at
+  // this substep's speed, so it slows its point but never past a stop; a point the solve speeds up instead (the robot
+  // pulling away) is then held to exactly μN against its new motion and the rest solved again.
   const frameTerms = frames.map((frame) => {
     const ux = velocity.forward - velocity.turn * frame.offset.y;
     const uy = velocity.left + velocity.turn * frame.offset.x;
-    const damping = (frame.mu * frame.load) / Math.max(length(ux, uy), CREEP_MM_S);
-    return { damping, x: rowAlong({ x: 1, y: 0 }, frame.offset), y: rowAlong({ x: 0, y: 1 }, frame.offset) };
+    const limit = frame.mu * frame.load;
+    return { damping: limit / Math.max(length(ux, uy), CREEP_MM_S), limit, x: rowAlong({ x: 1, y: 0 }, frame.offset), y: rowAlong({ x: 0, y: 1 }, frame.offset) };
   });
 
   const slipping = new Map<number, { readonly roll: number; readonly across: number }>();
+  const sliding = new Map<number, Vec2>();
   let solved: Velocity = velocity;
-  for (let round = 0; round <= robot.wheels.length; round += 1) {
+  for (let round = 0; round <= robot.wheels.length + frameTerms.length; round += 1) {
     const k = [0, 0, 0, 0, 0, 0, 0, 0, 0];
     const force = [robot.kilograms * stance.along.x, robot.kilograms * stance.along.y, 0];
     const addDamping = (row: Row, c: number): void => {
@@ -168,10 +171,16 @@ export const driveStep = (
       }
       addDamping(entry.side, across);
     });
-    for (const term of frameTerms) {
+    frameTerms.forEach((term, index) => {
+      const held = sliding.get(index);
+      if (held) {
+        addForce(term.x, held.x);
+        addForce(term.y, held.y);
+        return;
+      }
       addDamping(term.x, term.damping);
       addDamping(term.y, term.damping);
-    }
+    });
     const inertiaRate = [mass / seconds, mass / seconds, inertia / seconds];
     const a = k.map((value, at) => (at % 4 === 0 ? value + (inertiaRate[at / 4] ?? 0) : value));
     const b = [
@@ -190,6 +199,16 @@ export const driveStep = (
       if (size > entry.limit) {
         const scale = size > 0 ? entry.limit / size : 0;
         slipping.set(index, { roll: roll * scale, across: side * scale });
+        more = true;
+      }
+    });
+    frameTerms.forEach((term, index) => {
+      if (sliding.has(index)) return;
+      const ux = dot(term.x, solved);
+      const uy = dot(term.y, solved);
+      const speed = length(ux, uy);
+      if (term.damping * speed > term.limit * (1 + 1e-9)) {
+        sliding.set(index, { x: (-term.limit * ux) / speed, y: (-term.limit * uy) / speed });
         more = true;
       }
     });
@@ -213,10 +232,11 @@ export const driveStep = (
     fy += roll * entry.wheel.roll.y + side * entry.wheel.axle.y;
     return { roll: clean(roll), across: clean(side), slipping: fixed !== undefined, load: entry.load, limit: entry.limit };
   });
-  for (const term of frameTerms) {
-    fx -= term.damping * dot(term.x, solved);
-    fy -= term.damping * dot(term.y, solved);
-  }
+  frameTerms.forEach((term, index) => {
+    const held = sliding.get(index);
+    fx += held ? held.x : -term.damping * dot(term.x, solved);
+    fy += held ? held.y : -term.damping * dot(term.y, solved);
+  });
   return {
     velocity: { forward: clean(solved.forward), left: clean(solved.left), turn: clean(solved.turn) },
     wheels: outcome,
