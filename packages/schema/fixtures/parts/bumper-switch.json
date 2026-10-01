@@ -1,0 +1,128 @@
+{
+  "behaviour": [
+    {
+      "actuation": {
+        "kind": "contact",
+        "normally": "closed",
+        "probe": {
+          "from": {
+            "x": 10,
+            "y": -20
+          },
+          "to": {
+            "x": 10,
+            "y": 20
+          }
+        }
+      },
+      "id": "contacts",
+      "kind": "switch",
+      "terminals": [
+        "a",
+        "b"
+      ]
+    }
+  ],
+  "body": {
+    "centreOfMass": {
+      "x": -2,
+      "y": 0,
+      "z": 6
+    },
+    "grams": 8,
+    "size": {
+      "x": 20,
+      "y": 40,
+      "z": 14
+    }
+  },
+  "card": {
+    "does": "Opens the power line when its bumper touches something.",
+    "gives": "Gives: a stop when the robot meets a wall.",
+    "needs": "Needs: a place in a power line, at the front of the frame.",
+    "popularMechanics": "A lift door has a switch like this that stops it when it meets an arm."
+  },
+  "failureModes": [
+    {
+      "cardLine": "Across the battery pack: it drains the pack fast.",
+      "id": "across-the-pack",
+      "need": "no-short",
+      "shows": [
+        "drain"
+      ],
+      "teachingNote": "Wired straight across the battery pack, the bumper switch makes a short circuit whenever it is closed.",
+      "unmet": "shorted"
+    },
+    {
+      "cardLine": "Not in the loop: a bump changes nothing.",
+      "hint": "This bumper switch is not in the power line",
+      "id": "outside-loop",
+      "need": "in-loop",
+      "shows": [
+        "off"
+      ],
+      "teachingNote": "A bumper switch stops only the loop it sits in. Wired off to one side of the loop, a bump changes nothing.",
+      "unmet": "open"
+    }
+  ],
+  "id": "bumper-switch",
+  "identity": {
+    "art": "part/bumper-switch",
+    "colours": {
+      "accent": "#ffb300",
+      "main": "#455a64"
+    },
+    "domains": [
+      "electronics-and-power",
+      "sensing-and-feedback-loops"
+    ],
+    "family": "sense",
+    "level": 2,
+    "name": "bumper switch"
+  },
+  "needs": [
+    {
+      "id": "no-short",
+      "kind": "isolation",
+      "ports": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "id": "in-loop",
+      "kind": "loop",
+      "ports": [
+        "a",
+        "b"
+      ]
+    }
+  ],
+  "ports": [
+    {
+      "id": "a",
+      "label": "side A",
+      "polarity": "none",
+      "type": "power"
+    },
+    {
+      "id": "b",
+      "label": "side B",
+      "polarity": "none",
+      "type": "power"
+    },
+    {
+      "at": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "id": "mount",
+      "label": "mount",
+      "role": "mount",
+      "type": "mechanical",
+      "yaw": 0
+    }
+  ],
+  "settings": []
+}

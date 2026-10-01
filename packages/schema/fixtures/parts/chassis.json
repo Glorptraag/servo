@@ -1,0 +1,213 @@
+{
+  "behaviour": [],
+  "body": {
+    "centreOfMass": {
+      "x": 0,
+      "y": 0,
+      "z": 3
+    },
+    "grams": 90,
+    "size": {
+      "x": 160,
+      "y": 130,
+      "z": 6
+    }
+  },
+  "card": {
+    "does": "Holds every part of the robot in one frame.",
+    "gives": "Gives: a strong base that keeps the parts in place.",
+    "needs": "Needs: parts fixed to its mount points (grey).",
+    "popularMechanics": "A car has a chassis too: the frame its engine, seats and wheels bolt to."
+  },
+  "failureModes": [
+    {
+      "cardLine": "Too much weight high up or to one side: the robot tips over.",
+      "hint": "Move the heavy part lower or nearer the middle",
+      "id": "top-heavy",
+      "need": "upright",
+      "shows": [
+        "tip"
+      ],
+      "teachingNote": "A robot stays upright while its centre of mass sits over the space between its wheels and caster. Heavy parts mounted high or far out move that point, and a fast start or a slope tips the robot over.",
+      "unmet": "lost"
+    },
+    {
+      "cardLine": "Frame on the floor: the robot drags.",
+      "hint": "Something needs to hold up this end of the frame",
+      "id": "scraping",
+      "need": "upright",
+      "shows": [
+        "drag"
+      ],
+      "teachingNote": "The frame rides clear of the floor only while wheels and a caster hold it up at both ends. With nothing under one end, it rests on the floor and scrapes, so the robot drags.",
+      "unmet": "grounded"
+    }
+  ],
+  "id": "chassis",
+  "identity": {
+    "art": "part/chassis",
+    "colours": {
+      "accent": "#90caf9",
+      "main": "#1565c0"
+    },
+    "domains": [
+      "mechanics",
+      "robotic-system-components"
+    ],
+    "family": "structure-and-ride",
+    "level": 1,
+    "name": "chassis"
+  },
+  "needs": [
+    {
+      "id": "upright",
+      "kind": "balance"
+    }
+  ],
+  "ports": [
+    {
+      "at": {
+        "x": 30,
+        "y": 53,
+        "z": 6
+      },
+      "id": "motor-left",
+      "label": "left motor mount",
+      "mirrored": false,
+      "role": "mount-point",
+      "type": "mechanical",
+      "yaw": 0
+    },
+    {
+      "at": {
+        "x": 30,
+        "y": -53,
+        "z": 6
+      },
+      "id": "motor-right",
+      "label": "right motor mount",
+      "mirrored": true,
+      "role": "mount-point",
+      "type": "mechanical",
+      "yaw": 0
+    },
+    {
+      "at": {
+        "x": 30,
+        "y": 29,
+        "z": 6
+      },
+      "id": "motor-left-inner",
+      "label": "left inner motor mount",
+      "mirrored": false,
+      "role": "mount-point",
+      "type": "mechanical",
+      "yaw": 0
+    },
+    {
+      "at": {
+        "x": 30,
+        "y": -29,
+        "z": 6
+      },
+      "id": "motor-right-inner",
+      "label": "right inner motor mount",
+      "mirrored": true,
+      "role": "mount-point",
+      "type": "mechanical",
+      "yaw": 0
+    },
+    {
+      "at": {
+        "x": 40,
+        "y": 53,
+        "z": 6
+      },
+      "id": "gear-left",
+      "label": "left gearbox mount",
+      "mirrored": false,
+      "role": "mount-point",
+      "type": "mechanical",
+      "yaw": 0
+    },
+    {
+      "at": {
+        "x": 40,
+        "y": -53,
+        "z": 6
+      },
+      "id": "gear-right",
+      "label": "right gearbox mount",
+      "mirrored": true,
+      "role": "mount-point",
+      "type": "mechanical",
+      "yaw": 0
+    },
+    {
+      "at": {
+        "x": 55,
+        "y": 0,
+        "z": 6
+      },
+      "id": "deck-front",
+      "label": "front deck",
+      "mirrored": false,
+      "role": "mount-point",
+      "type": "mechanical",
+      "yaw": 0
+    },
+    {
+      "at": {
+        "x": 0,
+        "y": 0,
+        "z": 6
+      },
+      "id": "deck-middle",
+      "label": "middle deck",
+      "mirrored": false,
+      "role": "mount-point",
+      "type": "mechanical",
+      "yaw": 0
+    },
+    {
+      "at": {
+        "x": -45,
+        "y": 0,
+        "z": 6
+      },
+      "id": "deck-rear",
+      "label": "rear deck",
+      "mirrored": false,
+      "role": "mount-point",
+      "type": "mechanical",
+      "yaw": 0
+    },
+    {
+      "at": {
+        "x": 80,
+        "y": 0,
+        "z": 6
+      },
+      "id": "bumper",
+      "label": "bumper mount",
+      "mirrored": false,
+      "role": "mount-point",
+      "type": "mechanical",
+      "yaw": 0
+    },
+    {
+      "at": {
+        "x": -70,
+        "y": 0,
+        "z": 0
+      },
+      "id": "caster",
+      "label": "caster mount",
+      "mirrored": false,
+      "role": "mount-point",
+      "type": "mechanical",
+      "yaw": 0
+    }
+  ],
+  "settings": []
+}

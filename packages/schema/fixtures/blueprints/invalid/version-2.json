@@ -1,0 +1,85 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "meta": {
+    "createdAt": "2026-10-01T09:00:00.000Z",
+    "highWater": {
+      "parts": 0,
+      "wires": 3
+    },
+    "id": "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f",
+    "level": 1,
+    "name": "LED with a switch",
+    "updatedAt": "2026-10-01T09:20:00.000Z"
+  },
+  "parts": [
+    {
+      "id": "battery",
+      "part": "battery-pack-2-cell",
+      "position": {
+        "x": -80,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "led",
+      "part": "led",
+      "position": {
+        "x": 80,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "switch",
+      "part": "switch",
+      "position": {
+        "x": 0,
+        "y": -60
+      },
+      "rotation": 0,
+      "settings": {}
+    }
+  ],
+  "version": 2,
+  "wires": [
+    {
+      "from": {
+        "part": "battery",
+        "port": "plus"
+      },
+      "id": "w1",
+      "to": {
+        "part": "switch",
+        "port": "a"
+      }
+    },
+    {
+      "from": {
+        "part": "switch",
+        "port": "b"
+      },
+      "id": "w2",
+      "to": {
+        "part": "led",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "led",
+        "port": "minus"
+      },
+      "id": "w3",
+      "to": {
+        "part": "battery",
+        "port": "minus"
+      }
+    }
+  ]
+}
