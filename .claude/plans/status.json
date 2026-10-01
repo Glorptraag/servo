@@ -304,7 +304,7 @@
       "dispatched_at": "2026-10-01T06:12:30+00:00"
     },
     "1.7": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -320,7 +320,8 @@
       "done_when": "Any solver change that alters a golden run fails CI with a readable diff; `--accept` regenerates; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T13:03:29+00:00"
     },
     "G1": {
       "status": "pending",
@@ -508,7 +509,7 @@
       "dispatched_at": "2026-10-01T04:52:13+00:00"
     },
     "3.2": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -522,8 +523,8 @@
       ],
       "done_when": "E2E scripts for the touch path and the pointer path both place every part of every fixture; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T12:50:40+00:00",
+      "completed_by": "W-3.2",
       "dispatched_at": "2026-10-01T06:59:05+00:00"
     },
     "3.3": {
@@ -1768,6 +1769,30 @@
       "id": "D71",
       "question": "Saving and profiles before accounts exist (task 4.9): should every edit save, and what happens when no child profile exists yet?",
       "recommendation": "Autosave the current build about 1 s after the last edit and when Run is pressed (brief principle 5, nothing is lost); on first run create one local child profile with a neutral default name ('Builder 1'), which the parent view renames later; no email or personal data.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D72",
+      "question": "Release pipeline details (task 6.3): when does the content semver bump; should a deploy refuse a tester build without an invite-code seed; when should the app load a content bundle at run time instead of the one built in; should Settings be reached from Home behind the parental gate (D28, D68); should final art travel in the content bundle (D6)?",
+      "recommendation": "Bump the content minor version for new records and the patch for text fixes (the hash suffix already identifies every bundle); refuse deploys of tester builds without a seed; keep the built-in content until a host exists, then add run-time bundle loading; Settings sits behind the parental gate on Home; art ships with the app until D6 is decided.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D73",
+      "question": "Store behaviour details (task 4.9, review R-4.9): status lines 'Not saved', 'Saved', 'Saved, and the other version kept as a copy', 'Builds are not being kept on this device'; 'Saved' appears only after Save is pressed; removing a build keeps its Runs as the child's progress; a profile with no loadable build starts an empty 'Build 1' on open floor.",
+      "recommendation": "Accept for testers; task 6.5's copy pass reviews the status wording; removing a build keeping its Runs stays (progress is the child's).",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D74",
+      "question": "Fault debounce (task 1.5): one-tick faults appeared at start-up (a driver brown-out), on heavy contact (a wheel slip) and after a bumper stop (a re-close). Should a fault need a minimum duration before it counts?",
+      "recommendation": "Yes: a fault is recorded (and shown as a fault) only after 3 consecutive ticks (0.1 s), and ends after 3 ticks absent; live motion and values still show every tick as it is.",
       "confidence": "medium",
       "blocks": [],
       "resolved": false
