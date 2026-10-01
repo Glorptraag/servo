@@ -1,1 +1,1 @@
-export {};
+export type * from './interface.ts';
