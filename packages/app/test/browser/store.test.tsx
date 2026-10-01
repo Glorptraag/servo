@@ -1,76 +1,24 @@
 // The store in a real browser (task 4.9), on Chromium's own IndexedDB. Save, autosave and the blueprint's name in the
-// header, with a stand-in canvas and a real store; then the real app page: its first run, and a build kept across a
-// real reload. The store's own rules are tested in Node on fake-indexeddb (test/store/).
+// header, with a stand-in canvas and a real store; two tabs on one build; an edit kept when its page is reloaded or
+// closed at once (save-page.html); then the real app page: its first run, a build kept across a real reload, and a
+// device whose storage is blocked or full. The store's own rules are tested in Node on fake-indexeddb (test/store/).
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cdp, userEvent } from 'vitest/browser';
 import { Dexie } from 'dexie';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
-import type { CanvasEventMap, CanvasHandle, CanvasMode, EditCommand, EditResult, ListView, Selection } from '@servo/canvas';
 import { loadContent } from '@servo/content';
 import { loadFixtures } from '@servo/content/fixtures';
 import { serializeBlueprint } from '@servo/schema';
-import type { Blueprint, ValidationResult } from '@servo/schema';
+import type { Blueprint } from '@servo/schema';
 import { invalidBlueprints } from '@servo/schema/fixtures';
-import { AUTOSAVE_MS, SAVE_LINES, SaveControl, Shell, useShell } from '../../src/shell/index.ts';
+import { AUTOSAVE_MS, SAVE_LINES, SaveControl, Shell, UNSAVED_PREFIX, useShell } from '../../src/shell/index.ts';
 import type { ShellApi } from '../../src/shell/index.ts';
 import { openDatabase } from '../../src/store/database.ts';
 import { openStore } from '../../src/store/index.ts';
 import type { ProfileStore, ServoStore } from '../../src/store/index.ts';
-
-/** A stand-in for the canvas: it keeps the build it is given, and renames it as the canvas's `rename` command does. */
-class StandInCanvas implements CanvasHandle {
-  mode: CanvasMode = 'build';
-  blueprint: Blueprint | undefined;
-  selection: Selection | null = null;
-  zoom = 1;
-  readonly applied: EditCommand[] = [];
-  private readonly listeners = new Map<keyof CanvasEventMap, Set<(event: never) => void>>();
-
-  get listView(): ListView {
-    throw new Error('not in the stand-in');
-  }
-  load(blueprint: Blueprint): ValidationResult<Blueprint> {
-    this.blueprint = blueprint;
-    return { ok: true, value: blueprint };
-  }
-  apply(command: EditCommand): EditResult {
-    this.applied.push(command);
-    if (command.kind !== 'rename' || !this.blueprint) return { ok: false, refusal: { code: 'edit.no_build', message: 'not in the stand-in' } };
-    const blueprint = { ...this.blueprint, meta: { ...this.blueprint.meta, name: command.name } };
-    this.blueprint = blueprint;
-    for (const listener of this.listeners.get('edit') ?? []) (listener as (event: CanvasEventMap['edit']) => void)({ command, blueprint });
-    return { ok: true, blueprint };
-  }
-  beginPlacement(): void {}
-  beginPropPlacement(): void {}
-  cancelPlacement(): void {}
-  setRemoveTargets(): void {}
-  select(): void {}
-  setMode(mode: CanvasMode): void {
-    this.mode = mode;
-  }
-  applyRunFrame(): void {}
-  showHint(): boolean {
-    return false;
-  }
-  clearHints(): void {}
-  fit(): void {}
-  setZoom(zoom: number): void {
-    this.zoom = zoom;
-  }
-  tidyWires(): void {}
-  setLevel(): void {}
-  setPrefs(): void {}
-  on<K extends keyof CanvasEventMap>(type: K, listener: (event: CanvasEventMap[K]) => void): () => void {
-    const set = this.listeners.get(type) ?? new Set();
-    set.add(listener as (event: never) => void);
-    this.listeners.set(type, set);
-    return () => set.delete(listener as (event: never) => void);
-  }
-  destroy(): void {}
-}
+import { StandInCanvas } from './stand-in.ts';
 
 const { content } = loadContent();
 const rollingRobot = loadFixtures().fixtures.find((fixture) => fixture.name === 'kit-rolling-start')?.blueprint as Blueprint;
@@ -217,10 +165,14 @@ describe('Save in the header', () => {
 
   it('is there to press only with a build on the canvas and a profile to keep it in', async () => {
     const { child, build } = await childWithBuild();
-    expect((await mountShell(null, build)).saveButton().disabled).toBe(true);
+    // With a build but nowhere to keep it, the line says so.
+    const unkept = await mountShell(null, build);
+    expect(unkept.saveButton().disabled).toBe(true);
+    expect(unkept.status()).toBe(SAVE_LINES.notKept);
     const empty = await mountShell(child);
     expect(empty.saveButton().disabled).toBe(true);
     expect(empty.nameButton()).toBeNull();
+    expect(empty.status()).toBe('');
   });
 });
 
@@ -291,8 +243,42 @@ describe('autosave', () => {
     for (const { at } of saves) expect(at - Math.max(...edits.filter((edit) => edit < at))).toBeGreaterThanOrEqual(AUTOSAVE_MS - 20);
     expect(saves.at(-1)?.build.meta.name).toBe('Fastest');
     expect(saves.length).toBeLessThan(edits.length);
-    await vi.waitFor(() => expect(app.status()).toBe(SAVE_LINES.saved), SOON);
     expect((await child.blueprints.list()).map((summary) => summary.name)).toEqual(['Fastest']);
+    // A save that went as expected says nothing, so a screen reader is not told "Saved" after every pause.
+    expect(app.status()).toBe('');
+  });
+
+  it('tries a failed save again, later each time, until it saves, and the line goes then', async () => {
+    const { child, build } = await childWithBuild();
+    const app = await mountShell(child, build);
+    const save = child.blueprints.save;
+    let refusals = 1;
+    const spy = vi.spyOn(child.blueprints, 'save').mockImplementation((next) => {
+      if (refusals > 0) {
+        refusals -= 1;
+        return Promise.reject(new Error('The connection to the store was lost.'));
+      }
+      return save(next);
+    });
+    cleanups.push(() => spy.mockRestore());
+    app.rename('Kept in the end');
+    await vi.waitFor(() => expect(app.status()).toBe(SAVE_LINES.notSaved), SOON);
+    await vi.waitFor(() => expect(app.status()).toBe(''), { timeout: AUTOSAVE_MS * 6, interval: 50 });
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect((await child.blueprints.list()).map((summary) => summary.name)).toEqual(['Kept in the end']);
+  });
+
+  it('saves an Undo, which loads the build’s earlier form with load', async () => {
+    const { child, build } = await childWithBuild();
+    const app = await mountShell(child, build);
+    app.rename('Changed');
+    flushSync(() => app.shell().setMode('run'));
+    flushSync(() => app.shell().setMode('build'));
+    await vi.waitFor(async () => expect((await child.blueprints.list())[0]?.name).toBe('Changed'), SOON);
+    // Undo: the build as it was before the rename goes back on the canvas with load, which fires no edit.
+    flushSync(() => app.shell().load(build));
+    await vi.waitFor(async () => expect((await child.blueprints.list())[0]?.name).toBe('Rolling robot'), SOON);
+    expect(await child.blueprints.list()).toHaveLength(1);
   });
 
   it('saves at once when Run is pressed, and not again after', async () => {
@@ -368,16 +354,102 @@ describe('autosave', () => {
   });
 });
 
+describe('two tabs on one build', () => {
+  it('keeps both versions, and the later save says a copy was kept', async () => {
+    const { name, child, build, clock } = await childWithBuild();
+    // A second tab: its own connection to the same database, on the same child's records.
+    const second = await openStore({ name, now: () => clock.time });
+    cleanups.push(() => second.close());
+    const tabA = await mountShell(child, build);
+    const tabB = await mountShell(second.forProfile(child.profile), build);
+
+    clock.time = LATER;
+    tabA.rename('Tab A edit');
+    tabA.saveButton().click();
+    await vi.waitFor(() => expect(tabA.status()).toBe(SAVE_LINES.saved), SOON);
+    // Tab B opened the build before tab A saved it, and saves its own edit.
+    tabB.rename('Tab B edit');
+    tabB.saveButton().click();
+    await vi.waitFor(() => expect(tabB.status()).toBe(SAVE_LINES.keptCopy), SOON);
+
+    const builds = await child.blueprints.list();
+    expect(builds.map(({ name: built, keptFrom }) => ({ built, keptFrom }))).toEqual([
+      { built: 'Tab B edit', keptFrom: undefined },
+      { built: 'Tab A edit', keptFrom: build.meta.id },
+    ]);
+    expect(builds[0]?.id).toBe(build.meta.id);
+    const copy = await child.blueprints.load(builds[1]?.id ?? '');
+    expect(copy.ok && copy.blueprint.parts).toEqual(build.parts);
+    expect(document.querySelector('dialog, [role="dialog"], [role="alertdialog"]')).toBeNull();
+  });
+});
+
+describe('leaving the page', () => {
+  /** The shell with Save on a stand-in canvas, in a frame (save-page.html), on the database `name`. */
+  const openSavePage = async (name: string) => {
+    const frame = document.createElement('iframe');
+    frame.title = 'Servo save page';
+    frame.style.cssText = 'position: fixed; left: 0; top: 0; width: 1180px; height: 820px; border: 0;';
+    frame.src = `/test/browser/save-page.html?store=${encodeURIComponent(name)}`;
+    document.body.appendChild(frame);
+    cleanups.push(() => frame.remove());
+    const nameShown = (): string | null => frame.contentDocument?.querySelector('button.shell-blueprint-name')?.textContent ?? null;
+    const ready = () =>
+      vi.waitFor(() => {
+        if (!frame.contentWindow?.servoTest || nameShown() === null) throw new Error('the page has not mounted yet');
+      }, { timeout: 90_000, interval: 50 });
+    await ready();
+    return {
+      name: nameShown,
+      rename: (next: string) => frame.contentWindow?.servoTest?.rename(next),
+      reload: async () => {
+        const loaded = new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
+        frame.contentWindow?.location.reload();
+        await loaded;
+        await ready();
+      },
+      close: () => frame.remove(),
+    };
+  };
+
+  it('keeps an edit when the page is reloaded or closed at once, inside the quiet second', async () => {
+    const { store, name, build } = await childWithBuild();
+    store.close();
+    const page = await openSavePage(name);
+    expect(page.name()).toBe('Rolling robot');
+
+    page.rename('Renamed, then reloaded');
+    await page.reload();
+    // The page and its memory started again; the name comes from IndexedDB.
+    await vi.waitFor(() => expect(page.name()).toBe('Renamed, then reloaded'), SOON);
+
+    page.rename('Renamed, then closed');
+    page.close();
+    // The next time the page opens, the edit is there, saved to the build it was made on.
+    const again = await openSavePage(name);
+    await vi.waitFor(() => expect(again.name()).toBe('Renamed, then closed'), SOON);
+    const reader = await openStore({ name });
+    try {
+      const builds = await reader.forProfile((await reader.profiles.list())[0]?.id ?? '').blueprints.list();
+      expect(builds.map(({ id, name: built }) => ({ id, built }))).toEqual([{ id: build.meta.id, built: 'Renamed, then closed' }]);
+    } finally {
+      reader.close();
+    }
+    // Every note the pages left has been saved and forgotten.
+    expect(Object.keys(localStorage).filter((item) => item.startsWith(`${UNSAVED_PREFIX}${name}:`))).toEqual([]);
+  }, 300_000);
+});
+
 describe('the app page', () => {
   /** How long an app page may take to start: it loads every module and starts WebGL, which a busy machine slows a lot. */
   const BOOT = { timeout: 90_000, interval: 50 };
 
-  /** The real app in a frame, on the database `name`. A reload starts the page and every module again. */
-  const openPage = async (name: string) => {
+  /** The real app in a frame, on the database `name`, its storage blocked or full when asked. A reload starts the page and every module again. */
+  const openPage = async (name: string, storage?: string) => {
     const frame = document.createElement('iframe');
     frame.title = 'Servo';
     frame.style.cssText = 'position: fixed; left: 0; top: 0; width: 1180px; height: 820px; border: 0;';
-    frame.src = `/test/browser/store-page.html?store=${encodeURIComponent(name)}`;
+    frame.src = `/test/browser/store-page.html?store=${encodeURIComponent(name)}${storage ? `&${storage}` : ''}`;
     document.body.appendChild(frame);
     cleanups.push(() => frame.remove());
     const header = (): HTMLElement => {
@@ -395,6 +467,8 @@ describe('the app page', () => {
       name: () => header().querySelector('button.shell-blueprint-name')?.textContent ?? null,
       status: () => header().querySelector('[role="status"]')?.textContent ?? '',
       save: () => ([...header().querySelectorAll('button')].find((button) => button.textContent === 'Save') as HTMLButtonElement).click(),
+      saveDisabled: () => ([...header().querySelectorAll('button')].find((button) => button.textContent === 'Save') as HTMLButtonElement).disabled,
+      dialogs: () => frame.contentDocument?.querySelectorAll('dialog, [role="dialog"], [role="alertdialog"]').length ?? 0,
       reload: async () => {
         const loaded = new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
         frame.contentWindow?.location.reload();
@@ -449,5 +523,18 @@ describe('the app page', () => {
     expect(after.builds.map((summary) => summary.id)).toEqual(before.builds.map((summary) => summary.id));
     expect(after.build.meta.updatedAt >= before.build.meta.updatedAt).toBe(true);
     expect(serializeBlueprint(after.build)).toBe(serializeBlueprint({ ...before.build, meta: { ...before.build.meta, updatedAt: after.build.meta.updatedAt } }));
+  }, 300_000);
+  it.each([
+    ['blocked', 'opening IndexedDB throws, as when site data is blocked'],
+    ['full', 'every write throws a quota error, so the first profile cannot be made'],
+  ])('lets the child build on, unsaved, with a line saying so, when storage is %s: %s', async (mode) => {
+    const name = databaseName();
+    cleanups.push(() => Dexie.delete(name));
+    const page = await openPage(name, mode);
+    // An empty build to work on, kept only in the page, and one plain line.
+    await vi.waitFor(() => expect(page.name()).toBe('Build 1'), SOON);
+    expect(page.status()).toBe(SAVE_LINES.notKept);
+    expect(page.saveDisabled()).toBe(true);
+    expect(page.dialogs()).toBe(0);
   }, 300_000);
 });

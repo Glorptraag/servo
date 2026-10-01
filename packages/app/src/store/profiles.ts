@@ -18,9 +18,28 @@ const checkName = (name: unknown): void => {
 
 const noProfile = (id: ProfileId): Error => refusal(`There is no profile '${String(id)}' on this device.`);
 
+const oldestFirst = (rows: readonly ProfileRow[]): Profile[] =>
+  [...rows].sort((a, b) => compareText(a.createdAt, b.createdAt) || a.seq - b.seq).map(profileOf);
+
+/**
+ * The device's profiles, oldest first. On a device with none, it first makes one named `name` (the app's first run,
+ * task 4.9). One read-write transaction, which IndexedDB runs one at a time across tabs, so two tabs opening at once
+ * never make two first profiles, with or without Web Locks.
+ */
+export const profilesOrFirst = async ({ db, now }: StoreContext, name: string): Promise<readonly Profile[]> => {
+  checkName(name);
+  return db.transaction('rw', [db.profiles, db.changes], async () => {
+    const rows = await db.profiles.toArray();
+    if (rows.length > 0) return oldestFirst(rows);
+    const profile: Profile = { id: uuidV4(), name, createdAt: now() };
+    await db.profiles.add({ ...profile });
+    await recordChange(db, { collection: 'profiles', id: profile.id, updatedAt: profile.createdAt, removed: false });
+    return [profile];
+  });
+};
+
 export const profilesOf = ({ db, now }: StoreContext): Profiles => ({
-  list: async () =>
-    (await db.profiles.toArray()).sort((a, b) => compareText(a.createdAt, b.createdAt) || a.seq - b.seq).map(profileOf),
+  list: async () => oldestFirst(await db.profiles.toArray()),
 
   create: async (name) => {
     checkName(name);

@@ -1,86 +1,107 @@
-// Saving (task 4.9), in the header's Save slot. Nothing is lost (brief Section 8, principle 5): the child's build saves
-// itself about a second after the last edit (`AUTOSAVE_MS`, from the canvas's `edit` event) and at once when Run is
-// pressed. Save stores it at once too. What happened to the last save shows as one plain line beside the button, the
-// same for both, never a dialog (ground rule 9), and the line goes once the build changes again. A stored build that
-// does not load is never overwritten: the store refuses, and the line says "Not saved".
-import { useCallback, useEffect, useRef, useState } from 'react';
+// Saving (task 4.9), in the header's Save slot. Nothing is lost (brief Section 8, principle 5): the build saves itself a
+// quiet second after the last edit (autosave.ts), and at once when Run is pressed, when the page is hidden or left (noted
+// in the journal first, autosave.ts), and when the slot goes away. An Undo, which loads the build's earlier form onto the canvas, saves like an edit. Save
+// stores the build at once. One plain line beside the button, never a dialog (ground rule 9), says what the child
+// needs to know: a failed save (until a save succeeds), the outcome of pressing Save, a version another tab saved being
+// kept as a copy, or that this device is not keeping builds at all. A save that went as expected says nothing.
+import { useEffect, useRef, useState } from 'react';
 import type { Blueprint } from '@servo/schema';
-import type { ProfileStore } from '../store/index.ts';
+import { Autosaver } from './autosave.ts';
 import { useShell } from './context.ts';
 
-/** The status line after a save. */
-export const SAVE_LINES = { saved: 'Saved', notSaved: 'Not saved' } as const;
+/** The status lines. */
+export const SAVE_LINES = {
+  saved: 'Saved',
+  notSaved: 'Not saved',
+  keptCopy: 'Saved, and the other version kept as a copy',
+  notKept: 'Builds are not being kept on this device',
+} as const;
 
-/** How long after the last edit the build saves itself, in milliseconds. */
-export const AUTOSAVE_MS = 1000;
-
-/** An edited build waiting to be saved, and the child it belongs to. */
-interface Waiting {
-  readonly build: Blueprint;
-  readonly child: ProfileStore;
+interface Line {
+  readonly text: string;
+  /** Shown only while this build is on the canvas; without it the line stays until another replaces it. */
+  readonly for?: Blueprint;
 }
 
-export const SaveControl = () => {
+export interface SaveControlProps {
+  /** The app's autosave, which it waits on before closing the store. Without it the control makes its own. */
+  readonly saving?: Autosaver;
+}
+
+export const SaveControl = ({ saving: given }: SaveControlProps) => {
   const { blueprint, child, canvas, mode } = useShell();
-  const [outcome, setOutcome] = useState<{ readonly build: Blueprint; readonly line: string } | null>(null);
-  const waiting = useRef<Waiting | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [own] = useState(() => new Autosaver());
+  const saving = given ?? own;
+  const [line, setLine] = useState<Line | null>(null);
+  // Builds the canvas's edit events delivered, so a change of build that came from anything else can be told apart.
+  const fromEdits = useRef(new WeakSet<Blueprint>()).current;
+  const seen = useRef<Blueprint | undefined>(undefined);
 
-  const store = useCallback((build: Blueprint, into: ProfileStore): void => {
-    into.blueprints.save(build).then(
-      () => setOutcome({ build, line: SAVE_LINES.saved }),
-      (error: unknown) => {
-        console.warn('Save failed.', error);
-        setOutcome({ build, line: SAVE_LINES.notSaved });
-      },
-    );
-  }, []);
+  useEffect(
+    () =>
+      saving.subscribe((outcome) => {
+        if (outcome.kind === 'failed') setLine({ text: SAVE_LINES.notSaved });
+        else if (outcome.keptCopy) setLine({ text: SAVE_LINES.keptCopy });
+        else if (outcome.pressed) setLine({ text: SAVE_LINES.saved, for: outcome.build });
+        else setLine((current) => (current?.text === SAVE_LINES.notSaved ? null : current));
+      }),
+    [saving],
+  );
 
-  /** Saves the waiting build now, if there is one. */
-  const flush = useCallback((): void => {
-    clearTimeout(timer.current);
-    timer.current = undefined;
-    const next = waiting.current;
-    waiting.current = null;
-    if (next) store(next.build, next.child);
-  }, [store]);
-
-  // Each edit waits for a quiet second. An edit to another build first saves the one waiting, and so does leaving.
+  // Each edit waits for a quiet second; leaving saves what waits.
   useEffect(() => {
     if (!canvas || !child) return undefined;
     const off = canvas.on('edit', ({ blueprint: build }) => {
-      if (waiting.current && waiting.current.build.meta.id !== build.meta.id) flush();
-      waiting.current = { build, child };
-      clearTimeout(timer.current);
-      timer.current = setTimeout(flush, AUTOSAVE_MS);
+      fromEdits.add(build);
+      saving.edited(build, child);
     });
     return () => {
       off();
-      flush();
+      saving.leaving();
     };
-  }, [canvas, child, flush]);
+  }, [canvas, child, saving, fromEdits]);
 
-  // Run saves what is waiting at once, so the build that runs is the one kept.
+  // Undo loads the build's earlier form with `load`, which fires no edit: a new form of the same build saves like one.
   useEffect(() => {
-    if (mode === 'run') flush();
-  }, [mode, flush]);
+    const before = seen.current;
+    seen.current = blueprint;
+    if (!blueprint || !before || !child || blueprint === before || fromEdits.has(blueprint)) return;
+    if (blueprint.meta.id === before.meta.id) saving.edited(blueprint, child);
+  }, [blueprint, child, saving, fromEdits]);
+
+  // Run saves what waits at once, so the build that runs is the one kept.
+  useEffect(() => {
+    if (mode === 'run') saving.flush();
+  }, [mode, saving]);
+
+  // A hidden page may be discarded (iPadOS does), and a page being left or reloaded is gone before a save it starts can
+  // finish: note what waits in the journal, then save it.
+  useEffect(() => {
+    const onVisibility = (): void => {
+      if (document.visibilityState === 'hidden') saving.leaving();
+    };
+    const onPageHide = (): void => saving.leaving();
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', onPageHide);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', onPageHide);
+    };
+  }, [saving]);
+
+  useEffect(() => () => own.dispose(), [own]);
 
   const save = (): void => {
-    if (!blueprint || !child) return;
-    if (waiting.current && waiting.current.build.meta.id !== blueprint.meta.id) flush();
-    clearTimeout(timer.current);
-    timer.current = undefined;
-    waiting.current = null;
-    store(blueprint, child);
+    if (blueprint && child) saving.saveNow(blueprint, child);
   };
-
+  const shown = !child && blueprint ? SAVE_LINES.notKept : line && (line.for === undefined || line.for === blueprint) ? line.text : null;
   return (
     <>
       <button type="button" className="shell-button" disabled={!blueprint || !child} onClick={save}>
         Save
       </button>
       <span className="shell-save-status" role="status">
-        {outcome !== null && outcome.build === blueprint ? outcome.line : null}
+        {shown}
       </span>
     </>
   );

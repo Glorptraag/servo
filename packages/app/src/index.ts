@@ -2,10 +2,17 @@
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { loadContent } from '@servo/content';
-import type { Blueprint } from '@servo/schema';
+import type { Content } from '@servo/content';
+import { BLUEPRINT_VERSION } from '@servo/schema';
+import type { ArenaRef, Blueprint } from '@servo/schema';
 import { App, START_LEVEL } from './App.tsx';
+import { Autosaver, pageStorage, recoverUnsaved } from './shell/index.ts';
+import type { Journal } from './shell/index.ts';
+import { DATABASE_NAME } from './store/database.ts';
 import { openStore } from './store/index.ts';
 import type { ProfileStore, ServoStore, StoreOptions } from './store/index.ts';
+import { buildForOpening, profilesForOpening } from './store/open.ts';
+import { uuidV4 } from './store/uuid.ts';
 
 export interface AppOptions {
   /** How to open the store. Tests and the e2e harness pass their own database name. */
@@ -13,7 +20,7 @@ export interface AppOptions {
 }
 
 export interface AppHandle {
-  /** Removes the app from its host and closes the store. */
+  /** Removes the app from its host, then closes the store once every save it started has settled. */
   destroy(): void;
 }
 
@@ -33,53 +40,71 @@ const NO_ONE: Opening = { child: null, start: undefined };
 /** The profile the app makes on a device that has none: a neutral name, no email, nothing personal. */
 const FIRST_PROFILE_NAME = 'Builder 1';
 
-/** The empty sandbox build the app starts for a profile with none that loads. */
+/** The empty sandbox build the app starts when there is none that loads. */
 const FIRST_BUILD_NAME = 'Build 1';
 
 /** The arena a first build is set in: the plain floor, with no walls or props, or else the content's first. */
-const FIRST_ARENA = 'open-floor';
+const firstArena = (content: Content): ArenaRef | undefined => {
+  const preset = content.arenas.find((arena) => arena.id === 'open-floor') ?? content.arenas[0];
+  return preset ? { preset: preset.id, props: [] } : undefined;
+};
 
-/** Runs `work` while no other tab of the app on this device runs it, where the browser can promise that (Web Locks). */
-const alone = <T>(name: string, work: () => Promise<T>): Promise<T> => {
-  const locks = (globalThis as { readonly navigator?: { readonly locks?: LockManager } }).navigator?.locks;
-  return locks ? locks.request(name, work) : work();
+/**
+ * An empty build that lives only in this page: for a device that cannot keep builds, or a session with no one profile
+ * to keep them in. The child builds on, and Save's line says builds are not being kept.
+ */
+const unsavedBuild = (content: Content): Blueprint | undefined => {
+  const arena = firstArena(content);
+  if (!arena) return undefined;
+  const at = new Date().toISOString();
+  const meta = { id: uuidV4(), name: FIRST_BUILD_NAME, level: START_LEVEL, createdAt: at, updatedAt: at, highWater: { parts: 0, wires: 0 } };
+  return { version: BLUEPRINT_VERSION, parts: [], wires: [], arena, meta };
 };
 
 /**
  * Whose records the app opens, and the build it opens with, until the profile switch (task 5.1) and Home (task 4.5)
  * choose them. On a device with no profile it makes one, "Builder 1", which the parent view can rename later. It opens
  * the one profile, with its newest build that loads, or a new empty "Build 1" when none does, so the child always has
- * a build to work on and nothing is lost. With several profiles, before the profile switch exists, none is in use.
- * Two tabs opening at once take turns, so a device never gets two first profiles.
+ * a build to work on. Each step is one transaction in the store, so two tabs opening at once never make two of either.
+ * With several profiles, before the profile switch exists, none is in use.
  */
-const openingOf = (store: ServoStore): Promise<Opening> =>
-  alone('servo.opening', async () => {
-    const found = await store.profiles.list();
-    const profiles = found.length > 0 ? found : [await store.profiles.create(FIRST_PROFILE_NAME)];
-    const [only] = profiles;
-    if (!only || profiles.length > 1) return NO_ONE;
-    const child = store.forProfile(only.id);
-    for (const summary of await child.blueprints.list()) {
-      const loaded = await child.blueprints.load(summary.id);
-      if (loaded.ok) return { child, start: loaded.blueprint };
-    }
-    const arena = store.content.arenas.find((preset) => preset.id === FIRST_ARENA) ?? store.content.arenas[0];
-    if (!arena) return { child, start: undefined };
-    const start = await child.blueprints.create({ name: FIRST_BUILD_NAME, level: START_LEVEL, arena: { preset: arena.id, props: [] } });
-    return { child, start };
-  });
+const openingOf = async (store: ServoStore): Promise<Opening> => {
+  const profiles = await profilesForOpening(store, FIRST_PROFILE_NAME);
+  const [only] = profiles;
+  const arena = firstArena(store.content);
+  if (!only || profiles.length > 1 || !arena) return NO_ONE;
+  const start = await buildForOpening(store, only.id, { name: FIRST_BUILD_NAME, level: START_LEVEL, arena });
+  return { child: store.forProfile(only.id), start };
+};
 
 /**
  * Opens the store, then draws the shell and the canvas in `host`, which needs a definite size: the shell fills it.
- * Resolves once the canvas is mounted. A device whose storage cannot be opened still builds; it only cannot save.
+ * Resolves once the canvas is mounted. When the device's storage cannot be opened, or opening a build in it fails,
+ * the child still builds: on an empty build kept only in the page, with a line that says builds are not being kept.
  */
 export const mountApp: MountApp = async (host, options = {}) => {
   const store = await openStore(options.store).catch((error: unknown) => {
-    console.warn('The store could not be opened, so nothing will be saved.', error);
+    console.warn('The store could not be opened, so builds are not kept on this device.', error);
     return null;
   });
-  const { child, start } = store ? await openingOf(store).catch(() => NO_ONE) : NO_ONE;
+  // Builds a page of the app noted as it was left, before their saves finished, are saved first (autosave.ts).
+  const storage = pageStorage();
+  const journal: Journal | undefined = storage ? { storage, scope: options.store?.name ?? DATABASE_NAME } : undefined;
+  if (store && journal) {
+    await recoverUnsaved(store, journal).catch((error: unknown) => {
+      console.warn('Builds left unsaved could not all be saved; they stay noted for next time.', error);
+    });
+  }
+  const opened = store
+    ? await openingOf(store).catch((error: unknown) => {
+        console.warn('The store could not open a build, so builds are not kept on this device.', error);
+        return NO_ONE;
+      })
+    : NO_ONE;
   const content = store?.content ?? loadContent().content;
+  const child = opened.child;
+  const start = child ? opened.start : unsavedBuild(content);
+  const saving = new Autosaver(journal);
   return new Promise<AppHandle>((resolve, reject) => {
     const root = createRoot(host, {
       onUncaughtError: (error) => {
@@ -89,10 +114,14 @@ export const mountApp: MountApp = async (host, options = {}) => {
     });
     const handle: AppHandle = {
       destroy: () => {
+        // Unmounting saves what waits; the store closes only once those saves have settled.
         root.unmount();
-        store?.close();
+        void saving.settled().finally(() => {
+          saving.dispose();
+          store?.close();
+        });
       },
     };
-    root.render(createElement(App, { content, child, start, onReady: () => resolve(handle) }));
+    root.render(createElement(App, { content, child, start, saving, onReady: () => resolve(handle) }));
   });
 };

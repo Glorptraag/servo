@@ -278,11 +278,15 @@ describe('create, save, duplicate, rename and remove', () => {
     expect(renamed).toEqual(withMeta(build, { name: 'Night light', updatedAt: T1 }));
     expect((await kid.blueprints.list()).map(({ name, updatedAt }) => ({ name, updatedAt }))).toEqual([{ name: 'Night light', updatedAt: T1 }]);
     const sixty = '🔋'.repeat(30) + 'x'.repeat(30);
-    expect((await kid.blueprints.save(withMeta(build, { name: sixty }))).meta.name).toBe(sixty);
+    const longest = await kid.blueprints.save(withMeta(renamed, { name: sixty }));
+    expect(longest.meta.name).toBe(sixty);
+    // The clock stood still, and each save is still stamped later than the version it replaced.
+    expect(longest.meta.updatedAt).toBe('2026-10-02T10:30:00.001Z');
+    expect(await kid.blueprints.list()).toHaveLength(1);
 
     const stored = await storedDocument(opened.name, build.meta.id);
     for (const name of ['', ' Night', 'Night ', 'x'.repeat(61), 'Two\nlines', 'Tab\there']) {
-      await expect(kid.blueprints.save(withMeta(build, { name })), JSON.stringify(name)).rejects.toThrow(/does not validate/);
+      await expect(kid.blueprints.save(withMeta(longest, { name })), JSON.stringify(name)).rejects.toThrow(/does not validate/);
     }
     expect(await storedDocument(opened.name, build.meta.id)).toBe(stored);
     opened.store.close();
@@ -297,12 +301,15 @@ describe('create, save, duplicate, rename and remove', () => {
     const stored = await storedDocument(opened.name, build.meta.id);
 
     await expect(kid.blueprints.save(withMeta(build, { id: '9b2e4c1a-7d3f-4e5a-8b6c-1d2e3f4a5b6c' }))).rejects.toThrow(/holds no blueprint.*create, copy or duplicate/);
-    await expect(kid.blueprints.save(withMeta(build, { author: 'a3f1c2d4-5b6e-4f70-8a91-b2c3d4e5f607' }))).rejects.toThrow(/another profile/);
     const invalid = kid.blueprints.save({ ...build, wires: [...build.wires, { id: 'w9', from: { part: 'led', port: 'plus' }, to: { part: 'led', port: 'plus' } }] });
     await expect(invalid).rejects.toThrow(/does not validate/);
     expect(issuesOf(await invalid.catch((error: unknown) => error)).length).toBeGreaterThan(0);
     await expect(kid.blueprints.save(null as unknown as Blueprint)).rejects.toThrow(/does not validate/);
     expect(await storedDocument(opened.name, build.meta.id)).toBe(stored);
+    // The row decides whose build it is, not the author it names: a build sync brought in, written by this child on
+    // another device or by someone else, is still this profile's to save.
+    const synced = withMeta(build, { author: 'a3f1c2d4-5b6e-4f70-8a91-b2c3d4e5f607' });
+    expect((await kid.blueprints.save(synced)).meta.author).toBe(synced.meta.author);
     opened.store.close();
   });
 

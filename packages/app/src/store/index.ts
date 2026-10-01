@@ -92,7 +92,9 @@ export interface Blueprints {
   /**
    * Stores a build this profile already holds, in canonical form under its `meta.id`, with `updatedAt` stamped now.
    * Refuses a `meta.id` the profile does not hold (new builds come from create, copy or duplicate), another
-   * profile's build, and one that does not validate.
+   * profile's build, and one that does not validate. The `updatedAt` given names the stored version the build was
+   * saved from (as load and save return it): when the stored build has changed since, in another tab, the stored
+   * version is kept as its own blueprint (`keptFrom`) and this one keeps the id, as sync's conflict rule below.
    */
   save(blueprint: Blueprint): Promise<Blueprint>;
   /** A copy under a fresh `meta.id`, with its own name. Its runs start again from 1. */

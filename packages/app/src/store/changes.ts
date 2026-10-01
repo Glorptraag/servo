@@ -29,7 +29,13 @@ const documentOf = async (db: ServoDatabase, { collection, id }: ChangeRow): Pro
     }
     case 'blueprints': {
       const row = await db.blueprints.get(id);
-      return row ? (JSON.parse(row.document) as unknown) : undefined;
+      if (!row) return undefined;
+      // A document that is not JSON goes as the text it is stored as, so one bad row never stops the rest.
+      try {
+        return JSON.parse(row.document) as unknown;
+      } catch {
+        return row.document;
+      }
     }
     case 'runs':
       return (await db.runs.get({ id }))?.record;
@@ -39,8 +45,8 @@ const documentOf = async (db: ServoDatabase, { collection, id }: ChangeRow): Pro
 };
 
 /**
- * Every change waiting for sync, oldest first, as SyncChange: each with its record as stored now (a blueprint as
- * `serializeBlueprint` wrote it, parsed), or with none when the record was removed.
+ * Every change waiting for sync, oldest first, as SyncChange: each with its record as it is stored now, when this is
+ * read (a blueprint as `serializeBlueprint` wrote it, parsed), or with none when the record was removed.
  */
 export const pendingChanges = (db: ServoDatabase): Promise<readonly SyncChange[]> =>
   db.transaction('r', [db.changes, db.profiles, db.blueprints, db.runs, db.cardGames], async () => {
