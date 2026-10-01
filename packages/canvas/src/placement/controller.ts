@@ -39,8 +39,11 @@ export const QUARTER_TURN = 90;
 export const SLIDE_MS = 160;
 /** Drag sensitivity is held at or above this, as the view's pan threshold holds it. */
 const MIN_SENSITIVITY = 0.05;
-/** How far a socket reaches from its centre: a hexagon's corner reaches furthest (scene/scene.ts). */
-const SOCKET_REACH_MM = (PORT_MM / 2) * (2 / Math.sqrt(3));
+/**
+ * How far a socket reaches from its centre: a hexagon's corner reaches furthest (scene/scene.ts). The handles keep
+ * clear of it, and so does a wire's bin (task 3.3).
+ */
+export const SOCKET_REACH_MM = (PORT_MM / 2) * (2 / Math.sqrt(3));
 
 export interface PlacementHost {
   readonly surface: CanvasSurface;
@@ -221,14 +224,9 @@ export class PlacementController {
     return this.callout.line;
   }
 
-  /** Hides the handles: wiring (task 3.3) calls it when a socket or a wire is tapped instead. */
-  deselect(): void {
-    this.select(undefined);
-  }
-
-  /** The handle drawn under a canvas point, if any: handles take a press before the sockets beneath them. */
-  handleAt(world: Vec2): HandleKind | undefined {
-    return this.selected !== undefined ? this.handles.hit(world) : undefined;
+  /** Whether the line lies over a canvas point: drawn above everything, it takes a press first (wiring, task 3.3). */
+  noticeCovers(world: Vec2): boolean {
+    return this.callout.covers(world);
   }
 
   /** Shows the handles beside a part, or none: the tap on a part does this, and task 3.4's `select` will. */

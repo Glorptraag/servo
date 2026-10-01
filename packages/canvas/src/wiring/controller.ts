@@ -3,13 +3,16 @@
 // the layer the list view uses too (ground rule 8), so every path gives the same bytes. A wire lands within 32 px of a
 // socket that takes it, which glows as it comes near; a socket that can never take it pushes the wire away while the
 // right colour glows; let go anywhere else, the wire springs back. A crowd of overlapping sockets fans out first, so a
-// wire never lands on the wrong part's socket. A wire is removed by dragging it to the tray or by its bin. No
-// long-press, no double-tap, no text: what is wrong shows at the socket (brief Section 10). See docs/wiring.md.
+// wire never lands on the wrong part's socket. A wire is removed by dragging it to the tray or by its bin. What the
+// child sees on top is what a press reaches, and a socket beats a handle, as for placement (task 3.2). No long-press,
+// no double-tap, no text: what is wrong shows at the socket (brief Section 10). See docs/wiring.md.
 import type { Blueprint, Catalogue, IssueCode, PortRef, Vec2, WireId } from '@servo/schema';
 import type { CanvasPrefs, EditCommand, EditResult } from '../interface.ts';
-import { Press } from '../placement/controller.ts';
+import { Press, SOCKET_REACH_MM } from '../placement/controller.ts';
 import type { Gesture } from '../placement/controller.ts';
-import { REMOVING_ALPHA } from '../placement/views.ts';
+import { layOutHandles } from '../placement/overlays.ts';
+import type { Circle } from '../placement/overlays.ts';
+import { HANDLE_GAP_PX, HANDLE_PX, Handles, REMOVING_ALPHA } from '../placement/views.ts';
 import { DRAG_THRESHOLD_PX } from '../renderer/input.ts';
 import type { PointerClaim } from '../renderer/input.ts';
 import { paletteFor } from '../renderer/style.ts';
@@ -25,7 +28,7 @@ import type { Crowd, CrowdMember, Crowds } from './crowds.ts';
 import { FAN_MS, REACH_MS, SETTLE_MS, SPRING_BACK_MS, easeOut, elastic } from './motion.ts';
 import { WIRE_REACH_PX, judgeSockets, landingAt, socketsFrom, wireEndAt } from './rules.ts';
 import type { Socket, Verdict } from './rules.ts';
-import { BIN_MM, WireMarks } from './views.ts';
+import { WireMarks } from './views.ts';
 import type { FanMark, Marks, SocketMark } from './views.ts';
 
 /** Drag sensitivity is held at or above this, as placement and the view hold it. */
@@ -97,6 +100,9 @@ export class WiringController {
   private readonly host: WiringHost;
   private readonly surface: CanvasSurface;
   private readonly marks = new WireMarks();
+  /** The tapped wire's bin: the bin handle a selected part has (D44). */
+  private readonly bin = new Handles();
+  private readonly offZoom: () => void;
   private crowds: Crowds;
   /** The build the state below belongs to: any other build ends it. */
   private seen: Blueprint | undefined;
@@ -117,9 +123,11 @@ export class WiringController {
     this.surface = host.surface;
     this.crowds = crowdsOf(this.surface.scene);
     const { canvas, input, overlays } = this.surface;
-    overlays.addChild(this.marks.graphics);
-    // First in line: a socket or a wire is drawn above the part it sits on, and a fanned socket above everything.
+    overlays.addChild(this.marks.graphics, this.bin.graphics);
+    // First in line, ahead of placement: a socket beats a handle, and fanned sockets take presses first.
     input.handlers.unshift((event, screen, hit) => this.pressed(event, screen, hit));
+    // The bin keeps its 44 px on screen at every zoom.
+    this.offZoom = this.surface.on('zoom', () => this.redraw());
     input.taps.push(() => this.tapped());
     canvas.addEventListener('keydown', this.keyed);
   }
@@ -169,7 +177,7 @@ export class WiringController {
 
   /** Where the bin of the tapped wire sits, mm. */
   get binPlace(): Vec2 | undefined {
-    return this.selected !== undefined ? this.binOf(this.selected) : undefined;
+    return this.selected !== undefined ? this.bin.shown.get('bin') : undefined;
   }
 
   /** The crowds of overlapping sockets in the build now. */
@@ -227,48 +235,56 @@ export class WiringController {
     if (this.frame !== undefined) cancelAnimationFrame(this.frame);
     this.motions.clear();
     this.surface.canvas.removeEventListener('keydown', this.keyed);
+    this.offZoom();
     this.dropLive();
     this.marks.graphics.destroy();
+    this.bin.graphics.destroy();
   }
 
   // ---------------------------------------------------------------------------------------------------------
   // Pointers on the canvas
 
+  /**
+   * What the child sees on top is what a press reaches (brief Section 9): the line, then the fanned sockets, the
+   * sockets, the tapped wire's bin and the selected part's handles, then wires, parts and drive linkages. A socket
+   * beats a handle, as for placement (task 3.2), whose handles and line are laid out clear of every socket.
+   */
   private pressed(event: PointerEvent, screen: Vec2, hit: Hit | null): PointerClaim | null {
-    // A part waiting for its tap takes every tap (task 3.2).
-    if (!this.editable() || this.surface.placement.placing) return null;
+    if (this.deferring()) return null;
     this.finishMotions();
     if (this.refusal) {
       this.clearCue();
       this.redraw();
     }
     const world = this.surface.camera.screenToWorld(screen);
-    if (this.surface.placement.handleAt(world)) {
-      this.clearSelection();
-      return null;
-    }
-    if (this.selected !== undefined) {
-      const bin = this.binOf(this.selected);
-      if (bin && distance(bin, world) <= BIN_MM / 2) return this.claim(event, this.binGesture(this.selected));
-    }
+    const placement = this.surface.placement;
+    // The line is drawn above everything: a press on it only takes it away (placement's).
+    if (placement.noticeCovers(world)) return null;
     const waiting = this.waiting;
     const fanned = this.fannedAt(world);
     if (fanned) return this.claim(event, waiting ? this.pickGesture(waiting) : this.socketGesture(fanned.ports[0] as ScenePort));
     // Where the fanned sockets came from is no target while they are out: each sits clear of it, out of reach.
     if (this.onFannedHome(world)) return this.claim(event, { tap: () => undefined });
     if (waiting && this.nearSocket(world)) return this.claim(event, this.pickGesture(waiting));
-    if (waiting && hit !== null) this.letGo();
     const under = this.membersUnder(world);
     if (under.length > 1) {
       // The press cannot tell these sockets apart: they fan out round it, and the next press picks one.
       this.clearSelection();
-      this.surface.placement.deselect();
+      placement.selectPart(undefined);
       const crowd = this.crowds.crowdOf((under[0] as CrowdMember).key);
       if (crowd) this.openFan(crowd, world);
       return this.claim(event, { tap: () => undefined });
     }
     if (under.length === 1) return this.claim(event, this.socketGesture((under[0] as CrowdMember).ports[0] as ScenePort));
+    if (this.selected !== undefined && this.bin.hit(world) === 'bin') return this.claim(event, this.binGesture(this.selected));
+    if (waiting && hit !== null) this.letGo();
     this.closeFan();
+    // The selected part's handles are placement's.
+    if (this.onHandle(world)) {
+      this.clearSelection();
+      this.redraw();
+      return null;
+    }
     const wire = hit?.kind === 'wire' ? hit.wire : hit === null ? this.linkageAt(world) : undefined;
     if (wire) return this.claim(event, this.wireGesture(wire, world));
     if (hit?.kind === 'part') this.clearSelection();
@@ -278,7 +294,7 @@ export class WiringController {
 
   /** A tap on the canvas nobody claimed (empty workbench): the waiting wire, the fan, the bin and the cue go. */
   private tapped(): void {
-    if (!this.editable() || this.surface.placement.placing) return;
+    if (this.deferring()) return;
     this.letGo();
     this.clearSelection();
     this.clearCue();
@@ -333,7 +349,7 @@ export class WiringController {
   /** Tap-then-tap: the wire waits at its source, the sockets that would take it glowing. */
   private wait(pending: Pending): void {
     this.waiting = pending;
-    this.surface.placement.deselect();
+    this.surface.placement.selectPart(undefined);
     this.clearSelection();
     this.redraw();
   }
@@ -369,7 +385,7 @@ export class WiringController {
     this.waiting = undefined;
     const from = this.placeOf(pending.source);
     this.dragging = { ...pending, end: from, target: undefined, pushedBy: undefined, waited, spread: undefined };
-    this.surface.placement.deselect();
+    this.surface.placement.selectPart(undefined);
     this.clearSelection();
     this.showLive(pending.source, from);
   }
@@ -557,7 +573,7 @@ export class WiringController {
     return {
       tap: () => this.selectWire(wire.id),
       start: () => {
-        this.surface.placement.deselect();
+        this.surface.placement.selectPart(undefined);
         this.clearSelection();
       },
       drag: (event) => {
@@ -596,13 +612,22 @@ export class WiringController {
   private selectWire(id: WireId): void {
     this.selected = id;
     this.letGo();
-    this.surface.placement.deselect();
+    this.surface.placement.selectPart(undefined);
     this.surface.canvas.focus({ preventScroll: true });
     this.redraw();
   }
 
   private clearSelection(): void {
+    if (this.selected === undefined) return;
     this.selected = undefined;
+    this.bin.draw(new Map(), 0, this.palette);
+    this.surface.requestFrame();
+  }
+
+  /** Whether a press lands on one of the selected part's handles, drawn above the wires and parts. */
+  private onHandle(world: Vec2): boolean {
+    const { places, radius } = this.surface.placement.handlePlaces;
+    return [...places.values()].some((at) => distance(at, world) <= radius);
   }
 
   /** A drive linkage long enough to see and grab (24 px hit area): one whose wheel does not sit on its shaft. */
@@ -617,21 +642,36 @@ export class WiringController {
   }
 
   /**
-   * Beside the middle of the wire, clear of its hit area: on its right for right-handed use, on its left otherwise
-   * (D44), above it when it runs across.
+   * The tapped wire's bin, laid out as a selected part's handles are (D44): beside the wire's middle, on its right for
+   * right-handed use and its left otherwise, then further along, clear of every socket and of the wire's own hit area,
+   * inside the view where it fits; 44 px on screen at every zoom.
    */
-  private binOf(id: WireId): Vec2 | undefined {
-    const wire = [...this.surface.scene.wires, ...this.surface.scene.linkages].find((candidate) => candidate.id === id);
-    if (!wire) return undefined;
+  private drawBin(): void {
+    const id = this.selected;
+    const wire = id === undefined ? undefined : [...this.surface.scene.wires, ...this.surface.scene.linkages].find((each) => each.id === id);
+    const scale = this.surface.camera.scale;
+    const radius = HANDLE_PX / 2 / scale;
+    if (!wire) {
+      this.bin.draw(new Map(), radius, this.palette);
+      return;
+    }
     const { at: a } = wire.from;
     const { at: b } = wire.to;
-    const length = Math.hypot(b.x - a.x, b.y - a.y);
-    let normal = length > 1e-9 ? { x: -(b.y - a.y) / length, y: (b.x - a.x) / length } : { x: 0, y: -1 };
-    const side = this.host.prefs().leftHanded ? -1 : 1;
-    if (Math.abs(normal.x) < 1e-6) normal = { x: 0, y: -1 };
-    else if (Math.sign(normal.x) !== side) normal = { x: -normal.x, y: -normal.y };
-    const offset = WIRE_HIT_MM / 2 + BIN_MM / 2 + mmOf(4);
-    return { x: (a.x + b.x) / 2 + normal.x * offset, y: (a.y + b.y) / 2 + normal.y * offset };
+    const half = WIRE_HIT_MM / 2;
+    const middle = lerp(a, b, 0.5);
+    const steps = Math.max(1, Math.ceil(distance(a, b) / half));
+    const line: Circle[] = Array.from({ length: steps + 1 }, (_, i) => ({ ...lerp(a, b, i / steps), r: half }));
+    const sockets: Circle[] = drawnSockets(this.surface.scene).map((port) => ({ ...port.at, r: SOCKET_REACH_MM }));
+    const places = layOutHandles({
+      kinds: ['bin'],
+      part: { minX: middle.x - half, minY: middle.y - half, maxX: middle.x + half, maxY: middle.y + half },
+      sockets: [...sockets, ...line],
+      radius,
+      gap: HANDLE_GAP_PX / scale,
+      view: this.surface.camera.visible(),
+      leftHanded: this.host.prefs().leftHanded,
+    });
+    this.bin.draw(places, radius, this.palette);
   }
 
   // ---------------------------------------------------------------------------------------------------------
@@ -807,28 +847,32 @@ export class WiringController {
     const drag = this.dragging;
     const pending = drag ?? this.waiting;
     const { hints, target } = this.glowState();
-    const bin = this.selected !== undefined ? this.binOf(this.selected) : undefined;
     return {
       ...(fanMarks.length > 0 ? { fan: fanMarks } : {}),
       hints: hints.map((port) => this.socketMark(port)),
       ...(target ? { target: this.socketMark(target) } : {}),
       ...(pending ? { source: this.socketMark(pending.source) } : {}),
       ...(drag ? { plug: { at: drag.end, type: drag.source.type } } : {}),
-      ...(bin ? { bin } : {}),
     };
   }
 
   private redraw(): void {
     this.marks.draw(this.currentMarks(), this.palette);
+    this.drawBin();
     this.surface.requestFrame();
   }
 
-  /** The marks go on top of the ports layer after every rebuild, above every socket, as fanned sockets must be. */
+  /**
+   * The marks and the bin go on top of the ports layer after every rebuild, above every socket, as fanned sockets must
+   * be; placement's rings and handles then go above them (task 3.2), which never show while a crowd is fanned out.
+   */
   private attach(): void {
     const layers = this.surface.layers;
     if (!layers) return;
-    this.marks.graphics.parentRenderLayer?.detach(this.marks.graphics);
-    layers.ports.attach(this.marks.graphics);
+    for (const graphics of [this.marks.graphics, this.bin.graphics]) {
+      graphics.parentRenderLayer?.detach(graphics);
+      layers.ports.attach(graphics);
+    }
   }
 
   // ---------------------------------------------------------------------------------------------------------
@@ -840,6 +884,11 @@ export class WiringController {
 
   private editable(): boolean {
     return !this.host.readOnly && this.surface.mode === 'build' && this.surface.blueprint !== undefined;
+  }
+
+  /** Locked, or a part is waiting for its tap (from the tray or by the Move handle): it takes every press (task 3.2). */
+  private deferring(): boolean {
+    return !this.editable() || this.surface.placement.placing || this.surface.placement.moving !== undefined;
   }
 
   private get sensitivity(): number {

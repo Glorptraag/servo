@@ -1,20 +1,21 @@
 // Wiring by touch and pointer (brief Sections 10 and 13, task 3.3): drag and tap-then-tap, the 32 px reach and its
 // glow, drag sensitivity, the push-away from a wrong socket with the right colour glowing, every impossible drop
 // refused with that cue (by state and by pixels), the spring back, legal-but-wrong wiring, drive linkages, 44 px
-// socket targets, removing wires (the tray, the bin, the Delete key) by their 24 px hit areas, wires following their
-// ports, the elastic settle, the locks, and crowded sockets fanning out on the two Level 2 builds whose sockets
-// overlap (review R-3.1, finding 2). Real input through CDP, in the iPad profile.
+// socket targets, what a press reaches beside placement's handles and line (task 3.2), removing wires (the tray, the
+// bin, the Delete key) by their 24 px hit areas, wires following their ports, the elastic settle, the locks, and
+// crowded sockets fanning out on the two Level 2 builds whose sockets overlap (review R-3.1, finding 2). Real input
+// through CDP, in the iPad profile.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { cdp, userEvent } from 'vitest/browser';
 import { planWire } from '@servo/schema';
 import type { Blueprint, Catalogue, IssueCode, PortRef, Vec2 } from '@servo/schema';
 import type { CanvasSurface } from '../../src/renderer/surface.ts';
-import { distance } from '../../src/scene/geometry.ts';
+import { HANDLE_PX } from '../../src/placement/views.ts';
+import { distance, distanceToSegment } from '../../src/scene/geometry.ts';
 import { PORT_MM, PX_PER_MM, WIRE_HIT_MM } from '../../src/scene/units.ts';
 import { drawnSockets } from '../../src/wiring/crowds.ts';
 import { SETTLE_MS, SPRING_BACK_MS } from '../../src/wiring/motion.ts';
 import { WIRE_REACH_PX, judgeSockets } from '../../src/wiring/rules.ts';
-import { BIN_MM } from '../../src/wiring/views.ts';
 import { blueprintOf, catalogue, fixture } from '../helpers/catalogue.ts';
 import { crewCatalogue, crewRobot } from '../helpers/circuit-crew.ts';
 import { PREFS, colourDistance, describeRgb, listen, mount, reset, settle, shoot, unmountAll } from './helpers.ts';
@@ -310,6 +311,91 @@ describe('targets at the default zoom (brief Section 9)', () => {
   });
 });
 
+describe('what a press reaches: the top-most drawn target, and a socket beats a handle (brief Section 9, task 3.2)', () => {
+  it('gives a socket beside a selected part’s handles to wiring, and its handles to placement; a part the Move handle moves takes every tap', async () => {
+    const hands = handsOf();
+    const { surface } = bench;
+    load(surface, sockets(), { x: -80, y: 40 }, 1);
+    const edits = listen(surface, 'edit');
+    const motor = (): Vec2 => client(surface.blueprint?.parts.find((each) => each.id === 'motor')?.position as Vec2);
+    const handle = (kind: 'move' | 'rotate' | 'bin'): Vec2 => client(surface.placement.handlePlaces.places.get(kind) as Vec2);
+    const own = surface.scene.partById.get('motor')?.ports.filter((port) => port.layer === 'ports') ?? [];
+    expect(own.map((port) => port.key).sort()).toEqual(['motor.minus', 'motor.plus', 'motor.shaft']);
+    for (const port of own) {
+      await hands.tap('touch', motor());
+      expect([...surface.placement.handlePlaces.places.keys()]).toEqual(['move', 'rotate', 'bin']);
+      await hands.tap('mouse', client(port.at));
+      expect(surface.wiring.waitingFrom, port.key).toEqual(ref(port.key));
+      // The handles go while the wire waits.
+      expect(surface.placement.handlePlaces.places.size).toBe(0);
+      await hands.tap('touch', client(EMPTY));
+      expect(surface.wiring.waitingFrom).toBeUndefined();
+    }
+    await hands.tap('mouse', motor());
+    await hands.tap('mouse', handle('rotate'));
+    expect(surface.blueprint?.parts.find((each) => each.id === 'motor')?.rotation).toBe(90);
+    // Move: the next tap is where the motor goes, on a socket too, and starts no wire.
+    await hands.tap('touch', handle('move'));
+    expect(surface.placement.moving).toBe('motor');
+    await hands.tap('touch', socketAt('gearbox.input'));
+    expect(surface.placement.moving).toBeUndefined();
+    expect(surface.wiring.waitingFrom).toBeUndefined();
+    expect(edits.map((edit) => edit.command.kind)).toEqual(['rotate-part', 'move-part']);
+  }, LONG_MS);
+
+  it('gives a press on the line to the line, over a wire too: it only takes the line away', async () => {
+    const hands = handsOf();
+    const { surface } = bench;
+    // A loose LED with a power line from the battery pack; its removal leaves a line above where it was. The pack's
+    // plus feeds a buzzer across the workbench, on a power line set to run through that line.
+    const build = (battery: Vec2, buzzer: Vec2): Blueprint =>
+      blueprintOf({
+        parts: [part('led', 'led', 0, 40), part('battery', 'battery-pack-2-cell', battery.x, battery.y), part('buzzer', 'buzzer', buzzer.x, buzzer.y)],
+        wires: [
+          { id: 'w1', from: { part: 'battery', port: 'plus' }, to: { part: 'buzzer', port: 'plus' } },
+          { id: 'w2', from: { part: 'battery', port: 'minus' }, to: { part: 'led', port: 'minus' } },
+        ],
+      });
+    const removeLed = (): { readonly min: Vec2; readonly max: Vec2 } => {
+      expect(surface.apply({ kind: 'remove-part', partId: 'led' }).ok).toBe(true);
+      expect(surface.placement.notice).toBeDefined();
+      const view = surface.camera.visible();
+      const covered: Vec2[] = [];
+      for (let x = view.minX; x <= view.maxX; x += 0.5) {
+        for (let y = view.minY; y <= view.maxY; y += 0.5) {
+          if (surface.placement.noticeCovers({ x, y })) covered.push({ x, y });
+        }
+      }
+      expect(covered.length).toBeGreaterThan(0);
+      return {
+        min: { x: Math.min(...covered.map((at) => at.x)), y: Math.min(...covered.map((at) => at.y)) },
+        max: { x: Math.max(...covered.map((at) => at.x)), y: Math.max(...covered.map((at) => at.y)) },
+      };
+    };
+    load(surface, build({ x: -100, y: 40 }, { x: 100, y: 40 }), { x: 0, y: 20 }, 1);
+    const plus = (key: string, at: Vec2): Vec2 => {
+      const home = homeOf(surface, key);
+      return { x: home.x - at.x, y: home.y - at.y };
+    };
+    const offsets = { battery: plus('battery.plus', { x: -100, y: 40 }), buzzer: plus('buzzer.plus', { x: 100, y: 40 }) };
+    const box = removeLed();
+    const centre = { x: (box.min.x + box.max.x) / 2, y: (box.min.y + box.max.y) / 2 };
+
+    load(surface, build({ x: -100, y: centre.y - offsets.battery.y }, { x: 100, y: centre.y - offsets.buzzer.y }), { x: 0, y: 20 }, 1);
+    const wire = surface.scene.wires.find((each) => each.id === 'w1');
+    expect(distanceToSegment(centre, wire?.from.at as Vec2, wire?.to.at as Vec2)).toBeLessThan(WIRE_HIT_MM / 4);
+    expect(removeLed()).toEqual(box);
+    const edits = listen(surface, 'edit');
+    await hands.tap('touch', client(centre));
+    expect(surface.placement.notice).toBeUndefined();
+    expect(surface.wiring.selectedWire).toBeUndefined();
+    // With the line gone, the same tap reaches the wire under it.
+    await hands.tap('mouse', client(centre));
+    expect(surface.wiring.selectedWire).toBe('w1');
+    expect(edits).toEqual([]);
+  }, LONG_MS);
+});
+
 describe('removing a wire', () => {
   it('removes a wire dragged onto the tray, and puts it back when let go anywhere else', async () => {
     const hands = handsOf();
@@ -331,12 +417,22 @@ describe('removing a wire', () => {
     load(bench.surface, sockets());
     const edits = listen(bench.surface, 'edit');
     await hands.tap('touch', client(middleOfWire('w1').middle));
-    const right = bench.surface.wiring.binPlace as Vec2;
-    expect(right.x).toBeGreaterThan(middleOfWire('w1').middle.x);
-    // Clear of the wire's 24 px hit area.
-    expect(distance(right, middleOfWire('w1').middle)).toBeGreaterThanOrEqual(WIRE_HIT_MM / 2 + BIN_MM / 2);
+    // A part's bin handle: 44 px on screen at every zoom, clear of the wire's 24 px hit area and of every socket.
+    const clear = (): void => {
+      const bin = bench.surface.wiring.binPlace as Vec2;
+      const radius = HANDLE_PX / 2 / bench.surface.camera.scale;
+      const wire = bench.surface.scene.wires.find((each) => each.id === 'w1');
+      expect(distanceToSegment(bin, wire?.from.at as Vec2, wire?.to.at as Vec2)).toBeGreaterThanOrEqual(WIRE_HIT_MM / 2 + radius);
+      for (const port of drawnSockets(bench.surface.scene)) expect(distance(bin, port.at), port.key).toBeGreaterThan(PORT_MM / 2 + radius);
+    };
+    expect((bench.surface.wiring.binPlace as Vec2).x).toBeGreaterThan(middleOfWire('w1').middle.x);
+    clear();
     bench.surface.setPrefs({ ...PREFS, leftHanded: true });
     expect((bench.surface.wiring.binPlace as Vec2).x).toBeLessThan(middleOfWire('w1').middle.x);
+    clear();
+    bench.surface.setZoom(0.5);
+    expect((bench.surface.wiring.binPlace as Vec2).x).toBeLessThan(middleOfWire('w1').middle.x);
+    clear();
     await hands.tap('touch', client(bench.surface.wiring.binPlace as Vec2));
     await hands.tap('mouse', client(middleOfWire('w2').middle));
     expect(bench.surface.wiring.selectedWire).toBe('w2');

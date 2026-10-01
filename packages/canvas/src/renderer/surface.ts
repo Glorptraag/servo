@@ -502,8 +502,8 @@ export class CanvasSurface implements CanvasHandle {
     const layers = this.layers;
     const renderer = this.renderer;
     if (!layers || !renderer) {
-      this.placement.refresh();
       this.wiring.refresh();
+      this.placement.refresh();
       return;
     }
     const context = this.drawContext;
@@ -553,8 +553,8 @@ export class CanvasSurface implements CanvasHandle {
     this.arenaView.draw(this.arena, context.palette);
     this.applyEmphasis();
     this.grid.invalidate();
-    this.placement.refresh();
     this.wiring.refresh();
+    this.placement.refresh();
     this.loop.request();
   }
 

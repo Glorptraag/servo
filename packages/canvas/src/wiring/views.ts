@@ -1,7 +1,8 @@
 // What wiring draws over the sockets, in the ports-and-handles layer (brief Section 9): the glow of a socket a wire
-// can land on, the ring round a waiting wire's source, a crowd fanned out on its leads, the free end of a wire under a
-// finger, and the bin beside a tapped wire. Colour is kept for meaning: every glow is in its socket's wire colour, and
-// each socket keeps its shape (D20). All in canvas millimetres, sized from the brief's pixels at the default zoom.
+// can land on, the ring round a waiting wire's source, a crowd fanned out on its leads, and the free end of a wire
+// under a finger. A tapped wire's bin is placement's bin handle. Colour is kept for meaning: every glow is in its
+// socket's wire colour, and each socket keeps its shape (D20). All in canvas millimetres, sized from the brief's
+// pixels at the default zoom.
 import { Graphics } from 'pixi.js';
 import type { PortType, Vec2 } from '@servo/schema';
 import { drawSocket } from '../renderer/sockets.ts';
@@ -31,12 +32,8 @@ export interface Marks {
   readonly source?: SocketMark;
   /** The free end of a wire on its way. */
   readonly plug?: { readonly at: Vec2; readonly type: PortType };
-  /** The bin beside a tapped wire. */
-  readonly bin?: Vec2;
 }
 
-/** A 44 px target, as a port's (brief Section 9). */
-export const BIN_MM = PORT_MM;
 const LEAD_MM = mmOf(3);
 const LEAD_DOT_MM = mmOf(5);
 const BACKING_MM = mmOf(4);
@@ -46,7 +43,6 @@ const TARGET_RING_MM = mmOf(3);
 const SOURCE_RING_MM = mmOf(4);
 const RING_GAP_MM = mmOf(6);
 const PLUG_MM = mmOf(7);
-const ICON_MM = mmOf(3);
 
 /** The glow round a socket a wire can land on, and the socket itself above it, so it shows above any neighbour. */
 const glow = (g: Graphics, mark: SocketMark, palette: Palette, reach: number, alpha: number): void => {
@@ -83,21 +79,9 @@ export class WireMarks {
       const { at, type } = marks.plug;
       g.circle(at.x, at.y, PLUG_MM).fill({ color: palette.types[type].colour }).stroke({ color: palette.types[type].casing, width: mmOf(1.5), alignment: 1 });
     }
-    if (marks.bin) this.drawBin(marks.bin, palette);
   }
 
   clear(): void {
     this.graphics.clear();
-  }
-
-  /** A round 44 px handle with a bin on it, as the bin beside a selected part (placement/views.ts). */
-  private drawBin(at: Vec2, palette: Palette): void {
-    const g = this.graphics;
-    const r = BIN_MM / 2;
-    g.circle(at.x, at.y, r).fill({ color: palette.tile }).stroke({ color: palette.tileEdge, width: mmOf(2), alignment: 1 });
-    const w = r * 0.9;
-    g.rect(at.x - w / 2, at.y - w * 0.45, w, ICON_MM).fill({ color: palette.label });
-    g.rect(at.x - w * 0.15, at.y - w * 0.6, w * 0.3, ICON_MM).fill({ color: palette.label });
-    g.roundRect(at.x - w * 0.38, at.y - w * 0.3, w * 0.76, w * 0.8, ICON_MM / 2).stroke({ color: palette.label, width: ICON_MM });
   }
 }
