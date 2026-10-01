@@ -130,17 +130,50 @@
   min-width: 0;
 }
 
+/* The blueprint's name: quiet text that is also a 44 px target, and a text field while the child renames it. */
 .shell-blueprint-name {
   flex: 0 1 auto;
   max-width: 30%;
-  margin: 0 4px;
+  min-width: var(--shell-target);
+  min-height: var(--shell-target);
+  margin: 0;
+  padding: 0 8px;
   overflow: hidden;
+  border: 0;
+  border-radius: 12px;
+  background: none;
   color: var(--shell-muted);
+  font: inherit;
   white-space: nowrap;
   text-overflow: ellipsis;
+  cursor: pointer;
 }
 
-.shell-blueprint-name:empty {
+.shell-blueprint-name:disabled {
+  cursor: default;
+}
+
+.shell-blueprint-name-input {
+  flex: 0 1 18em;
+  min-width: 8em;
+  min-height: var(--shell-target);
+  padding: 0 10px;
+  border: 1px solid var(--shell-line);
+  border-radius: 12px;
+  background: var(--shell-panel);
+  color: var(--shell-ink);
+  font: inherit;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Save's one-line status: what happened to the last save. */
+.shell-save-status {
+  color: var(--shell-muted);
+  white-space: nowrap;
+}
+
+.shell-save-status:empty {
   display: none;
 }
 

@@ -2,8 +2,10 @@
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { loadContent } from '@servo/content';
+import type { Blueprint } from '@servo/schema';
 import { App } from './App.tsx';
-import type { StoreOptions } from './store/index.ts';
+import { openStore } from './store/index.ts';
+import type { ProfileStore, ServoStore, StoreOptions } from './store/index.ts';
 
 export interface AppOptions {
   /** How to open the store. Tests and the e2e harness pass their own database name. */
@@ -21,19 +23,54 @@ export interface AppHandle {
  */
 export type MountApp = (host: HTMLElement, options?: AppOptions) => Promise<AppHandle>;
 
+interface Opening {
+  readonly child: ProfileStore | null;
+  readonly start: Blueprint | undefined;
+}
+
+const NO_ONE: Opening = { child: null, start: undefined };
+
 /**
- * Loads the content and draws the shell and the canvas in `host`, which needs a definite size: the shell fills it.
- * Resolves once the canvas is mounted. The store is not opened yet: task 4.9 adds it, and `options.store` with it.
+ * Whose records the app opens, and the build it opens with, until the profile switch (task 5.1) and Home (task 4.5)
+ * choose them: the one profile on this device and its newest build that loads. With no profile, or with several, no
+ * profile is in use, so the canvas starts empty and nothing is saved.
  */
-export const mountApp: MountApp = (host) =>
-  new Promise<AppHandle>((resolve, reject) => {
-    const { content } = loadContent();
+const openingOf = async (store: ServoStore): Promise<Opening> => {
+  const profiles = await store.profiles.list();
+  const [only] = profiles;
+  if (!only || profiles.length > 1) return NO_ONE;
+  const child = store.forProfile(only.id);
+  for (const summary of await child.blueprints.list()) {
+    const loaded = await child.blueprints.load(summary.id);
+    if (loaded.ok) return { child, start: loaded.blueprint };
+  }
+  return { child, start: undefined };
+};
+
+/**
+ * Opens the store, then draws the shell and the canvas in `host`, which needs a definite size: the shell fills it.
+ * Resolves once the canvas is mounted. A device whose storage cannot be opened still builds; it only cannot save.
+ */
+export const mountApp: MountApp = async (host, options = {}) => {
+  const store = await openStore(options.store).catch((error: unknown) => {
+    console.warn('The store could not be opened, so nothing will be saved.', error);
+    return null;
+  });
+  const { child, start } = store ? await openingOf(store).catch(() => NO_ONE) : NO_ONE;
+  const content = store?.content ?? loadContent().content;
+  return new Promise<AppHandle>((resolve, reject) => {
     const root = createRoot(host, {
       onUncaughtError: (error) => {
         reject(error instanceof Error ? error : new Error(String(error)));
         reportError(error);
       },
     });
-    const handle: AppHandle = { destroy: () => root.unmount() };
-    root.render(createElement(App, { content, onReady: () => resolve(handle) }));
+    const handle: AppHandle = {
+      destroy: () => {
+        root.unmount();
+        store?.close();
+      },
+    };
+    root.render(createElement(App, { content, child, start, onReady: () => resolve(handle) }));
   });
+};

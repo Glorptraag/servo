@@ -22,7 +22,7 @@ The canvas fills the screen, and the header, tray, spec card and Run bar never c
 
 ## How the packages meet
 
-- **Content.** `openStore()` loads it once (until task 4.9, `mountApp` calls `loadContent()` itself); the app passes `content.catalogue` and a `resolveArt` built from `content.art` to `mountCanvas`.
+- **Content.** `openStore()` loads it once, and `mountApp` takes it from the store (or from `loadContent()` itself when the device's storage cannot be opened); the app passes `content.catalogue` and a `resolveArt` built from `content.art` to `mountCanvas`.
 - **Canvas.** The app listens to `edit` (Undo history and saving), `select` (spec card), `placement` (tray and arena strip) and `control` (switch flips). Its own changes (settings, name, arena and Reset arena, the hint ladder's do-it) go through `canvas.apply`, so every change to a build is an `EditCommand`.
 - **sim-core.** Run snapshots tick 0 and switches the canvas to Run mode. After a one-second spin-up, a wall-clock driver steps the simulation at 30 ticks a second or in slow motion, and passes each frame to the canvas, spec card, sound layer and challenge runner. Stop records the Run, restores tick 0 and returns the canvas to Build mode, where the build is exactly as it was (ground rule 4). An unchanged build keeps its Simulation and seed (D37).
 - **Shared links** open a read-only canvas: a replay with "keep a copy" (D43).
@@ -35,7 +35,7 @@ From the repository root, `pnpm dev` serves the app and `pnpm build` writes it t
 
 ## The store
 
-Local-first on Dexie and profile-scoped: blueprints keyed by `meta.id`, run records and card-game results. Loading migrates and validates, and a document that fails stays stored. A content defect never stops the store opening. Sync goes through a pluggable `SyncRemote`, off until one is configured (D10, D13); two devices' copies of one blueprint are both kept. Details: [docs/store.md](docs/store.md).
+Local-first on Dexie and profile-scoped: blueprints keyed by `meta.id`, run records and card-game results. Loading migrates and validates, and a document that fails stays stored. A content defect never stops the store opening. Sync goes through a pluggable `SyncRemote`, off until one is configured (D10, D13); two devices' copies of one blueprint are both kept. The app opens for the one profile on the device, with its newest build; Save in the header stores the build, and a tap on the build's name renames it. Details: [docs/store.md](docs/store.md).
 
 ## Areas and owners
 

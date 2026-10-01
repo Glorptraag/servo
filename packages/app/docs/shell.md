@@ -53,7 +53,7 @@ UI motion is 160 ms (brief Section 11). Panels and the controls beside them slid
 
 ## Slots
 
-`<Shell slots={…}>` takes a React node per slot ([shell.tsx](../src/shell/shell.tsx), `ShellSlots`). An empty slot shows nothing. [App.tsx](../src/App.tsx) fills them with [placeholders](../src/shell/placeholders.tsx) of real words only: disabled Home, Save and Run buttons, and the tray, spec card and arena strip showing their names.
+`<Shell slots={…}>` takes a React node per slot ([shell.tsx](../src/shell/shell.tsx), `ShellSlots`). An empty slot shows nothing. [App.tsx](../src/App.tsx) fills them with [placeholders](../src/shell/placeholders.tsx) of real words only: disabled Home and Run buttons, and the tray, spec card and arena strip showing their names. Save is task 4.9's ([save.tsx](../src/shell/save.tsx), [store.md](store.md), "In the app"). The shell also takes `child`, the child's records, and `start`, a build it loads onto the canvas once the canvas is mounted (task 4.9).
 
 | Slot | Region | Owner |
 | --- | --- | --- |
@@ -73,6 +73,7 @@ A component in a slot reads the shell with `useShell()` ([context.ts](../src/she
 - `canvas`: the canvas handle, null for the first render only.
 - `mode` and `setMode(mode)`: switches the canvas and the layout together. The run loop calls this, not `canvas.setMode`.
 - `blueprint` and `load(blueprint)`: the build on the canvas, as `load` and every `edit` leave it. Load through the shell so the header's name follows.
+- `child`: the child's records in the store (task 4.9), where Save keeps the build and later tasks keep Runs and find builds. Null when there is no store or no one profile in use.
 - `tucked` and `setTucked(edge, tucked)`.
 - `specCardAside` and `setSpecCardAside(aside)`: see above.
 - `prefs` and `setPrefs(prefs)`: the canvas's prefs, which the shell keeps. `leftHanded` is the hook for task 5.7: it mirrors the tray, the spec card and everything on the canvas, and passes the canvas its prefs. The header reads left to right either way.
@@ -84,7 +85,7 @@ Zoom in and out step along a ladder of zooms a half power of two apart (0.5, 0.7
 
 ## Running it
 
-From the repository root: `pnpm dev` serves the app with Vite, `pnpm build` writes it to `packages/app/dist`, and `pnpm --filter @servo/app preview` serves that build. Dev and build run `pnpm art` first, so the parts have their placeholder pictures; without it every part draws as a neutral tile. The build targets D14's browsers. Until task 4.9 the app opens no store, so the canvas starts empty and nothing is saved.
+From the repository root: `pnpm dev` serves the app with Vite, `pnpm build` writes it to `packages/app/dist`, and `pnpm --filter @servo/app preview` serves that build. Dev and build run `pnpm art` first, so the parts have their placeholder pictures; without it every part draws as a neutral tile. The build targets D14's browsers. The app opens the store (task 4.9): with one profile on the device it opens that child's newest build, and otherwise the canvas starts empty and nothing is saved ([store.md](store.md), "In the app").
 
 ## Tests
 
@@ -105,7 +106,7 @@ Rulings applied (orchestrator, 2026-10-01): the canvas fills the screen behind t
 2. To keep the 30%, the spec card's height gives way: 358 px on the 10-inch landscape screen. Its text scrolls.
 3. `canvas.fit()` frames the build in the whole screen, under the panels too: the canvas has no way to leave room for them. A large build can end up partly under the tray or the card. Fit that keeps clear of the panels needs a canvas interface change.
 4. The spec card steps aside for every drag on the canvas, pans and pinches included: the simple rule that covers every wire drag. Tap-then-tap wiring needs the canvas to report a wire in progress; `setSpecCardAside` is ready for it.
-5. Home has nowhere to go yet, and Save waits for task 4.9: both are disabled placeholders. No task owns what goes in the arena strip.
+5. Home has nowhere to go yet: a disabled placeholder. Save and the blueprint's name are task 4.9's ([store.md](store.md)). No task owns what goes in the arena strip.
 6. The header shows a kit's name only when one is passed in; which kit the sandbox's tray holds is for tasks 4.2 and 4.5.
 7. The spec card starts open, as in the brief's picture; task 4.3 decides whether it slides in only when a part is tapped.
 8. The zoom steps (half powers of two).

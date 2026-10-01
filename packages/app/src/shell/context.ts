@@ -4,6 +4,7 @@ import { createContext, useContext } from 'react';
 import type { CanvasHandle, CanvasMode, CanvasPrefs } from '@servo/canvas';
 import type { Content } from '@servo/content';
 import type { Blueprint, Kit, Level, ValidationResult } from '@servo/schema';
+import type { ProfileStore } from '../store/index.ts';
 import type { Edge, Tucked } from './edges.ts';
 import type { ShellLayout } from './layout.ts';
 
@@ -26,6 +27,11 @@ export interface ShellApi {
   readonly blueprint: Blueprint | undefined;
   /** Loads a build onto the canvas (`canvas.load`) so the header follows it. Throws before the canvas is mounted. */
   load(blueprint: Blueprint): ValidationResult<Blueprint>;
+  /**
+   * The records of the child using the app (task 4.9): Save stores the build here, and later tasks reach the child's
+   * builds and Runs through it. Null when the device's storage cannot be opened or no one profile is in use.
+   */
+  readonly child: ProfileStore | null;
   /** Which edges the child has tucked away. They persist on this device. */
   readonly tucked: Tucked;
   setTucked(edge: Edge, tucked: boolean): void;

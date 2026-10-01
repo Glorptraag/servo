@@ -8,6 +8,7 @@ import type { ReactNode } from 'react';
 import type { CanvasHandle, CanvasMode, CanvasPrefs } from '@servo/canvas';
 import type { Content } from '@servo/content';
 import type { Blueprint, Kit, Level, ValidationResult } from '@servo/schema';
+import type { ProfileStore } from '../store/index.ts';
 import { ShellContext } from './context.ts';
 import type { ShellApi } from './context.ts';
 import { EdgeTab } from './edge-tab.tsx';
@@ -58,11 +59,15 @@ export interface ShellProps {
   readonly storage?: Storage | null;
   /** The prefs the canvas starts with. */
   readonly prefs?: CanvasPrefs;
+  /** The child's records in the store (task 4.9), shared with the slots as `useShell().child`. None without a store or a profile. */
+  readonly child?: ProfileStore | null;
+  /** A build to load onto the canvas as soon as it is mounted. */
+  readonly start?: Blueprint | undefined;
   /** Called once the canvas is mounted. */
   readonly onReady?: () => void;
 }
 
-export const Shell = ({ content, level, kit, slots = {}, mountCanvas, storage: givenStorage, prefs: startPrefs, onReady }: ShellProps) => {
+export const Shell = ({ content, level, kit, slots = {}, mountCanvas, storage: givenStorage, prefs: startPrefs, child = null, start, onReady }: ShellProps) => {
   const storage = useMemo(() => (givenStorage === undefined ? pageStorage() : givenStorage), [givenStorage]);
   const rootRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -100,8 +105,8 @@ export const Shell = ({ content, level, kit, slots = {}, mountCanvas, storage: g
   }, []);
 
   // The canvas is mounted once, with the level and prefs of the moment; later changes reach it through its setters.
-  const latest = useRef({ mountCanvas, onReady, level, prefs });
-  latest.current = { mountCanvas, onReady, level, prefs };
+  const latest = useRef({ mountCanvas, onReady, level, prefs, start });
+  latest.current = { mountCanvas, onReady, level, prefs, start };
   const applied = useRef<CanvasSetup | null>(null);
   const measured = size !== null;
   useEffect(() => {
@@ -111,6 +116,8 @@ export const Shell = ({ content, level, kit, slots = {}, mountCanvas, storage: g
     const handle = setup.mountCanvas(host, { level: setup.level, prefs: setup.prefs });
     applied.current = { level: setup.level, prefs: setup.prefs };
     const off = handle.on('edit', (event) => setBlueprint(event.blueprint));
+    const first = setup.start ? handle.load(setup.start) : undefined;
+    if (first?.ok) setBlueprint(first.value);
     setCanvas(handle);
     setup.onReady?.();
     return () => {
@@ -222,6 +229,7 @@ export const Shell = ({ content, level, kit, slots = {}, mountCanvas, storage: g
       setMode,
       blueprint,
       load,
+      child,
       tucked,
       setTucked,
       specCardAside,
@@ -230,7 +238,7 @@ export const Shell = ({ content, level, kit, slots = {}, mountCanvas, storage: g
       prefs,
       setPrefs,
     }),
-    [content, level, kit, canvas, mode, setMode, blueprint, load, tucked, setTucked, specCardAside, layout, prefs],
+    [content, level, kit, canvas, mode, setMode, blueprint, load, child, tucked, setTucked, specCardAside, layout, prefs],
   );
 
   const { shown } = layout;
