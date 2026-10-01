@@ -342,7 +342,7 @@
       "completed_by": null
     },
     "2.1": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -357,7 +357,8 @@
       "done_when": "`pnpm validate-content packages/content/parts/level-1` passes; every part has \u22652 failure modes with teaching notes and spec-card layers 1 and 2.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T04:01:20+00:00"
     },
     "2.2": {
       "status": "pending",
@@ -396,7 +397,7 @@
       "completed_by": null
     },
     "2.4": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "micro",
       "batch": "B1",
@@ -410,12 +411,12 @@
       ],
       "done_when": "Each preset loads and validates.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T04:07:35+00:00",
+      "completed_by": "W-2.4",
       "dispatched_at": "2026-10-01T02:52:50+00:00"
     },
     "2.5": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "micro",
       "batch": "B1",
@@ -430,7 +431,8 @@
       "done_when": "Validator fails a record that uses a banned word and passes one that uses only listed terms.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T04:01:20+00:00"
     },
     "2.6": {
       "status": "pending",
@@ -1437,6 +1439,14 @@
       "id": "D32",
       "question": "Art pipeline details from task 0.6: should the swap registry also track card.realWorldArt (a photo, no placeholder possible), which final render formats are accepted, and does the canvas need separate art per quarter-turn?",
       "recommendation": "Track realWorldArt keys with no placeholder (the spec card shows no photo until one is dropped in); accept SVG, PNG and WebP finals; one tile per part, rotated by the canvas.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D33",
+      "question": "Ramp preset: schema v1 cannot express a flat-topped ramp, so the 'ramp' arena is a gentle hill (1-in-7 up, 1-in-14 down) that a Level 1 robot climbs without a gearbox, and nothing tips on it. The Level 2 gearbox and tipping lessons need something steeper.",
+      "recommendation": "Keep the gentle hill for Level 1; when task 4.8 writes the Level 2 gearbox challenge, add a steeper preset (or a schema minor bump for flat-topped ramps) so the bare motor slips or stalls and the gearbox climbs it.",
       "confidence": "medium",
       "blocks": [],
       "resolved": false
