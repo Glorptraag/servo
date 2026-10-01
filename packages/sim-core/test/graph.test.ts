@@ -4,6 +4,8 @@ import type { Blueprint, ControlState, PartRecord, Placement, PortRef, Primitive
 import { exampleArenas, exampleParts, invalidBlueprints, v0Blueprints, validBlueprints } from '@servo/schema/fixtures';
 import { GraphInputError, buildGraph, liveAt } from '../src/graph/index.ts';
 import type { SimGraph } from '../src/graph/index.ts';
+import * as entry from '../src/index.ts';
+import type { LiveState } from '../src/index.ts';
 import bumperRobot from '../fixtures/graph/bumper-robot.json' with { type: 'json' };
 import ledCircuit from '../fixtures/graph/led-circuit.json' with { type: 'json' };
 import lightAndMotor from '../fixtures/graph/light-and-motor.json' with { type: 'json' };
@@ -134,6 +136,15 @@ const deepFreeze = <T>(value: T): T => {
   }
   return value;
 };
+
+describe('the package entry', () => {
+  it('leaves the graph out: it is internal to sim-core', () => {
+    for (const name of ['buildGraph', 'liveAt', 'GraphInputError', 'LIVE_TABLE_CONTROLS']) expect(name in entry).toBe(false);
+    // Compiles only while LiveState from the entry is the interface's: one part's live values, with its faults.
+    const partState: LiveState = { values: {}, sounds: [], faults: ['no-circuit'] };
+    expect(partState.faults).toEqual(['no-circuit']);
+  });
+});
 
 describe('the eight fixture builds', () => {
   it('has one hand-made expectation for every valid blueprint, and one for the migrated light-and-motor', () => {

@@ -1,16 +1,16 @@
 import type { Control, ControlState, PlacedPartId } from '@servo/schema';
 import { blocksOf, cycleMates, groupsOf } from './topology.ts';
 import type { Edge } from './topology.ts';
-import type { LiveState, NetPair, PowerSource, PowerSwitch, PowerUse, SimGraph } from './types.ts';
+import type { LiveNets, NetPair, PowerSource, PowerSwitch, PowerUse, SimGraph } from './types.ts';
 
 /**
- * With at most this many controls (64 settings), the graph holds the live state for every setting of
+ * With at most this many controls (64 settings), the graph holds the live nets for every setting of
  * them, so a tick only looks its state up. A Level 1–2 kit has at most four: a switch, a bumper switch and
  * a motor driver's two channels. Above it, `liveAt` works each state out when asked.
  */
 export const LIVE_TABLE_CONTROLS = 6;
 
-/** The parts of a graph the live state is worked out from. */
+/** The parts of a graph the live nets are worked out from. */
 export interface Wiring {
   readonly nets: readonly unknown[];
   readonly sources: readonly PowerSource[];
@@ -63,7 +63,7 @@ const closesThroughSource = (wiring: Wiring, giving: readonly boolean[], nodes: 
 };
 
 /** Live nets: a closed path through a source giving power runs through them. A source shorted outright closes its own. */
-const liveNets = (wiring: Wiring, giving: readonly boolean[], nodes: readonly number[]): boolean[] => {
+const netsLive = (wiring: Wiring, giving: readonly boolean[], nodes: readonly number[]): boolean[] => {
   const { edges, isSource } = conductingEdges(wiring, giving, nodes);
   const block = blocksOf(edges);
   const sizes = new Map<number, number>();
@@ -90,12 +90,12 @@ const liveNets = (wiring: Wiring, giving: readonly boolean[], nodes: readonly nu
 };
 
 /**
- * The live state with each control on or off (`on`, in control order). Closed switches join nets. A
+ * The live nets with each control on or off (`on`, in control order). Closed switches join nets. A
  * battery always gives power; an output gives power once its supply closes through a source giving power
  * outside its own part, and a driver channel at stop gives none: the schema's rule for powering through a
  * motor driver or regulator, grown until nothing changes, which gives the same answer in any order.
  */
-export const liveState = (wiring: Wiring, on: readonly boolean[]): LiveState => {
+export const liveFor = (wiring: Wiring, on: readonly boolean[]): LiveNets => {
   const count = wiring.nets.length;
   const closed = wiring.switches.filter((join) => on[join.control] === true);
   const nodes = groupsOf(
@@ -126,14 +126,14 @@ export const liveState = (wiring: Wiring, on: readonly boolean[]): LiveState => 
       grew = true;
     });
   }
-  return { nodes, sources: giving, nets: liveNets(wiring, giving, nodes) };
+  return { nodes, sources: giving, nets: netsLive(wiring, giving, nodes) };
 };
 
-/** The live state for every control key, or undefined above LIVE_TABLE_CONTROLS controls. */
-export const liveTableOf = (wiring: Wiring, controls: number): readonly LiveState[] | undefined => {
+/** The live nets for every control key, or undefined above LIVE_TABLE_CONTROLS controls. */
+export const liveTableOf = (wiring: Wiring, controls: number): readonly LiveNets[] | undefined => {
   if (controls > LIVE_TABLE_CONTROLS) return undefined;
   return Array.from({ length: 1 << controls }, (_, key) =>
-    liveState(
+    liveFor(
       wiring,
       Array.from({ length: controls }, (_, index) => (key & (1 << index)) !== 0),
     ),
@@ -146,12 +146,12 @@ export const liveTableOf = (wiring: Wiring, controls: number): readonly LiveStat
  * in `liveTable`; larger ones work it out here, so a caller that ticks can keep the answer until a control
  * changes.
  */
-export const liveAt = (graph: SimGraph, state: ControlState = {}): LiveState => {
+export const liveAt = (graph: SimGraph, state: ControlState = {}): LiveNets => {
   const on = controlsOn(graph.controls, state);
-  if (!graph.liveTable) return liveState(graph, on);
+  if (!graph.liveTable) return liveFor(graph, on);
   let key = 0;
   on.forEach((flag, index) => {
     if (flag) key |= 1 << index;
   });
-  return graph.liveTable[key] as LiveState;
+  return graph.liveTable[key] as LiveNets;
 };

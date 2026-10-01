@@ -1,18 +1,21 @@
-# Graph builder
+# The wired graph
 
-Task 1.1. `src/graph/` turns a blueprint into the wired graph that the solvers read every tick. Until the package interface (task 0.4) lists it, this page is its contract.
+Back to the [README](../README.md). Task 1.1. `src/graph/` turns a blueprint into the wired graph that the solvers read every tick.
+
+The graph is internal to sim-core. The package entry exports only the [interface](../src/interface.ts) and `createSimulation`, so the solvers import the graph by relative path:
 
 ```ts
-import { buildGraph, liveAt } from '@servo/sim-core';
+// In packages/sim-core/src, for example from src/electrical/:
+import { buildGraph, liveAt } from '../graph/index.ts';
 
 const graph = buildGraph(blueprint, catalogue);
-const live = liveAt(graph, { switches: { 'switch/contacts': false } });
+const live = liveAt(graph, { switches: { 'switch/contacts': false } }); // LiveNets
 ```
 
 ## The two arguments
 
-- `blueprint` is a version 1 blueprint: one that `migrateBlueprint` has brought up to date.
-- `catalogue` is the schema's `makeCatalogue` result, and must hold every part record the blueprint uses. sim-core never imports packages/content (the package map), so whatever starts the Run passes the catalogue in. If the catalogue holds `arenas`, the blueprint's arena is checked as well.
+- `blueprint` is a version 1 blueprint: one that `migrateBlueprint` has brought up to date. In a Run it is the canonical copy that `createSimulation` makes, so the graph never holds the caller's own objects.
+- `catalogue` is the schema's `makeCatalogue` result, and must hold every part record the blueprint uses. sim-core never imports packages/content (the package map), so `createSimulation`'s caller passes the catalogue in. If the catalogue holds `arenas`, the blueprint's arena is checked as well.
 
 `buildGraph` checks its input with the schema's validators, in this order: the blueprint's structure, then each part record the blueprint uses, then the whole blueprint against the catalogue.
 
@@ -29,7 +32,7 @@ const live = liveAt(graph, { switches: { 'switch/contacts': false } });
 | `switches` | Each switch's two terminal nets: a join that the control state opens and closes, never baked into a net | electrical |
 | `uses` | Everything that takes power: loads, actuators, programs, and the supplies of drivers and regulators | electrical, behaviour |
 | `controls` | The schema's `controlsOf`, unchanged | electrical, tick loop |
-| `liveTable` | The live state at every setting of the controls, when there are at most `LIVE_TABLE_CONTROLS` (6) of them | electrical |
+| `liveTable` | The live nets at every setting of the controls, when there are at most `LIVE_TABLE_CONTROLS` (6) of them | electrical |
 | `signals` | Signal lines, signal out → signal in | behaviour, program |
 | `drives` | Drive linkages, drive-out → drive-in. `carried` is the driven part's frame on the shaft (`carriedPlacement`) | mechanical |
 | `mounts` | Mounts, mount → mount point. `local` is the part's frame on its host (`mountPlacement`), mirrored on a mirrored mount point | mechanical |
@@ -43,7 +46,7 @@ Net, source, switch, use and control numbers are indices into these lists.
 
 ## Live nets
 
-`liveAt(graph, state)` gives the power graph at one setting of the controls. It reads a `ControlState` the way `wiredNeeds` does: a control left out sits at rest, a switch is closed only when its value is `true`, and a channel is at stop only when its command is 0.
+`liveAt(graph, state)` gives a `LiveNets`: the power graph at one setting of the controls. It is not the interface's `LiveState`, which is one part's live values in a `RunFrame`. `liveAt` reads a `ControlState` the way `wiredNeeds` does: a control left out sits at rest, a switch is closed only when its value is `true`, and a channel is at stop only when its command is 0.
 
 - **`nodes`:** closed switches join nets. Each net names its node by the lowest net index among those joined.
 - **`sources`:** whether each source gives power.
@@ -77,10 +80,11 @@ Live describes the wiring, not the voltages. A part whose two supply nets are bo
 
 ## Notes for the solver tasks
 
-- **Task 1.2:** `wiredNeeds(graph.blueprint, graph.catalogue, state)` judges `open` and `shorted`.
+- **Task 1.2:** `wiredNeeds(graph.blueprint, graph.catalogue, state)` judges `open` and `shorted`, as [runs.md](runs.md#faults) sets out.
   - Its control search can take 818 ms on a pathological build (review N14). Cache its result per control state, or run it outside the tick.
   - For `low`, `high` and `reversed`, apply the short and feeder steps of the rule as well as `explainByControls` (review N10).
 - **Task 1.3:** the graph does not apply settings. `parts.get(id).placed.settings` holds the child's values.
+- **Task 1.5:** `createSimulation` rejects with a `SimulationSetupError` for invalid input. A `GraphInputError` maps onto it with the same `issues`.
 
 ## Fixtures
 

@@ -8,7 +8,7 @@ export type {
   BoundPrimitive,
   DriveLink,
   GraphPart,
-  LiveState,
+  LiveNets,
   MountLink,
   NetPair,
   PowerNet,

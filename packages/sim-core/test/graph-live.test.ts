@@ -91,7 +91,7 @@ interface Oracle {
 }
 
 /**
- * The live state worked out by brute force, independently of the graph module: nets joined by closed
+ * The live nets worked out by brute force, independently of the graph module: nets joined by closed
  * switches through a plain search; each output giving power exactly when the schema meets its part's
  * power need (and a driver channel is not at stop); and every simple closed path found by walking every
  * simple path. Small circuits only.

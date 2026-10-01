@@ -26,7 +26,8 @@ import type {
 /**
  * The wired graph of one blueprint, built once when a Run starts and read by the solvers every tick.
  * Every list is in a fixed order, so the same blueprint and catalogue always give the same graph.
- * Net, source, switch, use and control numbers are indices into the lists here. See docs/graph.md.
+ * Net, source, switch, use and control numbers are indices into the lists here. Internal to sim-core:
+ * the solvers import it from src/graph/index.ts, and the package entry does not export it. See docs/graph.md.
  */
 export interface SimGraph {
   /** The blueprint and catalogue it was built from, for the schema's own judgements (`wiredNeeds`). */
@@ -45,11 +46,11 @@ export interface SimGraph {
   /** The controls, exactly as the schema's `controlsOf` gives them: switch positions and driver-channel commands. */
   readonly controls: readonly Control[];
   /**
-   * The live state for every setting of the controls, indexed by control key (bit i set when control i is
+   * The live nets for every setting of the controls, indexed by control key (bit i set when control i is
    * on: a switch closed, a channel not at stop). Present when there are at most LIVE_TABLE_CONTROLS
    * controls; otherwise `liveAt` works each state out when asked.
    */
-  readonly liveTable: readonly LiveState[] | undefined;
+  readonly liveTable: readonly LiveNets[] | undefined;
   /** Signal lines, signal out → signal in, in wire id order. */
   readonly signals: readonly SignalLink[];
   /** Drive linkages, drive-out → drive-in, in wire id order. */
@@ -145,8 +146,12 @@ export interface PowerUse extends NetPair {
   readonly spec: LoadPrimitive | ActuatorPrimitive | ProgramPrimitive | DriverPrimitive | RegulatorPrimitive;
 }
 
-/** The power graph at one setting of the controls. Arrays are indexed like the graph's nets and sources. */
-export interface LiveState {
+/**
+ * The power graph at one setting of the controls: which nets closed switches join, which sources give power
+ * and which nets are live. Arrays are indexed like the graph's nets and sources. Not the interface's
+ * `LiveState`, which is one part's live values during a Run.
+ */
+export interface LiveNets {
   /** Each net's node: nets joined by closed switches share one, numbered by the lowest net index among them. */
   readonly nodes: readonly number[];
   /** Whether each source gives power: a battery always; an output while its supply has power and, for a driver channel, its command is not stop. */
