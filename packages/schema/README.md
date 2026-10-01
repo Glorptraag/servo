@@ -24,6 +24,7 @@ import { exampleParts, validBlueprints } from '@servo/schema/fixtures'; // test 
 | Geometry | `placeParts`, `drivePushes`, `robotRoot`, `mountPlacement`, `canvasPoseOf`, `arenaPoseOf`, `cosSin` | [geometry](docs/geometry.md) |
 | Needs judged as wired | `wiredNeeds` | [parts](docs/parts.md) |
 | Canonical form and ids | `serializeBlueprint`, `canonicalizeBlueprint`, `canonicalJson`, `claimPartId`, `claimWireId` | [documents](docs/documents.md) |
+| Versions and migrations | `migrateBlueprint`, `MigrationResult` | [migrations](docs/migrations.md) |
 
 ## In brief
 

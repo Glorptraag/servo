@@ -1,0 +1,114 @@
+{
+  "arena": "wall-stop",
+  "meta": {
+    "created": 1789400527315,
+    "level": 1,
+    "modified": 1789891439004,
+    "title": "Light and motor"
+  },
+  "parts": [
+    {
+      "id": "p1",
+      "position": {
+        "x": -80,
+        "y": 0
+      },
+      "settings": {},
+      "turns": 0,
+      "type": "battery-pack-2-cell"
+    },
+    {
+      "id": "p2",
+      "position": {
+        "x": 0,
+        "y": -60
+      },
+      "settings": {},
+      "turns": 0,
+      "type": "switch"
+    },
+    {
+      "id": "p4",
+      "position": {
+        "x": 80,
+        "y": 0
+      },
+      "settings": {
+        "colour": "green"
+      },
+      "turns": 1,
+      "type": "led"
+    },
+    {
+      "id": "p5",
+      "position": {
+        "x": 0,
+        "y": 60
+      },
+      "settings": {
+        "direction": "backward",
+        "speed": 100
+      },
+      "turns": 3,
+      "type": "dc-motor"
+    }
+  ],
+  "version": 0,
+  "wires": [
+    {
+      "from": {
+        "part": "p1",
+        "port": "plus"
+      },
+      "id": "w1",
+      "to": {
+        "part": "p2",
+        "port": "a"
+      }
+    },
+    {
+      "from": {
+        "part": "p4",
+        "port": "plus"
+      },
+      "id": "w2",
+      "to": {
+        "part": "p2",
+        "port": "b"
+      }
+    },
+    {
+      "from": {
+        "part": "p1",
+        "port": "minus"
+      },
+      "id": "w4",
+      "to": {
+        "part": "p4",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "p5",
+        "port": "plus"
+      },
+      "id": "w6",
+      "to": {
+        "part": "p2",
+        "port": "b"
+      }
+    },
+    {
+      "from": {
+        "part": "p5",
+        "port": "minus"
+      },
+      "id": "w7",
+      "to": {
+        "part": "p1",
+        "port": "minus"
+      }
+    }
+  ]
+}
