@@ -185,7 +185,7 @@
       "completed_by": null
     },
     "1.1": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -201,10 +201,11 @@
       "done_when": "Nets, links and mounts match the hand-written expectations for 8 fixture builds (add them under packages/sim-core/fixtures/graph/); tests pass.",
       "contracts": "Uses only packages/schema types; exports buildGraph(blueprint): SimGraph.",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T04:09:31+00:00"
     },
     "1.2": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -219,7 +220,8 @@
       "done_when": "A motor on a 1-cell vs 2-cell pack shows the speed ratio stated in the part record; a shorted pack drains in the specified time; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T04:45:51+00:00"
     },
     "1.3": {
       "status": "pending",
@@ -416,7 +418,7 @@
       "dispatched_at": "2026-10-01T02:52:50+00:00"
     },
     "2.5": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "micro",
       "batch": "B1",
@@ -430,8 +432,8 @@
       ],
       "done_when": "Validator fails a record that uses a banned word and passes one that uses only listed terms.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T04:51:26+00:00",
+      "completed_by": "W-2.5",
       "dispatched_at": "2026-10-01T04:01:20+00:00"
     },
     "2.6": {
@@ -1447,6 +1449,102 @@
       "id": "D33",
       "question": "Ramp preset: schema v1 cannot express a flat-topped ramp, so the 'ramp' arena is a gentle hill (1-in-7 up, 1-in-14 down) that a Level 1 robot climbs without a gearbox, and nothing tips on it. The Level 2 gearbox and tipping lessons need something steeper.",
       "recommendation": "Keep the gentle hill for Level 1; when task 4.8 writes the Level 2 gearbox challenge, add a steeper preset (or a schema minor bump for flat-topped ramps) so the bare motor slips or stalls and the gearbox climbs it.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D34",
+      "question": "Moving or turning a part that sits on a mount or a motor shaft: does it come off, move the robot with it, or refuse? (0.4 review Q1)",
+      "recommendation": "It comes off (and re-snaps if dropped near another mount point); moving the chassis carries everything mounted on it.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D35",
+      "question": "Removing a part leaves the parts mounted on it where they are, loose? (0.4 review Q2)",
+      "recommendation": "Yes; the canvas says which parts came loose, and Undo restores them.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D36",
+      "question": "Props: added only in Build mode from the arena strip, and from which list? (0.4 review Q3)",
+      "recommendation": "Build mode only (Run never writes back, rule 4), from a short preset list of boxes and cylinders.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D37",
+      "question": "Same seed on every Run of an unchanged build, or a fresh seed? (0.4 review Q4)",
+      "recommendation": "Keep the seed while the build is unchanged, so the same build always behaves the same.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D38",
+      "question": "Does removing a child's profile delete that child's builds and runs? (0.4 review Q5)",
+      "recommendation": "Yes, after the adult confirms in the parent view.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D39",
+      "question": "Parent view: session start mode, and time in sandbox before telemetry exists? (0.4 review Q6)",
+      "recommendation": "Both absent until task 6.2's telemetry; no session start mode shown in the parent view.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D40",
+      "question": "Card game scoring: adult marks each part named or not; which result counts? (0.4 review Q7)",
+      "recommendation": "Ten cards drawn from Level 1\u20132 parts; the latest result per child counts; no score is ever shown to the child.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D41",
+      "question": "D16 revisited: should the v1 microcontroller's no-op program drive a servo's signal? The schema and task 1.6 say the no-op brain has no effect. (0.4 review Q8)",
+      "recommendation": "No for v1 (task 1.6 as written); task 6.6 adds the flagged servo behaviour. This replaces D16's earlier default.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D42",
+      "question": "D30 revisited: Space is Run/Stop (brief Section 10), so which key flips a selected switch during a Run? (0.4 review Q9)",
+      "recommendation": "Enter flips the selected switch; Space stays Run/Stop. This replaces D30's keyboard default.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D43",
+      "question": "Shared read-only link: after the replay, may the adult inspect the build? (0.4 review Q10)",
+      "recommendation": "Watch the replay, plus 'keep a copy' into the adult's own child profile; no editing of the original.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D44",
+      "question": "Canvas details set by the interface: the bin as a handle beside the selected part; left-handed mode mirrors the canvas's own handles; one drag-sensitivity setting scales the drag threshold and drop forgiveness. (0.4 review Q11)",
+      "recommendation": "Keep as written; settle in the canvas interaction spec (brief Section 15, sub-draft 2).",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D45",
+      "question": "DC motor strength: brief Section 6's example spec says 'stall torque 0.4 kg\u00b7cm at 6 V', but task 2.1 used 0.12 kg\u00b7cm (a realistic small hobby motor) so the bare motor cannot climb the ramp and the Level 2 gearbox has a job. Which?",
+      "recommendation": "Keep 0.12 kg\u00b7cm at 6 V: it is a real small-motor figure and it makes the gearbox lesson work; the Level 4 spec line shows the real value. Switch to 0.4 only if Drew wants the brief's number literally.",
       "confidence": "medium",
       "blocks": [],
       "resolved": false
