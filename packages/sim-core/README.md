@@ -31,6 +31,14 @@ import type { RunFrame } from '@servo/sim-core/interface'; // the canvas: this f
 - **Stop.** The app snapshots at tick 0 and restores on Stop, keeping the Simulation and its seed while the build is unchanged (D37). Nothing is ever written back to the blueprint (ground rule 4).
 - **The program slot** holds each brain's state as plain JSON, kept in snapshots. The v1 brain drives nothing (D41).
 
+## Inside
+
+The solvers are internal: they import each other by relative path, and the package entry exports none of them.
+
+- [docs/graph.md](docs/graph.md): the wired graph (task 1.1) that every solver reads.
+- [docs/electrical.md](docs/electrical.md): the electrical solver (task 1.2), which gives the volts, currents, battery drain and electrical faults of each tick.
+- [docs/runs.md](docs/runs.md): a Run in detail.
+
 ## Rules every sim-core task keeps
 
 - Same blueprint, catalogue, arena, seed, inputs and program give the same frames and run record on every device.
