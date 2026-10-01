@@ -89,20 +89,22 @@ Settings may drive `actuator.throttle`, `actuator.reverse`, `actuator.target`, `
 
 Every Level 1–2 example part has at least two failure modes (a test checks it).
 
+The table follows the content records in `packages/content/parts/` (tasks 2.1 and 2.2). The example records in `fixtures/parts/` prove the schema and keep their Phase 0 values, so they differ in places: there the LED is a Level 1 part on 2–6 V that dims, and the buzzer needs 3 V.
+
 | Part | Family | Primitives | Needs | Failure modes (need · way → shows) |
 | --- | --- | --- | --- | --- |
 | battery pack, 2-cell and 1-cell | Power | `source` (3 V and 1.5 V) | isolation, loop | short circuit: isolation · shorted → drain; no loop: loop · open → off |
 | switch | Power | `switch` (manual) | isolation, loop | across the pack: isolation · shorted → drain; outside the loop: loop · open → off |
 | bumper switch | Sense | `switch` (contact, normally closed) | isolation, loop | across the pack; outside the loop |
-| DC motor | Actuators | `actuator` speed, `reverses` | power 2.2–6 V, torque | no circuit: power · open → still; low voltage: power · low → slow, drain; overload: torque · exceeded → stall, hum; reversed: power · reversed → reverse |
-| wheel (large; the second size is another radius) | Drivetrain | `wheel` | drive, floor | not driven: drive · absent → still; slipping: floor · slipping → slip |
+| DC motor | Actuators | `actuator` speed, `reverses` | power 2.2–6 V, torque | no circuit: power · open → still; low voltage: power · low → slow, drain; overload: torque · exceeded → stall, hum, drain; reversed: power · reversed → reverse |
+| wheel, large and small (another radius) | Drivetrain | `wheel` | drive, floor | not driven: drive · absent → still; off the floor: floor · lifted → slip; slipping: floor · slipping → slip |
 | caster | Structure & Ride | `support` | mount, floor | loose: mount · absent → drag; off the floor: floor · lifted → drag |
 | chassis (frame) | Structure & Ride | body + eleven mount points (the right-hand ones mirrored) | balance | top-heavy: balance · lost → tip; frame on the floor: balance · grounded → drag |
-| LED | Output | `load` blocks, light | power 2–6 V | reversed → dark; no circuit → dark; low → dim |
-| buzzer | Output | `load` blocks, sound | power 3–6 V | reversed → silent; low → quiet |
-| motor driver | Power | `driver` × 2 (channel settings, which are controls) | power 2.5–10 V | no power → off; low → off (its motors show no fault of their own) |
+| LED | Output | `load` blocks, light | power 1.8–6 V | reversed → dark; no circuit → dark; low → dark |
+| buzzer | Output | `load` blocks, sound | power 2.5–6 V | reversed → silent; no circuit → silent; low → quiet |
+| motor driver | Power | `driver` × 2 (channel settings, which are controls) | power 2.5–10 V | no power → off; low → off; reversed → off (its motors show no fault of their own) |
 | gearbox | Drivetrain | `ratio` | drive, mount | not driven → still; loose: mount · absent → still |
-| servo motor (preview) | Actuators | `actuator` position | power 4.8–6 V, signal, torque | no signal: signal · absent → hold, hum; no circuit → still; low → slow; overload → stall, hum |
+| servo motor (preview) | Actuators | `actuator` position | power 4.8–6 V, signal, torque | no signal: signal · absent → hold, hum; no circuit → still, silent; low → slow; reversed → still, silent; overload → stall, hum, drain |
 | microcontroller (Level 3 slot) | Brain | `program` (no-op), `regulator` (3V pin) | power 3–6 V | no power → off; low → off |
 
 The DC motor's range starts at 2.2 V, so a fresh 2-cell pack under normal load (about 2.8 V) is in range and the 1-cell pack (1.5 V) shows `low`.

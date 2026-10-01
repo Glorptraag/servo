@@ -70,3 +70,28 @@
 {"ts": "2026-10-01T05:32:07+00:00", "event": "done", "tasks": ["1.1"], "by": "W-1.1"}
 {"ts": "2026-10-01T06:12:30+00:00", "event": "dispatch", "tasks": ["1.4", "1.6"]}
 {"ts": "2026-10-01T06:16:05+00:00", "event": "done", "tasks": ["2.2"], "by": "W-2.2"}
+{"ts": "2026-10-01T06:17:00+00:00", "event": "decision_add", "id": "D50", "blocks": []}
+{"ts": "2026-10-01T06:17:00+00:00", "event": "decision_add", "id": "D51", "blocks": []}
+{"ts": "2026-10-01T06:17:00+00:00", "event": "decision_add", "id": "D52", "blocks": []}
+{"ts": "2026-10-01T06:17:01+00:00", "event": "decision_add", "id": "D53", "blocks": []}
+{"ts": "2026-10-01T06:17:01+00:00", "event": "dispatch", "tasks": ["2.3", "2.6"]}
+{"ts": "2026-10-01T06:46:28+00:00", "event": "decision_add", "id": "D54", "blocks": []}
+{"ts": "2026-10-01T06:58:19+00:00", "event": "decision_add", "id": "D55", "blocks": []}
+{"ts": "2026-10-01T06:59:05+00:00", "event": "dispatch", "tasks": ["3.2", "4.1"]}
+{"ts": "2026-10-01T07:06:44+00:00", "event": "done", "tasks": ["2.3"], "by": "W-2.3"}
+{"ts": "2026-10-01T07:36:31+00:00", "event": "decision_add", "id": "D56", "blocks": []}
+{"ts": "2026-10-01T07:36:32+00:00", "event": "decision_add", "id": "D57", "blocks": []}
+{"ts": "2026-10-01T07:36:32+00:00", "event": "decision_add", "id": "D58", "blocks": []}
+{"ts": "2026-10-01T07:42:43+00:00", "event": "done", "tasks": ["1.3"], "by": "W-1.3"}
+{"ts": "2026-10-01T07:44:24+00:00", "event": "done", "tasks": ["1.6"], "by": "W-1.6"}
+{"ts": "2026-10-01T07:44:25+00:00", "event": "decision_add", "id": "D59", "blocks": []}
+{"ts": "2026-10-01T07:46:20+00:00", "event": "decision_add", "id": "D60", "blocks": []}
+{"ts": "2026-10-01T07:48:45+00:00", "event": "decision_add", "id": "D61", "blocks": []}
+{"ts": "2026-10-01T08:07:35+00:00", "event": "done", "tasks": ["2.6"], "by": "W-2.6"}
+{"ts": "2026-10-01T08:07:36+00:00", "event": "decision_add", "id": "D62", "blocks": []}
+{"ts": "2026-10-01T08:07:36+00:00", "event": "decision_add", "id": "D63", "blocks": []}
+{"ts": "2026-10-01T08:08:35+00:00", "event": "decision_add", "id": "D64", "blocks": []}
+{"ts": "2026-10-01T08:08:35+00:00", "event": "done", "tasks": ["G2"], "by": "orchestrator-provisional"}
+{"ts": "2026-10-01T08:34:36+00:00", "event": "done", "tasks": ["3.1"], "by": "W-3.1"}
+{"ts": "2026-10-01T08:34:36+00:00", "event": "decision_add", "id": "D65", "blocks": []}
+{"ts": "2026-10-01T08:38:47+00:00", "event": "done", "tasks": ["1.2"], "by": "W-1.2"}

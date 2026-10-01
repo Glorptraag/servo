@@ -1,0 +1,718 @@
+{
+  "arena": {
+    "preset": "wall-stop",
+    "props": [
+      {
+        "at": {
+          "heading": 0,
+          "x": 1200,
+          "y": 300
+        },
+        "fixed": false,
+        "grams": 40,
+        "id": "cone",
+        "shape": "cylinder",
+        "size": {
+          "x": 60,
+          "y": 60,
+          "z": 90
+        }
+      }
+    ]
+  },
+  "meta": {
+    "createdAt": "2026-10-01T09:00:00.000Z",
+    "highWater": {
+      "parts": 0,
+      "wires": 39
+    },
+    "id": "7d2c9a41-6e3b-4f58-9a1d-2b8c4e6f0a13",
+    "level": 2,
+    "name": "Twenty-five parts",
+    "updatedAt": "2026-10-01T09:20:00.000Z"
+  },
+  "parts": [
+    {
+      "id": "br-battery",
+      "part": "battery-pack-2-cell",
+      "position": {
+        "x": 35,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "br-bumper",
+      "part": "bumper-switch",
+      "position": {
+        "x": 160,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "br-buzzer",
+      "part": "buzzer",
+      "position": {
+        "x": -40,
+        "y": 90
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "br-caster",
+      "part": "caster",
+      "position": {
+        "x": 10,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "br-chassis",
+      "part": "chassis",
+      "position": {
+        "x": 80,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "br-driver",
+      "part": "motor-driver",
+      "position": {
+        "x": 80,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "br-gear-left",
+      "part": "gearbox",
+      "position": {
+        "x": 120,
+        "y": -53
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "br-gear-right",
+      "part": "gearbox",
+      "position": {
+        "x": 120,
+        "y": 53
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "br-motor-left",
+      "part": "dc-motor",
+      "position": {
+        "x": 110,
+        "y": -29
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "br-motor-right",
+      "part": "dc-motor",
+      "position": {
+        "x": 110,
+        "y": 29
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "br-servo",
+      "part": "servo-motor",
+      "position": {
+        "x": 135,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "br-wheel-left",
+      "part": "wheel-large",
+      "position": {
+        "x": 120,
+        "y": -79
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "br-wheel-right",
+      "part": "wheel-large",
+      "position": {
+        "x": 120,
+        "y": 79
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "lc-battery",
+      "part": "battery-pack-2-cell",
+      "position": {
+        "x": -140,
+        "y": 230
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "lc-led",
+      "part": "led",
+      "position": {
+        "x": 20,
+        "y": 230
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "lc-switch",
+      "part": "switch",
+      "position": {
+        "x": -60,
+        "y": 170
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "mc",
+      "part": "microcontroller",
+      "position": {
+        "x": 190,
+        "y": 230
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "rs-battery",
+      "part": "battery-pack-2-cell",
+      "position": {
+        "x": -345,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "rs-caster",
+      "part": "caster",
+      "position": {
+        "x": -370,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "rs-chassis",
+      "part": "chassis",
+      "position": {
+        "x": -300,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "rs-motor-left",
+      "part": "dc-motor",
+      "position": {
+        "x": -270,
+        "y": -53
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "rs-motor-right",
+      "part": "dc-motor",
+      "position": {
+        "x": -270,
+        "y": 53
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "rs-switch",
+      "part": "switch",
+      "position": {
+        "x": -245,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "rs-wheel-left",
+      "part": "wheel-large",
+      "position": {
+        "x": -260,
+        "y": -79
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "rs-wheel-right",
+      "part": "wheel-large",
+      "position": {
+        "x": -260,
+        "y": 79
+      },
+      "rotation": 0,
+      "settings": {}
+    }
+  ],
+  "version": 1,
+  "wires": [
+    {
+      "from": {
+        "part": "rs-motor-left",
+        "port": "mount"
+      },
+      "id": "w1",
+      "to": {
+        "part": "rs-chassis",
+        "port": "motor-left"
+      }
+    },
+    {
+      "from": {
+        "part": "rs-motor-right",
+        "port": "plus"
+      },
+      "id": "w10",
+      "to": {
+        "part": "rs-switch",
+        "port": "b"
+      }
+    },
+    {
+      "from": {
+        "part": "rs-battery",
+        "port": "minus"
+      },
+      "id": "w11",
+      "to": {
+        "part": "rs-motor-left",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "rs-battery",
+        "port": "minus"
+      },
+      "id": "w12",
+      "to": {
+        "part": "rs-motor-right",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "br-motor-left",
+        "port": "mount"
+      },
+      "id": "w13",
+      "to": {
+        "part": "br-chassis",
+        "port": "motor-left-inner"
+      }
+    },
+    {
+      "from": {
+        "part": "br-motor-right",
+        "port": "mount"
+      },
+      "id": "w14",
+      "to": {
+        "part": "br-chassis",
+        "port": "motor-right-inner"
+      }
+    },
+    {
+      "from": {
+        "part": "br-gear-left",
+        "port": "mount"
+      },
+      "id": "w15",
+      "to": {
+        "part": "br-chassis",
+        "port": "gear-left"
+      }
+    },
+    {
+      "from": {
+        "part": "br-gear-right",
+        "port": "mount"
+      },
+      "id": "w16",
+      "to": {
+        "part": "br-chassis",
+        "port": "gear-right"
+      }
+    },
+    {
+      "from": {
+        "part": "br-battery",
+        "port": "mount"
+      },
+      "id": "w17",
+      "to": {
+        "part": "br-chassis",
+        "port": "deck-rear"
+      }
+    },
+    {
+      "from": {
+        "part": "br-driver",
+        "port": "mount"
+      },
+      "id": "w18",
+      "to": {
+        "part": "br-chassis",
+        "port": "deck-middle"
+      }
+    },
+    {
+      "from": {
+        "part": "br-bumper",
+        "port": "mount"
+      },
+      "id": "w19",
+      "to": {
+        "part": "br-chassis",
+        "port": "bumper"
+      }
+    },
+    {
+      "from": {
+        "part": "rs-motor-right",
+        "port": "mount"
+      },
+      "id": "w2",
+      "to": {
+        "part": "rs-chassis",
+        "port": "motor-right"
+      }
+    },
+    {
+      "from": {
+        "part": "br-caster",
+        "port": "mount"
+      },
+      "id": "w20",
+      "to": {
+        "part": "br-chassis",
+        "port": "caster"
+      }
+    },
+    {
+      "from": {
+        "part": "br-servo",
+        "port": "mount"
+      },
+      "id": "w21",
+      "to": {
+        "part": "br-chassis",
+        "port": "deck-front"
+      }
+    },
+    {
+      "from": {
+        "part": "br-motor-left",
+        "port": "shaft"
+      },
+      "id": "w22",
+      "to": {
+        "part": "br-gear-left",
+        "port": "input"
+      }
+    },
+    {
+      "from": {
+        "part": "br-gear-left",
+        "port": "output"
+      },
+      "id": "w23",
+      "to": {
+        "part": "br-wheel-left",
+        "port": "hub"
+      }
+    },
+    {
+      "from": {
+        "part": "br-motor-right",
+        "port": "shaft"
+      },
+      "id": "w24",
+      "to": {
+        "part": "br-gear-right",
+        "port": "input"
+      }
+    },
+    {
+      "from": {
+        "part": "br-gear-right",
+        "port": "output"
+      },
+      "id": "w25",
+      "to": {
+        "part": "br-wheel-right",
+        "port": "hub"
+      }
+    },
+    {
+      "from": {
+        "part": "br-battery",
+        "port": "plus"
+      },
+      "id": "w26",
+      "to": {
+        "part": "br-bumper",
+        "port": "a"
+      }
+    },
+    {
+      "from": {
+        "part": "br-bumper",
+        "port": "b"
+      },
+      "id": "w27",
+      "to": {
+        "part": "br-driver",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "br-battery",
+        "port": "minus"
+      },
+      "id": "w28",
+      "to": {
+        "part": "br-driver",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "br-driver",
+        "port": "a-plus"
+      },
+      "id": "w29",
+      "to": {
+        "part": "br-motor-left",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "rs-battery",
+        "port": "mount"
+      },
+      "id": "w3",
+      "to": {
+        "part": "rs-chassis",
+        "port": "deck-rear"
+      }
+    },
+    {
+      "from": {
+        "part": "br-driver",
+        "port": "a-minus"
+      },
+      "id": "w30",
+      "to": {
+        "part": "br-motor-left",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "br-driver",
+        "port": "b-plus"
+      },
+      "id": "w31",
+      "to": {
+        "part": "br-motor-right",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "br-driver",
+        "port": "b-minus"
+      },
+      "id": "w32",
+      "to": {
+        "part": "br-motor-right",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "br-bumper",
+        "port": "b"
+      },
+      "id": "w33",
+      "to": {
+        "part": "br-buzzer",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "br-battery",
+        "port": "minus"
+      },
+      "id": "w34",
+      "to": {
+        "part": "br-buzzer",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "br-bumper",
+        "port": "b"
+      },
+      "id": "w35",
+      "to": {
+        "part": "br-servo",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "br-battery",
+        "port": "minus"
+      },
+      "id": "w36",
+      "to": {
+        "part": "br-servo",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "lc-battery",
+        "port": "plus"
+      },
+      "id": "w37",
+      "to": {
+        "part": "lc-switch",
+        "port": "a"
+      }
+    },
+    {
+      "from": {
+        "part": "lc-led",
+        "port": "plus"
+      },
+      "id": "w38",
+      "to": {
+        "part": "lc-switch",
+        "port": "b"
+      }
+    },
+    {
+      "from": {
+        "part": "lc-battery",
+        "port": "minus"
+      },
+      "id": "w39",
+      "to": {
+        "part": "lc-led",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "rs-switch",
+        "port": "mount"
+      },
+      "id": "w4",
+      "to": {
+        "part": "rs-chassis",
+        "port": "deck-front"
+      }
+    },
+    {
+      "from": {
+        "part": "rs-caster",
+        "port": "mount"
+      },
+      "id": "w5",
+      "to": {
+        "part": "rs-chassis",
+        "port": "caster"
+      }
+    },
+    {
+      "from": {
+        "part": "rs-motor-left",
+        "port": "shaft"
+      },
+      "id": "w6",
+      "to": {
+        "part": "rs-wheel-left",
+        "port": "hub"
+      }
+    },
+    {
+      "from": {
+        "part": "rs-motor-right",
+        "port": "shaft"
+      },
+      "id": "w7",
+      "to": {
+        "part": "rs-wheel-right",
+        "port": "hub"
+      }
+    },
+    {
+      "from": {
+        "part": "rs-battery",
+        "port": "plus"
+      },
+      "id": "w8",
+      "to": {
+        "part": "rs-switch",
+        "port": "a"
+      }
+    },
+    {
+      "from": {
+        "part": "rs-motor-left",
+        "port": "plus"
+      },
+      "id": "w9",
+      "to": {
+        "part": "rs-switch",
+        "port": "b"
+      }
+    }
+  ]
+}
