@@ -244,7 +244,7 @@
       "dispatched_at": "2026-10-01T05:23:27+00:00"
     },
     "1.4": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -258,12 +258,12 @@
       ],
       "done_when": "A two-motor robot drives straight, turns on the spot when one motor reverses, stops at a wall, and tips with the top-heavy fixture; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T11:41:56+00:00",
+      "completed_by": "W-1.4",
       "dispatched_at": "2026-10-01T06:12:30+00:00"
     },
     "1.5": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -281,7 +281,8 @@
       "done_when": "Same seed produces identical run records across 100 runs of every fixture; Stop restores the snapshot byte-for-byte; the public API matches the README; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T10:21:35+00:00"
     },
     "1.6": {
       "status": "done",
@@ -507,7 +508,7 @@
       "dispatched_at": "2026-10-01T04:52:13+00:00"
     },
     "3.2": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -521,12 +522,12 @@
       ],
       "done_when": "E2E scripts for the touch path and the pointer path both place every part of every fixture; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T12:50:40+00:00",
+      "completed_by": "W-3.2",
       "dispatched_at": "2026-10-01T06:59:05+00:00"
     },
     "3.3": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -541,7 +542,8 @@
       "done_when": "Every legal fixture can be wired by script in both input paths; illegal wires are refused with the glow cue; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T08:46:24+00:00"
     },
     "3.4": {
       "status": "pending",
@@ -617,7 +619,7 @@
       "completed_by": null
     },
     "3.8": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -632,7 +634,8 @@
       "done_when": "Harness runs in CI in under 10 minutes on the fixtures available at the time; parity check reports per fixture.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T08:38:56+00:00"
     },
     "G3": {
       "status": "pending",
@@ -662,7 +665,7 @@
       "completed_by": null
     },
     "4.1": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -677,8 +680,8 @@
       ],
       "done_when": "Layout tests at 10-inch landscape, 13-inch and tablet portrait pass; tuck states persist across reload; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T11:34:10+00:00",
+      "completed_by": "W-4.1",
       "dispatched_at": "2026-10-01T06:59:05+00:00"
     },
     "4.2": {
@@ -817,7 +820,7 @@
       "completed_by": null
     },
     "4.9": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -833,7 +836,8 @@
       "done_when": "Round-trip of all fixtures; a v0 fixture migrates on load; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T09:05:09+00:00"
     },
     "4.10": {
       "status": "pending",
@@ -1076,7 +1080,7 @@
       "completed_by": null
     },
     "6.3": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1093,7 +1097,8 @@
       "done_when": "A tagged commit produces a tester URL with the content version shown in Settings.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T11:34:37+00:00"
     },
     "6.4": {
       "status": "pending",
@@ -1715,6 +1720,62 @@
       "id": "D65",
       "question": "D55 updated (review R-3.1): the canvas renderer's default choices are now the ten listed in packages/canvas/docs/renderer.md (scale, socket layout, tile sizes, mount-point drawing, mirrored light, trackpad zoom, fonts and three more). Known issue for task 3.3: sockets of neighbouring parts overlap on the Level 2 bumper robot and the Circuit Crew kit robot (5.6 px apart).",
       "recommendation": "Review renderer.md's ten choices with the canvas interaction spec; task 3.3 fixes the socket overlap before G3.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D66",
+      "question": "Edge panels and the 70% rule (task 4.1): holding the canvas to 70% with every edge beside it left the spec card 153\u2013246 px wide. Brief Section 11 describes panels 'with soft shadows only where they overlap the canvas'.",
+      "recommendation": "Panels may overlap the canvas edge with a soft shadow; at most 30% of the canvas is ever covered; the spec card is about 300\u2013340 px wide where the screen allows; it never covers a port the child is wiring.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D67",
+      "question": "The Run bar: brief Section 9's table says 'always visible', but the same section says each edge can be tucked away. (task 4.1 Q2)",
+      "recommendation": "The Run bar never tucks: Run/Stop is the one control a child must always reach; the tray, spec card, header and arena strip tuck.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D68",
+      "question": "Arena strip content and Home: no plan task owns the arena strip's preset picker and prop palette, or the Home screen (start a sandbox build, open saved builds, pick a challenge by level). (task 4.1 Q3)",
+      "recommendation": "Task 4.5 (challenge runner) adds the arena strip's preset picker and prop palette (Build mode only, D36) and a minimal Home: sandbox, saved builds (from 4.9), and challenges by level.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D69",
+      "question": "Canvas placement details (review R-3.2): (1) a Move handle gives tap-then-tap moving, as the canvas docs promise for every drag; (2) a part held by a mount or shaft has no rotate handle, because its mount sets its orientation, and the card says to move it off to turn it; (3) turning by drag snaps to quarter turns like tap and the list view; (4) a removal says 'Removed with it: 2 wires' plus any loose parts' names; (5) free mount points under a placed part are still offered for now.",
+      "recommendation": "Accept all five for G3; revisit (5) with the chassis content and the canvas interaction spec.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D70",
+      "question": "App shell details (review R-4.1): (1) the Run/Stop bar stays put between Build and Run; (2) the arena strip is part of the canvas, while the zoom control and tabs count as covering it; (3) the spec card may scroll within its 30% budget, and Level 1\u20132 cards aim to fit without scrolling at 10 inches; (4) the canvas takes safe-area insets so load and Fit centre the build in the uncovered area (task 3.7); (5) the spec card is hidden at rest and slides in when a part is selected.",
+      "recommendation": "Accept all five for G3; settle the exact card height budget in the canvas interaction spec.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D71",
+      "question": "Saving and profiles before accounts exist (task 4.9): should every edit save, and what happens when no child profile exists yet?",
+      "recommendation": "Autosave the current build about 1 s after the last edit and when Run is pressed (brief principle 5, nothing is lost); on first run create one local child profile with a neutral default name ('Builder 1'), which the parent view renames later; no email or personal data.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D72",
+      "question": "Release pipeline details (task 6.3): when does the content semver bump; should a deploy refuse a tester build without an invite-code seed; when should the app load a content bundle at run time instead of the one built in; should Settings be reached from Home behind the parental gate (D28, D68); should final art travel in the content bundle (D6)?",
+      "recommendation": "Bump the content minor version for new records and the patch for text fixes (the hash suffix already identifies every bundle); refuse deploys of tester builds without a seed; keep the built-in content until a host exists, then add run-time bundle loading; Settings sits behind the parental gate on Home; art ships with the app until D6 is decided.",
       "confidence": "medium",
       "blocks": [],
       "resolved": false

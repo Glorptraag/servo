@@ -1,4 +1,8 @@
-// @servo/app: the child's app. Task 4.1 builds it; until then mountApp rejects. See README.md.
+// @servo/app: the child's app. Task 4.1 draws the shell round the canvas; task 4.9 adds the store. See README.md.
+import { createElement } from 'react';
+import { createRoot } from 'react-dom/client';
+import { loadContent } from '@servo/content';
+import { App } from './App.tsx';
 import type { StoreOptions } from './store/index.ts';
 
 export interface AppOptions {
@@ -17,4 +21,19 @@ export interface AppHandle {
  */
 export type MountApp = (host: HTMLElement, options?: AppOptions) => Promise<AppHandle>;
 
-export const mountApp: MountApp = () => Promise.reject(new Error('mountApp is not implemented yet (task 4.1).'));
+/**
+ * Loads the content and draws the shell and the canvas in `host`, which needs a definite size: the shell fills it.
+ * Resolves once the canvas is mounted. The store is not opened yet: task 4.9 adds it, and `options.store` with it.
+ */
+export const mountApp: MountApp = (host) =>
+  new Promise<AppHandle>((resolve, reject) => {
+    const { content } = loadContent();
+    const root = createRoot(host, {
+      onUncaughtError: (error) => {
+        reject(error instanceof Error ? error : new Error(String(error)));
+        reportError(error);
+      },
+    });
+    const handle: AppHandle = { destroy: () => root.unmount() };
+    root.render(createElement(App, { content, onReady: () => resolve(handle) }));
+  });

@@ -56,13 +56,14 @@ const doIt: EditCommand = {
 
 describe('the contracts the app builds against', () => {
   it('has typed stubs that refuse until their tasks land', async () => {
-    const host = {} as HTMLElement;
     // Task 3.1 has landed: mountCanvas draws in a browser, and packages/canvas tests it there.
     expect(mountCanvas).toBeTypeOf('function');
-    expect(() => applyEdit({} as Blueprint, doIt, {} as Catalogue)).toThrow(/tasks 3\.2 and 3\.3/);
+    // Task 3.2 has landed: applyEdit applies every command but wiring, and refuses a build the schema does not accept.
+    expect(applyEdit({} as Blueprint, doIt, {} as Catalogue).ok).toBe(false);
     await expect(createSimulation({ blueprint: {} as Blueprint, catalogue: {} as Catalogue, arena: {} as never, seed: 1 })).rejects.toThrow(/task 1\.5/);
     await expect(openStore()).rejects.toThrow(/task 4\.9/);
-    await expect(mountApp(host)).rejects.toThrow(/task 4\.1/);
+    // Task 4.1 has landed: mountApp draws the shell in a browser, and test/browser tests it there.
+    expect(mountApp).toBeTypeOf('function');
     expect([runOnce, replay].every((flow) => typeof flow === 'function')).toBe(true);
   });
 });
