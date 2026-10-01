@@ -104,12 +104,13 @@ Effects are observations in the schema's words, read from the outputs. They are 
 
 | Effect | Shown when |
 | --- | --- |
-| `still` | Every turning output is at rest because nothing drives it: an idle actuator, a gearbox output or wheel at 0 rpm. |
+| `still` | Every turning output is at rest because nothing drives it: an idle actuator whose drive does not turn, a gearbox output or wheel at 0 rpm. |
 | `slow` | An actuator turns or sweeps, but less than it would at its rated volts with the same load and settings. |
-| `reverse` | A speed actuator turns the other way from the way its settings turn it. |
+| `reverse` | A speed actuator's shaft turns against `direction`, the way its settings turn it. It is read from the shaft's sign. |
 | `stall`, `hum` | An actuator is stalled. `hum` is any `hum` sound. |
 | `hold`, `hum` | A position actuator holds, with power and no signal. |
-| `dark`, `silent` | Its light, or its sound, is 0. |
+| `dark` | Its light is 0. |
+| `silent` | It makes no sound at all, though it has a sounder, or an actuator, which whirs or hums with power, and here is idle. A settled servo makes no sound but is not `silent`, since it is working. |
 | `dim`, `quiet` | Its light or sound is above 0 and below 1, which is less than at its rated volts. |
 | `off` | Nothing in it that gives, carries or takes power works. Parts with only mechanical primitives are never off. |
 
@@ -130,26 +131,28 @@ Effects are observations in the schema's words, read from the outputs. They are 
   - that a renamed record behaves identically (rule 1);
   - every primitive kind of the vocabulary;
   - determinism, frozen inputs and odd inputs.
-- **`packages/tools/test/behaviour-content.test.ts`** holds the behaviour fixtures generated from the records. It runs over the Level 1–2 content records, and over the schema's example records until task 2.2 authors Level 2.
-  - For each part it builds a bench and one tick's inputs from the record alone, with every need met, and checks that the part shows no effect and no fault.
-  - For each failure mode it unmets that one need in its way:
+- **`packages/tools/test/behaviour-content.test.ts`** holds the behaviour fixtures generated from the Level 1–2 content records. For each part it builds probes from the record alone: a bench and one tick's inputs. Each probe states the exact effects and the exact failure modes every one of three ticks shows, and what its primitives read.
+  - **Every need met**, at its working volts (the rated volts of the primitive on that supply, or the middle of the need's range when none is rated): no effect, no fault, and its rated figures. A speed actuator turns at noLoadRpm × throttle, a servo sweeps at degPerSecond towards the end its signal commands, and a load is full. A gearbox gives the motor turning it ÷ its ratio, and a wheel the motor's speed.
+  - **Each failure mode**, with every other need met:
     - power `open` 0 V, `low` 0.01 V below `minVolts`, `high` 0.01 V above `maxVolts`, `reversed` the working volts swapped;
-    - loop `open` with no current;
-    - isolation `shorted` with the pack's volts ÷ internalOhms through it;
-    - no signal level;
-    - a load of exactly what the actuator can give;
-    - no drive linkage;
-    - no mount.
-  - The working volts are the rated volts of the primitive on that supply, or the middle of the need's range when none is rated.
-  - The claims must show on every one of three ticks, and a need this runtime judges must make its failure mode active. Each claim it does not show must belong to a named solver.
+    - loop `open` with no current, and isolation `shorted` with the pack's volts ÷ internalOhms through it;
+    - no signal level, a load of exactly what the actuator can give, no drive linkage, no mount.
+
+    It shows exactly the record's claims that this runtime shows, plus what they bring. When the claims leave nothing in the part working, the part is also at rest: `off`, and an idle actuator `silent`. A need this runtime judges makes exactly that failure mode active. Each claim it does not show must belong to a named solver.
+  - **Below where anything on a supply starts** (its least start, turn-on or dropout volts, less 0.01 V): at rest.
+  - **At the top of the range**: full, and in proportion above the rated volts.
+  - **Halfway from start to rated volts**: speed and sweep in proportion to volts, and a load at half its level.
+  - **No power and no signal**: at rest, with the missing signal not judged.
+  - **Opened by its control**: a switch reads open and carries nothing.
+  - **Each other value of each setting**: the parameter it binds follows it. The servo motor’s angle is left to Level 3 (review R-1.3, Question 1).
+  - Twenty one-line mutations of `src/behaviour` each fail these fixtures, and the unit tests too: the review's six and fourteen more.
 
 ## Decisions and open questions
 
-- **The `./behaviour` export.** Lint lets a test import another package only through its exports, so the fixtures in packages/tools reach the runtime through a `./behaviour` entry in sim-core's package.json. The package map lets the app import it too; the README's public surface does not list it yet.
-- **Signal to angle.** A servo commanded at level l goes to minDeg + l × (maxDeg − minDeg). Its `target` setting is not read here: how a Level 3 program uses it is open (schema question 2).
+- **The `./behaviour` export.** Lint lets a test import another package only through its exports, so the fixtures in packages/tools reach the runtime through a `./behaviour` entry in sim-core's package.json. A tools-only guard in eslint.config.js refuses it in every other package's src, though app's map allows every sim-core entry (review R-1.3 finding 2).
+- **Signal to angle (review R-1.3, Question 1).** A servo commanded at level l goes to minDeg + l × (maxDeg − minDeg). Its `target` setting is not read here: how a Level 3 program uses it is open (schema question 2, D16).
 - **No signal from an unpowered brain.** A powered servo shows `no-signal` whenever no level arrives, as D41 intends for v1. The schema's feeder step (an unpowered driver's own fault stands for what it feeds) covers power needs only. Whether an unpowered brain should explain its servo's missing signal the same way is a Level 3 question.
-- **Signal to command.** A driven signal sets a motor-driver channel's command to its level, so a signal drives forward only. How Level 3 drives a channel backward is open.
-- **Servo with too little power.** Below its startVolts a servo does nothing: no hold, no hum, no sweep. With the example record (3.5 V start, 4.8 V minimum), a servo on one 2-cell pack (3 V) stays still, so D41's hold-and-hum lesson needs more volts. That is a question for task 2.2's record.
-- **Buzzer on a 2-cell pack.** The example buzzer's range starts at 3 V, above what a 2-cell pack gives under load (about 2.8 V), so its low-voltage fault would show on the standard pack. That is also for task 2.2.
+- **Signal to command (review R-1.3, Question 2).** A driven signal sets a motor-driver channel's command to its level, so a signal drives forward only. How Level 3 drives a channel backward is open.
+- **Below a part's start volts (review R-1.3, Question 4).** There a part does nothing, while its `low-voltage` mode may claim `slow` or `quiet`. The fixtures test the failure mode 0.01 V below `minVolts`, and the primitive's own rule below its start volts.
 - **Servo sweep under load.** A servo's sweep slows with load in the same straight line as a DC motor's speed. The schema states only that it pushes up to holdingTorqueNmm.
 - **Sound levels.** The levels and the use of `motor`, `hum` and `buzz` are this runtime's reading of brief Section 11. The app's sound design may rescale them.
