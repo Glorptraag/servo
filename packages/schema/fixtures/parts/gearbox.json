@@ -1,0 +1,144 @@
+{
+  "behaviour": [
+    {
+      "efficiency": 0.8,
+      "id": "gears",
+      "input": "input",
+      "kind": "ratio",
+      "mount": "mount",
+      "output": "output",
+      "ratio": 3
+    }
+  ],
+  "body": {
+    "centreOfMass": {
+      "x": 0,
+      "y": 0,
+      "z": 11
+    },
+    "grams": 18,
+    "size": {
+      "x": 36,
+      "y": 22,
+      "z": 22
+    }
+  },
+  "card": {
+    "does": "Trades speed for strength: the output turns slower but pushes harder.",
+    "gives": "Gives: a slower, stronger turning shaft.",
+    "needs": "Needs: a turning shaft at its input (grey), and a place on the frame.",
+    "popularMechanics": "The low gears on a bike do the same job when you ride up a hill."
+  },
+  "failureModes": [
+    {
+      "cardLine": "Nothing turning it: the output stays still.",
+      "id": "not-driven",
+      "need": "driven",
+      "shows": [
+        "still"
+      ],
+      "teachingNote": "A gearbox changes the turning it is given; it makes none of its own. With nothing turning its input, its output stays still.",
+      "unmet": "absent"
+    },
+    {
+      "cardLine": "Loose: the housing turns instead of the output.",
+      "hint": "The gearbox is not fixed to the frame",
+      "id": "loose",
+      "need": "fixed",
+      "shows": [
+        "still"
+      ],
+      "teachingNote": "A gearbox turns its output only while its housing is held still. Left loose, the housing turns instead and the output stays still.",
+      "unmet": "absent"
+    }
+  ],
+  "id": "gearbox",
+  "identity": {
+    "art": "part/gearbox",
+    "colours": {
+      "accent": "#616161",
+      "main": "#fbc02d"
+    },
+    "domains": [
+      "mechanics"
+    ],
+    "family": "drivetrain",
+    "level": 2,
+    "name": "gearbox"
+  },
+  "needs": [
+    {
+      "id": "driven",
+      "kind": "drive",
+      "port": "input"
+    },
+    {
+      "id": "fixed",
+      "kind": "mount",
+      "port": "mount"
+    }
+  ],
+  "ports": [
+    {
+      "at": {
+        "x": 0,
+        "y": -11,
+        "z": 10
+      },
+      "axis": "+y",
+      "id": "input",
+      "label": "input",
+      "role": "drive-in",
+      "type": "mechanical"
+    },
+    {
+      "at": {
+        "x": 0,
+        "y": 13,
+        "z": 10
+      },
+      "axis": "+y",
+      "id": "output",
+      "label": "output shaft",
+      "role": "drive-out",
+      "type": "mechanical"
+    },
+    {
+      "at": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "id": "mount",
+      "label": "mount",
+      "role": "mount",
+      "type": "mechanical",
+      "yaw": 0
+    }
+  ],
+  "settings": [
+    {
+      "binds": {
+        "param": "ratio",
+        "primitive": "gears"
+      },
+      "default": "three-to-one",
+      "id": "ratio",
+      "kind": "choice",
+      "label": "Gear ratio",
+      "options": [
+        {
+          "id": "three-to-one",
+          "label": "3 to 1",
+          "value": 3
+        },
+        {
+          "id": "five-to-one",
+          "label": "5 to 1",
+          "value": 5
+        }
+      ],
+      "unlockLevel": 4
+    }
+  ]
+}

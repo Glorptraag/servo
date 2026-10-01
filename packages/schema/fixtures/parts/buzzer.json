@@ -1,0 +1,102 @@
+{
+  "behaviour": [
+    {
+      "emits": {
+        "hz": 2400,
+        "kind": "sound"
+      },
+      "id": "sounder",
+      "kind": "load",
+      "onVolts": 1.5,
+      "ratedMilliamps": 30,
+      "ratedVolts": 5,
+      "supply": {
+        "neg": "minus",
+        "pos": "plus"
+      },
+      "whenReversed": "blocks"
+    }
+  ],
+  "body": {
+    "centreOfMass": {
+      "x": 0,
+      "y": 0,
+      "z": 5
+    },
+    "grams": 3,
+    "size": {
+      "x": 12,
+      "y": 12,
+      "z": 10
+    }
+  },
+  "card": {
+    "does": "Makes a buzzing sound when power flows through it.",
+    "gives": "Gives: a sound you can hear across the room.",
+    "needs": "Needs: power (red), plus to plus.",
+    "popularMechanics": "A microwave oven beeps with a buzzer like this when the food is ready."
+  },
+  "failureModes": [
+    {
+      "cardLine": "Wires swapped: it stays silent.",
+      "id": "reversed",
+      "need": "power",
+      "shows": [
+        "silent"
+      ],
+      "teachingNote": "This buzzer has a plus side and a minus side. Wired the other way round, it stays silent.",
+      "unmet": "reversed"
+    },
+    {
+      "cardLine": "Too little power: it buzzes quietly.",
+      "id": "low-voltage",
+      "need": "power",
+      "shows": [
+        "quiet"
+      ],
+      "teachingNote": "With too little voltage the buzzer still sounds, but faintly.",
+      "unmet": "low"
+    }
+  ],
+  "id": "buzzer",
+  "identity": {
+    "art": "part/buzzer",
+    "colours": {
+      "accent": "#cfd8dc",
+      "main": "#263238"
+    },
+    "domains": [
+      "electronics-and-power"
+    ],
+    "family": "output",
+    "level": 2,
+    "name": "buzzer"
+  },
+  "needs": [
+    {
+      "id": "power",
+      "kind": "power",
+      "maxVolts": 6,
+      "minVolts": 3,
+      "supply": {
+        "neg": "minus",
+        "pos": "plus"
+      }
+    }
+  ],
+  "ports": [
+    {
+      "id": "plus",
+      "label": "plus (+)",
+      "polarity": "positive",
+      "type": "power"
+    },
+    {
+      "id": "minus",
+      "label": "minus (−)",
+      "polarity": "negative",
+      "type": "power"
+    }
+  ],
+  "settings": []
+}

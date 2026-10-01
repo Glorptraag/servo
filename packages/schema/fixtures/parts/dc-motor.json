@@ -1,0 +1,203 @@
+{
+  "behaviour": [
+    {
+      "drive": "shaft",
+      "id": "motor",
+      "kind": "actuator",
+      "mode": "speed",
+      "noLoadMilliamps": 120,
+      "noLoadRpm": 200,
+      "ratedVolts": 6,
+      "reverse": false,
+      "stallMilliamps": 1200,
+      "stallTorqueNmm": 39,
+      "startVolts": 1,
+      "supply": {
+        "neg": "minus",
+        "pos": "plus"
+      },
+      "throttle": 1,
+      "whenReversed": "reverses"
+    }
+  ],
+  "body": {
+    "centreOfMass": {
+      "x": 0,
+      "y": 0,
+      "z": 10
+    },
+    "grams": 30,
+    "size": {
+      "x": 46,
+      "y": 22,
+      "z": 20
+    }
+  },
+  "card": {
+    "does": "Turns electricity into spinning.",
+    "gives": "Gives: a spinning shaft.",
+    "needs": "Needs: power (red), from plus round to minus.",
+    "popularMechanics": "A DC motor like this spins the blades of a hand-held fan.",
+    "specLine": "3–6 V · stall torque 0.4 kg·cm at 6 V"
+  },
+  "failureModes": [
+    {
+      "cardLine": "No complete circuit: the shaft stays still.",
+      "hint": "This motor has power in but no way out",
+      "id": "no-circuit",
+      "need": "power",
+      "shows": [
+        "still"
+      ],
+      "teachingNote": "Current only flows round a complete loop: out of the battery pack, through the motor and back. With one wire missing nothing flows, so the shaft stays still.",
+      "unmet": "open"
+    },
+    {
+      "cardLine": "Too little power: it turns slowly.",
+      "hint": "Try a bigger battery",
+      "id": "low-voltage",
+      "need": "power",
+      "shows": [
+        "slow",
+        "drain"
+      ],
+      "teachingNote": "Speed rises with voltage. Below about 2 volts the motor turns slowly, and because it works hard for little speed it drains the battery pack faster.",
+      "unmet": "low"
+    },
+    {
+      "cardLine": "Too much to turn: it stops and hums.",
+      "id": "overload",
+      "need": "load",
+      "shows": [
+        "stall",
+        "hum"
+      ],
+      "teachingNote": "Every motor has a most it can turn. Past that stall limit the shaft stops, the motor hums, and it draws the most current it ever draws.",
+      "unmet": "exceeded"
+    },
+    {
+      "cardLine": "Wires swapped: it turns the other way.",
+      "id": "reversed",
+      "need": "power",
+      "shows": [
+        "reverse"
+      ],
+      "teachingNote": "A DC motor turns one way when plus meets plus and the other way when the wires swap. On a robot, one motor wired the other way round spins it on the spot.",
+      "unmet": "reversed"
+    }
+  ],
+  "id": "dc-motor",
+  "identity": {
+    "art": "part/dc-motor",
+    "colours": {
+      "accent": "#fdd835",
+      "main": "#b0bec5"
+    },
+    "domains": [
+      "mechanics",
+      "electronics-and-power"
+    ],
+    "family": "actuators",
+    "level": 1,
+    "name": "DC motor"
+  },
+  "needs": [
+    {
+      "id": "power",
+      "kind": "power",
+      "maxVolts": 6,
+      "minVolts": 2.2,
+      "supply": {
+        "neg": "minus",
+        "pos": "plus"
+      }
+    },
+    {
+      "id": "load",
+      "kind": "torque",
+      "port": "shaft"
+    }
+  ],
+  "ports": [
+    {
+      "id": "plus",
+      "label": "plus (+)",
+      "polarity": "positive",
+      "type": "power"
+    },
+    {
+      "id": "minus",
+      "label": "minus (−)",
+      "polarity": "negative",
+      "type": "power"
+    },
+    {
+      "at": {
+        "x": 10,
+        "y": 13,
+        "z": 10
+      },
+      "axis": "+y",
+      "id": "shaft",
+      "label": "shaft",
+      "role": "drive-out",
+      "type": "mechanical"
+    },
+    {
+      "at": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "id": "mount",
+      "label": "mount",
+      "role": "mount",
+      "type": "mechanical",
+      "yaw": 0
+    }
+  ],
+  "settings": [
+    {
+      "binds": {
+        "param": "reverse",
+        "primitive": "motor"
+      },
+      "default": "forward",
+      "id": "direction",
+      "kind": "choice",
+      "label": "Direction",
+      "options": [
+        {
+          "id": "forward",
+          "label": "Forward",
+          "value": false
+        },
+        {
+          "id": "backward",
+          "label": "Backward",
+          "value": true
+        }
+      ],
+      "unlockLevel": 2
+    },
+    {
+      "binds": {
+        "param": "throttle",
+        "primitive": "motor",
+        "range": [
+          0,
+          1
+        ]
+      },
+      "default": 100,
+      "id": "speed",
+      "kind": "number",
+      "label": "Speed",
+      "max": 100,
+      "min": 0,
+      "step": 10,
+      "unit": "%",
+      "unlockLevel": 3
+    }
+  ]
+}
