@@ -1,5 +1,5 @@
 // The real terminology lists in packages/content/terminology (task 2.5), checked through the validator.
-import { exampleParts } from '@servo/schema/fixtures';
+import { exampleChallenges, exampleParts } from '@servo/schema/fixtures';
 import { afterEach, describe, expect, it } from 'vitest';
 import { bannedFindings, compileTerminology, glossFindings, loadTerminology, partNameFindings } from '../src/validate-content/terminology.ts';
 import {
@@ -88,7 +88,10 @@ describe('the real lists', () => {
       expect(phrases).toContain(phrase);
     }
     for (const phrase of ['great job', 'well done', 'awesome', 'amazing', 'good job']) expect(phrases).toContain(phrase);
-    expect(allowed).toContain('mount points');
+    for (const phrase of ['coin', 'zappy', 'brainy', 'great', 'brilliant', 'excellent', 'perfect', 'fantastic', 'nice one', 'nicely done']) {
+      expect(phrases).toContain(phrase);
+    }
+    expect(allowed).toEqual(expect.arrayContaining(['mount points', 'do it for me', 'place it for me']));
   });
 
   it('give every ban a reason that cites ground rule 7, the brief or D22', () => {
@@ -132,6 +135,72 @@ describe('done when: fails a record that uses a banned word', () => {
     expect(textFindings('My wheels are stuck')).toEqual(['terminology.banned']);
   });
 
+  it("allows the hint ladder's last rung, which the child says (rule 9, brief Sections 5 and 10)", () => {
+    for (const text of ['Do it for me', 'Place it for me', 'Tap do it for me to see the wire placed']) expect(textFindings(text)).toEqual([]);
+    expect(textFindings('Do it for me, then show me')).toEqual(['terminology.banned']);
+  });
+
+  it('refuses the other forms of the listed words', () => {
+    for (const text of [
+      'Collect a coin for each wire',
+      'Join the zappy wires to plus',
+      'Join the zappy one to plus',
+      'The brainy bit needs power',
+      'The brain-y one needs power',
+      'Scoring starts when the robot moves',
+      'Keep earning while it runs',
+      'Levelling up opens new parts',
+    ]) {
+      expect(textFindings(text)).toEqual(['terminology.banned']);
+    }
+  });
+
+  it('refuses common praise and cheering', () => {
+    for (const word of [
+      'Brilliant',
+      'Excellent',
+      'Perfect',
+      'Fantastic',
+      'Great',
+      'Nice one',
+      'Nicely done',
+      'Top job',
+      'You got it',
+      'Superb',
+      'Nailed it',
+      'Hooray',
+      'Yay',
+      'Wow',
+    ]) {
+      expect(textFindings(`${word}, the motor turns`)).toEqual(['terminology.banned']);
+    }
+  });
+
+  it('gives one issue for a banned word inside a longer banned phrase', () => {
+    expect(bannedFindings('Great job, the motor turns', matcher).map((finding) => finding.message)).toEqual([
+      "'Great job' is on the banned list: System text never praises the child (ground rule 7, brief Section 12).",
+    ]);
+    expect(textFindings('Plug in the zappy wire')).toEqual(['terminology.banned']);
+    expect(textFindings('The brain-y bit and the brainy one')).toEqual(['terminology.banned', 'terminology.banned']);
+    expect(textFindings('A great job and a great robot')).toEqual(['terminology.banned', 'terminology.banned']);
+  });
+
+  it('passes a challenge hint line that names the last rung', () => {
+    const [challenge] = exampleChallenges.filter((fixture) => fixture.name === 'drive-and-light');
+    const file = write(
+      tempFolder(),
+      'challenges/drive-and-light.json',
+      changed(challenge?.data as Record<string, unknown>, (data) => {
+        const [ladder] = data.hints as { steps: { line: string }[] }[];
+        const [step] = ladder?.steps ?? [];
+        if (step) step.line = 'Tap do it for me and the wire is placed';
+      }),
+    );
+    const result = run(file);
+    expect(issueLines(result.out)).toEqual([]);
+    expect(result.status).toBe(0);
+  });
+
   it('leaves exclamation marks to the schema', () => {
     const result = run(partFile('shout', (part) => (card(part).does = 'Turns electricity into spinning!')));
     expect(result.status).toBe(1);
@@ -166,15 +235,46 @@ describe('done when: passes a record that uses only listed terms', () => {
     }
   });
 
-  it("accepts the brief's own examples: colour words and short names are not glosses", () => {
+  it("accepts the brief's own example sentences: colour words and short names are not glosses", () => {
     for (const text of [
+      // Section 12: the servo motor's spec card, the hint examples and the popular-mechanics thread.
       'Turns to an angle you choose, and holds it.',
       'Needs: power (red) and a signal (yellow). Gives: a turning arm.',
+      'Angle: 0° to 180°',
+      '4.8–6 V · 180° · holds 1.8 kg·cm',
       'The same part steers a radio-controlled car and moves a camera gimbal.',
       'No signal: the arm stays where it is and hums.',
       'This motor has power in but no way out',
       'The servo is waiting for a signal',
       'Try a bigger battery',
+      "A lift counterweight, a bike's gears, a car's headlights, an automatic door's sensor",
+      // Section 6: the DC motor's spec card.
+      'Turns electricity into spinning',
+      'stall torque 0.4 kg·cm at 6 V',
+      // Section 4: how builds fail, and a what-if prompt.
+      'A motor with no return path does nothing',
+      'A motor on a weak battery turns slowly and the battery icon drains fast',
+      'A servo with power but no signal sits still and hums',
+      'Correct builds move: wheels spin, servos sweep, LEDs light, buzzers sound, sensors show live numbers.',
+      'What happens with one wheel bigger than the other?',
+      // Section 5: a part introduction, the challenge goals and the hint ladder's last rung.
+      'Meet the switch',
+      'Put it in the power line, press it, the motor stops and starts',
+      'Make the robot drive forward and light the LED at the same time',
+      'One motor wired backwards so the robot spins on the spot',
+      'Swap the 2-cell battery for a 1-cell battery and watch the speed',
+      'Cross the arena and stop at the wall',
+      'Do it for me',
+      // Section 10: the hint ladder.
+      'Pulse the part, pulse the port, draw a ghost wire, place it for me',
+      // Sections 2, 3 and 13.
+      'Wires a motor through a switch to a battery and it runs',
+      'Add a brain (microcontroller)',
+      "A car's differential, a lift's counterweight, a washing machine's sensor",
+      'DC motor, connected to battery pack power out',
+      // Section 4's kits, and the colour words of a part's card.
+      'Rolling Start',
+      'Line Runner',
       'Needs: power (red), from plus round to minus.',
     ]) {
       expect(textFindings(text)).toEqual([]);

@@ -88,7 +88,7 @@ describe('record kinds from fields (the shape check)', () => {
 });
 
 describe('finding record files', () => {
-  it('walks folders in name order and leaves out dependencies, hidden folders, terminology and package configuration', () => {
+  it('walks folders in name order and leaves out dependencies, hidden folders, terminology, art and package configuration', () => {
     const folder = tempFolder();
     const keep = [
       write(folder, 'arenas/open-floor.json', {}),
@@ -100,6 +100,8 @@ describe('finding record files', () => {
     write(folder, 'node_modules/pkg/parts/led.json', {});
     write(folder, '.cache/parts/led.json', {});
     write(folder, 'terminology/banned.json', {});
+    write(folder, 'art/generated/registry.json', {});
+    write(folder, 'art/final/part/led.json', {});
     write(folder, 'package.json', {});
     write(folder, 'tsconfig.json', {});
     write(folder, 'tsconfig.build.json', {});
@@ -136,8 +138,8 @@ describe('finding record files', () => {
   });
 
   it('names what it skips', () => {
-    expect(['node_modules', '.git', 'terminology'].every(isSkippedFolder)).toBe(true);
-    expect(['parts', 'fixtures', 'level-1'].some(isSkippedFolder)).toBe(false);
+    expect(['node_modules', '.git', 'terminology', 'art'].every(isSkippedFolder)).toBe(true);
+    expect(['parts', 'fixtures', 'level-1', 'generated', 'final', 'artwork'].some(isSkippedFolder)).toBe(false);
     expect(['package.json', 'tsconfig.json', 'tsconfig.test.json'].every(isConfigFile)).toBe(true);
     expect(['packages.json', 'my-tsconfig.json', 'led.json'].some(isConfigFile)).toBe(false);
   });
