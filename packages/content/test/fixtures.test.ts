@@ -31,6 +31,7 @@ import type {
   PortRef,
   PowerNeed,
   Primitive,
+  SpeedActuator,
   Vec3,
   WheelPrimitive,
   Wire,
@@ -474,7 +475,16 @@ const judge = (blueprint: Blueprint, state: ControlState = {}): string[] =>
 /** The faults a fixture records, as the judge writes them, sorted. */
 const recorded = (name: string): string[] => fixture(name).expect.faults.map(named).sort();
 
-/** Which way each speed actuator turns at `state`: the sign of its supply's volts, flipped by its reverse setting. */
+/** A speed actuator's `reverse` as its placed part sets it: the value of the setting bound to it (the DC motor's Direction), else the record's. */
+const reverseOf = (blueprint: Blueprint, part: string, primitive: SpeedActuator): boolean => {
+  const setting = typeOf(blueprint, part).settings.find((candidate) => candidate.binds.primitive === primitive.id && candidate.binds.param === 'reverse');
+  if (setting?.kind !== 'choice') return primitive.reverse;
+  const chosen = blueprint.parts.find((candidate) => candidate.id === part)?.settings[setting.id] ?? setting.default;
+  const value = setting.options.find((option) => option.id === chosen)?.value;
+  return typeof value === 'boolean' ? value : primitive.reverse;
+};
+
+/** Which way each speed actuator turns at `state`: the sign of its supply's volts, flipped when it is set to reverse. */
 const turning = (blueprint: Blueprint, state: ControlState = {}): ReadonlyMap<string, number> => {
   const signs = new Map<string, number>();
   for (const { part, primitive } of primitivesOf(blueprint)) {
@@ -482,7 +492,7 @@ const turning = (blueprint: Blueprint, state: ControlState = {}): ReadonlyMap<st
     const need = powerNeedsOf(blueprint).find((candidate) => candidate.part === part)?.need;
     const wired = need && wiredNeeds(blueprint, catalogue, state).find((verdict) => verdict.partId === part && verdict.need === need.id);
     const volts = need && wired?.unmet === undefined ? (supplyVolts(blueprint, state, part, need) ?? 0) : 0;
-    signs.set(part, Math.abs(volts) < primitive.startVolts ? 0 : Math.sign(volts) * (primitive.reverse ? -1 : 1));
+    signs.set(part, Math.abs(volts) < primitive.startVolts ? 0 : Math.sign(volts) * (reverseOf(blueprint, part, primitive) ? -1 : 1));
   }
   return signs;
 };
@@ -877,6 +887,15 @@ describe('motion and balance', () => {
     ['one-cell-roller', 'forward'],
   ])('%s moves %s at rest', (name, expected) => {
     expect(motion(fixture(name).blueprint)).toBe(expected);
+  });
+
+  it('follows the DC motor’s Direction setting: backward turns a motor round with no fault, and cannot hide a wiring fault (D48)', () => {
+    const backward = (blueprint: Blueprint): Blueprint =>
+      edited(blueprint, { parts: (parts) => parts.map((part) => (part.id === 'motor-right' ? { ...part, settings: { direction: 'backward' } } : part)) });
+    const roller = backward(fixture('small-wheel-roller').blueprint);
+    expect([judge(roller), motion(roller)]).toEqual([[], 'spin']);
+    const breakdown = backward(fixture('broken-reversed-motor').blueprint);
+    expect([judge(breakdown), motion(breakdown)]).toEqual([['motor-right: reversed'], 'forward']);
   });
 
   it('rests every robot with a fixed caster on its wheels and caster, upright and with its chassis clear of the floor', () => {
