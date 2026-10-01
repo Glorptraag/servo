@@ -21,32 +21,32 @@
     }
   },
   "card": {
-    "does": "Holds up the back of the frame and swivels to follow.",
+    "does": "Holds up the back of the chassis (frame) and swivels to follow.",
     "gives": "Gives: a smooth ride with no drag.",
-    "needs": "Needs: a place under the frame (grey).",
+    "needs": "Needs: a place under the chassis (grey).",
     "popularMechanics": "Office chairs and shopping trolleys roll on casters."
   },
   "failureModes": [
     {
-      "cardLine": "Loose: the frame drags on the floor.",
-      "hint": "The caster is not fixed to the frame",
+      "cardLine": "Loose: the chassis (frame) drags on the floor.",
+      "hint": "The caster is not fixed to the chassis",
       "id": "loose",
       "need": "fixed",
       "shows": [
         "drag"
       ],
-      "teachingNote": "The caster holds the back of the frame off the floor and swivels to follow the wheels. Left loose, the frame scrapes the floor, so the robot drags and pulls to one side.",
+      "teachingNote": "The caster holds the back of the chassis off the floor and swivels to follow the wheels. Left loose, the chassis scrapes the floor, so the robot drags and pulls to one side.",
       "unmet": "absent"
     },
     {
-      "cardLine": "Off the floor: the frame drags.",
+      "cardLine": "Off the floor: the chassis (frame) drags.",
       "hint": "The caster does not reach the floor",
       "id": "lifted",
       "need": "on-floor",
       "shows": [
         "drag"
       ],
-      "teachingNote": "A caster holds the frame up only where it reaches the floor. Fixed where it hangs in the air, it carries nothing, so the frame scrapes.",
+      "teachingNote": "A caster holds the chassis up only where it reaches the floor. Fixed where it hangs in the air, it carries nothing, so the chassis scrapes.",
       "unmet": "lifted"
     }
   ],

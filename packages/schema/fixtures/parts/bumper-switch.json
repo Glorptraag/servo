@@ -39,7 +39,7 @@
   "card": {
     "does": "Opens the power line when its bumper touches something.",
     "gives": "Gives: a stop when the robot meets a wall.",
-    "needs": "Needs: a place in a power line, at the front of the frame.",
+    "needs": "Needs: a place in a power line, at the front of the chassis (frame).",
     "popularMechanics": "A lift door has a switch like this that stops it when it meets an arm."
   },
   "failureModes": [
