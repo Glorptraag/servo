@@ -77,6 +77,7 @@ Live describes the wiring, not the voltages. A part whose two supply nets are bo
 - `liveAt` looks the state up in the table when there are up to 6 controls. A Level 1–2 kit has at most 4.
   - Above 6 controls, `liveAt` works the state out instead, which takes about 0.1 ms.
   - A caller that ticks can keep the answer until a control changes.
+  - Every answer is frozen, because the table shares one answer among every tick that asks for it. The graph is read-only: no solver writes into it.
 
 ## Notes for the solver tasks
 

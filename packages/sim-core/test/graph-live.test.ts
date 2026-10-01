@@ -259,6 +259,19 @@ describe('the live table', () => {
     for (const state of [{}, { switches: { 'no-such/control': false } }, ...odd, ...every]) expect(liveAt(graph, state)).toEqual(liveAt(worked, state));
   });
 
+  it('hands out frozen answers, so no reader can change one for every later tick', () => {
+    const graph = buildGraph(validBlueprints.find((entry) => entry.name === 'rolling-start')?.data as Blueprint, catalogue);
+    for (const answers of [graph, { ...graph, liveTable: undefined }]) {
+      const live = liveAt(answers);
+      expect(Object.isFrozen(live) && Object.isFrozen(live.nodes) && Object.isFrozen(live.sources) && Object.isFrozen(live.nets)).toBe(true);
+      expect(() => {
+        (live.nets as boolean[])[0] = false;
+      }).toThrow(TypeError);
+      expect(liveAt(answers).nets).toEqual([true, true, true]);
+    }
+    expect(Object.isFrozen(graph.liveTable)).toBe(true);
+  });
+
   it('is left out above LIVE_TABLE_CONTROLS controls, and liveAt works the state out instead', () => {
     const count = LIVE_TABLE_CONTROLS + 1;
     const switches = Array.from({ length: count }, (_, index) => `s${index + 1}`);

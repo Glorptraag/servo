@@ -126,25 +126,22 @@ export const liveFor = (wiring: Wiring, on: readonly boolean[]): LiveNets => {
       grew = true;
     });
   }
-  return { nodes, sources: giving, nets: netsLive(wiring, giving, nodes) };
+  // Frozen, so an answer shared through the table can never be changed by one reader for every later tick.
+  return Object.freeze({ nodes: Object.freeze(nodes), sources: Object.freeze(giving), nets: Object.freeze(netsLive(wiring, giving, nodes)) });
 };
 
 /** The live nets for every control key, or undefined above LIVE_TABLE_CONTROLS controls. */
 export const liveTableOf = (wiring: Wiring, controls: number): readonly LiveNets[] | undefined => {
   if (controls > LIVE_TABLE_CONTROLS) return undefined;
-  return Array.from({ length: 1 << controls }, (_, key) =>
-    liveFor(
-      wiring,
-      Array.from({ length: controls }, (_, index) => (key & (1 << index)) !== 0),
-    ),
-  );
+  const on = (key: number): boolean[] => Array.from({ length: controls }, (_, index) => (key & (1 << index)) !== 0);
+  return Object.freeze(Array.from({ length: 1 << controls }, (_, key) => liveFor(wiring, on(key))));
 };
 
 /**
  * The power graph at a control state: which nets closed switches join, which sources give power and which
  * nets are live. Pure: the same graph and state always give the same answer. Kit-sized builds look it up
  * in `liveTable`; larger ones work it out here, so a caller that ticks can keep the answer until a control
- * changes.
+ * changes. Every answer is frozen, so no reader can change it for another.
  */
 export const liveAt = (graph: SimGraph, state: ControlState = {}): LiveNets => {
   const on = controlsOn(graph.controls, state);
