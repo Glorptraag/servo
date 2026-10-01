@@ -9,6 +9,8 @@
   },
   "scripts": {
     "art": "node packages/tools/src/placeholder-art/main.ts",
+    "dev": "pnpm --filter @servo/app dev",
+    "build": "pnpm --filter @servo/app build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint --config eslint.config.js --max-warnings 0 .",
