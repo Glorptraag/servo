@@ -8,6 +8,8 @@
   },
   "scripts": {
     "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:browser": "vitest run --project browser --project performance",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -16,6 +18,8 @@
     "pixi.js": "^8.21.0"
   },
   "devDependencies": {
+    "@vitest/browser-playwright": "5.0.2",
+    "playwright": "^1.63.0",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
