@@ -4,17 +4,20 @@ import {
   SPEC_CARD_LAYERS,
   canvasPoseOf,
   carriedPlacement,
+  cosSin,
   drivePushes,
   makeCatalogue,
   mountPlacement,
   placeParts,
   placePoint,
   robotRoot,
+  validateArenaPreset,
   validateBlueprint,
   validatePartRecord,
   wiredNeeds,
 } from '@servo/schema';
 import type {
+  ArenaPreset,
   Blueprint,
   CanvasPose,
   ControlState,
@@ -24,6 +27,7 @@ import type {
   PartRecord,
   PlacedPart,
   Primitive,
+  Ramp,
   RatioPrimitive,
   SourcePrimitive,
   SpecCardLayer,
@@ -39,8 +43,9 @@ const files = Object.entries(
   import.meta.glob<string>('../parts/level-1/*.json', { query: '?raw', import: 'default', eager: true }),
 ).map(([path, text]) => ({ file: path.slice(path.lastIndexOf('/') + 1), text }));
 
-// The Level 1 roster. The 1-cell pack, small wheel, bumper switch, gearbox, motor driver, buzzer and servo are task 2.2's.
-const ROSTER = ['battery-pack-2-cell', 'caster', 'chassis', 'dc-motor', 'led', 'switch', 'wheel-large'];
+// The Level 1 roster. The LED (D47), 1-cell pack, small wheel, bumper switch, gearbox, motor driver, buzzer and servo
+// are Level 2 parts, in parts/level-2/.
+const ROSTER = ['battery-pack-2-cell', 'caster', 'chassis', 'dc-motor', 'switch', 'wheel-large'];
 
 const valid = <T>(result: ValidationResult<T>, what: string): T => {
   if (!result.ok) throw new Error(`${what} does not validate: ${result.issues.map(({ code, path }) => `${code} at ${path}`).join('; ')}`);
@@ -52,7 +57,18 @@ const records: readonly PartRecord[] = files.flatMap(({ text }) => {
   return result.ok ? [result.value] : [];
 });
 
-const catalogue = makeCatalogue({ parts: records });
+// Task 2.4's arena presets, which the reference robot runs in and the tuning estimates measure.
+const arenas: readonly ArenaPreset[] = Object.entries(
+  import.meta.glob<string>('../arenas/*.json', { query: '?raw', import: 'default', eager: true }),
+).map(([path, text]) => valid(validateArenaPreset(JSON.parse(text)), path));
+
+const arena = (id: string): ArenaPreset => {
+  const found = arenas.find((candidate) => candidate.id === id);
+  if (!found) throw new Error(`packages/content/arenas/${id}.json is missing.`);
+  return found;
+};
+
+const catalogue = makeCatalogue({ parts: records, arenas });
 
 const record = (id: string): PartRecord => {
   const found = records.find((candidate) => candidate.id === id);
@@ -156,7 +172,7 @@ describe('settings and safety notes', () => {
   });
 
   it('carries an adult-supervision note on the battery pack and on each small part (brief Section 13)', () => {
-    expect(records.filter((part) => part.card.safetyNote !== undefined).map((part) => part.id)).toEqual(['battery-pack-2-cell', 'caster', 'led', 'switch']);
+    expect(records.filter((part) => part.card.safetyNote !== undefined).map((part) => part.id)).toEqual(['battery-pack-2-cell', 'caster', 'switch']);
   });
 });
 
@@ -210,7 +226,6 @@ const blueprintOf = (parts: readonly PlacedPart[], wires: readonly Ends[]): unkn
     const [toPart = '', toPort = ''] = to.split('.');
     return { id: `w${index + 1}`, from: { part: fromPart, port: fromPort }, to: { part: toPart, port: toPort } };
   }),
-  // Arena presets are task 2.4's; a catalogue without arenas leaves the reference unchecked.
   arena: { preset: 'open-floor', props: [] },
   meta: {
     id: '5d1f0c2e-7a4b-4c9d-8e3f-2b6a1c0d9e8f',
@@ -338,8 +353,9 @@ const reach = (blueprint: Blueprint, id: string): readonly [number, number] => {
 const axle = (blueprint: Blueprint, wheel: string) => placePoint(placementOf(blueprint, wheel), drivePort(record('wheel-large'), 'hub').at);
 
 describe('the reference Level 1 robot', () => {
-  it('validates as a blueprint against a catalogue of the Level 1 records', () => {
+  it('validates as a blueprint against a catalogue of the Level 1 records and the arena presets', () => {
     expect(validateBlueprint(blueprintOf(ROBOT_PARTS, [...MECHANICAL, ...POWER]), catalogue).ok).toBe(true);
+    expect(validateBlueprint({ ...(blueprintOf(ROBOT_PARTS, [...MECHANICAL, ...POWER]) as object), arena: { preset: 'moon', props: [] } }, catalogue).ok).toBe(false);
   });
 
   it('lays out on the canvas as its mounts say: the right motor drawn as its mirror image', () => {
@@ -432,12 +448,12 @@ describe('failure modes the wiring decides', () => {
 
   it.each([
     ['one wire to a DC motor', [['battery', 'battery-pack-2-cell'], ['motor', 'dc-motor']], [['battery.plus', 'motor.plus']], ['battery: no-loop', 'motor: no-circuit']],
-    ['one wire to an LED', [['battery', 'battery-pack-2-cell'], ['led', 'led']], [['battery.plus', 'led.plus']], ['battery: no-loop', 'led: no-circuit']],
+    ['a DC motor wired only at minus', [['battery', 'battery-pack-2-cell'], ['motor', 'dc-motor']], [['battery.minus', 'motor.minus']], ['battery: no-loop', 'motor: no-circuit']],
     ['a switch across the pack', [['battery', 'battery-pack-2-cell'], ['switch', 'switch']], [['battery.plus', 'switch.a'], ['switch.b', 'battery.minus']], ['battery: short-circuit', 'switch: across-the-pack']],
     [
-      'a switch off to one side of an LED’s loop',
-      [['battery', 'battery-pack-2-cell'], ['led', 'led'], ['switch', 'switch']],
-      [['battery.plus', 'led.plus'], ['led.minus', 'battery.minus'], ['battery.plus', 'switch.a']],
+      'a switch off to one side of a DC motor’s loop',
+      [['battery', 'battery-pack-2-cell'], ['motor', 'dc-motor'], ['switch', 'switch']],
+      [['battery.plus', 'motor.plus'], ['motor.minus', 'battery.minus'], ['battery.plus', 'switch.a']],
       ['switch: outside-loop'],
     ],
   ] as const)('%s', (_name, parts, wires, expected) => {
@@ -454,13 +470,50 @@ describe('failure modes the wiring decides', () => {
 // - a pack sags by the current through it × internalOhms, and both motors share it;
 // - the wheels and the caster share the robot's weight by where its centre of mass lies between the axle and the
 //   caster; the caster drags by rollingFriction × its share, and the wheels roll free;
-// - a slope adds weight × sin(angle) to the push the two wheels must give.
-// The 1-cell pack and the gearbox are the schema's example records, standing in for task 2.2's.
+// - a slope adds weight × sin(angle) to the push the two wheels must give;
+// - a tyre grips up to its grip × the floor's friction × the weight on it.
+// Distances, slopes and friction come from task 2.4's presets. The 1-cell pack and the gearbox are the schema's
+// example records, standing in for task 2.2's.
 
 const GRAVITY = 9.81;
-const CROSSING_MM = 1600; // About the drive from the start pose to the far wall on task 2.4's 2,000 mm floors.
-const CLIMB = 40 / 280; // Task 2.4's ramp preset: 40 mm up over 280 mm, about 1 in 7.
-const FLOOR_FRICTION = 0.8; // Task 2.4's presets.
+
+/** How far ahead of a preset's start pose a floor point lies, along the start heading (mm). */
+const aheadOf = (preset: ArenaPreset, x: number, y: number): number => {
+  const [cos, sin] = cosSin(preset.start.heading);
+  return (x - preset.start.x) * cos + (y - preset.start.y) * sin;
+};
+
+/** How far the robot reaches ahead of its chassis's centre: the furthest corner of any part's body box (mm). */
+const frontOf = (blueprint: Blueprint): number => {
+  const placements = placeParts(blueprint, catalogue);
+  return Math.max(
+    ...blueprint.parts.flatMap((part) => {
+      const where = placements.get(part.id);
+      const { size } = typeOf(blueprint, part.id).body;
+      if (!where) return [];
+      return [-1, 1].flatMap((sx) => [-1, 1].map((sy) => placePoint(where.placement, { x: (sx * size.x) / 2, y: (sy * size.y) / 2, z: 0 }).x));
+    }),
+  );
+};
+
+/** The wall stop preset's drive: from the start pose until the robot's front meets the far wall (mm). */
+const driveToWall = (preset: ArenaPreset, front: number): number => {
+  const wall = preset.walls.find((candidate) => candidate.id === 'far-wall');
+  if (!wall) throw new Error(`The '${preset.id}' preset has no far wall.`);
+  return Math.min(aheadOf(preset, wall.from.x, wall.from.y), aheadOf(preset, wall.to.x, wall.to.y)) - wall.thicknessMm / 2 - front;
+};
+
+const UPHILL: Readonly<Record<Ramp['uphill'], readonly [number, number]>> = { '+x': [1, 0], '-x': [-1, 0], '+y': [0, 1], '-y': [0, -1] };
+
+/** The steepest slope the robot climbs, driving straight from the preset's start pose: rise over run. */
+const steepestClimb = (preset: ArenaPreset): number => {
+  const [cos, sin] = cosSin(preset.start.heading);
+  const grades = preset.ramps
+    .filter((ramp) => UPHILL[ramp.uphill][0] * cos + UPHILL[ramp.uphill][1] * sin > 0)
+    .map((ramp) => ramp.riseMm / (ramp.uphill.endsWith('x') ? ramp.to.x - ramp.from.x : ramp.to.y - ramp.from.y));
+  if (grades.length === 0) throw new Error(`The '${preset.id}' preset has no slope to climb.`);
+  return Math.max(...grades);
+};
 
 const primitive = <K extends Primitive['kind']>(part: PartRecord, kind: K): Extract<Primitive, { kind: K }> => {
   const found = part.behaviour.find((candidate): candidate is Extract<Primitive, { kind: K }> => candidate.kind === kind);
@@ -529,12 +582,15 @@ describe('the reference robot by first-order estimate', () => {
   const drag = caster.rollingFriction * onCaster * weight;
   /** The torque each drive wheel's motor must give to push `newtons` along with the other. */
   const perWheel = (newtons: number): number => (newtons / 2) * wheel.radiusMm;
+  /** The most torque a drive wheel can pass to the floor before its tyre slips, on a floor of `friction`. */
+  const gripPerWheel = (friction: number, cosine = 1): number => wheel.grip * friction * ((onWheels * weight * cosine) / 2) * wheel.radiusMm;
   const mmPerSecond = (rpm: number): number => (rpm / 60) * 2 * Math.PI * wheel.radiusMm;
+  const toWall = driveToWall(arena('wall-stop'), frontOf(robot()));
 
-  it('crosses the floor in a few seconds on the 2-cell pack, far from stalling', () => {
+  it('drives from the start pose to the far wall in a few seconds on the 2-cell pack, far from stalling', () => {
     const run = operate(twoCell, motor, perWheel(drag));
     expect(perWheel(drag)).toBeLessThan(run.stallNmm / 4);
-    const seconds = CROSSING_MM / mmPerSecond(run.rpm);
+    const seconds = toWall / mmPerSecond(run.rpm);
     expect(seconds).toBeGreaterThan(2);
     expect(seconds).toBeLessThan(6);
   });
@@ -546,13 +602,22 @@ describe('the reference robot by first-order estimate', () => {
     expect(slow.rpm / fast.rpm).toBeLessThan(0.6);
   });
 
-  it('stalls on the 1-in-7 climb in direct drive, and climbs it through a 3:1 gearbox with grip to spare', () => {
-    const sine = CLIMB / Math.sqrt(1 + CLIMB * CLIMB);
-    const climbNmm = perWheel(weight * sine + drag);
+  it('climbs the ramp preset’s slope in direct drive, with torque and grip to spare (D33)', () => {
+    const preset = arena('ramp');
+    const grade = steepestClimb(preset);
+    const climbNmm = perWheel((weight * grade) / Math.sqrt(1 + grade * grade) + drag);
+    const run = operate(twoCell, motor, climbNmm);
+    expect(climbNmm).toBeLessThan(run.stallNmm * 0.6);
+    expect(run.rpm).toBeGreaterThan(0);
+    expect(gripPerWheel(preset.friction, 1 / Math.sqrt(1 + grade * grade))).toBeGreaterThan(climbNmm * 2);
+  });
+
+  it('stalls its motors at the far wall in direct drive, and slips its tyres there through a 3:1 gearbox', () => {
+    const grip = gripPerWheel(arena('wall-stop').friction);
     const stalled = operate(twoCell, motor, Number.POSITIVE_INFINITY);
-    expect(climbNmm).toBeGreaterThan(stalled.stallNmm * 1.1);
-    expect(stalled.stallNmm * gearbox.ratio * gearbox.efficiency).toBeGreaterThan(climbNmm * 1.5);
-    const gripNmm = wheel.grip * FLOOR_FRICTION * ((onWheels * weight) / 2) * wheel.radiusMm;
-    expect(gripNmm).toBeGreaterThan(climbNmm * 2);
+    // Direct drive: the motors stop and hum before the tyres let go.
+    expect(stalled.stallNmm).toBeLessThan(grip);
+    // Through a gearbox the tyres let go first, at a wall or on a standing start: the squeal.
+    expect(stalled.stallNmm * gearbox.ratio * gearbox.efficiency).toBeGreaterThan(grip);
   });
 });

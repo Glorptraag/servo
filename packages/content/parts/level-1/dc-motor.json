@@ -5,12 +5,12 @@
       "id": "motor",
       "kind": "actuator",
       "mode": "speed",
-      "noLoadMilliamps": 100,
-      "noLoadRpm": 300,
+      "noLoadMilliamps": 120,
+      "noLoadRpm": 200,
       "ratedVolts": 6,
       "reverse": false,
-      "stallMilliamps": 700,
-      "stallTorqueNmm": 12,
+      "stallMilliamps": 1200,
+      "stallTorqueNmm": 39,
       "startVolts": 0.8,
       "supply": {
         "neg": "minus",
@@ -26,7 +26,7 @@
       "y": 0,
       "z": 10
     },
-    "grams": 28,
+    "grams": 30,
     "size": {
       "x": 64,
       "y": 22,
@@ -42,7 +42,7 @@
   "failureModes": [
     {
       "cardLine": "No complete circuit: the shaft stays still.",
-      "hint": "This motor has power in but no way out",
+      "hint": "This motor is not in a loop with the battery pack",
       "id": "no-circuit",
       "need": "power",
       "shows": [

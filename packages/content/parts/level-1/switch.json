@@ -36,7 +36,7 @@
   "failureModes": [
     {
       "cardLine": "Across the battery pack: closing it drains the pack fast.",
-      "hint": "This switch joins plus straight to minus",
+      "hint": "This switch closes a loop with nothing in it that uses power",
       "id": "across-the-pack",
       "need": "no-short",
       "shows": [
@@ -47,7 +47,7 @@
     },
     {
       "cardLine": "Not in the loop: pressing it changes nothing.",
-      "hint": "This switch is not in the power line",
+      "hint": "This switch is not in a loop with the battery pack",
       "id": "outside-loop",
       "need": "in-loop",
       "shows": [

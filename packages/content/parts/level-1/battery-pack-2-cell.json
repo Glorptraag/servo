@@ -36,7 +36,7 @@
   "failureModes": [
     {
       "cardLine": "Short circuit: the battery pack drains fast.",
-      "hint": "Plus is joined straight to minus",
+      "hint": "This battery pack is in a loop with nothing in it that uses power",
       "id": "short-circuit",
       "need": "no-short",
       "shows": [
