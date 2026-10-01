@@ -42,20 +42,18 @@ export interface PartBody {
 }
 
 /**
- * Power, loop and isolation needs are judged as wired: on the circuit the child built, with every switch
- * counted closed and every motor-driver channel at full forward command. A switch's state and a driver's
- * command are control, never faults: when one of them cuts or reverses a part's supply, the part shows
- * that behaviour (it stops, or turns the other way) with no fault. `wiredNeeds` gives the verdicts the
- * wiring alone decides; sim-core judges the rest on the voltages of the same as-wired circuit.
+ * A fault is something the child's controls cannot fix. Every need is judged on the build as it stands,
+ * with each switch and each motor-driver channel at its current setting. An unmet need is a fault only
+ * when no other setting of the controls would meet it and no short circuit or unpowered driver explains
+ * it; otherwise the part just shows the behaviour. A short circuit is a fault for as long as it lasts.
+ * `wiredNeeds` gives the verdicts the wiring decides; sim-core judges `low`, `high` and `reversed` on
+ * its voltages by the same rule (`explainByControls`).
  */
 
 /**
- * A complete circuit, the right way round, with the voltage across `supply` within [minVolts, maxVolts],
- * judged as wired. Unmet as `open` when no closed path through a source joins the supply's two ports
- * outside the part, `low` or `high` outside the range, and `reversed` when the circuit drives it the
- * wrong way round. A part fed through a motor-driver channel or a regulator whose own power need is unmet,
- * or starved by a short circuit elsewhere in its circuit, shows no power fault of its own: that part's
- * fault, or the short's, stands for it.
+ * A complete circuit, the right way round, with the voltage across `supply` within [minVolts, maxVolts].
+ * Unmet as `open` when no closed path through a source giving power joins the supply's two ports outside
+ * the part, `low` or `high` outside the range, and `reversed` when the circuit drives it the wrong way round.
  */
 export interface PowerNeed {
   readonly id: NeedId;
@@ -66,9 +64,9 @@ export interface PowerNeed {
 }
 
 /**
- * A closed path joins these two power ports outside the part, judged as wired. Unless this part is the
- * source of these ports, the path runs through a source. Unmet as `open` only when there is no closed
- * path at all: a closed path with nothing that uses power is the isolation need's `shorted`, never `open`.
+ * A closed path joins these two power ports outside the part, through a source giving power unless this
+ * part is the source of these ports. Unmet as `open` when there is none: a closed path with nothing that
+ * uses power is the isolation need's `shorted`, never `open`.
  */
 export interface LoopNeed {
   readonly id: NeedId;
@@ -105,9 +103,10 @@ export interface TorqueNeed {
 }
 
 /**
- * No short circuit runs through these two power ports, judged as wired: no closed path made only of wires,
- * closed switches and sources with power joins them through a source (this part, when it is the source).
- * Unmet as `shorted`.
+ * No short circuit runs through these two power ports: no closed loop of sources and closed switches, with
+ * nothing that uses power, whose source voltages do not cancel (adding each battery's volts from − to + and
+ * taking them away from + to −). Equal packs side by side cancel; a 2-cell pack beside a 1-cell pack does
+ * not. Unmet as `shorted`, which is a fault while it lasts.
  */
 export interface IsolationNeed {
   readonly id: NeedId;

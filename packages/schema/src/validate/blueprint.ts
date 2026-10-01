@@ -1,5 +1,6 @@
 import { canvasPoseOf, mountPlacement, normalizeDegrees } from '../geometry/frames.ts';
 import { placeParts } from '../geometry/robot.ts';
+import { BLUEPRINT_VERSION } from '../types/blueprint.ts';
 import type { Blueprint, BlueprintMeta, PlacedPart, SettingValue, Wire } from '../types/blueprint.ts';
 import type { ValidationResult } from '../types/issue.ts';
 import type { Setting } from '../types/part.ts';
@@ -125,12 +126,28 @@ const checkHighWater = (ctx: Ctx, blueprint: Blueprint, path: string): void => {
   }
 };
 
+/**
+ * The refusal for a blueprint from a newer version of Servo. validateBlueprint and migrateBlueprint both
+ * give it, so an older app answers a newer blueprint the same way on either path.
+ */
+export const reportNewerVersion = (ctx: Ctx, path: string, version: number, newest: number): void =>
+  report(
+    ctx,
+    'blueprint.newer_version',
+    path,
+    `This blueprint is from a newer version of Servo: it is version ${version}, and the newest this schema reads is version ${newest}. It is refused, never guessed at.`,
+  );
+
 /** Structure only: fields, formats, ids unique and under the high-water mark. Needs no catalogue. */
 export const readBlueprintShape = (ctx: Ctx, value: unknown, path: string): Blueprint | undefined => {
   const mark = ctx.issues.length;
   if (isRecord(value)) {
     const version = field(value, 'version');
-    if (version !== undefined && version !== 1) {
+    if (typeof version === 'number' && Number.isInteger(version) && version > BLUEPRINT_VERSION) {
+      reportNewerVersion(ctx, at(path, 'version'), version, BLUEPRINT_VERSION);
+      return undefined;
+    }
+    if (version !== undefined && version !== BLUEPRINT_VERSION) {
       report(
         ctx,
         'blueprint.unsupported_version',

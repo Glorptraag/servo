@@ -8,10 +8,12 @@
     "node": ">=24"
   },
   "scripts": {
+    "art": "node packages/tools/src/placeholder-art/main.ts",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint --config eslint.config.js --max-warnings 0 .",
-    "check": "pnpm lint && pnpm typecheck && pnpm test"
+    "check": "pnpm lint && pnpm typecheck && pnpm test",
+    "validate-content": "node packages/tools/src/validate-content/main.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

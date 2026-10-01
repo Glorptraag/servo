@@ -1,5 +1,5 @@
-// @servo/schema: the v1 types, validators, wiring rules, geometry and canonical form every package builds on.
-// See packages/schema/README.md.
+// @servo/schema: the v1 types, validators, wiring rules, geometry, canonical form and blueprint migrations
+// every package builds on. See packages/schema/README.md.
 
 export * from './types/common.ts';
 export * from './types/taxonomy.ts';
@@ -61,8 +61,8 @@ export { cosDegrees, cosSin, sinDegrees } from './geometry/trig.ts';
 export { drivePushes, placeParts, robotRoot } from './geometry/robot.ts';
 export type { DrivePush, PartPlacement } from './geometry/robot.ts';
 
-export { wiredNeeds } from './circuit/wired.ts';
-export type { WiredVerdict } from './circuit/wired.ts';
+export { CONTROL_COMBINATION_CAP, controlId, controlsOf, explainByControls, wiredNeeds } from './circuit/wired.ts';
+export type { Control, ControlId, ControlState, Explanation, WiredVerdict } from './circuit/wired.ts';
 
 export { mapSettingValue, validatePartRecord } from './validate/part.ts';
 export { validateArenaPreset } from './validate/arena.ts';
@@ -71,3 +71,6 @@ export { validateKit } from './validate/kit.ts';
 export { MAX_GOAL_DEPTH, validateChallenge } from './validate/challenge.ts';
 export { validateRunRecord } from './validate/run.ts';
 export { canonicalJson, canonicalizeBlueprint, claimPartId, claimWireId, serializeBlueprint } from './validate/canonical.ts';
+
+export { migrateBlueprint } from './migrate/blueprint.ts';
+export type { MigrationResult } from './migrate/runner.ts';

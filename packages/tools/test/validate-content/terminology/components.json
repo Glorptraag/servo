@@ -1,0 +1,19 @@
+{
+  "components": [
+    { "name": "battery pack" },
+    { "name": "switch" },
+    { "name": "bumper switch" },
+    { "name": "DC motor" },
+    { "name": "servo motor" },
+    { "name": "motor driver" },
+    { "name": "gearbox" },
+    { "name": "wheel" },
+    { "name": "caster" },
+    { "name": "chassis", "glosses": ["frame"] },
+    { "name": "LED" },
+    { "name": "buzzer" },
+    { "name": "microcontroller", "glosses": ["brain"] },
+    { "name": "line sensor" },
+    { "name": "ultrasonic sensor" }
+  ]
+}

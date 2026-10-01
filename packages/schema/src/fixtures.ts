@@ -57,6 +57,10 @@ import challengeDriveAndLight from '../fixtures/challenges/drive-and-light.json'
 import challengeOneMotorBackwards from '../fixtures/challenges/one-motor-backwards.json' with { type: 'json' };
 import challengeMeetTheSwitch from '../fixtures/challenges/meet-the-switch.json' with { type: 'json' };
 import runRollingStartRun from '../fixtures/run-records/rolling-start-run.json' with { type: 'json' };
+import v0RollingStart from '../fixtures/v0/rolling-start.json' with { type: 'json' };
+import v0LightAndMotor from '../fixtures/v0/light-and-motor.json' with { type: 'json' };
+import v0RollingStartMigrated from '../fixtures/v0/migrated/rolling-start.json' with { type: 'json' };
+import v0LightAndMotorMigrated from '../fixtures/v0/migrated/light-and-motor.json' with { type: 'json' };
 
 export interface Fixture {
   readonly name: string;
@@ -118,14 +122,14 @@ export const validBlueprints: readonly BlueprintFixture[] = [
   { name: 'led-circuit', description: 'An LED and a switch on a battery pack, with no chassis: a circuit on the workbench.', motion: 'none', data: blueprintLedCircuit },
   { name: 'reversed-motor', description: 'Legal but wrong: the right motor is wired the other way round, so on Run the robot spins on the spot.', motion: 'spin', data: blueprintReversedMotor },
   { name: 'short-circuit', description: "Legal but wrong: a wire joins the 1-cell pack's plus straight to its minus, so on Run it drains fast.", motion: 'none', data: blueprintShortCircuit },
-  { name: 'switch-across-pack', description: 'Legal but wrong: a switch wired straight across the 2-cell pack, so closing it makes a short circuit. The switch shows across-the-pack and the pack its short circuit, one fault each.', motion: 'none', data: blueprintSwitchAcrossPack },
+  { name: 'switch-across-pack', description: 'Legal but wrong: a switch wired straight across the 2-cell pack. While it is closed, as it rests, the switch shows across-the-pack and the pack its short circuit, one fault each; opened, nothing is wrong.', motion: 'none', data: blueprintSwitchAcrossPack },
   { name: 'bumper-robot', description: 'A Level 2 robot: motor driver with both channels forward, gearboxes (the motors on the inner motor mounts), bumper switch, buzzer, and a servo motor with power but no signal. It drives forward.', motion: 'forward', data: blueprintBumperRobot },
   { name: 'motor-off-pin', description: "Legal but wrong (Level 3 slot): a DC motor on the microcontroller's 3V pin, and a servo motor on a no-op brain's output.", motion: 'none', data: blueprintMotorOffPin },
 ];
 
 /** Each refused for exactly one reason, recorded in `expect`. */
 export const invalidBlueprints: readonly InvalidFixture[] = [
-  { name: 'version-2', description: 'A version 2 blueprint: this schema reads version 1 only.', expect: { code: 'blueprint.unsupported_version', path: '$.version' }, data: invalidBlueprintVersion2 },
+  { name: 'version-2', description: 'A version 2 blueprint, from a newer version of Servo: this schema reads version 1 only.', expect: { code: 'blueprint.newer_version', path: '$.version' }, data: invalidBlueprintVersion2 },
   { name: 'duplicate-part-id', description: 'Two placed parts share the id "led".', expect: { code: 'id.duplicate', path: '$.parts[3].id' }, data: invalidBlueprintDuplicatePartId },
   { name: 'unknown-part-type', description: 'A placed part names a part record the catalogue does not have.', expect: { code: 'ref.unknown_part_type', path: '$.parts[3].part' }, data: invalidBlueprintUnknownPartType },
   { name: 'unknown-port', description: 'A wire ends on a port the LED does not have.', expect: { code: 'ref.unknown_port', path: '$.wires[1].to.port' }, data: invalidBlueprintUnknownPort },
@@ -159,4 +163,15 @@ export const exampleChallenges: readonly Fixture[] = [
 
 export const exampleRunRecords: readonly Fixture[] = [
   { name: 'rolling-start-run', description: 'A second Run of a Rolling Start robot in the wall-stop arena: the left wheel slips against the box, the child presses the switch at tick 60 (an input, not a fault), and the goal is not met.', data: runRollingStartRun },
+];
+
+export interface MigrationFixture extends Fixture {
+  /** The same build after migrateBlueprint, validateBlueprint and canonical form: canonicalJson of it is the saved bytes. */
+  readonly migrated: unknown;
+}
+
+/** Blueprints stored in synthetic version 0 (docs/migrations.md), each with its migrated form, for testing migration on load. */
+export const v0Blueprints: readonly MigrationFixture[] = [
+  { name: 'rolling-start', description: 'The Rolling Start robot as version 0 stored it: parts in the order they were placed, and two power wires written from the other end. Migrated, it is the version 1 rolling-start fixture apart from its derived id.', data: v0RollingStart, migrated: v0RollingStartMigrated },
+  { name: 'light-and-motor', description: 'A shared workbench circuit with no author: numbered ids with gaps, an LED and a DC motor turned, a stored default that canonical form drops, and three power wires written from the other end.', data: v0LightAndMotor, migrated: v0LightAndMotorMigrated },
 ];

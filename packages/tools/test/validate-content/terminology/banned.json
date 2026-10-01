@@ -1,0 +1,13 @@
+{
+  "banned": [
+    { "phrase": "mascot", "reason": "Parts are drawn and named as themselves, never as a character (ground rule 7)." },
+    { "phrase": "brain-y bit", "reason": "A character-style name: say microcontroller (brief Section 12)." },
+    { "phrase": "zappy wire", "reason": "A character-style name: say power line or signal line (brief Section 12)." },
+    { "phrase": "points", "reason": "Servo keeps no score (ground rule 7, D22)." },
+    { "phrase": "coins", "reason": "Servo keeps no score (ground rule 7)." },
+    { "phrase": "streaks", "reason": "Servo keeps no score (ground rule 7)." },
+    { "phrase": "lives", "reason": "A challenge can never be failed, so there are no lives (ground rule 7)." },
+    { "phrase": "great job", "reason": "System text never praises the child (brief Section 12)." }
+  ],
+  "allowed": ["mount point", "mount points"]
+}

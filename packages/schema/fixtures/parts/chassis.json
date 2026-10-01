@@ -14,7 +14,7 @@
     }
   },
   "card": {
-    "does": "Holds every part of the robot in one frame.",
+    "does": "Holds every part of the robot in one frame, called the chassis.",
     "gives": "Gives: a strong base that keeps the parts in place.",
     "needs": "Needs: parts fixed to its mount points (grey).",
     "popularMechanics": "A car has a chassis too: the frame its engine, seats and wheels bolt to."
@@ -32,14 +32,14 @@
       "unmet": "lost"
     },
     {
-      "cardLine": "Frame on the floor: the robot drags.",
-      "hint": "Something needs to hold up this end of the frame",
+      "cardLine": "Chassis (frame) on the floor: the robot drags.",
+      "hint": "Something needs to hold up this end of the chassis",
       "id": "scraping",
       "need": "upright",
       "shows": [
         "drag"
       ],
-      "teachingNote": "The frame rides clear of the floor only while wheels and a caster hold it up at both ends. With nothing under one end, it rests on the floor and scrapes, so the robot drags.",
+      "teachingNote": "The chassis rides clear of the floor only while wheels and a caster hold it up at both ends. With nothing under one end, it rests on the floor and scrapes, so the robot drags.",
       "unmet": "grounded"
     }
   ],
