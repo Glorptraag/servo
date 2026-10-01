@@ -4,8 +4,9 @@ import type { Blueprint } from '@servo/schema';
 import { mountCanvas } from '../../src/index.ts';
 import { CANVAS_NAME } from '../../src/renderer/surface.ts';
 import type { CanvasSurface } from '../../src/renderer/surface.ts';
+import { STANDARD_PALETTE } from '../../src/renderer/style.ts';
 import { catalogue, fixture } from '../helpers/catalogue.ts';
-import { PREFS, listen, mount, reset, settle, unmountAll } from './helpers.ts';
+import { PREFS, artFrom, colourDistance, describeRgb, listen, mount, reset, rgbOf, settle, shoot, svgArt, unmountAll } from './helpers.ts';
 
 // Tests that mount and destroy canvases make their own; the rest share one (helpers.ts, `reset`).
 let surface: CanvasSurface;
@@ -46,6 +47,42 @@ describe('mounting', () => {
     expect(after.x).toBeCloseTo(centre.x, 9);
     expect(after.y).toBeCloseTo(centre.y, 9);
     unmount();
+  });
+
+  it('never shows a blank frame while its host changes size, as when an edge slides', async () => {
+    const { host, surface, unmount } = await mount({ resolveArt: artFrom({ 'part/battery-pack-2-cell': svgArt('#2050c0') }) });
+    surface.load(fixture('rolling-start'));
+    await settle(surface);
+    // Hold back the canvas's own frames: what shows after each step is only what it drew while the host resized.
+    const original = window.requestAnimationFrame;
+    const held: FrameRequestCallback[] = [];
+    window.requestAnimationFrame = (callback) => {
+      held.push(callback);
+      return 0;
+    };
+    try {
+      for (const width of [1100, 1020, 940, 860, 780]) {
+        const resized = new Promise<void>((resolve) => {
+          const watcher = new ResizeObserver(() => {
+            watcher.disconnect();
+            resolve();
+          });
+          watcher.observe(surface.canvas);
+        });
+        host.style.width = `${width}px`;
+        await resized;
+        const shot = await shoot(surface.canvas);
+        expect(shot.width).toBe(width * window.devicePixelRatio);
+        const bench = shot.at({ x: 12, y: 12 });
+        const picture = shot.at(surface.camera.worldToScreen({ x: -45, y: 0 }));
+        expect(colourDistance(bench, rgbOf(STANDARD_PALETTE.workbench)), `the bench at ${width} px: ${describeRgb(bench)}`).toBeLessThanOrEqual(12);
+        expect(colourDistance(picture, rgbOf(0x2050c0)), `the battery pack at ${width} px: ${describeRgb(picture)}`).toBeLessThanOrEqual(12);
+      }
+    } finally {
+      window.requestAnimationFrame = original;
+      for (const callback of held) original.call(window, callback);
+      unmount();
+    }
   });
 
   it('leaves nothing behind in its host when destroyed, and destroying twice is harmless', async () => {
