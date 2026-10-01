@@ -1,0 +1,59 @@
+{
+  "id": "rolling-start",
+  "level": 1,
+  "name": "Rolling Start",
+  "parts": [
+    {
+      "part": "battery-pack-2-cell",
+      "quantity": 1
+    },
+    {
+      "part": "switch",
+      "quantity": 1
+    },
+    {
+      "part": "dc-motor",
+      "quantity": 2
+    },
+    {
+      "part": "wheel-large",
+      "quantity": 2
+    },
+    {
+      "part": "chassis",
+      "quantity": 1
+    },
+    {
+      "part": "caster",
+      "quantity": 1
+    }
+  ],
+  "tray": [
+    {
+      "family": "power",
+      "parts": [
+        "battery-pack-2-cell",
+        "switch"
+      ]
+    },
+    {
+      "family": "actuators",
+      "parts": [
+        "dc-motor"
+      ]
+    },
+    {
+      "family": "drivetrain",
+      "parts": [
+        "wheel-large"
+      ]
+    },
+    {
+      "family": "structure-and-ride",
+      "parts": [
+        "chassis",
+        "caster"
+      ]
+    }
+  ]
+}
