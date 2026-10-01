@@ -70,7 +70,7 @@ Each challenge holds:
 
 **Part states** (`PART_STATES`) come in pairs: `powered` / `unpowered` (a voltage across its supply, either way round, or none), `turning` / `still`, `lit` / `dark`, `sounding` / `silent`, `closed` / `open` (a switch), and `upright` / `tipped` (the robot it is on).
 
-**Cross-and-stop** is Level 2 (D26). Its goal is near the wall, at most 5 mm/s, with no DC motor powered. A robot grinding against the wall with its motors running does not pass: its wheels slip before the motors stall, so "no motor overloaded" would not catch it.
+**Cross-and-stop** is Level 2 (D26). Its goal is near the wall, at most 5 mm/s, with no DC motor powered. A robot pressed against the wall with its motors running does not pass. In direct drive its motors stall there, but through a gearbox its wheels slip first, so "no motor overloaded" would not catch it.
 
 ## Run record
 
