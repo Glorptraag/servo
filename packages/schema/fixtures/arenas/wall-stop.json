@@ -1,0 +1,61 @@
+{
+  "friction": 0.8,
+  "id": "wall-stop",
+  "lines": [],
+  "name": "Wall stop",
+  "props": [
+    {
+      "at": {
+        "heading": 0,
+        "x": 1000,
+        "y": 950
+      },
+      "fixed": false,
+      "grams": 150,
+      "id": "box",
+      "shape": "box",
+      "size": {
+        "x": 80,
+        "y": 80,
+        "z": 60
+      }
+    }
+  ],
+  "ramps": [],
+  "size": {
+    "x": 2000,
+    "y": 1200
+  },
+  "start": {
+    "heading": 0,
+    "x": 300,
+    "y": 600
+  },
+  "walls": [
+    {
+      "from": {
+        "x": 1800,
+        "y": 100
+      },
+      "id": "far-wall",
+      "thicknessMm": 40,
+      "to": {
+        "x": 1800,
+        "y": 1100
+      }
+    }
+  ],
+  "zones": [
+    {
+      "from": {
+        "x": 1600,
+        "y": 400
+      },
+      "id": "stop-zone",
+      "to": {
+        "x": 1780,
+        "y": 800
+      }
+    }
+  ]
+}

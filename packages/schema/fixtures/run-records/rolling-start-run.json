@@ -1,0 +1,398 @@
+{
+  "blueprint": {
+    "arena": {
+      "preset": "wall-stop",
+      "props": []
+    },
+    "meta": {
+      "author": "a3f1c2d4-5b6e-4f70-8a91-b2c3d4e5f607",
+      "createdAt": "2026-10-01T09:00:00.000Z",
+      "highWater": {
+        "parts": 0,
+        "wires": 12
+      },
+      "id": "0f8e7d6c-5b4a-4c3d-9e2f-1a0b9c8d7e6f",
+      "level": 1,
+      "name": "Rolling robot",
+      "updatedAt": "2026-10-01T09:20:00.000Z"
+    },
+    "parts": [
+      {
+        "id": "battery",
+        "part": "battery-pack-2-cell",
+        "position": {
+          "x": -45,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "caster",
+        "part": "caster",
+        "position": {
+          "x": -70,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "chassis",
+        "part": "chassis",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "motor-left",
+        "part": "dc-motor",
+        "position": {
+          "x": 30,
+          "y": -53
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "motor-right",
+        "part": "dc-motor",
+        "position": {
+          "x": 30,
+          "y": 53
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "switch",
+        "part": "switch",
+        "position": {
+          "x": 55,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "wheel-left",
+        "part": "wheel-large",
+        "position": {
+          "x": 40,
+          "y": -79
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "wheel-right",
+        "part": "wheel-large",
+        "position": {
+          "x": 40,
+          "y": 79
+        },
+        "rotation": 0,
+        "settings": {}
+      }
+    ],
+    "version": 1,
+    "wires": [
+      {
+        "from": {
+          "part": "motor-left",
+          "port": "mount"
+        },
+        "id": "w1",
+        "to": {
+          "part": "chassis",
+          "port": "motor-left"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-right",
+          "port": "plus"
+        },
+        "id": "w10",
+        "to": {
+          "part": "switch",
+          "port": "b"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w11",
+        "to": {
+          "part": "motor-left",
+          "port": "minus"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w12",
+        "to": {
+          "part": "motor-right",
+          "port": "minus"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-right",
+          "port": "mount"
+        },
+        "id": "w2",
+        "to": {
+          "part": "chassis",
+          "port": "motor-right"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "mount"
+        },
+        "id": "w3",
+        "to": {
+          "part": "chassis",
+          "port": "deck-rear"
+        }
+      },
+      {
+        "from": {
+          "part": "switch",
+          "port": "mount"
+        },
+        "id": "w4",
+        "to": {
+          "part": "chassis",
+          "port": "deck-front"
+        }
+      },
+      {
+        "from": {
+          "part": "caster",
+          "port": "mount"
+        },
+        "id": "w5",
+        "to": {
+          "part": "chassis",
+          "port": "caster"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-left",
+          "port": "shaft"
+        },
+        "id": "w6",
+        "to": {
+          "part": "wheel-left",
+          "port": "hub"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-right",
+          "port": "shaft"
+        },
+        "id": "w7",
+        "to": {
+          "part": "wheel-right",
+          "port": "hub"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "plus"
+        },
+        "id": "w8",
+        "to": {
+          "part": "switch",
+          "port": "a"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-left",
+          "port": "plus"
+        },
+        "id": "w9",
+        "to": {
+          "part": "switch",
+          "port": "b"
+        }
+      }
+    ]
+  },
+  "blueprintId": "0f8e7d6c-5b4a-4c3d-9e2f-1a0b9c8d7e6f",
+  "challenge": "cross-and-stop",
+  "endedAt": "2026-10-01T09:21:12.000Z",
+  "events": [
+    {
+      "kind": "value",
+      "partId": "battery",
+      "payload": {
+        "charge": 1,
+        "volts": 3
+      },
+      "tick": 0
+    },
+    {
+      "kind": "value",
+      "partId": "motor-left",
+      "payload": {
+        "milliamps": 180,
+        "rpm": 85,
+        "volts": 2.8
+      },
+      "tick": 30
+    },
+    {
+      "kind": "sound",
+      "partId": "motor-left",
+      "payload": {
+        "hz": 140,
+        "level": 0.4,
+        "sound": "motor"
+      },
+      "tick": 30
+    },
+    {
+      "kind": "motion",
+      "partId": "chassis",
+      "payload": {
+        "heading": 0,
+        "x": 312,
+        "y": 600
+      },
+      "tick": 31
+    },
+    {
+      "kind": "motion",
+      "partId": "arena:box",
+      "payload": {
+        "heading": 2,
+        "x": 1004,
+        "y": 950
+      },
+      "tick": 52
+    },
+    {
+      "kind": "sound",
+      "partId": "chassis",
+      "payload": {
+        "level": 0.7,
+        "sound": "knock"
+      },
+      "tick": 52
+    },
+    {
+      "kind": "fault",
+      "partId": "wheel-left",
+      "payload": {
+        "active": true,
+        "failure": "slipping"
+      },
+      "tick": 52
+    },
+    {
+      "kind": "sound",
+      "partId": "wheel-left",
+      "payload": {
+        "level": 0.5,
+        "sound": "squeal"
+      },
+      "tick": 52
+    },
+    {
+      "kind": "fault",
+      "partId": "wheel-left",
+      "payload": {
+        "active": false,
+        "failure": "slipping"
+      },
+      "tick": 58
+    },
+    {
+      "kind": "value",
+      "partId": "switch",
+      "payload": {
+        "closed": false
+      },
+      "tick": 60
+    },
+    {
+      "kind": "value",
+      "partId": "motor-left",
+      "payload": {
+        "milliamps": 0,
+        "rpm": 0,
+        "volts": 0
+      },
+      "tick": 61
+    }
+  ],
+  "faults": [
+    {
+      "failure": "slipping",
+      "firstTick": 52,
+      "partId": "wheel-left"
+    }
+  ],
+  "fixed": [
+    {
+      "changes": [
+        {
+          "from": {
+            "part": "caster",
+            "port": "mount"
+          },
+          "kind": "add-wire",
+          "to": {
+            "part": "chassis",
+            "port": "caster"
+          }
+        }
+      ],
+      "failure": "loose",
+      "partId": "caster"
+    }
+  ],
+  "goal": {
+    "met": false
+  },
+  "hints": [
+    {
+      "at": "2026-10-01T09:20:40.000Z",
+      "partId": "caster",
+      "step": "pulse-part",
+      "trigger": "asked"
+    }
+  ],
+  "id": "8d9e0f1a-2b3c-4d4e-b5f6-a7b8c9d0e1f2",
+  "inputs": [
+    {
+      "closed": false,
+      "kind": "switch",
+      "partId": "switch",
+      "tick": 60
+    }
+  ],
+  "profile": "a3f1c2d4-5b6e-4f70-8a91-b2c3d4e5f607",
+  "runNumber": 2,
+  "seed": 12345,
+  "startedAt": "2026-10-01T09:21:00.000Z",
+  "tickRate": 30,
+  "ticks": 90,
+  "version": 1
+}

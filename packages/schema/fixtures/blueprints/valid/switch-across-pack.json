@@ -1,0 +1,64 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "meta": {
+    "createdAt": "2026-10-01T09:00:00.000Z",
+    "highWater": {
+      "parts": 0,
+      "wires": 2
+    },
+    "id": "9e0f1a2b-3c4d-4e5f-86a7-b8c9d0e1f2a3",
+    "level": 1,
+    "name": "Switch across the pack",
+    "updatedAt": "2026-10-01T09:20:00.000Z"
+  },
+  "parts": [
+    {
+      "id": "battery",
+      "part": "battery-pack-2-cell",
+      "position": {
+        "x": -60,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "switch",
+      "part": "switch",
+      "position": {
+        "x": 60,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    }
+  ],
+  "version": 1,
+  "wires": [
+    {
+      "from": {
+        "part": "battery",
+        "port": "plus"
+      },
+      "id": "w1",
+      "to": {
+        "part": "switch",
+        "port": "a"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "minus"
+      },
+      "id": "w2",
+      "to": {
+        "part": "switch",
+        "port": "b"
+      }
+    }
+  ]
+}
