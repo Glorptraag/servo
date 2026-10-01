@@ -185,6 +185,20 @@ describe('each part bound to the graph', () => {
     }
   });
 
+  it.each(graphs)('%s: every power line keeps its ends as stored, inside its net', (_, graph) => {
+    const power = (ref: PortRef): boolean => graph.parts.get(ref.part)?.ports.get(ref.port)?.spec.type === 'power';
+    const stored = graph.blueprint.wires
+      .filter((wire) => power(wire.from) && power(wire.to))
+      .map((wire) => ({ wire: wire.id, from: text(wire.from), to: text(wire.to) }))
+      .sort((p, q) => (p.wire < q.wire ? -1 : p.wire > q.wire ? 1 : 0));
+    expect(graph.powerLines.map((line) => ({ wire: line.wire, from: text(line.from), to: text(line.to) }))).toEqual(stored);
+    for (const line of graph.powerLines) {
+      expect(graph.nets[line.net]?.ports.map(text)).toEqual(expect.arrayContaining([text(line.from), text(line.to)]));
+      expect(graph.nets[line.net]?.wires).toContain(line.wire);
+    }
+    expect(graph.nets.flatMap((net) => net.wires).sort()).toEqual(graph.powerLines.map((line) => line.wire).sort());
+  });
+
   it.each(graphs)('%s: every signal line, drive linkage and mount shows on the ports at both ends', (_, graph) => {
     const joined = (ref: PortRef): string[] => (graph.parts.get(ref.part)?.ports.get(ref.port)?.joined ?? []).map(text);
     let links = 0;

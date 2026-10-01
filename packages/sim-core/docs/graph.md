@@ -28,6 +28,7 @@ const live = liveAt(graph, { switches: { 'switch/contacts': false } }); // LiveN
 | --- | --- | --- |
 | `parts` | Each placed part, with its blueprint entry and its record. Its `ports` are bound to nets and links, its `primitives` are bound to the power elements they make, and its `placement` comes from `placeParts`. A primitive's other ports (a shaft, a hub, a signal in) resolve through `ports`, by the ids the primitive names | every solver |
 | `nets` | Power ports joined by power wires alone, with the wires inside each. A net is named by its first port | electrical |
+| `powerLines` | Each power wire with its two ends as the blueprint stores them, and its net. A current along it is positive from `from` to `to`, as the interface's `WireFlow.milliamps` counts it | electrical, tick loop |
 | `sources` | Batteries, and the outputs of motor-driver channels and regulators. Each has `pos` and `neg` nets (its polarity). An output also has the `feeder` supply that must have power, and a driver channel has the `control` that stops it | electrical |
 | `switches` | Each switch's two terminal nets: a join that the control state opens and closes, never baked into a net | electrical |
 | `uses` | Everything that takes power: loads, actuators, programs, and the supplies of drivers and regulators | electrical, behaviour |
@@ -57,6 +58,8 @@ Net, source, switch, use and control numbers are indices into these lists.
   - A source whose two ends are one node, because a bare wire or a closed switch joins them, closes its own path. Its net is live, and that is a short.
 
 Live describes the wiring, not the voltages. A part whose two supply nets are both live may still get no current. For example, a motor wired between two separately powered loops lies on no closed path. The schema's power need (`wiredNeeds`) is the stricter test, and the electrical solver works out the currents.
+
+Live is also per net, so it cannot say which wire carries current: the wire into a motor with no return path lies in a live net. The canvas's moving dots come from each power line's current (`WireFlow`), which the solvers work out from `powerLines`.
 
 ## Kept consistent with the schema
 

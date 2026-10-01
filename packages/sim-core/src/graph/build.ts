@@ -39,6 +39,7 @@ import type {
   GraphPart,
   MountLink,
   NetPair,
+  PowerLine,
   PowerNet,
   PowerSource,
   PowerSwitch,
@@ -92,11 +93,8 @@ const checked = (blueprint: Blueprint, catalogue: Catalogue): Blueprint => {
   return full.value;
 };
 
-interface PowerWire {
-  readonly wire: WireId;
-  readonly from: PortRef;
-  readonly to: PortRef;
-}
+/** A power wire before nets are known: its ends as stored. */
+type PowerWire = Omit<PowerLine, 'net'>;
 
 interface Wires {
   readonly power: readonly PowerWire[];
@@ -274,6 +272,7 @@ export const buildGraph = (blueprint: Blueprint, catalogue: Catalogue): SimGraph
     catalogue,
     parts,
     ...wiring,
+    powerLines: wires.power.map((line) => ({ ...line, net: netOf(line.from) })),
     controls,
     liveTable: liveTableOf(wiring, controls.length),
     signals: wires.signals,

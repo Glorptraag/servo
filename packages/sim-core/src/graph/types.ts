@@ -37,6 +37,8 @@ export interface SimGraph {
   readonly parts: ReadonlyMap<PlacedPartId, GraphPart>;
   /** Ports joined by power wires alone, in the order of their first port. Switches join nets only at solve time. */
   readonly nets: readonly PowerNet[];
+  /** Power lines, in wire id order: each power wire with its two ends as stored, and its net. */
+  readonly powerLines: readonly PowerLine[];
   /** Batteries, and the outputs of motor-driver channels and regulators: in part id order, then the record's primitive order. */
   readonly sources: readonly PowerSource[];
   /** Switch terminals: joins that the control state opens and closes. Same order. */
@@ -110,6 +112,16 @@ export interface PowerNet {
   readonly ports: readonly PortRef[];
   /** The power wires inside it, in id order. */
   readonly wires: readonly WireId[];
+}
+
+/** A power line: one power wire inside a net. */
+export interface PowerLine {
+  readonly wire: WireId;
+  /** Its ends as the blueprint stores them. A current along it is positive from `from` to `to`, as the interface's `WireFlow` counts it. */
+  readonly from: PortRef;
+  readonly to: PortRef;
+  /** The net both ends lie in. */
+  readonly net: number;
 }
 
 /** The + and − nets of a pair of power ports. */

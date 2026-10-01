@@ -11,6 +11,7 @@ export type {
   LiveNets,
   MountLink,
   NetPair,
+  PowerLine,
   PowerNet,
   PowerSource,
   PowerSwitch,
