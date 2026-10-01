@@ -5,6 +5,7 @@ import { ISSUE_CODES } from '@servo/schema';
 import { exampleArenas, exampleParts, invalidBlueprints, invalidKits, validKits } from '@servo/schema/fixtures';
 import { afterEach, describe, expect, it } from 'vitest';
 import * as tools from '../src/index.ts';
+import { generateArt } from '../src/placeholder-art/cli.ts';
 import { CONTENT_ISSUE_CODES } from '../src/validate-content/codes.ts';
 import { validateContent } from '../src/validate-content/validate.ts';
 import {
@@ -174,6 +175,17 @@ describe('files that are not records', () => {
       'loose/thing.json: file.unknown_kind at $: Its kind is unknown: it is in no record folder and has the fields of no record. Put it in one of parts/, arenas/, kits/, challenges/, blueprints/, run-records/.',
       expect.stringMatching(/^parts\/broken\.json: file\.bad_json at \$: Not valid JSON: /),
     ]);
+  });
+
+  it('skips the art folder, where pnpm art writes registry.json', () => {
+    const content = tempFolder();
+    const parts = exampleParts.map((part) => write(content, `parts/level-1/${idOf(part)}.json`, part));
+    generateArt({ parts: path.join(content, 'parts'), out: path.join(content, 'art/generated'), final: path.join(content, 'art/final') });
+    expect(fs.existsSync(path.join(content, 'art/generated/registry.json'))).toBe(true);
+    const run = cli(['.', '--terminology', TERMINOLOGY], { cwd: content, contentDir: content });
+    expect(issueLines(run.out)).toEqual([]);
+    expect(run.out).toEqual([`validate-content: ${parts.length} records checked, no issues.`]);
+    expect(run.status).toBe(0);
   });
 
   it('classifies a record outside the record folders by its fields', () => {
@@ -349,10 +361,11 @@ describe('the command', () => {
   it('says what is not a record when a folder holds none', () => {
     const folder = tempFolder();
     write(folder, 'content/terminology/banned.json', { banned: [] });
+    write(folder, 'content/art/generated/registry.json', {});
     const run = cli(['content'], { cwd: folder });
     expect(run.status).toBe(2);
     expect(run.err).toEqual([
-      'validate-content: No .json records in content. Terminology folders, node_modules, hidden folders, package.json, tsconfig files and symbolic links are not records.',
+      'validate-content: No .json records in content. Terminology and art folders, node_modules, hidden folders, package.json, tsconfig files and symbolic links are not records.',
     ]);
   });
 

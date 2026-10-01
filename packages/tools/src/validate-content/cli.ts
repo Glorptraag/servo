@@ -35,7 +35,8 @@ export const USAGE = [
 const plural = (count: number, noun: string): string => `${count} ${noun}${count === 1 ? '' : 's'}`;
 
 /** What the walk leaves out (records.ts), said when a folder holds no records. */
-const NOT_RECORDS = 'Terminology folders, node_modules, hidden folders, package.json, tsconfig files and symbolic links are not records.';
+const NOT_RECORDS =
+  'Terminology and art folders, node_modules, hidden folders, package.json, tsconfig files and symbolic links are not records.';
 
 /** One line per issue: file, code, JSON path and message. */
 export const formatIssue = (issue: ContentIssue, show: (file: string) => string): string =>

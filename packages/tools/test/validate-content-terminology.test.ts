@@ -157,6 +157,24 @@ describe('loading the terminology folder', () => {
     ]);
   });
 
+  it('reports a banned phrase that a qualifier holds, since no part name could use that qualifier', () => {
+    expect(
+      problems({
+        'components.json': { components: [{ name: 'wheel' }], qualifiers: ['large', 'extra-large', 'small', 'mount points'] },
+        'banned.json': {
+          banned: [
+            { phrase: 'large', reason: 'Test.' },
+            { phrase: 'points', reason: 'Test.' },
+          ],
+          allowed: ['mount points'],
+        },
+      }),
+    ).toEqual([
+      "banned.json terminology.bad_file at $.banned[0].phrase: 'large' is banned, so the qualifier 'large' in components.json could never be used.",
+      "banned.json terminology.bad_file at $.banned[0].phrase: 'large' is banned, so the qualifier 'extra-large' in components.json could never be used.",
+    ]);
+  });
+
   it('keeps the good entries of a file that has bad ones', () => {
     const folder = tempFolder();
     write(folder, 'components.json', { components: [{ name: 'wheel' }, { name: 3 }, { name: 'caster', glosses: ['', 'swivel wheel'] }] });
@@ -223,6 +241,22 @@ describe('banned words in system text', () => {
       "'coins' is on the banned list: Servo keeps no score (ground rule 7).",
       "'lives' is on the banned list: A challenge can never be failed, so there are no lives (ground rule 7).",
     ]);
+  });
+
+  it('leaves a banned word inside a longer banned phrase to that phrase, and refuses it elsewhere', () => {
+    const own = compileTerminology({
+      components: [],
+      qualifiers: [],
+      banned: [
+        { phrase: 'great', reason: 'Word.' },
+        { phrase: 'great job', reason: 'Phrase.' },
+      ],
+      allowed: [],
+    });
+    const messages = (text: string): string[] => bannedFindings(text, own).map((finding) => finding.message);
+    expect(messages('Great job')).toEqual(["'Great job' is on the banned list: Phrase."]);
+    expect(messages('A great robot')).toEqual(["'great' is on the banned list: Word."]);
+    expect(messages('A great job and a great robot')).toEqual(["'great' is on the banned list: Word.", "'great job' is on the banned list: Phrase."]);
   });
 
   it('never refuses a word inside a real name or a gloss', () => {
