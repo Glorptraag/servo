@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { makeCatalogue, validateArenaPreset, validatePartRecord } from '@servo/schema';
+import { makeCatalogue, validateArenaPreset, validatePartRecord, wiredNeeds } from '@servo/schema';
 import type { Blueprint, ControlState, PartRecord, Placement, PortRef, Primitive, ValidationResult } from '@servo/schema';
 import { exampleArenas, exampleParts, invalidBlueprints, v0Blueprints, validBlueprints } from '@servo/schema/fixtures';
 import { GraphInputError, buildGraph, liveAt } from '../src/graph/index.ts';
@@ -318,6 +318,74 @@ describe('each part bound to the graph', () => {
   });
 });
 
+describe('live is not powered, worked out by hand', () => {
+  const unmet = (blueprint: Blueprint): string[] =>
+    wiredNeeds(blueprint, catalogue).flatMap((verdict) => (verdict.unmet ? [`${verdict.partId} ${verdict.need} ${verdict.unmet}`] : []));
+
+  it('a DC motor wired between two working LED loops: every net is live, and the motor has no circuit', () => {
+    const bridge = workbench(
+      [
+        ['a', 'battery-pack-2-cell'],
+        ['b', 'battery-pack-2-cell'],
+        ['led-a', 'led'],
+        ['led-b', 'led'],
+        ['motor', 'dc-motor'],
+      ],
+      [
+        ['a.plus', 'led-a.plus'],
+        ['led-a.minus', 'a.minus'],
+        ['b.plus', 'led-b.plus'],
+        ['led-b.minus', 'b.minus'],
+        ['motor.plus', 'a.plus'],
+        ['motor.minus', 'b.plus'],
+      ],
+    );
+    const graph = buildGraph(bridge, catalogue);
+    expect(graph.nets.map((net) => net.ports.map(text))).toEqual([
+      ['a.minus', 'led-a.minus'],
+      ['a.plus', 'led-a.plus', 'motor.plus'],
+      ['b.minus', 'led-b.minus'],
+      ['b.plus', 'led-b.plus', 'motor.minus'],
+    ]);
+    expect(graph.uses.map((use) => [`${use.part}/${use.primitive}`, use.pos, use.neg])).toEqual([
+      ['led-a/light', 1, 0],
+      ['led-b/light', 3, 2],
+      ['motor/motor', 1, 3],
+    ]);
+    // Each LED closes a loop through its pack, so all four nets are live, the motor's two ends included.
+    expect(liveAt(graph).nets).toEqual([true, true, true, true]);
+    // But no closed path runs through the motor: it has no return path.
+    expect(unmet(bridge)).toEqual(['motor power open']);
+  });
+
+  it('packs side by side: the same graph whether or not their volts cancel, so the short is the solver’s', () => {
+    const sideBySide = (other: string): Blueprint =>
+      workbench(
+        [
+          ['big', 'battery-pack-2-cell'],
+          ['led', 'led'],
+          ['other', other],
+        ],
+        [
+          ['big.plus', 'other.plus'],
+          ['big.minus', 'other.minus'],
+          ['big.plus', 'led.plus'],
+          ['led.minus', 'big.minus'],
+        ],
+      );
+    const graphs = ['battery-pack-2-cell', 'battery-pack-1-cell'].map((other) => buildGraph(sideBySide(other), catalogue));
+    for (const graph of graphs) {
+      expect(graph.nets.map((net) => net.ports.map(text))).toEqual([
+        ['big.minus', 'led.minus', 'other.minus'],
+        ['big.plus', 'led.plus', 'other.plus'],
+      ]);
+      expect(liveAt(graph)).toEqual({ nodes: [0, 1], sources: [true, true], nets: [true, true] });
+    }
+    expect(unmet(sideBySide('battery-pack-2-cell'))).toEqual([]);
+    expect(unmet(sideBySide('battery-pack-1-cell'))).toEqual(['big no-short shorted', 'other no-short shorted']);
+  });
+});
+
 describe('schema-invalid input', () => {
   it.each(invalidBlueprints.map((fixture) => [fixture.name, fixture] as const))('refuses %s with its named reason', (_, fixture) => {
     const error = refusal(() => buildGraph(fixture.data as Blueprint, catalogue));
@@ -344,17 +412,33 @@ describe('schema-invalid input', () => {
 });
 
 describe('determinism (ground rule 2)', () => {
-  const withoutBlueprint = (graph: SimGraph) => {
-    const { blueprint, ...rest } = graph;
-    expect(blueprint).toBeDefined();
-    return rest;
+  /** The graph as text, every Map as its entries in order, leaving out the blueprint and catalogue it was given. */
+  const serialised = (graph: SimGraph): string =>
+    JSON.stringify({ ...graph, blueprint: undefined, catalogue: undefined }, (_, value: unknown) => (value instanceof Map ? [...value.entries()] : value));
+
+  /** The list reversed, rotated by half, and with its odd places first. */
+  const reorderings = <T>(list: readonly T[]): T[][] => {
+    const half = Math.ceil(list.length / 2);
+    return [[...list].reverse(), [...list.slice(half), ...list.slice(0, half)], [...list.filter((_, index) => index % 2 === 1), ...list.filter((_, index) => index % 2 === 0)]];
   };
 
-  it.each(expectations.map((expected) => [expected.build.name, expected.build] as const))('%s: builds the same graph whatever the order of parts and wires', (_, build) => {
+  it.each(expectations.map((expected) => [expected.build.name, expected.build] as const))('%s: builds the same graph, Map order included, whatever the order of parts and wires', (_, build) => {
     const blueprint = blueprintOf(build);
-    const reversed: Blueprint = { ...blueprint, parts: [...blueprint.parts].reverse(), wires: [...blueprint.wires].reverse() };
-    expect(withoutBlueprint(buildGraph(reversed, catalogue))).toEqual(withoutBlueprint(buildGraph(blueprint, catalogue)));
+    const expected = serialised(buildGraph(blueprint, catalogue));
+    const partOrders = reorderings(blueprint.parts);
+    reorderings(blueprint.wires).forEach((wires, index) => {
+      const reordered: Blueprint = { ...blueprint, parts: partOrders[index] ?? blueprint.parts, wires };
+      expect(serialised(buildGraph(reordered, catalogue))).toBe(expected);
+    });
+    expect(serialised(buildGraph(blueprint, catalogue))).toBe(expected);
     expect(buildGraph(blueprint, catalogue)).toEqual(buildGraph(blueprint, catalogue));
+  });
+
+  it('serialises a Map in its own order, so a change of part order would show', () => {
+    const graph = buildGraph(blueprintOf({ list: 'validBlueprints', name: 'led-circuit' }), catalogue);
+    const shuffled: SimGraph = { ...graph, parts: new Map([...graph.parts].reverse()) };
+    expect(shuffled).toEqual(graph);
+    expect(serialised(shuffled)).not.toBe(serialised(graph));
   });
 
   it('builds from frozen input without changing it', () => {

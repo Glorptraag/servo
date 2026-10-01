@@ -82,6 +82,8 @@ const randomState = (graph: SimGraph, next: () => number): ControlState => {
 };
 
 interface Oracle {
+  /** Each net's node: the lowest net it reaches through closed switches. */
+  readonly nodes: readonly number[];
   readonly sources: readonly boolean[];
   readonly nets: readonly boolean[];
   /** By `part/primitive` of each use: whether a simple closed path through it runs through a source giving power. */
@@ -170,7 +172,7 @@ const oracleOf = (graph: SimGraph, state: ControlState, verdicts: readonly Wired
       powered.set(edge.id, closing.some((path) => path.source));
     }
   });
-  return { sources, nets: node.map((each) => liveNodes.has(each)), powered, looped };
+  return { nodes: node, sources, nets: node.map((each) => liveNodes.has(each)), powered, looped };
 };
 
 /** Parts with one primitive, which makes a use (an LED, a DC motor, a buzzer, a servo motor), and its power need. */
@@ -194,6 +196,7 @@ describe('live nets agree with the schema and with brute force', () => {
         const oracle = oracleOf(graph, state, verdicts);
         const live = liveAt(graph, state);
         const where = `circuit ${circuit}: ${JSON.stringify({ parts: blueprint.parts.map((part) => [part.id, part.part]), wires: blueprint.wires, state })}`;
+        expect(live.nodes, where).toEqual(oracle.nodes);
         expect(live.sources, where).toEqual(oracle.sources);
         expect(live.nets, where).toEqual(oracle.nets);
         const met = (part: string, need: string) => verdicts.find((verdict) => verdict.partId === part && verdict.need === need)?.unmet === undefined;
@@ -305,5 +308,5 @@ describe('the live table', () => {
 
 const oracleLive = (graph: SimGraph, state: ControlState, blueprint: Blueprint) => {
   const oracle = oracleOf(graph, state, wiredNeeds(blueprint, catalogue, state));
-  return { nodes: liveAt(graph, state).nodes, sources: oracle.sources, nets: oracle.nets };
+  return { nodes: oracle.nodes, sources: oracle.sources, nets: oracle.nets };
 };

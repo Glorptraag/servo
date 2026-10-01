@@ -66,6 +66,7 @@ Live is also per net, so it cannot say which wire carries current: the wire into
 - **Reused as they are:** `validateBlueprint`, `validatePartRecord`, `checkPortPair`, `resolvePort`, `controlsOf`, `placeParts`, `robotRoot`, `drivePushes`, `mountPlacement`, `carriedPlacement` and `comparePortRefs`.
 - **Rebuilt in sim-core, because the schema keeps them internal:** union-find over nets, blocks (biconnected components), and the output rule. `src/graph/topology.ts` and `src/graph/live.ts` follow `wired.ts`, over net numbers instead of port keys.
 - **Checked against the schema** by `test/graph-live.test.ts`, on 400 random circuits at 1,200 control states:
+  - the nodes, against a plain search through closed switches;
   - the sources giving power, against `wiredNeeds`' power verdicts for motor drivers and microcontrollers;
   - the live nets, against a brute-force search of every closed path;
   - that search, against `wiredNeeds`' power and loop verdicts.
@@ -73,7 +74,7 @@ Live is also per net, so it cannot say which wire carries current: the wire into
 ## Cost and determinism
 
 - The builder uses no clock, randomness, DOM or Node API. It needs no trigonometry: every transform is a quarter turn from the schema's geometry.
-- The same blueprint and catalogue always give the same graph, whatever order the parts and wires are listed in. A test checks this.
+- The same blueprint and catalogue always give the same graph, whatever order the parts and wires are listed in. A test compares the graphs as text, so the order of every Map counts too.
 - Measured once on an M1 Max under Node 26:
   - building a fixture graph takes 0.2–2 ms, and a build of 10 switches and 40 DC motors takes 3.5 ms;
   - the builder never runs the schema's control search (`wiredNeeds`).
@@ -100,4 +101,6 @@ Each expectation lists:
 - the links, and the mounts with their transforms;
 - every part's placement, the root and the pushes.
 
-`test/graph.test.ts` compares each graph with its expectation.
+`test/graph.test.ts` compares each graph with its expectation. It also works two cases out by hand that the eight builds do not cover:
+- a DC motor wired between two working LED loops, whose ends are live with no closed path through it;
+- packs side by side, whose graph is the same whether or not their volts cancel.
