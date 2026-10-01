@@ -244,7 +244,7 @@
       "dispatched_at": "2026-10-01T05:23:27+00:00"
     },
     "1.4": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -258,8 +258,8 @@
       ],
       "done_when": "A two-motor robot drives straight, turns on the spot when one motor reverses, stops at a wall, and tips with the top-heavy fixture; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T11:41:56+00:00",
+      "completed_by": "W-1.4",
       "dispatched_at": "2026-10-01T06:12:30+00:00"
     },
     "1.5": {
@@ -508,7 +508,7 @@
       "dispatched_at": "2026-10-01T04:52:13+00:00"
     },
     "3.2": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -522,8 +522,8 @@
       ],
       "done_when": "E2E scripts for the touch path and the pointer path both place every part of every fixture; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T12:50:40+00:00",
+      "completed_by": "W-3.2",
       "dispatched_at": "2026-10-01T06:59:05+00:00"
     },
     "3.3": {
@@ -1080,7 +1080,7 @@
       "completed_by": null
     },
     "6.3": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1097,7 +1097,8 @@
       "done_when": "A tagged commit produces a tester URL with the content version shown in Settings.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T11:34:37+00:00"
     },
     "6.4": {
       "status": "pending",
@@ -1767,6 +1768,14 @@
       "id": "D71",
       "question": "Saving and profiles before accounts exist (task 4.9): should every edit save, and what happens when no child profile exists yet?",
       "recommendation": "Autosave the current build about 1 s after the last edit and when Run is pressed (brief principle 5, nothing is lost); on first run create one local child profile with a neutral default name ('Builder 1'), which the parent view renames later; no email or personal data.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D72",
+      "question": "Release pipeline details (task 6.3): when does the content semver bump; should a deploy refuse a tester build without an invite-code seed; when should the app load a content bundle at run time instead of the one built in; should Settings be reached from Home behind the parental gate (D28, D68); should final art travel in the content bundle (D6)?",
+      "recommendation": "Bump the content minor version for new records and the patch for text fixes (the hash suffix already identifies every bundle); refuse deploys of tester builds without a seed; keep the built-in content until a host exists, then add run-time bundle loading; Settings sits behind the parental gate on Home; art ships with the app until D6 is decided.",
       "confidence": "medium",
       "blocks": [],
       "resolved": false
