@@ -1,10 +1,10 @@
 # @servo/app
 
-The child's app: shell, tray, library, spec card, Run bar, arena strip, challenges, hints, store, offline and sync, sound and accessibility. It puts the other packages together: content gives the records, the canvas draws and edits the build, sim-core runs it. It depends on schema, content, sim-core and canvas. Only tools imports it whole; parent imports only `@servo/app/store`. Phases 4 to 6 own it; task 0.4 owns this interface and the store's types. UI framework: React 19 (D12 default), installed by the first task that needs it (4.1).
+The child's app: shell, tray, library, spec card, Run bar, arena strip, challenges, hints, store, offline and sync, sound and accessibility. It puts the other packages together: content gives the records, the canvas draws and edits the build, sim-core runs it. It depends on schema, content, sim-core and canvas. Only tools imports it whole; parent imports only `@servo/app/store`. Phases 4 to 6 own it; task 0.4 owns this interface and the store's types. UI framework: React 19 with Vite (D12 default), from task 4.1.
 
 | Export | Owner | What |
 | --- | --- | --- |
-| `@servo/app` | 4.1 | `mountApp(host, options?)`, started by the web build and the e2e harness; a stub that rejects until then |
+| `@servo/app` | 4.1 | `mountApp(host, options?)`, started by the web build ([src/main.tsx](src/main.tsx)) and the e2e harness: the shell round the canvas. It opens the store from task 4.9 |
 | `@servo/app/store` | 0.4 types, 4.9, 5.5 | `openStore(options)`, the store's types and content's types ([src/store/index.ts](src/store/index.ts)) |
 
 ## The shell (brief Section 9)
@@ -18,16 +18,20 @@ The child's app: shell, tray, library, spec card, Run bar, arena strip, challeng
 | Arena strip | Top of the canvas, expands on Run | Preset picker; props to drag in (D36) | The arena around the robot |
 | Header | Top edge, thin | Kit and level, the goal line, Home, Save, the blueprint's name | The goal ticks when met |
 
-Every edge tucks away, and the canvas follows its host's size, so it never drops below 70% of the screen. Tuck states persist, and the left-handed preference mirrors the tray and spec card. Keys: Space is Run and Stop; Enter flips a selected switch during a Run (D42).
+Every edge tucks away, and the canvas follows its host's size, so it never drops below 70% of the screen. Tuck states persist, and the left-handed preference mirrors the tray and spec card. Keys: Space is Run and Stop; Enter flips a selected switch during a Run (D42). How the shell does it, its slots and `useShell()`: [docs/shell.md](docs/shell.md).
 
 ## How the packages meet
 
-- **Content.** `openStore()` loads it once; the app passes `content.catalogue` and a `resolveArt` built from `content.art` to `mountCanvas`.
+- **Content.** `openStore()` loads it once (until task 4.9, `mountApp` calls `loadContent()` itself); the app passes `content.catalogue` and a `resolveArt` built from `content.art` to `mountCanvas`.
 - **Canvas.** The app listens to `edit` (Undo history and saving), `select` (spec card), `placement` (tray and arena strip) and `control` (switch flips). Its own changes (settings, name, arena and Reset arena, the hint ladder's do-it) go through `canvas.apply`, so every change to a build is an `EditCommand`.
 - **sim-core.** Run snapshots tick 0 and switches the canvas to Run mode. After a one-second spin-up, a wall-clock driver steps the simulation at 30 ticks a second or in slow motion, and passes each frame to the canvas, spec card, sound layer and challenge runner. Stop records the Run, restores tick 0 and returns the canvas to Build mode, where the build is exactly as it was (ground rule 4). An unchanged build keeps its Simulation and seed (D37).
 - **Shared links** open a read-only canvas: a replay with "keep a copy" (D43).
 
 Details: [docs/run-loop.md](docs/run-loop.md).
+
+## Running it
+
+From the repository root, `pnpm dev` serves the app and `pnpm build` writes it to `packages/app/dist`; both run `pnpm art` first. `pnpm --filter @servo/app preview` serves the build, and `pnpm --filter @servo/app test` runs the unit and browser tests ([docs/shell.md](docs/shell.md), "Tests").
 
 ## The store
 
