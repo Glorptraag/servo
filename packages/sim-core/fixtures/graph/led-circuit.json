@@ -1,0 +1,31 @@
+{
+  "build": { "list": "validBlueprints", "name": "led-circuit" },
+  "nets": [
+    { "ports": ["battery.minus", "led.minus"], "wires": ["w3"] },
+    { "ports": ["battery.plus", "switch.a"], "wires": ["w1"] },
+    { "ports": ["led.plus", "switch.b"], "wires": ["w2"] }
+  ],
+  "sources": [{ "at": "battery/cells", "pos": "battery.plus", "neg": "battery.minus" }],
+  "switches": [{ "at": "switch/contacts", "a": "battery.plus", "b": "led.plus", "control": "switch/contacts" }],
+  "uses": [{ "at": "led/light", "pos": "led.plus", "neg": "battery.minus" }],
+  "controls": [{ "id": "switch/contacts", "kind": "switch", "rest": true }],
+  "live": [
+    { "on": [], "joined": [], "nets": [], "sources": ["battery/cells"] },
+    {
+      "on": ["switch/contacts"],
+      "joined": [["battery.plus", "led.plus"]],
+      "nets": ["battery.minus", "battery.plus", "led.plus"],
+      "sources": ["battery/cells"]
+    }
+  ],
+  "signals": [],
+  "drives": [],
+  "mounts": [],
+  "placements": {
+    "battery": { "by": "root", "root": "battery", "x": 0, "y": 0, "z": 0, "yaw": 0, "mirrored": false },
+    "led": { "by": "root", "root": "led", "x": 0, "y": 0, "z": 0, "yaw": 0, "mirrored": false },
+    "switch": { "by": "root", "root": "switch", "x": 0, "y": 0, "z": 0, "yaw": 0, "mirrored": false }
+  },
+  "root": null,
+  "pushes": []
+}
