@@ -1,20 +1,21 @@
 // The tester invite gate (task 6.3): on a tester build's first launch on a device, a plain form asks for the invite
 // code before the app opens. It is the page, not a dialog box (ground rule 9), and a wrong code is a line of text
 // under the field. The words are for the adult who sets the device up.
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { createRoot } from 'react-dom/client';
-import { NoWebCrypto, isInviteCode, normalizeInviteCode, pageStorage, rememberCode, rememberedCode } from './invite.ts';
+import { NoWebCrypto, normalizeInviteCode } from './invite-code.ts';
+import { isInviteCode, pageStorage, rememberCode, rememberedCode } from './invite.ts';
 import './release.css';
 
-const EMPTY = 'Enter the invite code.';
-const NO_MATCH = 'That code does not match. Check it and enter it again.';
-const NOT_SECURE = 'Codes can be checked only on a secure address, one that starts with https.';
-const NOT_CHECKED = 'The code could not be checked. Reload the page and enter it again.';
+export const EMPTY = 'Enter the invite code.';
+export const NO_MATCH = 'That code does not match. Check it and enter it again.';
+export const NOT_SECURE = 'Codes can be checked only on a secure address, one that starts with https.';
+export const NOT_CHECKED = 'The code could not be checked. Reload the page and enter it again.';
 
 interface InviteGateProps {
   readonly hashes: readonly string[];
-  /** Called with the reduced code once it matches. */
+  /** Called once, with the reduced code, when it matches. */
   readonly onAccepted: (code: string) => void;
 }
 
@@ -22,17 +23,25 @@ const InviteGate = ({ hashes, onAccepted }: InviteGateProps) => {
   const id = useId();
   const [typed, setTyped] = useState('');
   const [problem, setProblem] = useState<{ readonly text: string; readonly invalid: boolean } | null>(null);
+  // A submit while a code is being checked, or after one matched, does nothing: a double tap opens the app once.
+  const checking = useRef(false);
 
   const submit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
+    if (checking.current) return;
     const code = normalizeInviteCode(typed);
     if (code === '') {
       setProblem({ text: EMPTY, invalid: true });
       return;
     }
+    checking.current = true;
+    const refuse = (text: string, invalid: boolean): void => {
+      checking.current = false;
+      setProblem({ text, invalid });
+    };
     isInviteCode(code, hashes).then(
-      (matches) => (matches ? onAccepted(code) : setProblem({ text: NO_MATCH, invalid: true })),
-      (error: unknown) => setProblem({ text: error instanceof NoWebCrypto ? NOT_SECURE : NOT_CHECKED, invalid: false }),
+      (matches) => (matches ? onAccepted(code) : refuse(NO_MATCH, true)),
+      (error: unknown) => refuse(error instanceof NoWebCrypto ? NOT_SECURE : NOT_CHECKED, false),
     );
   };
 
@@ -70,7 +79,7 @@ const InviteGate = ({ hashes, onAccepted }: InviteGateProps) => {
 
 /**
  * Opens a tester build behind the invite gate: at once when this device remembers a code that is one of `hashes`,
- * otherwise once the form takes one. `open` mounts what the page shows (main.tsx).
+ * otherwise once the form takes one. `open` runs once, and mounts what the page shows.
  */
 export const openThroughInviteGate = async (host: HTMLElement, hashes: readonly string[], open: () => void): Promise<void> => {
   const storage = pageStorage();
@@ -80,7 +89,10 @@ export const openThroughInviteGate = async (host: HTMLElement, hashes: readonly 
     return;
   }
   const root = createRoot(host);
+  let opened = false;
   const accept = (code: string): void => {
+    if (opened) return;
+    opened = true;
     rememberCode(storage, code);
     root.unmount();
     open();

@@ -7,7 +7,7 @@ import { appBuildStep, gitStep, runRelease } from './cli.ts';
 
 const repoRoot = fileURLToPath(new URL('../../../../', import.meta.url));
 
-process.exitCode = runRelease(process.argv.slice(2), {
+process.exitCode = await runRelease(process.argv.slice(2), {
   cwd: process.env.INIT_CWD ?? process.cwd(),
   repoRoot,
   env: process.env,

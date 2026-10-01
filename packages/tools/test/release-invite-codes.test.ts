@@ -2,6 +2,7 @@
 // The known answers below were worked out independently (Python's hmac and shasum), so a change to how codes or hashes
 // are made, which would lock testers out of a new release, fails here.
 import { createHash } from 'node:crypto';
+import * as app from '@servo/app/invite-code';
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_INVITE_COUNT,
@@ -69,25 +70,30 @@ describe('invite codes', () => {
 });
 
 describe('what the build stores for a code', () => {
-  it("is the lower-case hex SHA-256 of the code's 8 characters", () => {
-    // printf '%s' 'ABCD2345' | shasum -a 256
-    expect(hashInviteCode('ABCD2345')).toBe('a00d76646eba91b057841554d5c8334f498dc592ed744bce404f21fe271cd36e');
-    const [first = ''] = inviteCodes(SEED, 1);
-    expect(hashInviteCode(first)).toBe(createHash('sha256').update(first).digest('hex'));
-    expect(hashInviteCode(first)).toMatch(/^[0-9a-f]{64}$/);
+  it("is the app's own reduction and hash, the ones its invite gate uses on what a tester types", () => {
+    expect(hashInviteCode).toBe(app.hashInviteCode);
+    expect(normalizeInviteCode).toBe(app.normalizeInviteCode);
   });
 
-  it('is the same however the code is typed: any case, with dashes or spaces', () => {
-    const hash = hashInviteCode('ABCD2345');
-    for (const typed of ['abcd2345', 'ABCD-2345', ' abcd 2345 ', 'Abcd–2345', 'ab.cd/23_45']) {
-      expect(normalizeInviteCode(typed), typed).toBe('ABCD2345');
-      expect(hashInviteCode(typed), typed).toBe(hash);
+  it("is the lower-case hex SHA-256 of the code's 8 characters", async () => {
+    // printf '%s' 'ABCD2345' | shasum -a 256
+    expect(await hashInviteCode('ABCD2345')).toBe('a00d76646eba91b057841554d5c8334f498dc592ed744bce404f21fe271cd36e');
+    for (const code of inviteCodes(SEED, DEFAULT_INVITE_COUNT)) {
+      expect(await hashInviteCode(code)).toBe(createHash('sha256').update(code).digest('hex'));
     }
   });
 
-  it('never equals the code, and a code prints as two groups of four', () => {
+  it('is the same however the code is typed: any case, with dashes or spaces', async () => {
+    const hash = await hashInviteCode('ABCD2345');
+    for (const typed of ['abcd2345', 'ABCD-2345', ' abcd 2345 ', 'Abcd–2345', 'ab.cd/23_45']) {
+      expect(normalizeInviteCode(typed), typed).toBe('ABCD2345');
+      expect(await hashInviteCode(typed), typed).toBe(hash);
+    }
+  });
+
+  it('never equals the code, and a code prints as two groups of four', async () => {
     const [code = ''] = inviteCodes(SEED, 1);
-    expect(hashInviteCode(code)).not.toContain(code);
+    expect(await hashInviteCode(code)).not.toContain(code);
     expect(formatInviteCode(code)).toBe('23RY-K629');
     expect(formatInviteCode('23ry k629')).toBe('23RY-K629');
   });

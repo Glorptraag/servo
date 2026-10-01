@@ -90,9 +90,9 @@ const textsUnder = (folder: string): string[] =>
     .filter((entry) => entry.isFile())
     .map((entry) => read(path.join(entry.parentPath, entry.name)));
 
-const releaseError = (run: () => unknown): ReleaseError => {
+const releaseError = async (run: () => Promise<unknown>): Promise<ReleaseError> => {
   try {
-    run();
+    await run();
   } catch (error) {
     if (error instanceof ReleaseError) return error;
     throw error;
@@ -101,10 +101,10 @@ const releaseError = (run: () => unknown): ReleaseError => {
 };
 
 describe('a release', () => {
-  it('writes the web build, the content bundle and release.json, with no codes and no invite gate without a seed', () => {
+  it('writes the web build, the content bundle and release.json, with no codes and no invite gate without a seed', async () => {
     const at = repo();
     const build = fakeBuild(at.dist);
-    const report = buildRelease(options(at), steps(build));
+    const report = await buildRelease(options(at), steps(build));
 
     const expected = makeContentBundle(readContentSemver(at.content), readContentFiles(at.content));
     expect(report.contentVersion).toBe(expected.version);
@@ -132,13 +132,14 @@ describe('a release', () => {
     expect(report.codesFile).toBeUndefined();
   });
 
-  it('with a seed, writes the codes to the private file only and gives the build only their hashes', () => {
+  it('with a seed, writes the codes to the private file only and gives the build only their hashes', async () => {
     const at = repo();
     const build = fakeBuild(at.dist);
     const codes = inviteCodes(SEED, 4);
-    const report = buildRelease(options(at, { inviteSeed: SEED, inviteCount: 4 }), steps(build));
+    const report = await buildRelease(options(at, { inviteSeed: SEED, inviteCount: 4 }), steps(build));
 
-    expect(build.calls[0]?.[BUILD_VARIABLES.inviteHashes]).toBe(codes.map(hashInviteCode).join(','));
+    const hashes = await Promise.all(codes.map((code) => hashInviteCode(code)));
+    expect(build.calls[0]?.[BUILD_VARIABLES.inviteHashes]).toBe(hashes.join(','));
     expect(report.inviteCodes).toBe(4);
     const codesFile = path.join(at.out, RELEASE_LAYOUT.codes);
     expect(report.codesFile).toBe(codesFile);
@@ -154,88 +155,88 @@ describe('a release', () => {
     for (const text of outsideCodesFile) for (const secret of secrets) expect(text).not.toContain(secret);
   });
 
-  it('takes the app version from the tag, and refuses a tag that names no version before building', () => {
+  it('takes the app version from the tag, and refuses a tag that names no version before building', async () => {
     const at = repo();
     const build = fakeBuild(at.dist);
-    expect(buildRelease(options(at, { tag: 'v0.1.0' }), steps(build)).appVersion).toBe('0.1.0');
-    expect(buildRelease(options(at, { tag: 'v0.2.0-tester.1' }), steps(build)).appVersion).toBe('0.2.0-tester.1');
+    expect((await buildRelease(options(at, { tag: 'v0.1.0' }), steps(build))).appVersion).toBe('0.1.0');
+    expect((await buildRelease(options(at, { tag: 'v0.2.0-tester.1' }), steps(build))).appVersion).toBe('0.2.0-tester.1');
     expect(build.calls.map((call) => call[BUILD_VARIABLES.appVersion])).toEqual(['0.1.0', '0.2.0-tester.1']);
     for (const tag of ['0.1.0', 'v1', 'v1.0', 'vfoo', 'v1.0.0+build', 'release-1']) {
-      expect(releaseError(() => buildRelease(options(at, { tag }), steps(build))).message).toMatch(/does not name a version/);
+      expect((await releaseError(() => buildRelease(options(at, { tag }), steps(build)))).message).toMatch(/does not name a version/);
     }
     expect(build.calls).toHaveLength(2);
   });
 
-  it("names a dry run by its commit, says when the working tree had changes, and copes without git", () => {
+  it("names a dry run by its commit, says when the working tree had changes, and copes without git", async () => {
     const at = repo();
     const dirty = { ...CLEAN, 'status --porcelain': ' M packages/content/parts/level-1/dc-motor.json' };
-    expect(buildRelease(options(at), steps(fakeBuild(at.dist), gitAnswers(dirty)))).toMatchObject({ appVersion: 'dry-abc1234-dirty', dirty: true });
-    expect(buildRelease(options(at), steps(fakeBuild(at.dist), () => undefined))).toMatchObject({ appVersion: 'dry', commit: null, dirty: false });
+    await expect(buildRelease(options(at), steps(fakeBuild(at.dist), gitAnswers(dirty)))).resolves.toMatchObject({ appVersion: 'dry-abc1234-dirty', dirty: true });
+    await expect(buildRelease(options(at), steps(fakeBuild(at.dist), () => undefined))).resolves.toMatchObject({ appVersion: 'dry', commit: null, dirty: false });
   });
 
-  it('refuses content with issues before building anything', () => {
+  it('refuses content with issues before building anything', async () => {
     const at = repo();
     write(at.content, 'parts/level-1/dc-motor.json', '{ "id": "dc-motor" }');
     const build = fakeBuild(at.dist);
-    const error = releaseError(() => buildRelease(options(at), steps(build)));
+    const error = await releaseError(() => buildRelease(options(at), steps(build)));
     expect(error.message).toMatch(/The content has issues/);
     expect(error.problems.some((problem) => problem.startsWith('parts/level-1/dc-motor.json: '))).toBe(true);
     expect(build.calls).toEqual([]);
     expect(fs.existsSync(at.out)).toBe(false);
   });
 
-  it('refuses a build that does not carry the content version and the code hashes', () => {
+  it('refuses a build that does not carry the content version and the code hashes', async () => {
     const at = repo();
-    const error = releaseError(() => buildRelease(options(at, { inviteSeed: SEED, inviteCount: 2 }), steps(fakeBuild(at.dist, { bake: false }))));
+    const error = await releaseError(() => buildRelease(options(at, { inviteSeed: SEED, inviteCount: 2 }), steps(fakeBuild(at.dist, { bake: false }))));
     expect(error.message).toMatch(/does not carry what the release gave it/);
     expect(error.problems).toHaveLength(3);
   });
 
-  it('refuses a build that holds a code or the seed, and never prints either', () => {
+  it('refuses a build that holds a code or the seed, and never prints either', async () => {
     const at = repo();
     const [code = ''] = inviteCodes(SEED, 1);
     for (const leaked of [formatInviteCode(code), code, SEED]) {
       const build = fakeBuild(at.dist, { extra: `const leaked = ${JSON.stringify(leaked)};` });
-      const error = releaseError(() => buildRelease(options(at, { inviteSeed: SEED, inviteCount: 1 }), steps(build)));
+      const error = await releaseError(() => buildRelease(options(at, { inviteSeed: SEED, inviteCount: 1 }), steps(build)));
       expect(error.message).toMatch(/holds an invite code or the invite seed/);
       expect(error.problems).toEqual(['assets/index.js holds one.']);
       for (const secret of [code, formatInviteCode(code), SEED]) expect(error.message).not.toContain(secret);
     }
   });
 
-  it('refuses an index.html that loads files by relative URL, which /settings would not find', () => {
+  it('refuses an index.html that loads files by relative URL, which /settings would not find', async () => {
     const at = repo();
     const build = fakeBuild(at.dist, { html: '<!doctype html><script type="module" src="./assets/index.js"></script>' });
-    expect(releaseError(() => buildRelease(options(at), steps(build))).problems).toContain('./assets/index.js');
+    expect((await releaseError(() => buildRelease(options(at), steps(build)))).problems).toContain('./assets/index.js');
   });
 
-  it("replaces an earlier release's files, its codes included", () => {
+  it("replaces an earlier release's files, its codes included", async () => {
     const at = repo();
-    buildRelease(options(at, { inviteSeed: SEED }), steps(fakeBuild(at.dist)));
+    await buildRelease(options(at, { inviteSeed: SEED }), steps(fakeBuild(at.dist)));
     expect(fs.existsSync(path.join(at.out, RELEASE_LAYOUT.codes))).toBe(true);
     write(at.out, '.DS_Store', '');
     write(at.out, 'web/stale.txt', 'from before');
-    buildRelease(options(at), steps(fakeBuild(at.dist)));
+    await buildRelease(options(at), steps(fakeBuild(at.dist)));
     expect(fs.existsSync(path.join(at.out, 'private'))).toBe(false);
     expect(fs.existsSync(path.join(at.out, 'web', 'stale.txt'))).toBe(false);
     expect(readJson<{ readonly inviteCodes: number }>(path.join(at.out, RELEASE_LAYOUT.manifest)).inviteCodes).toBe(0);
   });
 
-  it('refuses a release folder holding files a release does not write, and removes nothing there', () => {
+  it('refuses a release folder holding files a release does not write, and removes nothing there', async () => {
     const at = repo();
-    buildRelease(options(at), steps(fakeBuild(at.dist)));
+    await buildRelease(options(at), steps(fakeBuild(at.dist)));
     write(at.out, 'notes.txt', 'mine');
     const build = fakeBuild(at.dist);
-    expect(releaseError(() => buildRelease(options(at), steps(build))).message).toMatch(/holds files a release does not write/);
+    expect((await releaseError(() => buildRelease(options(at), steps(build)))).message).toMatch(/holds files a release does not write/);
     expect(build.calls).toEqual([]);
     expect(fs.existsSync(path.join(at.out, RELEASE_LAYOUT.manifest))).toBe(true);
     expect(fs.existsSync(path.join(at.out, 'notes.txt'))).toBe(true);
   });
 
-  it("refuses a release folder that overlaps the app's build folder", () => {
+  it("refuses a release folder that overlaps the app's build folder", async () => {
     const at = repo();
     for (const out of [path.join(at.dist, 'release'), at.root]) {
-      expect(releaseError(() => buildRelease(options(at, { out }), steps(fakeBuild(at.dist)))).message).toMatch(/overlaps the app's build folder/);
+      expect((await releaseError(() => buildRelease(options(at, { out }), steps(fakeBuild(at.dist))))).message).toMatch(/overlaps the app's build folder/);
     }
   });
 });
@@ -257,11 +258,11 @@ describe('the build environment', () => {
 });
 
 describe('the release command', () => {
-  const run = (argv: readonly string[], at: Repo, env: Readonly<Record<string, string>> = {}, cwd: string = at.root) => {
+  const run = async (argv: readonly string[], at: Repo, env: Readonly<Record<string, string>> = {}, cwd: string = at.root) => {
     const out: string[] = [];
     const err: string[] = [];
     const build = fakeBuild(at.dist);
-    const status = runRelease(argv, {
+    const status = await runRelease(argv, {
       cwd,
       repoRoot: at.root,
       env,
@@ -272,11 +273,11 @@ describe('the release command', () => {
     return { status, out, err, build };
   };
 
-  it('prints the versions and where the release went, and in a workflow writes the step outputs and summary', () => {
+  it('prints the versions and where the release went, and in a workflow writes the step outputs and summary', async () => {
     const at = repo();
     const outputs = path.join(at.root, 'github-output');
     const summary = path.join(at.root, 'github-summary');
-    const { status, out, err } = run(['--tag', 'v0.1.0', '--invite-count', '3'], at, {
+    const { status, out, err } = await run(['--tag', 'v0.1.0', '--invite-count', '3'], at, {
       SERVO_INVITE_SEED: SEED,
       GITHUB_OUTPUT: outputs,
       GITHUB_STEP_SUMMARY: summary,
@@ -296,39 +297,39 @@ describe('the release command', () => {
     }
   });
 
-  it('says when there is no seed, so no codes and no gate', () => {
+  it('says when there is no seed, so no codes and no gate', async () => {
     const at = repo();
     const summary = path.join(at.root, 'github-summary');
-    const { status, out } = run([], at, { SERVO_INVITE_SEED: '', GITHUB_STEP_SUMMARY: summary });
+    const { status, out } = await run([], at, { SERVO_INVITE_SEED: '', GITHUB_STEP_SUMMARY: summary });
     expect(status).toBe(0);
     expect(out).toContain('Invite codes: none, because SERVO_INVITE_SEED is not set, so the build has no invite gate.');
     expect(read(summary)).toContain('Invite codes: skipped, because SERVO_INVITE_SEED is not set. This build has no invite gate.');
   });
 
-  it('writes to --out, relative to the folder the command was typed in', () => {
+  it('writes to --out, relative to the folder the command was typed in', async () => {
     const at = repo();
     const cwd = path.join(at.root, 'packages');
-    const { status } = run(['--out', '../somewhere/else'], at, {}, cwd);
+    const { status } = await run(['--out', '../somewhere/else'], at, {}, cwd);
     expect(status).toBe(0);
     expect(fs.existsSync(path.join(at.root, 'somewhere', 'else', RELEASE_LAYOUT.manifest))).toBe(true);
   });
 
-  it('stops with status 1 and says why, when the release cannot be made', () => {
+  it('stops with status 1 and says why, when the release cannot be made', async () => {
     const at = repo();
-    const { status, err, build } = run(['--tag', 'latest'], at);
+    const { status, err, build } = await run(['--tag', 'latest'], at);
     expect(status).toBe(1);
     expect(err.join('\n')).toMatch(/The tag 'latest' does not name a version/);
     expect(build.calls).toEqual([]);
-    expect(run([], at, { SERVO_INVITE_SEED: 'short' }).status).toBe(1);
+    expect((await run([], at, { SERVO_INVITE_SEED: 'short' })).status).toBe(1);
   });
 
-  it('shows its help, and stops with status 2 when misused', () => {
+  it('shows its help, and stops with status 2 when misused', async () => {
     const at = repo();
-    const help = run(['--help'], at);
+    const help = await run(['--help'], at);
     expect(help.status).toBe(0);
     expect(help.out.join('\n')).toMatch(/^Usage: pnpm release:dry/);
     for (const argv of [['--invite-count', '0'], ['--invite-count', 'ten'], ['--invite-count', '501'], ['--tag='], ['--bogus'], ['extra']]) {
-      const misused = run(argv, at);
+      const misused = await run(argv, at);
       expect(misused.status, argv.join(' ')).toBe(2);
       expect(misused.build.calls).toEqual([]);
     }

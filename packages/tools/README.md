@@ -11,7 +11,7 @@ Developer tools and the tests that need the whole system. Dev-only: nothing at r
 | Swap registry | `src/swap-registry/` | 0.6 | `registry.json` | Every art key to `{ src, isPlaceholder }`, `src` relative to the registry's folder. A final render in `packages/content/art/final/` wins over the placeholder. Content's `loadArtRegistry()` reads it; a key it lacks gives `undefined` there, and the canvas draws a neutral tile |
 | Golden runs | `src/golden-runs/` | 1.7 | a CI check, and `--accept` | Replays each content fixture (`loadFixtures()`: its blueprint, seed, inputs and ticks), records the run in `packages/sim-core/golden/`, and fails CI with a readable per-tick diff when a run changes. `--accept` regenerates, for intended solver changes, with an orchestrator note |
 | Canvas e2e harness | `src/e2e/` | 3.8 | Vitest browser mode | Runs `pnpm art` first, then touch and pointer emulation, screenshot diffs, an iPad-class performance profile, and the parity check that touch, pointer and list view give byte-identical blueprints. Under 10 minutes in CI |
-| Release | `src/release/` | 6.3 | a tagged commit | Runs `pnpm art`, then the web build, a versioned content bundle shown in Settings, and tester invite codes. Deploying waits for a host (D10) |
+| Release | `src/release/` | 6.3 | a `v*` tag; `pnpm release:dry`, `pnpm release:preview` | Checks the content, runs `pnpm build` (and so `pnpm art`) with the app and content versions and the invite code hashes baked in, and writes the web build, the versioned content bundle and the tester invite codes. The codes are hashed with the app's own `@servo/app/invite-code`. Deploying waits for a host (D10) ([README](src/release/README.md)) |
 
 ## Tests here
 

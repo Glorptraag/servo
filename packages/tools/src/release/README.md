@@ -27,7 +27,7 @@ pnpm release:preview
 
 1. Checks the content as CI does: `pnpm validate-content`'s checks over `packages/content`, and content's own loader over the bundle's records. Any issue, or no part records at all, stops the release before anything is built.
 2. Works out the content version and the bundle.
-3. With `SERVO_INVITE_SEED` set, makes the invite codes and their hashes.
+3. With `SERVO_INVITE_SEED` set, makes the invite codes, and hashes them with the app's own `hashInviteCode` (`@servo/app/invite-code`).
 4. Runs `pnpm build` (which runs `pnpm art` first) with the versions and hashes in `VITE_SERVO_*` variables and the seed taken out of its environment.
 5. Copies `packages/app/dist` to `web/`, adds `web/settings/index.html`, and checks the build: some file must hold the content version and every code's hash (or the variables did not reach Vite), and no file may hold a code or the seed.
 6. Writes the bundle, the codes and `release.json`, and prints the app version and the content version.
@@ -84,7 +84,8 @@ A soft gate, not security. The check runs in the browser, and the hash of an 8-c
 - **Made from a seed.** Code number `n` is the first 40 bits of HMAC-SHA256(seed, `servo-invite:<n>`), written as 8 characters from `23456789ABCDEFGHJKLMNPQRSTUVWXYZ` (no 0, 1, I or O) and printed in two groups of four, such as `7KQ2-M9XD`. Codes are all different. The same seed gives the same codes in every release, and a larger `--invite-count` keeps the smaller one's codes first, so testers keep their codes from release to release. A new seed replaces every code.
 - **The seed** is the repository secret `SERVO_INVITE_SEED`, at least 16 characters (`openssl rand -hex 32` makes one). Without it the release makes no codes, the build has no invite gate, and the summary says so. A release built that way should not go to a public address.
 - **Only hashes in the build.** The build holds the lower-case hex SHA-256 of each code's 8 characters. The codes go only into `private/invite-codes.txt` and its artifact, which everyone with read access to the repository can download, so keep the repository private (D3).
-- **In the app** ([packages/app/src/release/](../../../app/src/release/)). A build with hashes opens on a plain page with one field, Invite code, before anything else, `/settings` included. It is the page, not a dialog box (ground rule 9), and a wrong code is a line of text under the field. The app upper-cases what is typed, takes out spaces and dashes, hashes it with the browser's Web Crypto and compares. A match is remembered on the device in localStorage under `servo.invite.code`, and the app opens; the next launch checks the remembered code again, so a new seed asks again. A build with no hashes has no gate.
+- **One hash, written once.** The reduction (upper case, letters and digits only) and the hash live in [packages/app/src/release/invite-code.ts](../../../app/src/release/invite-code.ts), exported as `@servo/app/invite-code`. The invite gate hashes what a tester types with it, and this release imports it to hash the codes, so the two cannot drift apart. It lives in the app because the package map lets tools import the app but nothing lets the app import tools; content and schema cannot reach Web Crypto (lint bans `globalThis` there, and they compile without DOM or Node types). It is pure, with no DOM, React or Node, and uses the Web Crypto that browsers and Node both have on `globalThis.crypto`. The app's unit tests and this folder's tests hold it to the same known answers.
+- **In the app** ([packages/app/src/release/](../../../app/src/release/)). A build with hashes opens on a plain page with one field, Invite code, before anything else, `/settings` included. It is the page, not a dialog box (ground rule 9), and a wrong code is a line of text under the field. The app upper-cases what is typed, takes out spaces and dashes, hashes it with the same `hashInviteCode`, and compares. A match is remembered on the device in localStorage under `servo.invite.code`, and the app opens; the next launch checks the remembered code again, so a new seed asks again. A build with no hashes has no gate.
 - **Secure pages only.** Web Crypto works only on https and on localhost. On a plain http address, such as a laptop's address on the home network, the gate says codes can be checked only on a secure address. Try a gated build on localhost, or make one without a seed.
 
 ## The workflow
@@ -112,11 +113,14 @@ Waits for a host (D10, D13). When Drew picks one, its deploy command goes into t
 ## Tests
 
 - `test/release-content.test.ts`: canonical JSON, the content version's form and what changes it, a known answer worked out with `shasum`, the bundle of `packages/content` against `loadContent()`, what is read and left out, and content the release refuses.
-- `test/release-invite-codes.test.ts`: known codes and hashes worked out independently (Python's `hmac`, `shasum`), so a change that would lock testers out fails; the alphabet; the same codes from the same seed; seed and count limits; hashing however a code is typed.
+- `test/release-invite-codes.test.ts`: known codes and hashes worked out independently (Python's `hmac`, `shasum`), so a change that would lock testers out fails; the alphabet; the same codes from the same seed; seed and count limits; hashing however a code is typed; and that the release's reduction and hash are the app's own functions.
 - `test/release-cli.test.ts`: whole releases in a copy of the content with a stand-in for `pnpm build`. The files and variables, codes only in the private file, the tag and dry-run versions, refusing bad content before building, a build without the versions or with a code, relative URLs, the release folder's rules, the build environment without the seed, the command's output, workflow outputs and summary, and misuse.
 - `pnpm release:dry` runs the real build end to end.
 
-The app's gate and Settings were checked by hand in a browser on a `release:dry` build with a seed: the gate on first launch, an empty and a wrong code, a right code typed in lower case with a space, the code remembered across a reload, a remembered code that no longer matches, `/settings` and `/settings/` behind the gate, no console errors, 44 px targets at phone width. The app has no automated test for them yet: `packages/app/test` was outside this task's files.
+The app's half is tested in packages/app:
+
+- `test/release/invite-code.test.ts` (Node): the hash, from the app's side, against the same known answers, the typed forms, no Web Crypto, the build info with and without a release's variables, the `/settings` path and storage that refuses.
+- `test/browser/release.test.ts` (Chromium): `startPage`, which main.tsx calls, with a stand-in app. A tester build opens on the form before the app; an empty and a wrong code each get their line and stay shut; a right code, however typed, opens the app once and is remembered; a code sent twice opens the app once; a remembered code opens at once and a stale one asks again; `/settings` comes after the gate; a page that cannot hash stays shut; and a real reload of a page in a frame (`release-page.html`) keeps the code. A build with no hashes opens the app or Settings at once, and the real `index.html` opens the shell with no gate. Settings shows both versions, or "Not a release build", and nothing to change.
 
 ## Decisions and open questions
 
@@ -128,6 +132,7 @@ Taken here, as the most conservative reading:
 4. Codes: 8 characters, 10 by default, the same every release for one seed, remembered per device. One code per family, not per child or device.
 5. A tester build that cannot reach Web Crypto (a plain http address) keeps the gate closed rather than open.
 6. Retention: 7 days for the codes artifact, the repository's default for the others.
+7. The invite code's hash lives in the app, as `@servo/app/invite-code`, and the release imports it (see Invite codes).
 
 For Drew:
 

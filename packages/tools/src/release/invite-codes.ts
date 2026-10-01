@@ -1,7 +1,12 @@
 // Tester invite codes: a soft gate in front of a tester build, not security. Codes come from a secret seed; the build
 // stores only their hashes. See README.md, "Invite codes".
-import { createHash, createHmac } from 'node:crypto';
+import { createHmac } from 'node:crypto';
+import { normalizeInviteCode } from '@servo/app/invite-code';
 import { ReleaseError } from './errors.ts';
+
+// The reduction and the hash are the app's own (packages/app/src/release/invite-code.ts), which its invite gate uses on
+// what a tester types, so the hashes a release bakes in are the ones the gate makes.
+export { hashInviteCode, normalizeInviteCode } from '@servo/app/invite-code';
 
 /** The environment variable, a repository secret in the workflow, that the codes come from. */
 export const INVITE_SEED_VARIABLE = 'SERVO_INVITE_SEED';
@@ -17,15 +22,6 @@ export const MIN_INVITE_SEED_LENGTH = 16;
 
 export const DEFAULT_INVITE_COUNT = 10;
 export const MAX_INVITE_COUNT = 500;
-
-/**
- * A code as typed, reduced to its characters: upper case, with spaces, dashes and anything else that is not a letter
- * or a digit taken out. The app reduces what a tester types the same way (packages/app/src/release/invite.ts).
- */
-export const normalizeInviteCode = (typed: string): string => typed.toUpperCase().replace(/[^0-9A-Z]/g, '');
-
-/** What the build stores for a code: the lower-case hex SHA-256 of its reduced form's UTF-8 bytes. */
-export const hashInviteCode = (code: string): string => createHash('sha256').update(normalizeInviteCode(code), 'utf8').digest('hex');
 
 /** A code as printed for a person: two groups of four, such as `7KQ2-M9XD`. */
 export const formatInviteCode = (code: string): string => {

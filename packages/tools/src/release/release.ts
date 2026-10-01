@@ -146,10 +146,10 @@ export const readContentSemver = (contentDir: string): string => {
 /**
  * Builds a release into `options.out`: the web build with the app version, the content version and the invite code
  * hashes baked in (web/, with web/settings/index.html), the content bundle, release.json and, with a seed, the codes
- * (private/invite-codes.txt). Stops with a ReleaseError, before building, on content with issues, a bad tag, a short
+ * (private/invite-codes.txt). Rejects with a ReleaseError, before building, on content with issues, a bad tag, a short
  * seed or a folder it may not write; and after building when the build lacks the versions or holds a code.
  */
-export const buildRelease = (options: ReleaseOptions, steps: ReleaseSteps): ReleaseReport => {
+export const buildRelease = async (options: ReleaseOptions, steps: ReleaseSteps): Promise<ReleaseReport> => {
   const commit = steps.git(['rev-parse', 'HEAD']);
   const dirty = commit !== undefined && Boolean(steps.git(['status', '--porcelain']));
   const appVersion =
@@ -161,7 +161,8 @@ export const buildRelease = (options: ReleaseOptions, steps: ReleaseSteps): Rele
   const bundle = makeContentBundle(readContentSemver(options.contentDir), files);
 
   const codes = options.inviteSeed === undefined ? [] : inviteCodes(options.inviteSeed, options.inviteCount);
-  const info: BuildInfo = { appVersion, contentVersion: bundle.version, inviteHashes: codes.map(hashInviteCode) };
+  const inviteHashes = await Promise.all(codes.map((code) => hashInviteCode(code)));
+  const info: BuildInfo = { appVersion, contentVersion: bundle.version, inviteHashes };
   const secrets = [...codes, ...codes.map(formatInviteCode), ...(options.inviteSeed === undefined ? [] : [options.inviteSeed])];
 
   prepareOut(options.out, options.appDist);

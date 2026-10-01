@@ -107,10 +107,10 @@ export const releaseSummary = (report: ReleaseReport): string =>
   ].join('\n');
 
 /**
- * The release command: returns the exit status. Prints the versions and where the release went, and in a workflow
+ * The release command: resolves to the exit status. Prints the versions and where the release went, and in a workflow
  * writes the step outputs (app-version, content-version, invite-codes) and the step summary.
  */
-export const runRelease = (argv: readonly string[], environment: ReleaseEnvironment): number => {
+export const runRelease = async (argv: readonly string[], environment: ReleaseEnvironment): Promise<number> => {
   const { cwd, repoRoot, env, out, err } = environment;
   const misuse = (message: string): number => {
     err(`release: ${message}`);
@@ -137,7 +137,7 @@ export const runRelease = (argv: readonly string[], environment: ReleaseEnvironm
   const releaseOut = values.out === undefined ? path.join(repoRoot, 'dist', 'release') : path.resolve(cwd, values.out);
 
   try {
-    const report = buildRelease(
+    const report = await buildRelease(
       {
         contentDir: path.join(repoRoot, 'packages', 'content'),
         repoRoot,
