@@ -162,7 +162,7 @@
       "dispatched_at": "2026-10-01T02:52:50+00:00"
     },
     "G0": {
-      "status": "pending",
+      "status": "done",
       "model": "opus",
       "size": "micro",
       "batch": null,
@@ -181,8 +181,8 @@
       ],
       "done_when": "docs/gates/G0.md exists with every Phase 0 task ticked and the schema v1 tag recorded.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null
+      "completed_at": "2026-10-01T05:11:24+00:00",
+      "completed_by": "orchestrator"
     },
     "1.1": {
       "status": "dispatched",
