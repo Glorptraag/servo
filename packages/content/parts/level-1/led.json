@@ -1,0 +1,157 @@
+{
+  "behaviour": [
+    {
+      "emits": {
+        "colour": "#ff3b30",
+        "kind": "light"
+      },
+      "id": "light",
+      "kind": "load",
+      "onVolts": 1.8,
+      "ratedMilliamps": 15,
+      "ratedVolts": 3,
+      "supply": {
+        "neg": "minus",
+        "pos": "plus"
+      },
+      "whenReversed": "blocks"
+    }
+  ],
+  "body": {
+    "centreOfMass": {
+      "x": 0,
+      "y": 0,
+      "z": 4
+    },
+    "grams": 1,
+    "size": {
+      "x": 8,
+      "y": 8,
+      "z": 11
+    }
+  },
+  "card": {
+    "does": "Lights up when power flows through it.",
+    "gives": "Gives: light.",
+    "needs": "Needs: power (red), with its long leg towards plus.",
+    "popularMechanics": "Many car headlights and bike lamps are made of LEDs.",
+    "safetyNote": "Real LEDs are small parts with sharp legs, so build with an adult nearby."
+  },
+  "failureModes": [
+    {
+      "cardLine": "Legs swapped: it stays dark.",
+      "hint": "This LED's legs are swapped",
+      "id": "reversed",
+      "need": "power",
+      "shows": [
+        "dark"
+      ],
+      "teachingNote": "An LED lets current through one way only, from its long leg to its short leg. Turned round, no current flows, so it stays dark.",
+      "unmet": "reversed"
+    },
+    {
+      "cardLine": "No complete circuit: it stays dark.",
+      "hint": "This LED has power in but no way out",
+      "id": "no-circuit",
+      "need": "power",
+      "shows": [
+        "dark"
+      ],
+      "teachingNote": "Light needs current, and current needs a complete loop: from plus, through the LED, and back to minus.",
+      "unmet": "open"
+    },
+    {
+      "cardLine": "Too little power: it glows faintly, or not at all.",
+      "hint": "This LED is not getting enough power",
+      "id": "low-voltage",
+      "need": "power",
+      "shows": [
+        "dim"
+      ],
+      "teachingNote": "An LED needs about 2 volts before it lights well. With less, such as a single cell, it glows faintly or not at all.",
+      "unmet": "low"
+    }
+  ],
+  "id": "led",
+  "identity": {
+    "art": "part/led",
+    "colours": {
+      "accent": "#212121",
+      "main": "#e53935"
+    },
+    "domains": [
+      "electronics-and-power"
+    ],
+    "family": "output",
+    "level": 1,
+    "name": "LED"
+  },
+  "needs": [
+    {
+      "id": "power",
+      "kind": "power",
+      "maxVolts": 6,
+      "minVolts": 2,
+      "supply": {
+        "neg": "minus",
+        "pos": "plus"
+      }
+    }
+  ],
+  "ports": [
+    {
+      "id": "plus",
+      "label": "plus (+), long leg",
+      "polarity": "positive",
+      "type": "power"
+    },
+    {
+      "id": "minus",
+      "label": "minus (−), short leg",
+      "polarity": "negative",
+      "type": "power"
+    },
+    {
+      "at": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "id": "mount",
+      "label": "mount",
+      "role": "mount",
+      "type": "mechanical",
+      "yaw": 0
+    }
+  ],
+  "settings": [
+    {
+      "binds": {
+        "param": "colour",
+        "primitive": "light"
+      },
+      "default": "red",
+      "id": "colour",
+      "kind": "choice",
+      "label": "Colour",
+      "options": [
+        {
+          "id": "red",
+          "label": "Red",
+          "value": "#ff3b30"
+        },
+        {
+          "id": "green",
+          "label": "Green",
+          "value": "#34c759"
+        },
+        {
+          "id": "blue",
+          "label": "Blue",
+          "value": "#0a84ff"
+        }
+      ],
+      "unlockLevel": 3
+    }
+  ]
+}
