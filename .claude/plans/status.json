@@ -142,7 +142,7 @@
       "dispatched_at": "2026-10-01T02:52:50+00:00"
     },
     "0.6": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -157,8 +157,8 @@
       ],
       "done_when": "Generator runs over the schema fixtures and emits one SVG per part; registry resolves every key; a missing final asset falls back to the placeholder; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T03:58:54+00:00",
+      "completed_by": "W-0.6",
       "dispatched_at": "2026-10-01T02:52:50+00:00"
     },
     "G0": {
