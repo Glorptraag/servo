@@ -20,7 +20,7 @@ export {
   specCardSize,
   unionArea,
 } from './layout.ts';
-export type { Hand, LayoutInput, Orientation, Rect, ShellLayout } from './layout.ts';
+export type { Hand, LayoutInput, Orientation, Rect, SafeArea, ShellLayout } from './layout.ts';
 export { tidyName } from './name.tsx';
 export { PLACEHOLDER_SLOTS } from './placeholders.tsx';
 export { SAVE_LINES, SaveControl } from './save.tsx';

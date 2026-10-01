@@ -1,7 +1,7 @@
 // What the shell shares with the parts later tasks put in its slots: the content, the canvas, the mode, the build,
 // the tuck states and the prefs. Slot components read it with useShell(). See docs/shell.md.
 import { createContext, useContext } from 'react';
-import type { CanvasHandle, CanvasMode, CanvasPrefs } from '@servo/canvas';
+import type { CanvasHandle, CanvasMode, CanvasPrefs, Selection } from '@servo/canvas';
 import type { Content } from '@servo/content';
 import type { Blueprint, Kit, Level, ValidationResult } from '@servo/schema';
 import type { ProfileStore } from '../store/index.ts';
@@ -32,6 +32,11 @@ export interface ShellApi {
    * builds and Runs through it. Null when the device's storage cannot be opened or no one profile is in use.
    */
   readonly child: ProfileStore | null;
+  /**
+   * The canvas's selection, as its `select` events leave it. The spec card shows while it is a part (task 4.3
+   * renders that part), slides out when it is anything else, and stays out while it is tucked.
+   */
+  readonly selection: Selection | null;
   /** Which edges the child has tucked away. They persist on this device. */
   readonly tucked: Tucked;
   setTucked(edge: Edge, tucked: boolean): void;

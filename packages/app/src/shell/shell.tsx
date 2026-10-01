@@ -1,11 +1,11 @@
 // The app shell (brief Section 9, task 4.1). The canvas fills the screen. Over it lie the header along the top, the
-// part tray on the left (along the bottom in portrait), the spec card at the right edge, the arena strip along the
-// top of the canvas, the Run bar at its bottom centre and the zoom control, never covering more than 30% of it. The
-// header, tray, spec card and arena strip tuck away and stay tucked across a reload; the Run bar is always there.
-// The regions are slots: later tasks fill them (docs/shell.md, "Slots").
+// part tray on the left (along the bottom in portrait), the spec card at the right edge while a part is selected,
+// the arena strip along the top of the canvas, the Run bar at its bottom centre and the zoom control, never covering
+// more than 30% of it. The header, tray, spec card and arena strip tuck away and stay tucked across a reload; the
+// Run bar is always there and never moves. The regions are slots: later tasks fill them (docs/shell.md, "Slots").
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { CanvasHandle, CanvasMode, CanvasPrefs } from '@servo/canvas';
+import type { CanvasHandle, CanvasMode, CanvasPrefs, Selection } from '@servo/canvas';
 import type { Content } from '@servo/content';
 import type { Blueprint, Kit, Level, ValidationResult } from '@servo/schema';
 import type { ProfileStore } from '../store/index.ts';
@@ -17,6 +17,7 @@ import type { Edge, Tucked } from './edges.ts';
 import { HeaderContents } from './header.tsx';
 import type { HeaderSlots } from './header.tsx';
 import { solveLayout } from './layout.ts';
+import type { SafeArea } from './layout.ts';
 import { box } from './place.ts';
 import { ZoomControl } from './zoom-control.tsx';
 import './shell.css';
@@ -65,9 +66,27 @@ export interface ShellProps {
   readonly start?: Blueprint | undefined;
   /** Called once the canvas is mounted. */
   readonly onReady?: () => void;
+  /**
+   * The hook for safe-area insets (task 3.7): called once the canvas is mounted and whenever the canvas a child can
+   * see changes, with how far in from each side it begins, so the canvas's load and Fit can centre the build there.
+   * The app passes them on once the canvas takes them; until then nothing is called with them.
+   */
+  readonly onSafeArea?: (safeArea: SafeArea, canvas: CanvasHandle) => void;
 }
 
-export const Shell = ({ content, level, kit, slots = {}, mountCanvas, storage: givenStorage, prefs: startPrefs, child = null, start, onReady }: ShellProps) => {
+export const Shell = ({
+  content,
+  level,
+  kit,
+  slots = {},
+  mountCanvas,
+  storage: givenStorage,
+  prefs: startPrefs,
+  child = null,
+  start,
+  onReady,
+  onSafeArea,
+}: ShellProps) => {
   const storage = useMemo(() => (givenStorage === undefined ? pageStorage() : givenStorage), [givenStorage]);
   const rootRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -78,6 +97,7 @@ export const Shell = ({ content, level, kit, slots = {}, mountCanvas, storage: g
   const [prefs, setPrefs] = useState<CanvasPrefs>(startPrefs ?? DEFAULT_PREFS);
   const [canvas, setCanvas] = useState<CanvasHandle | null>(null);
   const [blueprint, setBlueprint] = useState<Blueprint | undefined>(undefined);
+  const [selection, setSelection] = useState<Selection | null>(null);
   const [dragging, setDragging] = useState(false);
   const [asideAsked, setSpecCardAside] = useState(false);
   const ids: Readonly<Record<Edge | 'runBar', string>> = {
@@ -105,8 +125,8 @@ export const Shell = ({ content, level, kit, slots = {}, mountCanvas, storage: g
   }, []);
 
   // The canvas is mounted once, with the level and prefs of the moment; later changes reach it through its setters.
-  const latest = useRef({ mountCanvas, onReady, level, prefs, start });
-  latest.current = { mountCanvas, onReady, level, prefs, start };
+  const latest = useRef({ mountCanvas, onReady, onSafeArea, level, prefs, start });
+  latest.current = { mountCanvas, onReady, onSafeArea, level, prefs, start };
   const applied = useRef<CanvasSetup | null>(null);
   const measured = size !== null;
   useEffect(() => {
@@ -115,13 +135,17 @@ export const Shell = ({ content, level, kit, slots = {}, mountCanvas, storage: g
     const setup = latest.current;
     const handle = setup.mountCanvas(host, { level: setup.level, prefs: setup.prefs });
     applied.current = { level: setup.level, prefs: setup.prefs };
-    const off = handle.on('edit', (event) => setBlueprint(event.blueprint));
+    const offEdit = handle.on('edit', (event) => setBlueprint(event.blueprint));
+    // The spec card follows the selection: it slides in when a part is selected and out when none is (brief Section 9).
+    const offSelect = handle.on('select', (event) => setSelection(event.selection));
+    setSelection(handle.selection);
     const first = setup.start ? handle.load(setup.start) : undefined;
     if (first?.ok) setBlueprint(first.value);
     setCanvas(handle);
     setup.onReady?.();
     return () => {
-      off();
+      offEdit();
+      offSelect();
       handle.destroy();
     };
   }, [measured]);
@@ -206,6 +230,7 @@ export const Shell = ({ content, level, kit, slots = {}, mountCanvas, storage: g
   );
 
   const specCardAside = dragging || asideAsked;
+  const specCardWanted = selection?.kind === 'part';
   const layout = useMemo(
     () =>
       solveLayout({
@@ -214,10 +239,17 @@ export const Shell = ({ content, level, kit, slots = {}, mountCanvas, storage: g
         tucked,
         mode,
         hand: prefs.leftHanded ? 'left' : 'right',
+        specCardWanted,
         specCardAside,
       }),
-    [size, tucked, mode, prefs.leftHanded, specCardAside],
+    [size, tucked, mode, prefs.leftHanded, specCardWanted, specCardAside],
   );
+
+  // The safe area goes out whenever it changes, compared by value, so a re-render alone never repeats it.
+  const { top, right, bottom, left } = layout.safeArea;
+  useEffect(() => {
+    if (canvas) latest.current.onSafeArea?.({ top, right, bottom, left }, canvas);
+  }, [canvas, top, right, bottom, left]);
 
   const shell = useMemo<ShellApi>(
     () => ({
@@ -230,6 +262,7 @@ export const Shell = ({ content, level, kit, slots = {}, mountCanvas, storage: g
       blueprint,
       load,
       child,
+      selection,
       tucked,
       setTucked,
       specCardAside,
@@ -238,7 +271,7 @@ export const Shell = ({ content, level, kit, slots = {}, mountCanvas, storage: g
       prefs,
       setPrefs,
     }),
-    [content, level, kit, canvas, mode, setMode, blueprint, load, child, tucked, setTucked, specCardAside, layout, prefs],
+    [content, level, kit, canvas, mode, setMode, blueprint, load, child, selection, tucked, setTucked, specCardAside, layout, prefs],
   );
 
   const { shown } = layout;

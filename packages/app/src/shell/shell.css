@@ -22,7 +22,11 @@
   overflow: hidden;
   background: var(--shell-workbench);
   color: var(--shell-ink);
-  font-family: Nunito, 'Varela Round', 'Arial Rounded MT Bold', ui-rounded, system-ui, sans-serif;
+  /*
+   * A rounded sans-serif where the device has one (brief Section 11). No bold-only face such as Arial Rounded MT Bold:
+   * on Apple devices it would draw every word bold, and bold marks real names. Which face ships is task 5.7's.
+   */
+  font-family: Nunito, 'Varela Round', ui-rounded, system-ui, sans-serif;
   font-size: 16px;
   line-height: 1.25;
   -webkit-user-select: none;
