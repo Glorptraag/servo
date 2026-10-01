@@ -122,12 +122,12 @@ Usage limit reached mid-run. State lives in status.json (pharao.py); this file l
 /Users/drewdouglas/Desktop/Codebases/servo/.claude/worktrees/agent-ad4c0529038f95e5b  e91026e [task/1.5] locked
 ```
 
-- task/1.5 (tick loop): done incl. 3-tick fault debounce (e91026e); all 19 fixtures hold; NEEDS REVIEW then merge.
+- task/1.5 (tick loop): DONE incl. 3-tick fault debounce (e91026e); all 19 fixtures hold; determinism 100x green. NEEDS REVIEW then merge.
 - task/1.7 (golden runs): building on task/1.5; must re-merge task/1.5 before recording goldens; asserts every content fixture's expect.
 - task/3.3 (wiring): building on task/3.2 (merged); must re-merge main; fixes socket overlap.
 - task/3.8 (e2e harness): fixing review (diff sensitivity, CI sharding).
 - task/6.3 (release): review fixes DONE (8708b80 merge main, b9a8cb9: one invite hash in @servo/app/invite-code imported by tools; app 93 tests, tools 686; check, build, release:dry green). NEEDS RE-REVIEW (reviewer agent a846447c292bec684 wrote docs/reviews/tasks/6.3.md) then merge. Suggested CLAUDE.md How-to-run row: `pnpm release:dry` builds a tester release into dist/release and prints the content version; `pnpm release:preview` serves it.
-- task/4.9 (store): fixing round 3 (stale journal note must not overwrite a newer build; latest wins, both kept).
+- task/4.9 (store): round-3 fix DONE (9c20991 merge main incl. 3.2, 6730acb: journal replay drops a note already stored, saves it if the build is unchanged, otherwise keeps it as a copy and opens the newer build with a status line; app 158 tests, check and build green). NEEDS RE-REVIEW (reviewer wrote docs/reviews/tasks/4.9.md) then merge.
 
 Per-task flow used: Opus builder in worktree → orchestrator verifies → Opus reviewer writes docs/reviews/tasks/{id}.md → merge --no-ff → checks (under heavy load: lint, typecheck, serial tests with --retry 2; CI is authoritative) → pharao done → push.
 
