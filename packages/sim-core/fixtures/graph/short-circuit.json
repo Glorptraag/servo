@@ -1,0 +1,17 @@
+{
+  "build": { "list": "validBlueprints", "name": "short-circuit" },
+  "nets": [{ "ports": ["battery.minus", "battery.plus"], "wires": ["w1"] }],
+  "sources": [{ "at": "battery/cells", "pos": "battery.minus", "neg": "battery.minus" }],
+  "switches": [],
+  "uses": [],
+  "controls": [],
+  "live": [{ "on": [], "joined": [], "nets": ["battery.minus"], "sources": ["battery/cells"] }],
+  "signals": [],
+  "drives": [],
+  "mounts": [],
+  "placements": {
+    "battery": { "by": "root", "root": "battery", "x": 0, "y": 0, "z": 0, "yaw": 0, "mirrored": false }
+  },
+  "root": null,
+  "pushes": []
+}

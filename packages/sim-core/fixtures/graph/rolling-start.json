@@ -1,0 +1,51 @@
+{
+  "build": { "list": "validBlueprints", "name": "rolling-start" },
+  "nets": [
+    { "ports": ["battery.minus", "motor-left.minus", "motor-right.minus"], "wires": ["w11", "w12"] },
+    { "ports": ["battery.plus", "switch.a"], "wires": ["w8"] },
+    { "ports": ["motor-left.plus", "motor-right.plus", "switch.b"], "wires": ["w10", "w9"] }
+  ],
+  "sources": [{ "at": "battery/cells", "pos": "battery.plus", "neg": "battery.minus" }],
+  "switches": [{ "at": "switch/contacts", "a": "battery.plus", "b": "motor-left.plus", "control": "switch/contacts" }],
+  "uses": [
+    { "at": "motor-left/motor", "pos": "motor-left.plus", "neg": "battery.minus" },
+    { "at": "motor-right/motor", "pos": "motor-left.plus", "neg": "battery.minus" }
+  ],
+  "controls": [{ "id": "switch/contacts", "kind": "switch", "rest": true }],
+  "live": [
+    { "on": [], "joined": [], "nets": [], "sources": ["battery/cells"] },
+    {
+      "on": ["switch/contacts"],
+      "joined": [["battery.plus", "motor-left.plus"]],
+      "nets": ["battery.minus", "battery.plus", "motor-left.plus"],
+      "sources": ["battery/cells"]
+    }
+  ],
+  "signals": [],
+  "drives": [
+    { "wire": "w6", "from": "motor-left.shaft", "to": "wheel-left.hub", "carried": { "x": 10, "y": 26, "z": -22.5, "yaw": 0, "mirrored": false } },
+    { "wire": "w7", "from": "motor-right.shaft", "to": "wheel-right.hub", "carried": { "x": 10, "y": 26, "z": -22.5, "yaw": 0, "mirrored": false } }
+  ],
+  "mounts": [
+    { "wire": "w1", "part": "motor-left", "mount": "mount", "on": "chassis.motor-left", "local": { "x": 30, "y": 53, "z": 6, "yaw": 0, "mirrored": false } },
+    { "wire": "w2", "part": "motor-right", "mount": "mount", "on": "chassis.motor-right", "local": { "x": 30, "y": -53, "z": 6, "yaw": 0, "mirrored": true } },
+    { "wire": "w3", "part": "battery", "mount": "mount", "on": "chassis.deck-rear", "local": { "x": -45, "y": 0, "z": 6, "yaw": 0, "mirrored": false } },
+    { "wire": "w4", "part": "switch", "mount": "mount", "on": "chassis.deck-front", "local": { "x": 55, "y": 0, "z": 6, "yaw": 0, "mirrored": false } },
+    { "wire": "w5", "part": "caster", "mount": "mount", "on": "chassis.caster", "local": { "x": -70, "y": 0, "z": -16.5, "yaw": 0, "mirrored": false } }
+  ],
+  "placements": {
+    "battery": { "by": "mount", "root": "chassis", "parent": "chassis", "x": -45, "y": 0, "z": 6, "yaw": 0, "mirrored": false },
+    "caster": { "by": "mount", "root": "chassis", "parent": "chassis", "x": -70, "y": 0, "z": -16.5, "yaw": 0, "mirrored": false },
+    "chassis": { "by": "root", "root": "chassis", "x": 0, "y": 0, "z": 0, "yaw": 0, "mirrored": false },
+    "motor-left": { "by": "mount", "root": "chassis", "parent": "chassis", "x": 30, "y": 53, "z": 6, "yaw": 0, "mirrored": false },
+    "motor-right": { "by": "mount", "root": "chassis", "parent": "chassis", "x": 30, "y": -53, "z": 6, "yaw": 0, "mirrored": true },
+    "switch": { "by": "mount", "root": "chassis", "parent": "chassis", "x": 55, "y": 0, "z": 6, "yaw": 0, "mirrored": false },
+    "wheel-left": { "by": "carried", "root": "chassis", "parent": "motor-left", "x": 40, "y": 79, "z": -16.5, "yaw": 0, "mirrored": false },
+    "wheel-right": { "by": "carried", "root": "chassis", "parent": "motor-right", "x": 40, "y": -79, "z": -16.5, "yaw": 0, "mirrored": true }
+  },
+  "root": "chassis",
+  "pushes": [
+    { "wheel": "wheel-left", "actuator": "motor-left", "root": "chassis", "push": 1 },
+    { "wheel": "wheel-right", "actuator": "motor-right", "root": "chassis", "push": 1 }
+  ]
+}

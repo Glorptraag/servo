@@ -1,0 +1,39 @@
+{
+  "build": { "list": "validBlueprints", "name": "motor-off-pin" },
+  "nets": [
+    { "ports": ["battery.minus", "brain.minus", "motor.minus", "servo.minus"], "wires": ["w2", "w4", "w6"] },
+    { "ports": ["battery.plus", "brain.plus", "servo.plus"], "wires": ["w1", "w5"] },
+    { "ports": ["brain.pin-3v", "motor.plus"], "wires": ["w3"] }
+  ],
+  "sources": [
+    { "at": "battery/cells", "pos": "battery.plus", "neg": "battery.minus" },
+    { "at": "brain/rail", "pos": "brain.pin-3v", "neg": "battery.minus", "feeder": { "pos": "battery.plus", "neg": "battery.minus" } }
+  ],
+  "switches": [],
+  "uses": [
+    { "at": "brain/brain", "pos": "battery.plus", "neg": "battery.minus" },
+    { "at": "brain/rail", "pos": "battery.plus", "neg": "battery.minus" },
+    { "at": "motor/motor", "pos": "brain.pin-3v", "neg": "battery.minus" },
+    { "at": "servo/servo", "pos": "battery.plus", "neg": "battery.minus" }
+  ],
+  "controls": [],
+  "live": [
+    {
+      "on": [],
+      "joined": [],
+      "nets": ["battery.minus", "battery.plus", "brain.pin-3v"],
+      "sources": ["battery/cells", "brain/rail"]
+    }
+  ],
+  "signals": [{ "wire": "w7", "from": "brain.out-1", "to": "servo.signal" }],
+  "drives": [],
+  "mounts": [],
+  "placements": {
+    "battery": { "by": "root", "root": "battery", "x": 0, "y": 0, "z": 0, "yaw": 0, "mirrored": false },
+    "brain": { "by": "root", "root": "brain", "x": 0, "y": 0, "z": 0, "yaw": 0, "mirrored": false },
+    "motor": { "by": "root", "root": "motor", "x": 0, "y": 0, "z": 0, "yaw": 0, "mirrored": false },
+    "servo": { "by": "root", "root": "servo", "x": 0, "y": 0, "z": 0, "yaw": 0, "mirrored": false }
+  },
+  "root": null,
+  "pushes": []
+}

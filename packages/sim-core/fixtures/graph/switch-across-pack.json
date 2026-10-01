@@ -1,0 +1,29 @@
+{
+  "build": { "list": "validBlueprints", "name": "switch-across-pack" },
+  "nets": [
+    { "ports": ["battery.minus", "switch.b"], "wires": ["w2"] },
+    { "ports": ["battery.plus", "switch.a"], "wires": ["w1"] }
+  ],
+  "sources": [{ "at": "battery/cells", "pos": "battery.plus", "neg": "battery.minus" }],
+  "switches": [{ "at": "switch/contacts", "a": "battery.plus", "b": "battery.minus", "control": "switch/contacts" }],
+  "uses": [],
+  "controls": [{ "id": "switch/contacts", "kind": "switch", "rest": true }],
+  "live": [
+    { "on": [], "joined": [], "nets": [], "sources": ["battery/cells"] },
+    {
+      "on": ["switch/contacts"],
+      "joined": [["battery.minus", "battery.plus"]],
+      "nets": ["battery.minus", "battery.plus"],
+      "sources": ["battery/cells"]
+    }
+  ],
+  "signals": [],
+  "drives": [],
+  "mounts": [],
+  "placements": {
+    "battery": { "by": "root", "root": "battery", "x": 0, "y": 0, "z": 0, "yaw": 0, "mirrored": false },
+    "switch": { "by": "root", "root": "switch", "x": 0, "y": 0, "z": 0, "yaw": 0, "mirrored": false }
+  },
+  "root": null,
+  "pushes": []
+}

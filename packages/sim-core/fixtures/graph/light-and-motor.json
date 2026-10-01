@@ -1,0 +1,35 @@
+{
+  "build": { "list": "v0Blueprints", "name": "light-and-motor", "form": "migrated" },
+  "nets": [
+    { "ports": ["p1.minus", "p4.minus", "p5.minus"], "wires": ["w4", "w7"] },
+    { "ports": ["p1.plus", "p2.a"], "wires": ["w1"] },
+    { "ports": ["p2.b", "p4.plus", "p5.plus"], "wires": ["w2", "w6"] }
+  ],
+  "sources": [{ "at": "p1/cells", "pos": "p1.plus", "neg": "p1.minus" }],
+  "switches": [{ "at": "p2/contacts", "a": "p1.plus", "b": "p2.b", "control": "p2/contacts" }],
+  "uses": [
+    { "at": "p4/light", "pos": "p2.b", "neg": "p1.minus" },
+    { "at": "p5/motor", "pos": "p2.b", "neg": "p1.minus" }
+  ],
+  "controls": [{ "id": "p2/contacts", "kind": "switch", "rest": true }],
+  "live": [
+    { "on": [], "joined": [], "nets": [], "sources": ["p1/cells"] },
+    {
+      "on": ["p2/contacts"],
+      "joined": [["p1.plus", "p2.b"]],
+      "nets": ["p1.minus", "p1.plus", "p2.b"],
+      "sources": ["p1/cells"]
+    }
+  ],
+  "signals": [],
+  "drives": [],
+  "mounts": [],
+  "placements": {
+    "p1": { "by": "root", "root": "p1", "x": 0, "y": 0, "z": 0, "yaw": 0, "mirrored": false },
+    "p2": { "by": "root", "root": "p2", "x": 0, "y": 0, "z": 0, "yaw": 0, "mirrored": false },
+    "p4": { "by": "root", "root": "p4", "x": 0, "y": 0, "z": 0, "yaw": 0, "mirrored": false },
+    "p5": { "by": "root", "root": "p5", "x": 0, "y": 0, "z": 0, "yaw": 0, "mirrored": false }
+  },
+  "root": null,
+  "pushes": []
+}
