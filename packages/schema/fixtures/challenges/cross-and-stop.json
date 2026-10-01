@@ -1,0 +1,37 @@
+{
+  "arena": {
+    "preset": "wall-stop",
+    "props": []
+  },
+  "goal": {
+    "forTicks": 30,
+    "kind": "holds",
+    "when": {
+      "kind": "and",
+      "of": [
+        {
+          "kind": "near-wall",
+          "target": {
+            "part": "chassis"
+          },
+          "wall": "far-wall",
+          "withinMm": 40
+        },
+        {
+          "atMost": 5,
+          "kind": "speed",
+          "target": {
+            "part": "chassis"
+          }
+        }
+      ]
+    }
+  },
+  "goalLine": "Cross the arena and stop at the wall",
+  "hints": [],
+  "id": "cross-and-stop",
+  "kind": "unscripted-build",
+  "kit": "rolling-start",
+  "level": 1,
+  "title": "Cross and stop"
+}

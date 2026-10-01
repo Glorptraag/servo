@@ -1,0 +1,48 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "meta": {
+    "createdAt": "2026-10-01T09:00:00.000Z",
+    "level": 3,
+    "name": "Test build",
+    "updatedAt": "2026-10-01T09:20:00.000Z"
+  },
+  "parts": [
+    {
+      "id": "brain",
+      "part": "microcontroller",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "servo",
+      "part": "servo-motor",
+      "position": {
+        "x": 100,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    }
+  ],
+  "version": 1,
+  "wires": [
+    {
+      "from": {
+        "part": "servo",
+        "port": "signal"
+      },
+      "id": "w1",
+      "to": {
+        "part": "brain",
+        "port": "out-1"
+      }
+    }
+  ]
+}

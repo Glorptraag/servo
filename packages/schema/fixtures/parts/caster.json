@@ -1,0 +1,78 @@
+{
+  "behaviour": [
+    {
+      "id": "roller",
+      "kind": "support",
+      "mount": "mount",
+      "rollingFriction": 0.02
+    }
+  ],
+  "body": {
+    "centreOfMass": {
+      "x": 0,
+      "y": 0,
+      "z": 5
+    },
+    "grams": 12,
+    "size": {
+      "x": 22,
+      "y": 22,
+      "z": 14
+    }
+  },
+  "card": {
+    "does": "Holds up the back of the frame and swivels to follow.",
+    "gives": "Gives: a smooth ride with no drag.",
+    "needs": "Needs: a place under the frame (grey).",
+    "popularMechanics": "Office chairs and shopping trolleys roll on casters."
+  },
+  "failureModes": [
+    {
+      "cardLine": "Loose: the frame drags on the floor.",
+      "hint": "The caster is not fixed to the frame",
+      "id": "loose",
+      "need": "fixed",
+      "shows": [
+        "drag"
+      ],
+      "teachingNote": "The caster holds the back of the frame off the floor and swivels to follow the wheels. Left loose, the frame scrapes the floor, so the robot drags and pulls to one side.",
+      "unmet": "absent"
+    }
+  ],
+  "id": "caster",
+  "identity": {
+    "art": "part/caster",
+    "colours": {
+      "accent": "#424242",
+      "main": "#9e9e9e"
+    },
+    "domains": [
+      "mechanics"
+    ],
+    "family": "structure-and-ride",
+    "level": 1,
+    "name": "caster"
+  },
+  "needs": [
+    {
+      "id": "fixed",
+      "kind": "mount",
+      "port": "mount"
+    }
+  ],
+  "ports": [
+    {
+      "at": {
+        "x": 0,
+        "y": 0,
+        "z": 14
+      },
+      "id": "mount",
+      "label": "mount",
+      "role": "mount",
+      "type": "mechanical",
+      "yaw": 0
+    }
+  ],
+  "settings": []
+}

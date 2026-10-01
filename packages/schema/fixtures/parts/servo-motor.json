@@ -1,0 +1,188 @@
+{
+  "behaviour": [
+    {
+      "command": "signal",
+      "degPerSecond": 600,
+      "drive": "arm",
+      "holdingTorqueNmm": 176,
+      "id": "servo",
+      "idleMilliamps": 10,
+      "kind": "actuator",
+      "maxDeg": 180,
+      "minDeg": 0,
+      "mode": "position",
+      "ratedVolts": 5,
+      "restDeg": 90,
+      "stallMilliamps": 650,
+      "startVolts": 3.5,
+      "supply": {
+        "neg": "minus",
+        "pos": "plus"
+      },
+      "target": 90
+    }
+  ],
+  "body": {
+    "centreOfMass": {
+      "x": 0,
+      "y": 0,
+      "z": 12
+    },
+    "grams": 9,
+    "size": {
+      "x": 23,
+      "y": 12,
+      "z": 29
+    }
+  },
+  "card": {
+    "does": "Turns to an angle you choose, and holds it.",
+    "gives": "Gives: a turning arm.",
+    "needs": "Needs: power (red) and a signal (yellow).",
+    "popularMechanics": "The same part steers a radio-controlled car and moves a camera gimbal.",
+    "specLine": "4.8–6 V · 180° · holds 1.8 kg·cm"
+  },
+  "failureModes": [
+    {
+      "cardLine": "No signal: the arm stays where it is and hums.",
+      "hint": "The servo is waiting for a signal",
+      "id": "no-signal",
+      "need": "signal",
+      "shows": [
+        "hold",
+        "hum"
+      ],
+      "teachingNote": "A servo motor turns to the angle its signal asks for. With power but no signal it has nothing to follow, so it holds where it is and hums.",
+      "unmet": "absent"
+    },
+    {
+      "cardLine": "No complete circuit: the arm stays still.",
+      "id": "no-circuit",
+      "need": "power",
+      "shows": [
+        "still"
+      ],
+      "teachingNote": "Without a complete loop from plus to minus the servo motor gets no power, so its arm stays still.",
+      "unmet": "open"
+    },
+    {
+      "cardLine": "Too little power: the arm moves slowly.",
+      "id": "low-voltage",
+      "need": "power",
+      "shows": [
+        "slow"
+      ],
+      "teachingNote": "Below 4.8 volts the servo motor sweeps slowly and weakly.",
+      "unmet": "low"
+    },
+    {
+      "cardLine": "Too much to push: the arm stops and hums.",
+      "id": "overload",
+      "need": "load",
+      "shows": [
+        "stall",
+        "hum"
+      ],
+      "teachingNote": "A servo motor can hold or push only so much. Past that, the arm stops short of its angle and the motor hums.",
+      "unmet": "exceeded"
+    }
+  ],
+  "id": "servo-motor",
+  "identity": {
+    "art": "part/servo-motor",
+    "colours": {
+      "accent": "#fafafa",
+      "main": "#1e88e5"
+    },
+    "domains": [
+      "mechanics",
+      "electronics-and-power"
+    ],
+    "family": "actuators",
+    "level": 2,
+    "name": "servo motor"
+  },
+  "needs": [
+    {
+      "id": "power",
+      "kind": "power",
+      "maxVolts": 6,
+      "minVolts": 4.8,
+      "supply": {
+        "neg": "minus",
+        "pos": "plus"
+      }
+    },
+    {
+      "id": "signal",
+      "kind": "signal",
+      "port": "signal"
+    },
+    {
+      "id": "load",
+      "kind": "torque",
+      "port": "arm"
+    }
+  ],
+  "ports": [
+    {
+      "id": "plus",
+      "label": "plus (+)",
+      "polarity": "positive",
+      "type": "power"
+    },
+    {
+      "id": "minus",
+      "label": "minus (−)",
+      "polarity": "negative",
+      "type": "power"
+    },
+    {
+      "direction": "in",
+      "id": "signal",
+      "label": "signal in",
+      "type": "signal"
+    },
+    {
+      "at": {
+        "x": 6,
+        "y": 0,
+        "z": 29
+      },
+      "axis": "+z",
+      "id": "arm",
+      "label": "arm",
+      "role": "drive-out",
+      "type": "mechanical"
+    },
+    {
+      "at": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "id": "mount",
+      "label": "mount",
+      "role": "mount",
+      "type": "mechanical",
+      "yaw": 0
+    }
+  ],
+  "settings": [
+    {
+      "binds": {
+        "param": "target",
+        "primitive": "servo"
+      },
+      "default": 90,
+      "id": "angle",
+      "kind": "number",
+      "label": "Angle",
+      "max": 180,
+      "min": 0,
+      "step": 15,
+      "unit": "°",
+      "unlockLevel": 3
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "behaviour": [
+    {
+      "grip": 1,
+      "hub": "hub",
+      "id": "tyre",
+      "kind": "wheel",
+      "radiusMm": 32.5,
+      "widthMm": 26
+    }
+  ],
+  "body": {
+    "centreOfMass": {
+      "x": 0,
+      "y": 0,
+      "z": 32.5
+    },
+    "grams": 30,
+    "size": {
+      "x": 65,
+      "y": 26,
+      "z": 65
+    }
+  },
+  "card": {
+    "does": "Rolls the robot along the floor.",
+    "gives": "Gives: movement across the floor.",
+    "needs": "Needs: a shaft to turn it (grey).",
+    "popularMechanics": "Cars, prams and shopping trolleys all ride on wheels like this.",
+    "specLine": "65 mm across · rubber tyre"
+  },
+  "failureModes": [
+    {
+      "cardLine": "Not on a shaft: the wheel does not drive.",
+      "hint": "This wheel needs a shaft to turn it",
+      "id": "not-driven",
+      "need": "driven",
+      "shows": [
+        "still"
+      ],
+      "teachingNote": "A wheel only drives when a shaft turns it. Without a drive linkage it just rolls along, pushed by the frame.",
+      "unmet": "absent"
+    }
+  ],
+  "id": "wheel-large",
+  "identity": {
+    "art": "part/wheel-large",
+    "colours": {
+      "accent": "#ffca28",
+      "main": "#212121"
+    },
+    "domains": [
+      "mechanics"
+    ],
+    "family": "drivetrain",
+    "level": 1,
+    "name": "large wheel"
+  },
+  "needs": [
+    {
+      "id": "driven",
+      "kind": "drive",
+      "port": "hub"
+    }
+  ],
+  "ports": [
+    {
+      "at": {
+        "x": 0,
+        "y": 0,
+        "z": 32.5
+      },
+      "axis": "+y",
+      "id": "hub",
+      "label": "hub",
+      "role": "drive-in",
+      "type": "mechanical"
+    }
+  ],
+  "settings": []
+}

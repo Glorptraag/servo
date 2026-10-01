@@ -1,0 +1,19 @@
+{
+  "friction": 0.8,
+  "id": "open-floor",
+  "lines": [],
+  "name": "Open floor",
+  "props": [],
+  "ramps": [],
+  "size": {
+    "x": 2000,
+    "y": 1200
+  },
+  "start": {
+    "heading": 0,
+    "x": 300,
+    "y": 600
+  },
+  "walls": [],
+  "zones": []
+}

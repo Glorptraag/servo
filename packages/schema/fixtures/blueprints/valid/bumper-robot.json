@@ -1,0 +1,431 @@
+{
+  "arena": {
+    "preset": "wall-stop",
+    "props": [
+      {
+        "at": {
+          "heading": 0,
+          "x": 1200,
+          "y": 300
+        },
+        "fixed": false,
+        "grams": 40,
+        "id": "cone",
+        "shape": "cylinder",
+        "size": {
+          "x": 60,
+          "y": 60,
+          "z": 90
+        }
+      }
+    ]
+  },
+  "meta": {
+    "author": "prof_7Hq2LwX9aP4sZ1",
+    "createdAt": "2026-10-01T09:00:00.000Z",
+    "level": 2,
+    "name": "Bumper robot",
+    "updatedAt": "2026-10-01T09:20:00.000Z"
+  },
+  "parts": [
+    {
+      "id": "battery",
+      "part": "battery-pack-2-cell",
+      "position": {
+        "x": -45,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "bumper",
+      "part": "bumper-switch",
+      "position": {
+        "x": 85,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "buzzer",
+      "part": "buzzer",
+      "position": {
+        "x": -120,
+        "y": 60
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "caster",
+      "part": "caster",
+      "position": {
+        "x": -70,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "chassis",
+      "part": "chassis",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "driver",
+      "part": "motor-driver",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {
+        "motor-b": "backward"
+      }
+    },
+    {
+      "id": "gear-left",
+      "part": "gearbox",
+      "position": {
+        "x": 30,
+        "y": -52
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "gear-right",
+      "part": "gearbox",
+      "position": {
+        "x": 30,
+        "y": 52
+      },
+      "rotation": 180,
+      "settings": {}
+    },
+    {
+      "id": "motor-left",
+      "part": "dc-motor",
+      "position": {
+        "x": 30,
+        "y": -40
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "motor-right",
+      "part": "dc-motor",
+      "position": {
+        "x": 30,
+        "y": 40
+      },
+      "rotation": 180,
+      "settings": {}
+    },
+    {
+      "id": "servo",
+      "part": "servo-motor",
+      "position": {
+        "x": 55,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "wheel-left",
+      "part": "wheel-large",
+      "position": {
+        "x": 30,
+        "y": -90
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "wheel-right",
+      "part": "wheel-large",
+      "position": {
+        "x": 30,
+        "y": 90
+      },
+      "rotation": 0,
+      "settings": {}
+    }
+  ],
+  "version": 1,
+  "wires": [
+    {
+      "from": {
+        "part": "motor-left",
+        "port": "mount"
+      },
+      "id": "w1",
+      "to": {
+        "part": "chassis",
+        "port": "motor-left"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-left",
+        "port": "shaft"
+      },
+      "id": "w10",
+      "to": {
+        "part": "gear-left",
+        "port": "input"
+      }
+    },
+    {
+      "from": {
+        "part": "gear-left",
+        "port": "output"
+      },
+      "id": "w11",
+      "to": {
+        "part": "wheel-left",
+        "port": "hub"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-right",
+        "port": "shaft"
+      },
+      "id": "w12",
+      "to": {
+        "part": "gear-right",
+        "port": "input"
+      }
+    },
+    {
+      "from": {
+        "part": "gear-right",
+        "port": "output"
+      },
+      "id": "w13",
+      "to": {
+        "part": "wheel-right",
+        "port": "hub"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "plus"
+      },
+      "id": "w14",
+      "to": {
+        "part": "bumper",
+        "port": "a"
+      }
+    },
+    {
+      "from": {
+        "part": "bumper",
+        "port": "b"
+      },
+      "id": "w15",
+      "to": {
+        "part": "driver",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "minus"
+      },
+      "id": "w16",
+      "to": {
+        "part": "driver",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "driver",
+        "port": "a-plus"
+      },
+      "id": "w17",
+      "to": {
+        "part": "motor-left",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "driver",
+        "port": "a-minus"
+      },
+      "id": "w18",
+      "to": {
+        "part": "motor-left",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "driver",
+        "port": "b-plus"
+      },
+      "id": "w19",
+      "to": {
+        "part": "motor-right",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-right",
+        "port": "mount"
+      },
+      "id": "w2",
+      "to": {
+        "part": "chassis",
+        "port": "motor-right"
+      }
+    },
+    {
+      "from": {
+        "part": "driver",
+        "port": "b-minus"
+      },
+      "id": "w20",
+      "to": {
+        "part": "motor-right",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "bumper",
+        "port": "b"
+      },
+      "id": "w21",
+      "to": {
+        "part": "buzzer",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "minus"
+      },
+      "id": "w22",
+      "to": {
+        "part": "buzzer",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "bumper",
+        "port": "b"
+      },
+      "id": "w23",
+      "to": {
+        "part": "servo",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "minus"
+      },
+      "id": "w24",
+      "to": {
+        "part": "servo",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "gear-left",
+        "port": "mount"
+      },
+      "id": "w3",
+      "to": {
+        "part": "chassis",
+        "port": "gear-left"
+      }
+    },
+    {
+      "from": {
+        "part": "gear-right",
+        "port": "mount"
+      },
+      "id": "w4",
+      "to": {
+        "part": "chassis",
+        "port": "gear-right"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "mount"
+      },
+      "id": "w5",
+      "to": {
+        "part": "chassis",
+        "port": "deck-rear"
+      }
+    },
+    {
+      "from": {
+        "part": "driver",
+        "port": "mount"
+      },
+      "id": "w6",
+      "to": {
+        "part": "chassis",
+        "port": "deck-middle"
+      }
+    },
+    {
+      "from": {
+        "part": "bumper",
+        "port": "mount"
+      },
+      "id": "w7",
+      "to": {
+        "part": "chassis",
+        "port": "bumper"
+      }
+    },
+    {
+      "from": {
+        "part": "caster",
+        "port": "mount"
+      },
+      "id": "w8",
+      "to": {
+        "part": "chassis",
+        "port": "caster"
+      }
+    },
+    {
+      "from": {
+        "part": "servo",
+        "port": "mount"
+      },
+      "id": "w9",
+      "to": {
+        "part": "chassis",
+        "port": "deck-front"
+      }
+    }
+  ]
+}

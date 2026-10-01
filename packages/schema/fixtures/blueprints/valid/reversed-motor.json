@@ -1,0 +1,229 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "meta": {
+    "createdAt": "2026-10-01T09:00:00.000Z",
+    "level": 2,
+    "name": "One motor reversed",
+    "updatedAt": "2026-10-01T09:20:00.000Z"
+  },
+  "parts": [
+    {
+      "id": "battery",
+      "part": "battery-pack-2-cell",
+      "position": {
+        "x": -45,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "caster",
+      "part": "caster",
+      "position": {
+        "x": -70,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "chassis",
+      "part": "chassis",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "motor-left",
+      "part": "dc-motor",
+      "position": {
+        "x": 30,
+        "y": -40
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "motor-right",
+      "part": "dc-motor",
+      "position": {
+        "x": 30,
+        "y": 40
+      },
+      "rotation": 180,
+      "settings": {}
+    },
+    {
+      "id": "switch",
+      "part": "switch",
+      "position": {
+        "x": 55,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "wheel-left",
+      "part": "wheel-large",
+      "position": {
+        "x": 30,
+        "y": -80
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "wheel-right",
+      "part": "wheel-large",
+      "position": {
+        "x": 30,
+        "y": 80
+      },
+      "rotation": 0,
+      "settings": {}
+    }
+  ],
+  "version": 1,
+  "wires": [
+    {
+      "from": {
+        "part": "motor-left",
+        "port": "mount"
+      },
+      "id": "w1",
+      "to": {
+        "part": "chassis",
+        "port": "motor-left"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-right",
+        "port": "minus"
+      },
+      "id": "w10",
+      "to": {
+        "part": "switch",
+        "port": "b"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "minus"
+      },
+      "id": "w11",
+      "to": {
+        "part": "motor-left",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "minus"
+      },
+      "id": "w12",
+      "to": {
+        "part": "motor-right",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-right",
+        "port": "mount"
+      },
+      "id": "w2",
+      "to": {
+        "part": "chassis",
+        "port": "motor-right"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "mount"
+      },
+      "id": "w3",
+      "to": {
+        "part": "chassis",
+        "port": "deck-rear"
+      }
+    },
+    {
+      "from": {
+        "part": "switch",
+        "port": "mount"
+      },
+      "id": "w4",
+      "to": {
+        "part": "chassis",
+        "port": "deck-front"
+      }
+    },
+    {
+      "from": {
+        "part": "caster",
+        "port": "mount"
+      },
+      "id": "w5",
+      "to": {
+        "part": "chassis",
+        "port": "caster"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-left",
+        "port": "shaft"
+      },
+      "id": "w6",
+      "to": {
+        "part": "wheel-left",
+        "port": "hub"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-right",
+        "port": "shaft"
+      },
+      "id": "w7",
+      "to": {
+        "part": "wheel-right",
+        "port": "hub"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "plus"
+      },
+      "id": "w8",
+      "to": {
+        "part": "switch",
+        "port": "a"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-left",
+        "port": "plus"
+      },
+      "id": "w9",
+      "to": {
+        "part": "switch",
+        "port": "b"
+      }
+    }
+  ]
+}
