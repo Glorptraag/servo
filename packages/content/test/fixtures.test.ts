@@ -32,6 +32,7 @@ import type {
   PowerNeed,
   Primitive,
   Vec3,
+  WheelPrimitive,
   Wire,
 } from '@servo/schema';
 import { FIXTURES, loadFixtures } from '../src/fixtures.ts';
@@ -44,7 +45,9 @@ import { loadArenas, loadCatalogue } from '../src/index.ts';
 // - the wiring: `wiredNeeds` decides power and loop `open` and isolation `shorted`, and says what explains each;
 // - the voltages: nominal volts (batteries at full charge, no sag), judged for `low`, `high` and `reversed` and
 //   explained in the schema's order with `explainByControls`, then by an unpowered motor driver feeding the part;
-// - the links: signal, mount and drive needs from the wires; balance from the centre of mass against the supports.
+// - the links: signal, mount and drive needs from the wires;
+// - balance: the centre of mass against the wheels and supports, and off them, where the robot lands once a chassis
+//   edge meets the floor (the orchestrator's ruling after review R-2.6): resting on it is grounded, over it is lost.
 // The load torque and the floor (stall, slip, lifted) are left to the mechanical solver (task 1.4), and the
 // golden-run harness (task 1.7) replays every fixture in sim-core against its recorded verdict.
 
@@ -64,7 +67,7 @@ const BROKEN = [
   'broken-missing-return-wire',
   'broken-servo-without-signal',
   'broken-underpowered-pack',
-  'broken-top-heavy-chassis',
+  'broken-chassis-on-the-floor',
   'broken-short-circuit',
   'broken-wrong-type-wire',
   'broken-loose-caster',
@@ -381,11 +384,74 @@ const clearance = (blueprint: Blueprint, robot: Robot): number => {
   return Math.min(...heights);
 };
 
+/** Where a robot that has left its wheels and supports comes to rest, along the floor from its wheels' contact. */
+interface Landing {
+  /** How far it rocks about the axle before a bottom edge of the chassis meets the floor, in degrees. */
+  readonly degrees: number;
+  /** Signed along the robot's heading: negative behind the wheels' contact. */
+  readonly edge: number;
+  readonly centre: number;
+  /** Whether the centre of mass lands over the new base, the wheels to the chassis's edge: it rests and drags. */
+  readonly rests: boolean;
+}
+
 /**
- * Balance: the robot rides upright while its centre of mass lies over its wheels and supports. When it does not, a
- * support of the build that is not fixed (a loose caster) stands for it with its own fault, as an unpowered motor
- * driver stands for its motors; otherwise the chassis is top-heavy (balance · lost). This is the reading these
- * fixtures take; the mechanical solver (task 1.4) decides it.
+ * The orchestrator's ruling for a robot whose centre of mass leaves the polygon of its wheels and supports (given to
+ * task 1.4 too): it rocks until a chassis edge touches the floor. Landing over the new base (the wheels and that edge),
+ * it rests and drags: balance · grounded. Landing beyond it, it falls over with its wheels in the air: balance · lost, a
+ * tip. Judged here for a robot left on its two wheels, which rocks about their axle; rocking by t toward an edge
+ * (dx, dz) from the axle lowers it to dz·cos t − |dx|·sin t, and it lands once that is −radius.
+ */
+const landingOf = (blueprint: Blueprint, robot: Robot): Landing => {
+  if (robot.contacts.length !== 2) throw new Error('No static judge for a robot that leaves a base of three.');
+  const placements = placeParts(blueprint, catalogue);
+  const axles = blueprint.parts.flatMap((part) => {
+    const where = placements.get(part.id);
+    const type = typeOf(blueprint, part.id);
+    const wheel = type.behaviour.find((primitive): primitive is WheelPrimitive => primitive.kind === 'wheel');
+    const hub = type.ports.find((port) => port.id === wheel?.hub);
+    if (where?.root !== robot.root || !wheel || hub?.type !== 'mechanical' || !('at' in hub)) return [];
+    const at = placePoint(where.placement, hub.at);
+    return [{ x: at.x, z: at.z, radius: wheel.radiusMm }];
+  });
+  const [axle] = axles;
+  if (!axle || axles.some((other) => other.x !== axle.x || other.z !== axle.z || other.radius !== axle.radius)) throw new Error('No static judge for wheels off one axle.');
+  const { size } = typeOf(blueprint, robot.root).body;
+  const back = robot.centre.x < axle.x ? -1 : 1;
+  const rocked = (dx: number, dz: number, t: number) => ({
+    along: dx * Math.cos(t) + back * dz * Math.sin(t),
+    up: dz * Math.cos(t) - back * dx * Math.sin(t),
+  });
+  const [ex, ez] = [(back * size.x) / 2 - axle.x, -axle.z];
+  let [low, high] = [0, Math.PI / 2];
+  for (let step = 0; step < 60; step += 1) {
+    const mid = (low + high) / 2;
+    if (rocked(ex, ez, mid).up > -axle.radius) low = mid;
+    else high = mid;
+  }
+  // The chassis's edge must be the first body down: every other body on the robot still clears the floor.
+  for (const part of blueprint.parts) {
+    const where = placements.get(part.id);
+    if (where?.root !== robot.root || part.id === robot.root || robot.contacts.some((contact) => contact.id === part.id)) continue;
+    const box = typeOf(blueprint, part.id).body.size;
+    for (const sx of [-1, 1]) {
+      for (const sy of [-1, 1]) {
+        const corner = placePoint(where.placement, { x: (sx * box.x) / 2, y: (sy * box.y) / 2, z: 0 });
+        if (rocked(corner.x - axle.x, corner.z - axle.z, low).up < -axle.radius) throw new Error(`The ${part.id} meets the floor before the chassis.`);
+      }
+    }
+  }
+  const edge = rocked(ex, ez, low).along;
+  const centre = rocked(robot.centre.x - axle.x, robot.centre.z - axle.z, low).along;
+  const rests = Math.sign(centre) === Math.sign(edge) && Math.abs(centre) <= Math.abs(edge) && Math.abs(robot.centre.y) <= size.y / 2;
+  return { degrees: (low * 180) / Math.PI, edge, centre, rests };
+};
+
+/**
+ * Balance: the robot rides upright while its centre of mass lies over its wheels and supports. When it does not, it
+ * lands as `landingOf` says: resting on the chassis's edge (grounded) or over it (lost). A support of the build that is
+ * not fixed stands for either with its own fault, as broken-loose-caster's description records; otherwise the fault
+ * is the chassis's. The mechanical solver (task 1.4) decides it in a Run.
  */
 const balanceFaults = (blueprint: Blueprint): string[] =>
   robotsOf(blueprint).flatMap((robot) => {
@@ -396,7 +462,8 @@ const balanceFaults = (blueprint: Blueprint): string[] =>
         typeOf(blueprint, part.id).needs.some((need) => need.kind === 'mount' && !linked(blueprint, part.id, need.port, 'mount')),
     );
     if (looseSupport) return [];
-    const mode = typeOf(blueprint, robot.root).failureModes.find((candidate) => candidate.unmet === 'lost');
+    const way = landingOf(blueprint, robot).rests ? 'grounded' : 'lost';
+    const mode = typeOf(blueprint, robot.root).failureModes.find((candidate) => candidate.unmet === way);
     return mode ? [`${robot.root}: ${mode.id}`] : [];
   });
 
@@ -474,11 +541,14 @@ const mountOf = (part: PartRecord): MountPort => {
   return port;
 };
 
-/** The caster where the chassis's caster mount puts it, for a chassis at the canvas origin. */
-const casterOnItsMount = (): PlacedPart => {
-  const pose = canvasPoseOf({ x: 0, y: 0, rotation: 0 }, mountPlacement(mountPointOf(record('chassis'), 'caster'), mountOf(record('caster'))));
-  return { id: 'caster', part: 'caster', position: { x: pose.x, y: pose.y }, rotation: pose.rotation, settings: {} };
+/** A part where a chassis mount point puts it, for a chassis at the canvas origin. */
+const onChassis = (id: string, type: string, point: string): PlacedPart => {
+  const pose = canvasPoseOf({ x: 0, y: 0, rotation: 0 }, mountPlacement(mountPointOf(record('chassis'), point), mountOf(record(type))));
+  return { id, part: type, position: { x: pose.x, y: pose.y }, rotation: pose.rotation, settings: {} };
 };
+
+/** The caster where the chassis's caster mount puts it. */
+const casterOnItsMount = (): PlacedPart => onChassis('caster', 'caster', 'caster');
 
 // ---------------------------------------------------------------------------------------------
 
@@ -651,20 +721,86 @@ describe('each broken fixture’s named fault reproduces, and fixing the build c
     expect([judge(fixed), motion(fixed)]).toEqual([[], 'forward']);
   });
 
-  it('broken-top-heavy-chassis: with no caster, the centre of mass sits behind the axle, off the supports (D49)', () => {
-    const { blueprint } = fixture('broken-top-heavy-chassis');
+  it('broken-chassis-on-the-floor: with no caster it rocks back onto the chassis’s rear edge and rests there, so it scrapes', () => {
+    const { blueprint } = fixture('broken-chassis-on-the-floor');
     const [robot] = robotsOf(blueprint);
     if (!robot) throw new Error('No robot.');
     expect(robot.contacts.map((contact) => contact.id)).toEqual(['wheel-left', 'wheel-right']);
-    const axle = robot.contacts[0]?.x ?? 0;
-    expect(robot.centre.x).toBeLessThan(axle);
     expect(upright(robot)).toBe(false);
+    // By hand. The axle is 40 mm ahead of the chassis's centre and 16 mm above its underside, on large wheels of radius
+    // 32.5 mm. The underside's rear edge, 120 mm behind the axle and 16 mm below it, meets the floor once the robot has
+    // rocked back by t with 120·sin t + 16·cos t = 32.5: t = asin(32.5 / √(120² + 16²)) − atan(16 / 120) = 7.98°.
+    const [behind, below, radius] = [120, 16, 32.5];
+    const t = Math.asin(radius / Math.hypot(behind, below)) - Math.atan2(below, behind);
+    // The edge lands 120·cos t − 16·sin t behind the wheels' contact. The centre of mass, dx behind the axle and dz below
+    // it, lands dx·cos t − dz·sin t behind it: inside the edge, so the robot rests on it and drags.
+    const edge = behind * Math.cos(t) - below * Math.sin(t);
+    const [dx, dz] = [40 - robot.centre.x, 16 - robot.centre.z];
+    const centre = dx * Math.cos(t) - dz * Math.sin(t);
+    expect([(t * 180) / Math.PI, edge, dx, dz, centre, edge - centre].map((value) => Number(value.toFixed(1)))).toEqual([8, 116.6, 32.6, 4.1, 31.8, 84.9]);
+    const landing = landingOf(blueprint, robot);
+    expect(landing.rests).toBe(true);
+    expect([landing.degrees, landing.edge, landing.centre].map((value) => Number(value.toFixed(6)))).toEqual(
+      [(t * 180) / Math.PI, -edge, -centre].map((value) => Number(value.toFixed(6))),
+    );
     expect([...wiringFaults(blueprint, {}), ...voltageFaults(blueprint, {}), ...linkFaults(blueprint)]).toEqual([]);
-    expect(judge(blueprint)).toEqual(['chassis: top-heavy']);
+    expect(judge(blueprint)).toEqual(['chassis: scraping']);
     const fixed = edited(blueprint, { add: [['caster.mount', 'chassis.caster']], parts: (parts) => [...parts, casterOnItsMount()] });
     const [steady] = robotsOf(fixed);
     expect(steady && upright(steady)).toBe(true);
     expect([judge(fixed), motion(fixed)]).toEqual([[], 'forward']);
+  });
+
+  it('no Level 1–2 load tips this chassis, on the floor or on any slope a robot could drive, so no fixture shows top-heavy (D49)', () => {
+    // A search of every Level 1–2 part, or none, on every free mount point, with either drive, either wheel size and the
+    // caster on or off (2,152,008 builds), found none that tips on the floor: without the caster each lands at least
+    // 76 mm inside the rear edge, and with it none leaves its base. The most front-heavy is this one: both 2-cell
+    // battery packs forward, on the front deck and the bumper mount, with gearboxes.
+    const heavy = edited(fixture('broken-chassis-on-the-floor').blueprint, {
+      remove: [
+        ['battery.mount', 'chassis.deck-rear'],
+        ['switch.mount', 'chassis.deck-front'],
+        ['battery.plus', 'switch.a'],
+        ['switch.b', 'motor-left.plus'],
+        ['switch.b', 'motor-right.plus'],
+      ],
+      add: [
+        ['battery.mount', 'chassis.bumper'],
+        ['battery-2.mount', 'chassis.deck-front'],
+        ['battery.plus', 'motor-left.plus'],
+        ['battery.plus', 'motor-right.plus'],
+        ['battery-2.plus', 'battery.plus'],
+        ['battery-2.minus', 'battery.minus'],
+        ['caster.mount', 'chassis.caster'],
+      ],
+      parts: (parts) => [
+        ...parts.filter((part) => part.id !== 'switch').map((part) => (part.id === 'battery' ? onChassis('battery', part.part, 'bumper') : part)),
+        onChassis('battery-2', 'battery-pack-2-cell', 'deck-front'),
+        casterOnItsMount(),
+      ],
+    });
+    expect([judge(heavy), motion(heavy)]).toEqual([[], 'forward']);
+    const [robot] = robotsOf(heavy);
+    if (!robot) throw new Error('No robot.');
+    // Its centre of mass, x mm ahead of the chassis's centre, still sits behind the axle at 40, so on the floor nothing
+    // ever pitches it onto its nose. Facing downhill at a, it pitches onto its nose once the slope carries its centre of
+    // mass past the axle: a = atan((40 − x) / h), h its height above the floor. Nose down, it lands on the chassis's front
+    // edge (40 mm ahead of the axle, 16 mm below it) once 40·sin u + 16·cos u = 32.5. There it rests until the slope
+    // carries its centre of mass past that edge. (The overhanging pack meets the floor first, which only makes the tip
+    // later.) The steepest slope any preset has is the ramp's 1 in 7.
+    const [ahead, under, radius] = [40, 16, 32.5];
+    const nose = Math.atan2(40 - robot.centre.x, robot.centre.z - (under - radius));
+    const u = Math.asin(radius / Math.hypot(ahead, under)) - Math.atan2(under, ahead);
+    const [dx, dz] = [robot.centre.x - 40, robot.centre.z - 16];
+    const along = dx * Math.cos(u) + dz * Math.sin(u);
+    const height = dz * Math.cos(u) - dx * Math.sin(u) + radius;
+    const edge = ahead * Math.cos(u) - under * Math.sin(u);
+    const tip = Math.atan2(edge - along, height);
+    const degrees = (angle: number): number => Number(((angle * 180) / Math.PI).toFixed(1));
+    expect([Number(robot.centre.x.toFixed(1)), degrees(nose), degrees(u), degrees(tip)]).toEqual([30.9, 18, 27.2, 49.7]);
+    const ramp = loadArenas().find((arena) => arena.id === 'ramp');
+    const slopes = (ramp?.ramps ?? []).map((slope) => degrees(Math.atan2(slope.riseMm, slope.to.x - slope.from.x)));
+    expect(slopes).toEqual([8.1, 4.1]);
   });
 
   it('broken-short-circuit: the wire across the battery pack is its fault, and the parts it starves are explained by it', () => {
@@ -733,7 +869,7 @@ describe('motion and balance', () => {
     ['broken-reversed-motor', 'spin'],
     ['broken-missing-return-wire', 'turn'],
     ['broken-underpowered-pack', 'still'],
-    ['broken-top-heavy-chassis', 'forward'],
+    ['broken-chassis-on-the-floor', 'forward'],
     ['broken-short-circuit', 'still'],
     ['broken-loose-caster', 'forward'],
     ['one-cell-roller', 'forward'],

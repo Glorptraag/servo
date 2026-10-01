@@ -156,13 +156,13 @@ export const FIXTURES: Readonly<Record<string, FixtureSpec>> = {
     ticks: 60,
     expect: { faults: [{ partId: 'driver', failure: 'low-voltage' }], namedFault: { partId: 'driver', failure: 'low-voltage' } },
   },
-  'broken-top-heavy-chassis': {
+  'broken-chassis-on-the-floor': {
     description:
-      'Level 2: with no caster, the geared robot’s centre of mass sits behind its wheels, outside its supports, so it tips back; D49’s route, since no Level 1–2 load moves it outside a wheel-and-caster base.',
-    blueprint: 'broken-top-heavy-chassis',
+      'Level 2: with no caster, the geared robot rocks back 8.0° onto the chassis’s rear edge and rests there, its centre of mass 85 mm inside that edge, so it drags (grounded); no Level 1–2 build on this chassis tips (D49).',
+    blueprint: 'broken-chassis-on-the-floor',
     inputs: [],
     ticks: 90,
-    expect: { faults: [{ partId: 'chassis', failure: 'top-heavy' }], namedFault: { partId: 'chassis', failure: 'top-heavy' } },
+    expect: { faults: [{ partId: 'chassis', failure: 'scraping' }], namedFault: { partId: 'chassis', failure: 'scraping' } },
   },
   'broken-short-circuit': {
     description: 'Level 1: a wire straight across the battery pack shorts it; the DC motors and the switch it starves show no fault of their own.',
