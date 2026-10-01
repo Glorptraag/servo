@@ -14,13 +14,15 @@ describe('sizes at default zoom (brief Section 9)', () => {
     expect(PORT_PX).toBe(44);
   });
 
-  it('puts the example parts in or near the 96–160 px tile band', () => {
+  it('puts the example parts in the 96–160 px tile band, unless a part is truly bigger', () => {
     for (const part of parts) {
       const { tile, frame } = layoutPart(part);
       const longer = Math.max(tile.w, tile.h) * PX_PER_MM;
+      const trueSize = Math.max(part.body.size.x, part.body.size.y) * PX_PER_MM;
       expect(longer, part.id).toBeGreaterThanOrEqual(96 - 1e-9);
-      // Frames hold the robot and are as big as they really are; a part grows only to fit its sockets.
-      if (!frame) expect(longer, part.id).toBeLessThanOrEqual(165);
+      // Frames hold the robot and are as big as they really are. Growing for sockets never passes 160 px, so only a
+      // part bigger than 64 mm, drawn at its true size (the large wheel, 162.5 px), is outside the band.
+      if (!frame) expect(longer, part.id).toBeLessThanOrEqual(Math.max(160, trueSize) + 1e-9);
     }
   });
 });

@@ -82,13 +82,6 @@ export class Camera {
     this.zoom = Math.min(Math.min(1, fittingZoom(target, this.width, this.height)), limits.maxZoom);
   }
 
-  /** Brings the view inside the limits outright (used after a resize). */
-  clampTo(limits: ViewLimits): void {
-    this.zoom = Math.min(Math.max(this.zoom, limits.minZoom), limits.maxZoom);
-    this.centreX = Math.min(Math.max(this.centreX, limits.area.minX), limits.area.maxX);
-    this.centreY = Math.min(Math.max(this.centreY, limits.area.minY), limits.area.maxY);
-  }
-
   /**
    * Holds the centre in the area without jumping: a view already outside (after a load, say) may move back
    * towards the area but no further out.

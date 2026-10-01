@@ -21,6 +21,12 @@ const packageMap = {
   tools: ['schema', 'content', 'sim-core', 'canvas', 'app', 'parent'],
 };
 
+// Entries for dev tooling: only these packages' src/ may import them, whatever the map allows. Tests anywhere may,
+// as they may import any export. The behaviour runtime is for packages/tools' behaviour fixtures; a Run goes
+// through createSimulation.
+const toolsOnly = ['@servo/sim-core/behaviour'];
+const toolsOnlyUsers = ['tools', 'sim-core'];
+
 const exportedEntries = (name) => {
   const { exports = '.' } = JSON.parse(fs.readFileSync(path.join(repoRoot, 'packages', name, 'package.json'), 'utf8'));
   const subpaths =
@@ -123,6 +129,7 @@ const packageBoundaries = {
       outsideMap: "'{{specifier}}' is outside the package map: packages/{{pkg}}/src may import {{allowed}} (CLAUDE.md).",
       notExported: "'{{specifier}}' is not an entry its package exports.",
       unknownPackage: "'{{specifier}}' is not a Servo package.",
+      toolsOnly: "'{{specifier}}' is for packages/tools only. Run a simulation through createSimulation from @servo/sim-core.",
     },
   },
   create(context) {
@@ -153,6 +160,7 @@ const packageBoundaries = {
           if (where.shipped && !namesData(reference) && !isInside(target, where.source)) report('leavesSource');
           return;
         }
+        if (where.shipped && !toolsOnlyUsers.includes(where.pkg) && toolsOnly.includes(head)) return report('toolsOnly');
         if (!head.startsWith('@servo/') || allowed.some((entry) => entry.test(head))) return;
         const name = head.split('/')[1];
         if (!Object.hasOwn(packageMap, name)) return report('unknownPackage');
