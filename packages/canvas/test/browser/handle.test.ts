@@ -171,8 +171,6 @@ describe('members later tasks build', () => {
   it('say which task builds them', () => {
     expect(surface.selection).toBeNull();
     expect(() => surface.listView).toThrow(/task 3\.6/);
-    expect(() => surface.apply({ kind: 'rename', name: 'x' })).toThrow(/task 3\.2/);
-    expect(() => surface.beginPlacement('led')).toThrow(/task 3\.2/);
     expect(() => surface.select(null)).toThrow(/task 3\.4/);
     expect(() => surface.tidyWires()).toThrow(/task 3\.7/);
   });

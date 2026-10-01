@@ -3,7 +3,7 @@
 // tasks build throw until those tasks land, naming the task. See docs/renderer.md.
 import { Container, RenderLayer, Ticker, autoDetectRenderer } from 'pixi.js';
 import type { Renderer } from 'pixi.js';
-import { canonicalizeBlueprint, validateBlueprint } from '@servo/schema';
+import { canonicalizeBlueprint, serializeBlueprint, validateBlueprint } from '@servo/schema';
 import type { AssetKey, Blueprint, Level, PartTypeId, PlacedPartId, ValidationResult, Vec2, WireId } from '@servo/schema';
 import type { RunFrame } from '@servo/sim-core/interface';
 import type {
@@ -19,6 +19,8 @@ import type {
   PropTemplate,
   Selection,
 } from '../interface.ts';
+import { applyEdit } from '../placement/apply.ts';
+import { PlacementController } from '../placement/controller.ts';
 import { layArena } from '../scene/arena.ts';
 import type { SceneArena } from '../scene/arena.ts';
 import { unionRect } from '../scene/geometry.ts';
@@ -75,6 +77,8 @@ export class CanvasSurface implements CanvasHandle {
   layers: WorldLayers | undefined;
   /** The logical parent for anything later tasks attach to a world layer (hints, ghost wires, drag previews). */
   readonly overlays = new Container();
+  /** Placing, moving, turning and removing parts by touch and pointer (task 3.2, src/placement/). */
+  readonly placement: PlacementController;
 
   private readonly options: CanvasOptions;
   private readonly emitter = new Emitter<CanvasEventMap>();
@@ -134,6 +138,15 @@ export class CanvasSurface implements CanvasHandle {
       zoomAbout: (screen, zoom) => this.viewChange(() => this.camera.zoomAbout(screen, zoom, this.limits())),
       dragThreshold: () => DRAG_THRESHOLD_PX / Math.max(this.prefs.dragSensitivity, 0.05),
     });
+    this.placement = new PlacementController({
+      surface: this,
+      catalogue: options.catalogue,
+      readOnly: options.readOnly === true,
+      prefs: () => this.prefs,
+      drawContext: () => this.drawContext,
+      art: (key) => this.art.get(key),
+      placed: (event) => this.emitter.emit('placement', event),
+    });
     this.resizeObserver =
       typeof ResizeObserver === 'function' ? new ResizeObserver(() => this.resized()) : undefined;
     this.resizeObserver?.observe(this.canvas);
@@ -172,6 +185,7 @@ export class CanvasSurface implements CanvasHandle {
     if (mode !== 'build' && mode !== 'run') throw new RangeError(`Unknown mode '${String(mode)}'.`);
     if (mode === this.currentMode) return;
     this.currentMode = mode;
+    this.placement.modeChanged();
     this.modeFade.toward(mode === 'run' ? 1 : 0, this.motion(MODE_FADE_MS), performance.now());
     this.loop.request();
   }
@@ -218,6 +232,7 @@ export class CanvasSurface implements CanvasHandle {
     if (this.destroyed) return;
     this.destroyed = true;
     live.delete(this);
+    this.placement.destroy();
     this.loop.stop();
     if (this.restTimer !== undefined) clearTimeout(this.restTimer);
     this.resizeObserver?.disconnect();
@@ -229,6 +244,49 @@ export class CanvasSurface implements CanvasHandle {
   }
 
   // ---------------------------------------------------------------------------------------------------------
+  // CanvasHandle: task 3.2 (src/placement/, docs/placement.md)
+
+  /**
+   * The one way into the build: touch, pointer, the list view and the app all apply commands here, through the pure
+   * `applyEdit`. Fires `edit` when the build changed.
+   */
+  apply(command: EditCommand): EditResult {
+    this.alive('apply');
+    if (this.options.readOnly || this.currentMode === 'run') {
+      return { ok: false, refusal: { code: 'edit.locked', message: 'The build is locked: it is running, or this canvas is read-only.' } };
+    }
+    const current = this.current;
+    if (!current) return { ok: false, refusal: { code: 'edit.no_build', message: 'Nothing is loaded yet.' } };
+    const result = applyEdit(current, command, this.options.catalogue);
+    if (result.ok && serializeBlueprint(result.blueprint) !== serializeBlueprint(current)) {
+      this.current = result.blueprint;
+      this.rebuild();
+      this.emitter.emit('edit', { command, blueprint: result.blueprint });
+    }
+    return result;
+  }
+
+  beginPlacement(part: PartTypeId, pointer?: PointerEvent): void {
+    this.alive('beginPlacement');
+    this.placement.begin(part, pointer);
+  }
+
+  beginPropPlacement(prop: PropTemplate, pointer?: PointerEvent): void {
+    this.alive('beginPropPlacement');
+    this.placement.beginProp(prop, pointer);
+  }
+
+  cancelPlacement(): void {
+    this.alive('cancelPlacement');
+    this.placement.cancel();
+  }
+
+  setRemoveTargets(elements: readonly HTMLElement[]): void {
+    this.alive('setRemoveTargets');
+    this.placement.setRemoveTargets(elements);
+  }
+
+  // ---------------------------------------------------------------------------------------------------------
   // CanvasHandle: later tasks
 
   get selection(): Selection | null {
@@ -237,32 +295,6 @@ export class CanvasSurface implements CanvasHandle {
 
   get listView(): ListView {
     throw notYet('listView', '3.6');
-  }
-
-  apply(command: EditCommand): EditResult {
-    void command;
-    throw notYet('apply', '3.2');
-  }
-
-  beginPlacement(part: PartTypeId, pointer?: PointerEvent): void {
-    void part;
-    void pointer;
-    throw notYet('beginPlacement', '3.2');
-  }
-
-  beginPropPlacement(prop: PropTemplate, pointer?: PointerEvent): void {
-    void prop;
-    void pointer;
-    throw notYet('beginPropPlacement', '3.2');
-  }
-
-  cancelPlacement(): void {
-    throw notYet('cancelPlacement', '3.2');
-  }
-
-  setRemoveTargets(elements: readonly HTMLElement[]): void {
-    void elements;
-    throw notYet('setRemoveTargets', '3.2');
   }
 
   select(selection: Selection | null): void {
@@ -452,7 +484,10 @@ export class CanvasSurface implements CanvasHandle {
     this.arena = layArena(this.current, this.options.catalogue, this.scene);
     const layers = this.layers;
     const renderer = this.renderer;
-    if (!layers || !renderer) return;
+    if (!layers || !renderer) {
+      this.placement.refresh();
+      return;
+    }
     const context = this.drawContext;
     renderer.background.color = context.palette.workbench;
 
@@ -500,6 +535,7 @@ export class CanvasSurface implements CanvasHandle {
     this.arenaView.draw(this.arena, context.palette);
     this.applyEmphasis();
     this.grid.invalidate();
+    this.placement.refresh();
     this.loop.request();
   }
 
