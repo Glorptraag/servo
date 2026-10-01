@@ -262,10 +262,10 @@ describe('faults over a Run', () => {
     const model = electricalModel(graph);
     let now = state(model);
     let actuators: ActuatorState[] = graph.uses.map(() => ({}));
-    const seen: { readonly tick: number; readonly faults: string[]; readonly charge: number }[] = [];
+    const seen: { readonly tick: number; readonly faults: string[]; readonly explained: string[]; readonly charge: number }[] = [];
     for (let tick = 0; tick < ticks; tick += 1) {
       const result = stepElectrical(model, now, { actuators });
-      seen.push({ tick, faults: faults(result.solution), charge: now.charge[0] ?? 0 });
+      seen.push({ tick, faults: faults(result.solution), explained: explained(result.solution), charge: now.charge[0] ?? 0 });
       actuators = graph.uses.map((use, index): ActuatorState => (use.spec.kind === 'actuator' && use.spec.mode === 'speed' ? { rpm: steadyRpm(use.spec, result.solution.uses[index]?.volts ?? 0) } : {}));
       now = result.state;
     }
@@ -296,7 +296,7 @@ describe('faults over a Run', () => {
     expect(seen.slice(first).every((entry) => entry.faults.length === 1)).toBe(true);
   });
 
-  it('keeps an explanation it found until a control changes (review N14)', () => {
+  it('keeps an answer under the controls and the charge bands, checks a kept explanation every tick, and searches again when it fails (review N14)', () => {
     const blueprint = workbench(
       [battery, ['switch', 'switch'], ['driver', 'motor-driver', { 'motor-a': 'backward' }], motor],
       [
@@ -310,16 +310,58 @@ describe('faults over a Run', () => {
     const model = electricalModel(buildGraph(blueprint, catalogue));
     const first = solveElectrical(model, initialElectricalState(model));
     expect(explained(first.solution)).toEqual(['motor power reversed: controls driver/channel-a']);
-    expect(first.state.explained.needs).toEqual([{ partId: 'motor', need: 'power', unmet: 'reversed', explainedBy: { by: 'controls', controls: ['driver/channel-a'] } }]);
-    // At the same controls the kept answer stands, without searching again: a kept "nothing explains it" stays a fault.
+    const [entry] = first.state.explained.needs;
+    expect(entry).toMatchObject({ partId: 'motor', need: 'power', unmet: 'reversed', explainedBy: { by: 'controls', controls: ['driver/channel-a'] } });
+    expect(entry?.alternative?.channels).toEqual({ 'driver/channel-a': 1, 'driver/channel-b': 1 });
+    expect(first.state.explained.key).toBe('-1,1,closed#20');
+    // Under the same key a kept "nothing explains it" stands without a search: it stays a fault.
     const kept: ElectricalState = { ...first.state, explained: { ...first.state.explained, needs: [{ partId: 'motor', need: 'power', unmet: 'reversed' }] } };
     expect(faults(solveElectrical(model, kept).solution)).toEqual(['motor: reversed']);
-    // A control changes, so the search runs again.
-    const flipped = solveElectrical(model, kept, { controls: opened('switch') });
-    expect(flipped.state.explained.controls).not.toBe(kept.explained.controls);
-    const back = solveElectrical(model, flipped.state, { controls: { switches: { 'switch/contacts': true } } });
-    expect(faults(back.solution)).toEqual([]);
-    expect(explained(back.solution)).toEqual(['motor power reversed: controls driver/channel-a']);
+    // A kept explanation is checked: opening the switch does not meet the motor's need, so it is searched again.
+    const stale: ElectricalState = {
+      ...first.state,
+      explained: { ...first.state.explained, needs: [{ partId: 'motor', need: 'power', unmet: 'reversed', explainedBy: { by: 'controls', controls: ['switch/contacts'] }, alternative: opened('switch') }] },
+    };
+    const checked = solveElectrical(model, stale);
+    expect(explained(checked.solution)).toEqual(['motor power reversed: controls driver/channel-a']);
+    // Another key, a control or a charge band, starts afresh.
+    expect(solveElectrical(model, kept, { controls: opened('switch') }).state.explained.key).toBe('-1,1,open#20');
+    const drained = solveElectrical(model, { ...kept, charge: [0.9] });
+    expect(drained.state.explained.key).toBe('-1,1,closed#18');
+    expect(faults(drained.solution)).toEqual([]);
+  });
+
+  it('shows a motor that the switch explained as a fault of its own once the pack is too weak for any setting', () => {
+    // Four DC motors on the pack, and a fifth behind a switch (the reviewer's build, with the schema's records).
+    const motors = ['m1', 'm2', 'm3', 'm4'];
+    const blueprint = workbench(
+      [battery, ...motors.map((id): Placed => [id, 'dc-motor']), ['m5', 'dc-motor'], ['switch', 'switch']],
+      [
+        ...motors.flatMap((id): [string, string][] => [
+          ['battery.plus', `${id}.plus`],
+          [`${id}.minus`, 'battery.minus'],
+        ]),
+        ['battery.plus', 'switch.a'],
+        ['switch.b', 'm5.plus'],
+        ['m5.minus', 'battery.minus'],
+      ],
+    );
+    const seen = run(blueprint, (model) => initialElectricalState(model), 4600);
+    const explainedAt = (entry: (typeof seen)[number]): boolean => entry.explained.includes('m1 power low: controls switch/contacts');
+    // At the start all five stall and sag the pack below 2.2 V: m1–m4 would run with m5's switch open.
+    expect(explainedAt(seen[0] as (typeof seen)[number])).toBe(true);
+    expect(seen[0]?.faults).toEqual(['m5: low-voltage']);
+    // Settled at no load the motors see 2 + charge − 0.6 A × 0.4 Ω: low below a charge of 0.44. With m5's switch
+    // open m1 would see 2 + charge − 0.2036 V, enough down to a charge of 0.4036; below that nothing helps.
+    const low = seen.findIndex((entry, index) => index > 30 && explainedAt(entry));
+    expect(seen[low]?.charge).toBeCloseTo(0.44, 3);
+    const fault = seen.findIndex((entry) => entry.faults.includes('m1: low-voltage'));
+    expect(fault).toBeGreaterThan(low);
+    // Found by checking the kept answer each tick, inside the 0.40–0.45 charge band, not at its edge.
+    expect(seen[fault]?.charge).toBeGreaterThan(0.4);
+    expect(seen[fault]?.charge).toBeCloseTo(0.4036, 3);
+    expect(seen[fault]?.faults).toEqual(['m1: low-voltage', 'm2: low-voltage', 'm3: low-voltage', 'm4: low-voltage', 'm5: low-voltage']);
+    expect(seen.slice(low, fault).every((entry) => entry.faults.length === 1)).toBe(true);
   });
 
   it('starts every Run from the same state: the same steps give the same answers', () => {
@@ -337,5 +379,119 @@ describe('faults over a Run', () => {
       return out;
     };
     expect(steps()).toEqual(steps());
+  });
+});
+
+describe('a motor driver browning out (review R-1.2, finding 1)', () => {
+  // The Level 2 kit robot on the workbench, with the schema's records: a 2-cell pack, a switch, a motor driver
+  // with a DC motor on each channel, and an LED.
+  const robot = workbench(
+    [battery, ['switch', 'switch'], ['driver', 'motor-driver'], ['left', 'dc-motor'], ['right', 'dc-motor'], ['led', 'led']],
+    [
+      ['battery.plus', 'switch.a'],
+      ['switch.b', 'driver.plus'],
+      ['driver.minus', 'battery.minus'],
+      ['driver.a-plus', 'left.plus'],
+      ['driver.a-minus', 'left.minus'],
+      ['driver.b-plus', 'right.plus'],
+      ['driver.b-minus', 'right.minus'],
+      ['switch.b', 'led.plus'],
+      ['led.minus', 'battery.minus'],
+    ],
+  );
+
+  /**
+   * Drives the robot tick by tick. The motors have some inertia: each tick they cover 30% of the way to the speed
+   * their volts give with no load, or run down towards still while `held`.
+   */
+  const driver = () => {
+    const graph = buildGraph(robot, catalogue);
+    const model = electricalModel(graph);
+    let state = initialElectricalState(model);
+    let rpm = graph.uses.map(() => 0);
+    return (switchClosed: boolean, held = false) => {
+      const result = stepElectrical(model, state, { controls: { switches: { 'switch/contacts': switchClosed } }, actuators: rpm.map((each) => ({ rpm: each })) });
+      state = result.state;
+      rpm = graph.uses.map((use, index) => {
+        if (use.spec.kind !== 'actuator' || use.spec.mode !== 'speed') return 0;
+        const target = held ? 0 : steadyRpm(use.spec, result.solution.uses[index]?.volts ?? 0);
+        return (rpm[index] ?? 0) + (target - (rpm[index] ?? 0)) * 0.3;
+      });
+      const duty = result.solution.sources.find((_, index) => graph.sources[index]?.part === 'driver')?.duty ?? 1;
+      const left = rpm[graph.uses.findIndex((use) => use.part === 'left')] ?? 0;
+      return { solution: result.solution, faults: faults(result.solution), explained: explained(result.solution), duty, charge: state.charge[0] ?? 0, left };
+    };
+  };
+
+  /** Drives with the switch closed until the pack is down to `charge`. Nothing is wrong on the way. */
+  const driveTo = (step: ReturnType<typeof driver>, charge: number): void => {
+    for (let last = step(true), tick = 0; last.charge > charge; last = step(true), tick += 1) {
+      expect(last.faults, `tick ${tick}`).toEqual([]);
+      expect(last.duty, `tick ${tick}`).toBe(1);
+    }
+  };
+
+  it('restarts at 85% charge: browns out with the driver’s own fault, its motors put down to it, and comes back as they spin up', () => {
+    const step = driver();
+    driveTo(step, 0.85);
+    // Switched off, the motors run down: no fault, the switch explains them.
+    for (let tick = 0; tick < 60; tick += 1) expect(step(false).faults).toEqual([]);
+    // Switched on, both stalled motors would sag the supply below the driver's 2.5 V: it browns out.
+    const restart = step(true);
+    expect(restart.duty).toBeGreaterThan(0);
+    expect(restart.duty).toBeLessThan(1);
+    expect(restart.solution.parts.get('driver')?.volts).toBeCloseTo(2.5, 5);
+    expect(restart.faults).toEqual(['driver: low-voltage']);
+    expect(restart.explained).toEqual(['left power low: feeder driver', 'right power low: feeder driver']);
+    expect(restart.solution.parts.get('left')?.milliamps).toBeGreaterThan(0);
+    // The motors still get the duty's share, so they spin up, the sag eases, and the driver is fully on again.
+    let browned = 1;
+    let last = restart;
+    while (last.duty < 1 && browned < 100) {
+      last = step(true);
+      if (last.duty < 1) {
+        browned += 1;
+        expect(last.faults).toEqual(['driver: low-voltage']);
+      }
+    }
+    expect(browned).toBeLessThan(30);
+    expect(last.faults).toEqual([]);
+    expect(last.explained).toEqual([]);
+    expect(last.solution.parts.get('driver')?.volts).toBeGreaterThan(2.5);
+    for (let tick = 0; tick < 60; tick += 1) last = step(true);
+    expect(last.faults).toEqual([]);
+    expect(last.left).toBeGreaterThan(50);
+  });
+
+  it('held against a wall, stays browned out with its own fault while held, and comes back once let go', () => {
+    const step = driver();
+    driveTo(step, 0.85);
+    for (let tick = 0; tick < 60; tick += 1) {
+      const held = step(true, true);
+      if (tick < 5) continue;
+      expect(held.duty).toBeLessThan(1);
+      expect(held.faults).toEqual(['driver: low-voltage']);
+    }
+    let last = step(true);
+    for (let tick = 0; tick < 60 && last.duty < 1; tick += 1) last = step(true);
+    expect(last.duty).toBe(1);
+    expect(last.faults).toEqual([]);
+  });
+
+  it('cannot run at all on a 1-cell pack: off, with its own fault, and its motors put down to it', () => {
+    const weak = solve(
+      workbench(
+        [['battery', 'battery-pack-1-cell'], ['driver', 'motor-driver'], motor],
+        [
+          ['battery.plus', 'driver.plus'],
+          ['driver.minus', 'battery.minus'],
+          ['driver.a-plus', 'motor.plus'],
+          ['driver.a-minus', 'motor.minus'],
+        ],
+      ),
+    );
+    expect(weak.sources[1]).toMatchObject({ duty: 0, giving: false, milliamps: 0 });
+    expect(faults(weak)).toEqual(['driver: low-voltage']);
+    expect(explained(weak)).toEqual(['motor power low: feeder driver']);
   });
 });

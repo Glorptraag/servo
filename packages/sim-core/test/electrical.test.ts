@@ -288,6 +288,27 @@ describe('the other parts as the circuit sees them', () => {
     expect(solution.parts.get('motor')?.volts).toBeCloseTo(0.09 * 5, 8);
   });
 
+  it('reads an output with too little supply as giving nothing, never a negative emf (review R-1.2, finding 5)', () => {
+    // A microcontroller wired the wrong way round: its 3V pin's regulator sees −3 V.
+    const { solution, graph } = solvedAt(
+      workbench(
+        [
+          ['battery', 'battery-pack-2-cell'],
+          ['brain', 'microcontroller'],
+          ['led', 'led'],
+        ],
+        [
+          ['battery.plus', 'brain.minus'],
+          ['brain.plus', 'battery.minus'],
+          ['brain.pin-3v', 'led.plus'],
+          ['led.minus', 'brain.minus'],
+        ],
+      ),
+    );
+    const pin = graph.sources.findIndex((source) => source.part === 'brain');
+    expect(solution.sources[pin]).toMatchObject({ emfVolts: 0, giving: false, milliamps: 0, duty: 1 });
+  });
+
   it('runs a motor backwards from a reversed supply, and turns the shaft the other way with its direction set backward', () => {
     expect(steadyRpm(DC_MOTOR, -3)).toBeCloseTo(-100, 12);
     expect(steadyRpm(DC_MOTOR, 3, 0, 1, true)).toBeCloseTo(-100, 12);
@@ -388,14 +409,15 @@ describe('determinism and cost', () => {
       actuators = next;
     };
     for (let warm = 0; warm < 200; warm += 1) tick();
-    // The median of 15 batches of 100 ticks, so a busy machine does not decide it.
+    // The fastest of 15 batches of 100 ticks: what the code costs when it has the processor, so a busy machine
+    // does not decide it (review R-1.2, finding 8). The median is printed beside it.
     const batches = Array.from({ length: 15 }, () => {
       const begin = performance.now();
       for (let count = 0; count < 100; count += 1) tick();
       return (performance.now() - begin) / 100;
     }).sort((p, q) => p - q);
-    const perTick = batches[7] ?? Number.POSITIVE_INFINITY;
-    console.log(`electrical: ${perTick.toFixed(3)} ms a tick for a 25-part build (median of 15 batches)`);
+    const perTick = batches[0] ?? Number.POSITIVE_INFINITY;
+    console.log(`electrical: ${perTick.toFixed(3)} ms a tick for a 25-part build (fastest of 15 batches; median ${(batches[7] ?? 0).toFixed(3)} ms)`);
     expect(perTick).toBeLessThan(1);
   });
 });

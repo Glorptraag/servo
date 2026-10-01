@@ -26,13 +26,15 @@ export interface ElectricalInputs {
   readonly actuators?: readonly (ActuatorState | undefined)[];
 }
 
-/** An unmet power need that only the voltages show, and why it is not a fault, as found at one control state. */
+/** An unmet power need that only the voltages show, and why it is not a fault, as found under one key. */
 export interface ExplainedNeed {
   readonly partId: PlacedPartId;
   readonly need: NeedId;
   readonly unmet: VoltageWay;
   /** Absent when nothing explains it: then it is a fault. */
   readonly explainedBy?: Explanation;
+  /** For an explanation by the controls: the setting that meets the need, so the answer can be checked each tick. */
+  readonly alternative?: ControlState;
 }
 
 /**
@@ -43,10 +45,11 @@ export interface ElectricalState {
   /** Each source's charge left, 0–1, indexed like `graph.sources`. A driver channel's or regulator's output stays at 1. */
   readonly charge: readonly number[];
   /**
-   * The explanations already found for needs the voltages leave unmet, at the control state named by `controls`
-   * (a key the solver makes). The search runs once per need and way while the controls stay as they are.
+   * The answers already found for needs the voltages leave unmet, under `key`: the control state and the band
+   * (5% wide) each battery's charge is in. A kept explanation is checked again every tick and searched again
+   * when it no longer holds; a new key starts afresh.
    */
-  readonly explained: { readonly controls: string; readonly needs: readonly ExplainedNeed[] };
+  readonly explained: { readonly key: string; readonly needs: readonly ExplainedNeed[] };
 }
 
 /** The ways only the voltages show. The wiring decides `open` and `shorted` (the schema's `wiredNeeds`). */
@@ -54,7 +57,10 @@ export type VoltageWay = 'low' | 'high' | 'reversed';
 
 /** One battery, or one driver channel's or regulator's output. */
 export interface SourceFlow {
-  /** Its open-circuit volts now: a battery's falls from `volts` to `emptyVolts` with its charge; an output's follows its supply. */
+  /**
+   * Its open-circuit volts now: a battery's falls from `volts` to `emptyVolts` with its charge; an output's follows
+   * its supply, signed the way it drives, and is 0 when it has nothing to give.
+   */
   readonly emfVolts: number;
   /** Volts between its + and − ports. */
   readonly volts: number;
@@ -64,8 +70,13 @@ export interface SourceFlow {
   readonly sagVolts: number;
   /** Its charge, 0–1, when the tick began. Always 1 for an output. */
   readonly charge: number;
-  /** Whether it gives power now: a battery with charge left, or an output that is switched on. */
+  /** Whether it gives power now: a battery with charge left, or an output that is on with volts to give. */
   readonly giving: boolean;
+  /**
+   * A motor driver channel's duty: the share of the time it is on. Below 1 while its driver browns out (its
+   * supply would sag below onVolts), as the lumped average of the stutter a real one makes. 1 for any other source.
+   */
+  readonly duty: number;
 }
 
 /** One use: a load, an actuator, a program, or a driver's or regulator's supply. */

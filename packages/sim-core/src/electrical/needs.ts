@@ -1,5 +1,5 @@
 import { explainByControls } from '@servo/schema';
-import type { Explanation, FailureMode, FailureModeId, NeedId, PlacedPartId, PowerNeed } from '@servo/schema';
+import type { ControlState, Explanation, FailureMode, FailureModeId, NeedId, PlacedPartId, PowerNeed } from '@servo/schema';
 import { solveCircuit } from './circuit.ts';
 import type { Solved } from './circuit.ts';
 import { at, compareText, portOf } from './model.ts';
@@ -11,6 +11,8 @@ import type { ActuatorState, ElectricalState, ElectricalVerdict, ExplainedNeed, 
 export const REVERSED_VOLTS = 1e-6;
 /** How far outside its range a supply may sit and still meet the need: rounding, never a teaching value. */
 const RANGE_VOLTS = 1e-9;
+/** Kept explanations are searched again whenever a battery's charge crosses into another band this wide. */
+export const CHARGE_BAND = 0.05;
 
 /** How the voltages leave a power need unmet: the wrong way round first, then below or above its range. */
 export const voltageWay = (need: PowerNeed, volts: number): VoltageWay | undefined => {
@@ -29,13 +31,13 @@ export interface Judged {
 
 /**
  * Every power, loop and isolation need, in the order `wiredNeeds` gives its verdicts (part id, then the
- * record's need order): a power need with its supply's ports as power-port numbers, an isolation need with
- * its first port (which places a shorted part in its circuit).
+ * record's need order): a power need with its supply's ports as power-port numbers and the motor-driver
+ * channels it powers, an isolation need with its first port (which places a shorted part in its circuit).
  */
 interface Slot {
   readonly partId: PlacedPartId;
   readonly need: NeedId;
-  readonly power?: { readonly need: PowerNeed; readonly pos: number; readonly neg: number };
+  readonly power?: { readonly need: PowerNeed; readonly pos: number; readonly neg: number; readonly channels: readonly number[] };
   readonly isolation?: number;
 }
 
@@ -46,7 +48,7 @@ interface Needs {
 
 const needsCache = new WeakMap<Model, Needs>();
 
-const keyOf = (part: PlacedPartId, need: NeedId): string => `${part} ${need}`;
+const keyOf = (part: PlacedPartId, need: NeedId, way: VoltageWay): string => `${part} ${need} ${way}`;
 
 const needsOf = (model: Model): Needs => {
   const known = needsCache.get(model);
@@ -56,8 +58,12 @@ const needsOf = (model: Model): Needs => {
   for (const part of model.graph.parts.values()) {
     modes.set(part.id, part.record.failureModes);
     for (const need of part.record.needs) {
-      if (need.kind === 'power') slots.push({ partId: part.id, need: need.id, power: { need, pos: portOf(model, part.id, need.supply.pos), neg: portOf(model, part.id, need.supply.neg) } });
-      else if (need.kind === 'isolation') slots.push({ partId: part.id, need: need.id, isolation: portOf(model, part.id, need.ports[0]) });
+      if (need.kind === 'power') {
+        const pos = portOf(model, part.id, need.supply.pos);
+        const neg = portOf(model, part.id, need.supply.neg);
+        const channels = model.sources.flatMap((source, index) => (source.part === part.id && source.kind === 'channel' && source.feederPos === pos && source.feederNeg === neg ? [index] : []));
+        slots.push({ partId: part.id, need: need.id, power: { need, pos, neg, channels } });
+      } else if (need.kind === 'isolation') slots.push({ partId: part.id, need: need.id, isolation: portOf(model, part.id, need.ports[0]) });
       else if (need.kind === 'loop') slots.push({ partId: part.id, need: need.id });
     }
   }
@@ -66,16 +72,27 @@ const needsOf = (model: Model): Needs => {
   return made;
 };
 
+/** The key kept explanations live under: the control state, and the band each battery's charge is in. */
+const keepKey = (model: Model, situation: Situation, charge: readonly number[]): string => {
+  const bands = model.sources.flatMap((source, index) => (source.kind === 'battery' ? [Math.floor(at(charge, index) / CHARGE_BAND)] : []));
+  return `${situation.key}#${bands.join('.')}`;
+};
+
 /**
  * Every power, loop and isolation need at this tick, by the schema's rule: a fault is what the child's
  * controls cannot fix (packages/schema/docs/parts.md).
  * - The wiring decides `open` and `shorted` and explains them (`wiredNeeds`, cached per control state).
  * - A power need the wiring meets is judged on the solved volts across its supply: `reversed`, `low`, `high`.
- * - Such a need is explained in the schema's order: by a short that starves it (it would be met with the
- *   short's wires and closed switches taken away), by the controls (`explainByControls`, each other setting
- *   solved with this tick's charges), or by a motor driver or regulator without power that feeds it (review N10).
- * - The search for an explanation runs once per need and way at a control state; its answer is kept in the
- *   state until a control changes (review N14).
+ * - A motor driver that browns out is `low` (its record: "the fault is the driver's"). Only a short or a
+ *   feeder can explain that: a child must see why its motors stopped, so the controls never do.
+ * - Any other such need is explained in the schema's order: by a short that starves it (it would be met with
+ *   the short's wires and closed switches taken away), by the controls (`explainByControls`, each other
+ *   setting solved with this tick's charges), or by a motor driver or regulator without power that feeds it
+ *   (review N10). A part a browned-out driver starves of volts is put down to that driver straight after the
+ *   short step.
+ * - An answer is kept in the state under the control state and the batteries' charge bands, and checked again
+ *   every tick: one solve at the setting it names. When it no longer holds, the need is searched again
+ *   (review N14). An answer that nothing explains stands while the key does.
  */
 export const judgeNeeds = (
   model: Model,
@@ -91,8 +108,20 @@ export const judgeNeeds = (
   const volts = (where: Situation, solution: Solved, pos: number, neg: number): number =>
     at(solution.volts, nodeOf(where, pos)) - at(solution.volts, nodeOf(where, neg));
 
+  interface Pending {
+    readonly index: number;
+    readonly part: PlacedPartId;
+    readonly need: PowerNeed;
+    readonly pos: number;
+    readonly neg: number;
+    readonly way: VoltageWay;
+    /** The motor-driver channels this supply powers. */
+    readonly channels: readonly number[];
+    /** A motor driver browning out: its own fault unless a short or a feeder explains it. */
+    readonly browned: boolean;
+  }
   const verdicts: ElectricalVerdict[] = [];
-  const pending: { readonly index: number; readonly part: PlacedPartId; readonly need: PowerNeed; readonly pos: number; readonly neg: number; readonly way: VoltageWay }[] = [];
+  const pending: Pending[] = [];
   const shorted = new Map<PlacedPartId, number>();
   const shorts: ShortCircuit[] = [];
   wired.forEach((verdict, index) => {
@@ -104,20 +133,27 @@ export const judgeNeeds = (
       shorts.push({ partId: verdict.partId, need: verdict.need });
     }
     const power = verdict.kind === 'power' && verdict.unmet === undefined ? slot.power : undefined;
-    const way = power ? voltageWay(power.need, volts(situation, solved, power.pos, power.neg)) : undefined;
-    if (!power || way === undefined) {
+    if (!power) {
       verdicts.push(verdict);
       return;
     }
-    pending.push({ index: verdicts.length, part: verdict.partId, need: power.need, pos: power.pos, neg: power.neg, way });
+    const browned = power.channels.some((source) => solved.browned[source] === true);
+    const way = browned ? 'low' : voltageWay(power.need, volts(situation, solved, power.pos, power.neg));
+    if (way === undefined) {
+      verdicts.push(verdict);
+      return;
+    }
+    pending.push({ index: verdicts.length, part: verdict.partId, need: power.need, pos: power.pos, neg: power.neg, way, channels: power.channels, browned });
     verdicts.push({ ...verdict, unmet: way });
   });
 
-  const sameControls = prior.controls === situation.key;
-  const known = new Map<string, ExplainedNeed>(sameControls ? prior.needs.map((entry) => [`${keyOf(entry.partId, entry.need)} ${entry.unmet}`, entry]) : []);
+  const key = keepKey(model, situation, charge);
+  const same = prior.key === key;
+  const known = new Map<string, ExplainedNeed>(same ? prior.needs.map((entry) => [keyOf(entry.partId, entry.need, entry.unmet), entry]) : []);
   let found = false;
   if (pending.length > 0) {
     const unpowered = new Set(verdicts.filter((verdict) => verdict.kind === 'power' && verdict.unmet !== undefined).map((verdict) => verdict.partId));
+    const brownedOut = new Set(model.sources.flatMap((source, index) => (solved.browned[index] === true ? [source.part] : [])));
     const solutions = new Map<string, Solved>([[situation.key, solved]]);
     const solvedAt = (where: Situation): Solved => {
       const done = solutions.get(where.key);
@@ -126,28 +162,58 @@ export const judgeNeeds = (
       solutions.set(where.key, solution);
       return solution;
     };
-    const metAt = (where: Situation, part: PlacedPartId, need: PowerNeed, pos: number, neg: number): boolean =>
-      powerClosed(where, part, pos, neg) && voltageWay(need, volts(where, solvedAt(where), pos, neg)) === undefined;
-    const explain = (part: PlacedPartId, need: PowerNeed, pos: number, neg: number): Explanation | undefined => {
-      if (shorted.size > 0) {
-        const healed = healedOf(model, situation, new Set(shorted.keys()));
-        if (healed && metAt(healed, part, need, pos, neg)) return { by: 'short', parts: nearShorts(model, situation, pos, shorted) };
-      }
-      const controls = explainByControls(graph.controls, situation.state, (state) => metAt(situationOf(model, settle(model, state)), part, need, pos, neg));
-      if (controls) return { by: 'controls', controls };
-      const feeder = feederOf(situation, part, pos, neg, unpowered);
-      return feeder === undefined ? undefined : { by: 'feeder', part: feeder };
+    const metAt = (where: Situation, task: Pending): boolean => {
+      if (!powerClosed(where, task.part, task.pos, task.neg)) return false;
+      const solution = solvedAt(where);
+      if (task.channels.some((source) => solution.browned[source] === true)) return false;
+      return voltageWay(task.need, volts(where, solution, task.pos, task.neg)) === undefined;
     };
-    for (const { index, part, need, pos, neg, way } of pending) {
-      const key = `${keyOf(part, need.id)} ${way}`;
-      let entry = known.get(key);
+    const healed = (): Situation | undefined => (shorted.size > 0 ? healedOf(model, situation, new Set(shorted.keys())) : undefined);
+    /** The search, in the rule's order; with the setting the controls step found. */
+    const explain = (task: Pending): { readonly by?: Explanation; readonly alternative?: ControlState } => {
+      const mended = healed();
+      if (mended && metAt(mended, task)) return { by: { by: 'short', parts: nearShorts(model, situation, task.pos, shorted) } };
+      if (task.browned) {
+        const feeder = feederOf(situation, task.part, task.pos, task.neg, unpowered);
+        return feeder === undefined ? {} : { by: { by: 'feeder', part: feeder } };
+      }
+      if (task.way === 'low') {
+        const starver = feederOf(situation, task.part, task.pos, task.neg, brownedOut);
+        if (starver !== undefined) return { by: { by: 'feeder', part: starver } };
+      }
+      let alternative: ControlState | undefined;
+      const controls = explainByControls(graph.controls, situation.state, (state) => {
+        const met = metAt(situationOf(model, settle(model, state)), task);
+        if (met) alternative = state;
+        return met;
+      });
+      if (controls && alternative) return { by: { by: 'controls', controls }, alternative };
+      const feeder = feederOf(situation, task.part, task.pos, task.neg, unpowered);
+      return feeder === undefined ? {} : { by: { by: 'feeder', part: feeder } };
+    };
+    /** Whether a kept explanation still holds now: the setting, the healed circuit or the feeder it names. */
+    const holds = (entry: ExplainedNeed, task: Pending): boolean => {
+      const by = entry.explainedBy;
+      if (!by) return true;
+      if (by.by === 'controls') return entry.alternative !== undefined && metAt(situationOf(model, settle(model, entry.alternative)), task);
+      if (by.by === 'short') {
+        const mended = healed();
+        return mended !== undefined && metAt(mended, task);
+      }
+      // A browned-out driver's own need is unmet too, so it is among the unpowered.
+      return feederOf(situation, task.part, task.pos, task.neg, unpowered) === by.part;
+    };
+    for (const task of pending) {
+      const name = keyOf(task.part, task.need.id, task.way);
+      let entry = known.get(name);
+      if (entry && !holds(entry, task)) entry = undefined;
       if (!entry) {
-        const explainedBy = explain(part, need, pos, neg);
-        entry = { partId: part, need: need.id, unmet: way, ...(explainedBy ? { explainedBy } : {}) };
-        known.set(key, entry);
+        const { by, alternative } = explain(task);
+        entry = { partId: task.part, need: task.need.id, unmet: task.way, ...(by ? { explainedBy: by } : {}), ...(alternative ? { alternative } : {}) };
+        known.set(name, entry);
         found = true;
       }
-      if (entry.explainedBy) verdicts[index] = { ...(verdicts[index] as ElectricalVerdict), explainedBy: entry.explainedBy };
+      if (entry.explainedBy) verdicts[task.index] = { ...(verdicts[task.index] as ElectricalVerdict), explainedBy: entry.explainedBy };
     }
   }
 
@@ -163,12 +229,12 @@ export const judgeNeeds = (
     const order = (needs.modes.get(part) ?? []).map((mode) => mode.id);
     list.sort((p, q) => order.indexOf(p) - order.indexOf(q));
   }
-  // Only a new explanation changes the state: otherwise it is handed on as it came.
+  // Only a new answer changes the state: otherwise it is handed on as it came.
   const explained =
-    sameControls && !found
+    same && !found
       ? prior
       : {
-          controls: situation.key,
+          key,
           needs: [...known.values()].sort((p, q) => compareText(p.partId, q.partId) || compareText(p.need, q.need) || compareText(p.unmet, q.unmet)),
         };
   return { verdicts, faults, shorts, explained };

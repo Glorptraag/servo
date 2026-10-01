@@ -17,7 +17,7 @@ export const electricalModel = (graph: SimGraph): ElectricalModel => buildModel(
 /** The state a Run starts in: every battery full, nothing explained yet. */
 export const initialElectricalState = (model: ElectricalModel): ElectricalState => ({
   charge: model.graph.sources.map(() => 1),
-  explained: { controls: '', needs: [] },
+  explained: { key: '', needs: [] },
 });
 
 /** A charge read from a state: 1 when missing or not a number, and within 0–1. */
@@ -48,9 +48,11 @@ const tick = (electrical: ElectricalModel, state: ElectricalState, inputs: Elect
         emfVolts,
         volts,
         milliamps: milliamps(at(solved.sourceAmps, index)),
-        sagVolts: giving ? emfVolts - volts : 0,
+        // Measured the way it drives, so a channel driving backwards sags by a positive amount too.
+        sagVolts: giving ? (emfVolts < 0 ? volts - emfVolts : emfVolts - volts) : 0,
         charge: at(charge, index),
         giving,
+        duty: at(solved.duty, index),
       };
     }),
     uses: model.uses.map((use, index) => ({

@@ -9,6 +9,8 @@ import { batteryEmf, positionActuatorMilliamps } from './primitives.ts';
  * where a convex, piecewise-quadratic function of the node volts is least. Damped Newton finds it: take the
  * segment each branch's voltage lies on, solve that linear network, and walk towards its answer only as far
  * as the function keeps falling, until the answer lies on the segments it was solved on. That always ends.
+ * Around it: a regulator's drop follows its supply, and a motor driver that would sag its supply below onVolts
+ * runs at the duty that holds it there (a bracketed search), each solved again until both stand.
  * Each linear solve eliminates the unknowns in a fixed order (by net) on a symmetric positive definite
  * matrix, so it needs no pivoting. No transient physics: no inductance or capacitance; a motor's back-EMF and
  * load come from last tick. See docs/electrical.md.
@@ -25,9 +27,21 @@ export const OUTPUT_OHMS = 0.01;
 export const KNEE_VOLTS = 0.01;
 /** How far a voltage may sit outside its branch's segment, or a regulator's drop may move, and the answer still stand. */
 export const SETTLE_VOLTS = 1e-9;
-/** Bounds no circuit has come near (docs/electrical.md: 8 solves at most in 27,000 random ones). At them the last step stands, marked unsettled. */
-const MAX_SOLVES = 256;
+/**
+ * Bounds no circuit has come near (docs/electrical.md): a handful of solves, or a few dozen while a motor driver
+ * browns out. At them the last step stands, marked unsettled.
+ */
+const MAX_SOLVES = 2048;
 const MAX_ROUNDS = 64;
+/** How many steps the search for a browning-out driver's duty may take. */
+const MAX_DUTY_STEPS = 64;
+/**
+ * A browning-out driver's supply is held between onVolts and onVolts + 2 × DUTY_VOLTS (aiming a microvolt above),
+ * so it never reads below onVolts. A microvolt is looser than SETTLE_VOLTS because where a net hangs on leaks
+ * alone the answer is only that good. The duty search also stops once its bracket is narrower than DUTY_WIDTH.
+ */
+export const DUTY_VOLTS = 1e-6;
+const DUTY_WIDTH = 1e-9;
 
 /** What a branch stands for, so its numbers can be set each tick. */
 type Role =
@@ -45,7 +59,8 @@ type Role =
 interface Branch {
   readonly role: Role;
   readonly ports: readonly number[];
-  readonly weights: readonly number[];
+  /** Fixed for a two-terminal branch; an output's ratio is set every tick. */
+  readonly weights: number[];
   /** Per port: its node, and its unknown (−1 for a reference node). */
   readonly nodes: readonly number[];
   readonly cols: readonly number[];
@@ -60,13 +75,33 @@ interface Branch {
 interface Output {
   readonly source: number;
   readonly info: SourceInfo;
+  /** The size of its command (a regulator's is 1), and whether it drives the other way round. */
   readonly n: number;
   readonly flip: boolean;
   readonly maxAmps: number;
   readonly branch: Branch;
-  /** Whether it gives anything. A driver channel that browns out stays off for the rest of the tick. */
-  active: boolean;
+  /** A driver channel's supply group, or −1 for a regulator. */
+  readonly group: number;
+  /** Whether the wiring gives it power and its command is not stop. */
+  live: boolean;
+  /** A regulator's drop this tick (dropoutVolts or more); a driver channel's dropVolts. */
   drop: number;
+}
+
+/**
+ * A motor driver's channels on one supply, and their duty: the share of the time they are on. It is 1 unless
+ * the supply would sag below the driver's onVolts. Then a real driver stutters, cutting out and coming back
+ * faster than a tick, and the duty is the lumped average of that: the share that holds the supply at onVolts,
+ * or 0 when even the supply with its outputs off is below it.
+ */
+interface Group {
+  readonly part: string;
+  readonly outputs: readonly Output[];
+  readonly onVolts: number;
+  /** The supply's two nodes. */
+  readonly pos: number;
+  readonly neg: number;
+  duty: number;
 }
 
 /** A situation's branches, made once and given new numbers every tick. */
@@ -75,6 +110,7 @@ interface Layout {
   readonly batteries: readonly (Branch | undefined)[];
   readonly uses: readonly Branch[];
   readonly outputs: readonly Output[];
+  readonly groups: readonly Group[];
 }
 
 /** The operating point of one tick at one situation. Volts are per node (a net's volts are its node's). */
@@ -82,9 +118,14 @@ export interface Solved {
   readonly volts: Float64Array;
   /** Out of each source's + port, amps. */
   readonly sourceAmps: Float64Array;
-  /** Each source's open-circuit volts, + over −. */
+  /** Each source's open-circuit volts, + over −: a battery's, or an output's the way it drives (never less than 0 that way). */
   readonly sourceEmf: Float64Array;
+  /** Whether each source can give power now: a battery with charge, an output that is on and has volts to give. */
   readonly giving: readonly boolean[];
+  /** Each source's duty: a motor driver channel's share of the time on (below 1 while it browns out); 1 for any other. */
+  readonly duty: Float64Array;
+  /** Whether each source is a motor driver channel, with a command, that browns out: its duty is below 1. */
+  readonly browned: readonly boolean[];
   /** Into each use's + port, amps. */
   readonly useAmps: Float64Array;
   /** From each port's net into its part, amps, through the parts' elements (not yet through switches). */
@@ -127,7 +168,7 @@ const layoutOf = (model: Model, situation: Situation): Layout => {
     return {
       role,
       ports,
-      weights,
+      weights: [...weights],
       nodes,
       cols: nodes.map((node) => at(situation.unknownOf, node)),
       breaks: new Array<number>(count - 1).fill(0),
@@ -152,6 +193,7 @@ const layoutOf = (model: Model, situation: Situation): Layout => {
     return branch;
   });
   const outputs: Output[] = [];
+  const groups: { readonly part: string; outputs: Output[]; onVolts: number; readonly pos: number; readonly neg: number; duty: number }[] = [];
   model.sources.forEach((info, index) => {
     if (info.kind === 'battery') return;
     // Leaks on the output and on the supply, so each pair keeps its nodes tied while the output gives nothing.
@@ -163,9 +205,23 @@ const layoutOf = (model: Model, situation: Situation): Layout => {
     const flip = command < 0;
     const ports = [info.feederPos, info.feederNeg, flip ? info.neg : info.pos, flip ? info.pos : info.neg];
     const maxAmps = spec.kind === 'source' ? 0 : spec.maxMilliamps / 1000;
-    outputs.push({ source: index, info, n, flip, maxAmps, branch: make({ kind: 'output', output: outputs.length }, ports, [n, -n, -1, 1]), active: false, drop: 0 });
+    // A driver's channels on one supply share a duty: each driver browns out as a whole, and on its own.
+    let group = -1;
+    if (spec.kind === 'driver') {
+      const pos = nodeOf(info.feederPos);
+      const neg = nodeOf(info.feederNeg);
+      group = groups.findIndex((each) => each.part === info.part && each.pos === pos && each.neg === neg);
+      if (group < 0) group = groups.push({ part: info.part, outputs: [], onVolts: 0, pos, neg, duty: 1 }) - 1;
+    }
+    const output: Output = { source: index, info, n, flip, maxAmps, branch: make({ kind: 'output', output: outputs.length }, ports, [n, -n, -1, 1]), group, live: false, drop: 0 };
+    outputs.push(output);
+    const owner = groups[group];
+    if (owner && spec.kind === 'driver') {
+      owner.outputs.push(output);
+      owner.onVolts = Math.max(owner.onVolts, spec.onVolts);
+    }
   });
-  const layout = { fixed, batteries, uses, outputs };
+  const layout = { fixed, batteries, uses, outputs, groups };
   layouts.set(situation, layout);
   return layout;
 };
@@ -308,22 +364,26 @@ const setUse = (branch: Branch, use: UseInfo, state: ActuatorState | undefined):
 };
 
 /**
- * A driver channel's or regulator's output: an ideal transformer of ratio `n` from its supply, less `drop`,
- * behind OUTPUT_OHMS, passing current one way only, up to its limit. Across u = n·(supply volts) − (output
+ * A driver channel's or regulator's output: an ideal transformer of ratio `ratio` from its supply, less `drop`,
+ * behind OUTPUT_OHMS, passing current one way only, up to its limit. Across u = ratio·(supply volts) − (output
  * volts the way it drives), the current out is 0 below `drop`, (u − drop)/OUTPUT_OHMS above, and the limit
- * past it; the supply carries n times that. It adds one symmetric outer product to the matrix.
+ * past it; the supply carries ratio times that. It adds one symmetric outer product to the matrix. A driver
+ * channel's ratio is its command × its driver's duty, and its drop and its limit are dropVolts and maxMilliamps ×
+ * the duty: what it gives when fully on, averaged over the share of the time it is on.
  */
-const setOutput = (output: Output, drop: number): void => {
-  const { breaks, g, c, pg, pc } = output.branch;
+const setOutput = (output: Output, ratio: number, drop: number, limit: number): void => {
+  const { weights, breaks, g, c, pg, pc } = output.branch;
+  weights[0] = ratio;
+  weights[1] = -ratio;
   output.drop = drop;
   breaks[0] = drop;
-  breaks[1] = drop + output.maxAmps * OUTPUT_OHMS;
+  breaks[1] = drop + limit * OUTPUT_OHMS;
   g[0] = 0;
   g[1] = 1 / OUTPUT_OHMS;
   g[2] = 0;
   c[0] = 0;
   c[1] = -drop / OUTPUT_OHMS;
-  c[2] = output.maxAmps;
+  c[2] = limit;
   for (let index = 0; index < 3; index += 1) {
     pg[index] = at(g, index);
     pc[index] = at(c, index);
@@ -396,12 +456,23 @@ export const solveCircuit = (model: Model, situation: Situation, charge: readonl
     if (use) setUse(branch, use, actuators[index]);
   });
   for (const branch of layout.fixed) if (branch.role.kind === 'leak') line(branch, 0, 0);
+  /** A driver channel at its group's duty; a regulator at its drop. */
+  const configure = (output: Output, drop: number): void => {
+    const spec = output.info.spec;
+    const duty = layout.groups[output.group]?.duty ?? 1;
+    if (spec.kind === 'driver') setOutput(output, output.n * duty, spec.dropVolts * duty, output.maxAmps * duty);
+    else setOutput(output, output.n, drop, output.maxAmps);
+  };
+  // Every tick starts with each driver fully on: one that browned out last tick comes back as soon as its
+  // supply allows.
+  for (const group of layout.groups) group.duty = 1;
   for (const output of layout.outputs) {
     const spec = output.info.spec;
-    setOutput(output, spec.kind === 'driver' ? spec.dropVolts : spec.kind === 'regulator' ? spec.dropoutVolts : 0);
+    configure(output, spec.kind === 'regulator' ? spec.dropoutVolts : 0);
     output.branch.region = 1;
-    output.active = situation.live.sources[output.source] === true && output.n > 0;
+    output.live = situation.live.sources[output.source] === true && output.n > 0;
   }
+  const isActive = (output: Output): boolean => output.live && (layout.groups[output.group]?.duty ?? 1) > 0;
 
   const count = situation.wiring.nets.length;
   const unknowns = situation.unknowns;
@@ -412,7 +483,7 @@ export const solveCircuit = (model: Model, situation: Situation, charge: readonl
   const gather = (): Branch[] => {
     branches.length = 0;
     for (const branch of layout.fixed) branches.push(branch);
-    for (const output of layout.outputs) if (output.active) branches.push(output.branch);
+    for (const output of layout.outputs) if (isActive(output)) branches.push(output.branch);
     return branches;
   };
 
@@ -494,15 +565,15 @@ export const solveCircuit = (model: Model, situation: Situation, charge: readonl
     return 1;
   };
 
-  let volts: Float64Array | undefined;
+  let volts: Float64Array = new Float64Array(count);
+  let started = false;
   let solves = 0;
-  let settled = false;
-  for (let round = 0; round < MAX_ROUNDS && solves < MAX_SOLVES; round += 1) {
-    // Damped Newton for the outputs as they stand.
-    let steady = false;
+
+  /** Damped Newton for the outputs as they stand, from the last answer. False if it ran out of solves. */
+  const settle = (): boolean => {
     while (solves < MAX_SOLVES) {
       const list = gather();
-      const here = volts;
+      const here = started ? volts : undefined;
       if (here) for (const branch of list) branch.region = regionOf(branch.breaks, across(branch, here));
       const newton = linearSolve(list);
       solves += 1;
@@ -512,13 +583,10 @@ export const solveCircuit = (model: Model, situation: Situation, charge: readonl
         fitting = false;
         break;
       }
-      if (fitting) {
+      if (fitting || !here) {
         volts = newton;
-        steady = true;
-        break;
-      }
-      if (!here) {
-        volts = newton;
+        started = true;
+        if (fitting) return true;
         continue;
       }
       const t = stepSize(list, here, newton);
@@ -529,40 +597,102 @@ export const solveCircuit = (model: Model, situation: Situation, charge: readonl
         next[net] = at(here, net) + step;
         moved = Math.max(moved, step < 0 ? -step : step);
       }
-      if (!(moved > SETTLE_VOLTS)) {
-        // Nothing left to fall: `here` is the answer, on the segments it lies on. (A Newton answer can miss a
-        // break it should land on by rounding, where a net hangs on leaks alone; the walk then stops at once.)
-        steady = true;
-        break;
-      }
+      // Nothing left to fall: `here` is the answer, on the segments it lies on. (A Newton answer can miss a
+      // break it should land on by rounding, where a net hangs on leaks alone; the walk then stops at once.)
+      if (!(moved > SETTLE_VOLTS)) return true;
       volts = next;
     }
-    if (!steady || !volts) break;
-    // Then the outputs at that answer: a driver channel browns out below its onVolts, and a regulator holds
-    // `volts` while its supply allows and follows the supply less dropoutVolts below that.
-    let changed = false;
-    for (const output of layout.outputs) {
-      if (!output.active) continue;
-      const supply = at(volts, at(output.branch.nodes, 0)) - at(volts, at(output.branch.nodes, 1));
-      const spec = output.info.spec;
-      if (spec.kind === 'driver' && supply < spec.onVolts - SETTLE_VOLTS) {
-        output.active = false;
-        changed = true;
-      } else if (spec.kind === 'regulator') {
-        const drop = Math.max(spec.dropoutVolts, supply - spec.volts);
-        if (drop - output.drop > SETTLE_VOLTS || output.drop - drop > SETTLE_VOLTS) {
-          setOutput(output, drop);
-          changed = true;
-        }
+    return false;
+  };
+
+  /** How far a group's supply is above the volts its duty aims for: a microvolt over its onVolts. */
+  const headroom = (group: Group): number => at(volts, group.pos) - at(volts, group.neg) - group.onVolts - DUTY_VOLTS;
+  const setDuty = (group: Group, duty: number): void => {
+    group.duty = duty;
+    for (const output of group.outputs) configure(output, output.drop);
+  };
+  /** Whether a group's duty stands: fully on above onVolts, off below it, or in between exactly at it. */
+  const holds = (group: Group): boolean => {
+    if (!group.outputs.some((output) => output.live)) return group.duty === 1;
+    const over = headroom(group);
+    if (group.duty >= 1) return over >= -DUTY_VOLTS;
+    if (group.duty <= 0) return over <= DUTY_VOLTS;
+    return over <= DUTY_VOLTS && over >= -DUTY_VOLTS;
+  };
+  /**
+   * The duty that holds a group's supply just above onVolts. The supply only falls as the duty rises, so: fully on if
+   * that keeps the supply up, off if even the outputs off leave it below, and otherwise the root in between,
+   * by regula falsi with the Illinois step, from a fresh bracket.
+   */
+  const findDuty = (group: Group): boolean => {
+    const at1 = (): number => {
+      setDuty(group, 1);
+      return settle() ? headroom(group) : 0;
+    };
+    const full = group.duty === 1 ? headroom(group) : at1();
+    if (!group.outputs.some((output) => output.live) || full >= -DUTY_VOLTS) return true;
+    setDuty(group, 0);
+    if (!settle()) return false;
+    const empty = headroom(group);
+    if (empty <= DUTY_VOLTS) return true;
+    let low = 0;
+    let lowOver = empty;
+    let high = 1;
+    let highOver = full;
+    let kept = 0;
+    for (let step = 0; step < MAX_DUTY_STEPS; step += 1) {
+      const duty = (low * highOver - high * lowOver) / (highOver - lowOver);
+      setDuty(group, duty);
+      if (!settle()) return false;
+      const over = headroom(group);
+      if ((over <= DUTY_VOLTS && over >= -DUTY_VOLTS) || high - low <= DUTY_WIDTH) return true;
+      if (over > 0) {
+        low = duty;
+        lowOver = over;
+        if (kept > 0) highOver /= 2;
+        kept = 1;
+      } else {
+        high = duty;
+        highOver = over;
+        if (kept < 0) lowOver /= 2;
+        kept = -1;
       }
     }
-    if (!changed) {
-      settled = true;
-      break;
+    return true;
+  };
+
+  let settled = settle();
+  for (let round = 0; settled && round < MAX_ROUNDS; round += 1) {
+    // At that answer, a regulator holds `volts` while its supply allows and follows the supply less
+    // dropoutVolts below that; then each motor driver takes the duty its supply allows.
+    let changed = false;
+    for (const output of layout.outputs) {
+      const spec = output.info.spec;
+      if (!output.live || spec.kind !== 'regulator') continue;
+      const supply = at(volts, at(output.branch.nodes, 0)) - at(volts, at(output.branch.nodes, 1));
+      const drop = Math.max(spec.dropoutVolts, supply - spec.volts);
+      if (drop - output.drop > SETTLE_VOLTS || output.drop - drop > SETTLE_VOLTS) {
+        configure(output, drop);
+        changed = true;
+      }
     }
+    if (changed) {
+      settled = settle();
+      continue;
+    }
+    for (const group of layout.groups) {
+      if (holds(group)) continue;
+      changed = true;
+      if (!findDuty(group)) {
+        settled = false;
+        break;
+      }
+    }
+    if (!changed) break;
+    if (round === MAX_ROUNDS - 1) settled = false;
   }
 
-  const answer = volts ?? new Float64Array(count);
+  const answer = volts;
   const portAmps = new Float64Array(model.portCount);
   /** A branch's own current (the part's, without the leak), carried into each of its ports. */
   const flow = (branch: Branch): number => {
@@ -577,21 +707,30 @@ export const solveCircuit = (model: Model, situation: Situation, charge: readonl
   const sourceAmps = new Float64Array(model.sources.length);
   const useAmps = new Float64Array(model.uses.length);
   const giving = model.sources.map((source, index) => source.kind === 'battery' && at(charge, index) > 0);
+  const duty = new Float64Array(model.sources.length).fill(1);
+  const browned = model.sources.map(() => false);
   for (const branch of layout.fixed) {
     const amps = flow(branch);
     if (branch.role.kind === 'battery') sourceAmps[branch.role.source] = -amps;
     else if (branch.role.kind === 'use') useAmps[branch.role.use] = amps;
   }
   for (const output of layout.outputs) {
-    if (!output.active) continue;
+    // A channel with no command, or no power by the wiring, is not browning out: its duty reads 1.
+    const share = output.live ? (layout.groups[output.group]?.duty ?? 1) : 1;
+    duty[output.source] = share;
+    browned[output.source] = share < 1;
+    if (!isActive(output)) continue;
     const amps = flow(output.branch);
+    const ratio = at(output.branch.weights, 0);
     const supply = at(answer, at(output.branch.nodes, 0)) - at(answer, at(output.branch.nodes, 1));
+    // What it can push the way it drives: never less than nothing (a regulator or channel with too little supply).
+    const push = Math.max(0, ratio * supply - output.drop);
     const sign = output.flip ? -1 : 1;
     sourceAmps[output.source] = sign * amps;
-    sourceEmf[output.source] = sign * (output.n * supply - output.drop);
-    giving[output.source] = true;
+    sourceEmf[output.source] = push === 0 ? 0 : sign * push;
+    giving[output.source] = push > 0;
     const use = output.info.use;
-    if (use >= 0) useAmps[use] = at(useAmps, use) + output.n * amps;
+    if (use >= 0) useAmps[use] = at(useAmps, use) + ratio * amps;
   }
-  return { volts: answer, sourceAmps, sourceEmf, giving, useAmps, portAmps, solves, settled };
+  return { volts: answer, sourceAmps, sourceEmf, giving, duty, browned, useAmps, portAmps, solves, settled };
 };
