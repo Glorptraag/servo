@@ -1,8 +1,9 @@
 /// <reference types="vite/client" />
 import { describe, expect, it } from 'vitest';
 import { exampleArenas, exampleChallenges, exampleParts, validBlueprints, validKits } from '@servo/schema/fixtures';
-import { FIXTURE_NOTES, fixturesFrom, loadBlueprintFixtures } from '../src/fixtures.ts';
-import type { FixtureNote } from '../src/fixtures.ts';
+import type { RunInput } from '@servo/schema';
+import { FIXTURES, fixturesFrom, loadFixtures } from '../src/fixtures.ts';
+import type { FixtureSpec } from '../src/fixtures.ts';
 import {
   contentFrom,
   loadArenas,
@@ -81,10 +82,16 @@ describe('the content in this package', () => {
     }
   });
 
-  it('has a note for every fixture blueprint and a fixture for every note', () => {
-    const load = loadBlueprintFixtures();
+  it('has a valid fixture for every entry in FIXTURES, and uses every fixture blueprint', () => {
+    const load = loadFixtures();
     expect(shown(load.issues)).toEqual([]);
-    expect(load.fixtures.map((fixture) => fixture.name)).toEqual(Object.keys(FIXTURE_NOTES).sort());
+    expect(load.fixtures.map((fixture) => fixture.name)).toEqual(Object.keys(FIXTURES).sort());
+  });
+
+  it('has a picture for every part once pnpm art has written the registry', () => {
+    const { content } = loadContent();
+    const missing = content.art.size === 0 ? [] : content.parts.filter((part) => !content.art.has(part.identity.art)).map((part) => part.identity.art);
+    expect(missing).toEqual([]);
   });
 });
 
@@ -222,23 +229,128 @@ describe('the art registry', () => {
 });
 
 describe('fixturesFrom', () => {
-  const catalogue = contentFrom({ records: exampleTree() }).content.catalogue;
-  const rollingStart = validBlueprints.find((fixture) => fixture.name === 'rolling-start')?.data;
-  const note: FixtureNote = { description: 'A Rolling Start robot that drives forward.', outcome: { kind: 'works' } };
+  const content = contentFrom({ records: exampleTree() }).content;
+  const blueprintOf = (name: string): Json => json(validBlueprints.find((fixture) => fixture.name === name)?.data);
+  const start = json(exampleChallenges.find((challenge) => challenge.name === 'meet-the-switch')?.data).start as Json;
+  /** Meet the switch, finished: the battery pack's plus to side A, and side B to the motor's plus. */
+  const wired = {
+    ...start,
+    wires: [
+      ...(start.wires as unknown[]),
+      { id: 'w2', from: { part: 'battery', port: 'plus' }, to: { part: 'switch', port: 'a' } },
+      { id: 'w3', from: { part: 'motor', port: 'plus' }, to: { part: 'switch', port: 'b' } },
+    ],
+    meta: { ...(start.meta as Json), highWater: { parts: 0, wires: 3 } },
+  };
+  const files = {
+    'fixtures/blueprints/bumper-robot.json': blueprintOf('bumper-robot'),
+    'fixtures/blueprints/meet-the-switch-wired.json': wired,
+    'fixtures/blueprints/rolling-start.json': blueprintOf('rolling-start'),
+    'fixtures/blueprints/short-circuit.json': blueprintOf('short-circuit'),
+  };
+  const press: RunInput = { tick: 30, partId: 'switch', kind: 'switch', closed: false };
+  const noCircuit = { partId: 'motor', failure: 'no-circuit' };
+  const shorted = { partId: 'battery', failure: 'short-circuit' };
+  const specs: Record<string, FixtureSpec> = {
+    'meet-the-switch-pressed': {
+      description: 'Wired through the switch, then pressed: the motor turns, then stands still.',
+      blueprint: 'meet-the-switch-wired',
+      challenge: 'meet-the-switch',
+      inputs: [press],
+      ticks: 90,
+      expect: { goal: { met: true }, faults: [] },
+    },
+    'meet-the-switch-not-pressed': {
+      description: 'Wired through the switch, and never pressed.',
+      blueprint: 'meet-the-switch-wired',
+      challenge: 'meet-the-switch',
+      inputs: [],
+      ticks: 90,
+      expect: { goal: { met: false }, faults: [] },
+    },
+    'meet-the-switch-start': {
+      description: "The challenge's own starting build: the motor has no circuit.",
+      challenge: 'meet-the-switch',
+      inputs: [],
+      ticks: 30,
+      expect: { goal: { met: false }, faults: [noCircuit] },
+    },
+    'rolling-start': { description: 'A Rolling Start robot drives forward.', blueprint: 'rolling-start', inputs: [], ticks: 60, seed: 7, expect: { faults: [] } },
+    'short-circuit': { description: 'A wire across the 1-cell pack.', blueprint: 'short-circuit', inputs: [], ticks: 30, expect: { faults: [shorted], namedFault: shorted } },
+    'power-into-signal': {
+      description: "A power line dropped on the servo motor's signal port.",
+      blueprint: 'bumper-robot',
+      inputs: [],
+      ticks: 1,
+      expect: { faults: [], refused: { from: { part: 'battery', port: 'plus' }, to: { part: 'servo', port: 'signal' }, code: 'wire.type_mismatch' } },
+    },
+  };
 
-  it('pairs each bare blueprint with its note and checks it against the content', () => {
-    const load = fixturesFrom({ 'fixtures/blueprints/rolling-start.json': rollingStart }, { 'rolling-start': note }, catalogue);
-    expect(load.issues).toEqual([]);
-    expect(load.fixtures.map((fixture) => [fixture.name, fixture.outcome.kind, fixture.blueprint.parts.length])).toEqual([['rolling-start', 'works', 8]]);
+  it("holds a challenge's passing and failing Runs, with the switch press the passing one needs", () => {
+    const load = fixturesFrom(files, specs, content);
+    expect(shown(load.issues)).toEqual([]);
+    expect(load.fixtures.map((fixture) => fixture.name)).toEqual(Object.keys(specs).sort());
+    const pressed = load.fixtures.find((fixture) => fixture.name === 'meet-the-switch-pressed');
+    expect(pressed).toMatchObject({ challenge: 'meet-the-switch', inputs: [press], ticks: 90, seed: 1, expect: { goal: { met: true } } });
+    expect(pressed?.blueprint.wires).toHaveLength(3);
+    // With no blueprint named, the Run starts from the challenge's own start.
+    expect(load.fixtures.find((fixture) => fixture.name === 'meet-the-switch-start')?.blueprint.meta.id).toBe((start.meta as Json).id);
+    expect(load.fixtures.find((fixture) => fixture.name === 'rolling-start')?.seed).toBe(7);
   });
 
-  it('reports a file without a note, a note without a file, and a blueprint that does not validate', () => {
-    const files = { 'fixtures/blueprints/rolling-start.json': rollingStart, 'fixtures/blueprints/broken.json': { version: 1 } };
-    const load = fixturesFrom(files, { broken: note, lost: note }, catalogue);
+  it('serves working and broken fixtures with no challenge (task 2.6)', () => {
+    const load = fixturesFrom(files, specs, content);
+    expect(load.fixtures.find((fixture) => fixture.name === 'short-circuit')?.expect).toEqual({ faults: [shorted], namedFault: shorted });
+    expect(load.fixtures.find((fixture) => fixture.name === 'power-into-signal')?.expect.refused?.code).toBe('wire.type_mismatch');
+  });
+
+  it('reports every way a fixture disagrees with its blueprint or the content, and leaves it out', () => {
+    const bad: Record<string, FixtureSpec> = {
+      'no-such-blueprint': { description: 'x', blueprint: 'nowhere', inputs: [], ticks: 10, expect: { faults: [] } },
+      'no-such-challenge': { description: 'x', blueprint: 'rolling-start', challenge: 'nowhere', inputs: [], ticks: 10, expect: { faults: [] } },
+      'no-start': { description: 'x', challenge: 'drive-and-light', inputs: [], ticks: 10, expect: { faults: [] } },
+      'wrong-arena': { description: 'x', blueprint: 'rolling-start', challenge: 'cross-and-stop', inputs: [], ticks: 10, expect: { goal: { met: false }, faults: [] } },
+      'bad-run': {
+        description: 'x',
+        blueprint: 'meet-the-switch-wired',
+        inputs: [press, { tick: 10, partId: 'motor', kind: 'switch', closed: true }, { tick: 99, partId: 'switch', kind: 'switch', closed: true }],
+        ticks: 50.5,
+        seed: -1,
+        expect: {
+          goal: { met: true },
+          faults: [noCircuit, noCircuit, { partId: 'motor', failure: 'melted' }, { partId: 'ghost', failure: 'no-circuit' }],
+          namedFault: { partId: 'battery', failure: 'no-loop' },
+        },
+      },
+      'legal-wire': {
+        description: 'x',
+        blueprint: 'bumper-robot',
+        inputs: [],
+        ticks: 1,
+        expect: { faults: [], refused: { from: { part: 'battery', port: 'plus' }, to: { part: 'buzzer', port: 'plus' }, code: 'wire.type_mismatch' } },
+      },
+    };
+    const load = fixturesFrom({ ...files, 'fixtures/blueprints/broken.json': { version: 1 } }, bad, content);
     expect(load.fixtures).toEqual([]);
-    const reasons = load.issues.map(({ file, code }) => `${file} ${code}`);
-    expect(reasons).toContain('fixtures/blueprints/rolling-start.json value.missing');
-    expect(reasons).toContain('fixtures/blueprints/lost.json value.missing');
-    expect(load.issues.some((issue) => issue.file === 'fixtures/blueprints/broken.json' && issue.path.startsWith('$.'))).toBe(true);
+    const reasons = shown(load.issues);
+    expect(reasons.filter((reason) => reason.startsWith('src/fixtures.ts'))).toEqual([
+      "src/fixtures.ts value.out_of_range at $['bad-run'].ticks",
+      "src/fixtures.ts value.out_of_range at $['bad-run'].seed",
+      "src/fixtures.ts run.goal_without_challenge at $['bad-run'].expect.goal",
+      "src/fixtures.ts run.event_order at $['bad-run'].inputs[1].tick",
+      "src/fixtures.ts value.not_allowed at $['bad-run'].inputs[1].partId",
+      "src/fixtures.ts run.tick_out_of_range at $['bad-run'].inputs[2].tick",
+      "src/fixtures.ts value.duplicate at $['bad-run'].expect.faults[1]",
+      "src/fixtures.ts ref.unknown_failure_mode at $['bad-run'].expect.faults[2].failure",
+      "src/fixtures.ts ref.unknown_placed_part at $['bad-run'].expect.faults[3].partId",
+      "src/fixtures.ts value.inconsistent at $['bad-run'].expect.namedFault",
+      "src/fixtures.ts value.inconsistent at $['legal-wire'].expect.refused",
+      "src/fixtures.ts fixture.unknown_blueprint at $['no-start']",
+      "src/fixtures.ts fixture.unknown_blueprint at $['no-such-blueprint'].blueprint",
+      "src/fixtures.ts fixture.unknown_challenge at $['no-such-challenge'].challenge",
+      "src/fixtures.ts challenge.arena_mismatch at $['wrong-arena'].blueprint",
+    ]);
+    expect(reasons).toContain('fixtures/blueprints/short-circuit.json fixture.unused_blueprint at $');
+    expect(reasons.some((reason) => reason.startsWith('fixtures/blueprints/broken.json value.'))).toBe(true);
   });
 });

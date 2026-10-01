@@ -27,5 +27,5 @@ A shared link (task 5.6) and replay on a phone open a read-only canvas (D43). Th
 
 ## Challenges and hints
 
-- A challenge is laid over the same canvas: its goal line in the header, its arena preset on the blueprint, its kit in the tray (task 4.5). A breakdown or a what-if starts from `challenge.start`, kept as the child's own with `blueprints.copy`. The runner checks the goal over the Run's frames and ticks the header when it is met; the Run goes on.
+- A challenge is laid over the same canvas: its goal line in the header, its arena preset on the blueprint, its kit in the tray (task 4.5). A breakdown or a what-if starts from `challenge.start`, kept as the child's own with `blueprints.copy`. The runner checks the goal over the Run's frames and ticks the header when it is met; the Run goes on. Its tests replay every content fixture that names a challenge (`@servo/content/fixtures`: the blueprint, its switch presses, its ticks) and compare the goal verdict with the fixture's.
 - The hint ladder (task 4.6) picks the first ladder whose trigger holds, after two Runs that miss the goal or when asked. It draws the rungs with `canvas.showHint`, narrowing type targets to the placed part concerned, and applies do-it as one `batch` of commands.

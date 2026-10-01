@@ -184,7 +184,8 @@ export interface RunRecordContext {
  * Level 3's). Each tick, for each part with a `program` primitive whose supply is at or above its `onVolts`, the
  * loop calls `run` after the electrical solver and before the mechanical solver. A brain's variables and timers
  * live in its ProgramState, which the loop holds between ticks and keeps in snapshots, so a Run replays and
- * restores exactly. `run` must be pure: the same tick and state always give the same step.
+ * restores exactly. Both methods must be pure: the same brain gives the same start, and the same tick and state
+ * give the same step.
  */
 export interface ProgramRuntime {
   /** A brain's state as a Run starts. */
@@ -192,7 +193,10 @@ export interface ProgramRuntime {
   run(tick: BrainTick, state: ProgramState): BrainStep;
 }
 
-/** Plain JSON, so a snapshot can hold it and equal states give equal bytes. */
+/**
+ * Plain JSON, so a snapshot can hold it. The loop writes each state with the schema's `canonicalJson` (keys in
+ * code-unit order), so equal states give equal bytes however their keys were ordered.
+ */
 export type ProgramState = null | boolean | number | string | readonly ProgramState[] | { readonly [key: string]: ProgramState };
 
 export interface BrainInfo {
