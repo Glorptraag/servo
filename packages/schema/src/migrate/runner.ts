@@ -1,4 +1,5 @@
 import type { Issue, ValidationResult } from '../types/issue.ts';
+import { reportNewerVersion } from '../validate/blueprint.ts';
 import { field, isRecord, readNumber, report, runValidator } from '../validate/reader.ts';
 import type { Ctx } from '../validate/reader.ts';
 
@@ -33,12 +34,7 @@ const readVersion = (ctx: Ctx, root: unknown, oldest: number, current: number): 
   const found = readNumber(ctx, version, '$.version', { min: oldest, integer: true });
   if (found === undefined) return undefined;
   if (found > current) {
-    report(
-      ctx,
-      'blueprint.newer_version',
-      '$.version',
-      `This document is version ${found}; this schema reads up to version ${current}, so a newer app wrote it. It is refused, never guessed at.`,
-    );
+    reportNewerVersion(ctx, '$.version', found, current);
     return undefined;
   }
   // Adding zero turns a stored -0 into 0.

@@ -57,6 +57,10 @@ import challengeDriveAndLight from '../fixtures/challenges/drive-and-light.json'
 import challengeOneMotorBackwards from '../fixtures/challenges/one-motor-backwards.json' with { type: 'json' };
 import challengeMeetTheSwitch from '../fixtures/challenges/meet-the-switch.json' with { type: 'json' };
 import runRollingStartRun from '../fixtures/run-records/rolling-start-run.json' with { type: 'json' };
+import v0RollingStart from '../fixtures/v0/rolling-start.json' with { type: 'json' };
+import v0LightAndMotor from '../fixtures/v0/light-and-motor.json' with { type: 'json' };
+import v0RollingStartMigrated from '../fixtures/v0/migrated/rolling-start.json' with { type: 'json' };
+import v0LightAndMotorMigrated from '../fixtures/v0/migrated/light-and-motor.json' with { type: 'json' };
 
 export interface Fixture {
   readonly name: string;
@@ -125,7 +129,7 @@ export const validBlueprints: readonly BlueprintFixture[] = [
 
 /** Each refused for exactly one reason, recorded in `expect`. */
 export const invalidBlueprints: readonly InvalidFixture[] = [
-  { name: 'version-2', description: 'A version 2 blueprint: this schema reads version 1 only.', expect: { code: 'blueprint.unsupported_version', path: '$.version' }, data: invalidBlueprintVersion2 },
+  { name: 'version-2', description: 'A version 2 blueprint, from a newer version of Servo: this schema reads version 1 only.', expect: { code: 'blueprint.newer_version', path: '$.version' }, data: invalidBlueprintVersion2 },
   { name: 'duplicate-part-id', description: 'Two placed parts share the id "led".', expect: { code: 'id.duplicate', path: '$.parts[3].id' }, data: invalidBlueprintDuplicatePartId },
   { name: 'unknown-part-type', description: 'A placed part names a part record the catalogue does not have.', expect: { code: 'ref.unknown_part_type', path: '$.parts[3].part' }, data: invalidBlueprintUnknownPartType },
   { name: 'unknown-port', description: 'A wire ends on a port the LED does not have.', expect: { code: 'ref.unknown_port', path: '$.wires[1].to.port' }, data: invalidBlueprintUnknownPort },
@@ -159,4 +163,15 @@ export const exampleChallenges: readonly Fixture[] = [
 
 export const exampleRunRecords: readonly Fixture[] = [
   { name: 'rolling-start-run', description: 'A second Run of a Rolling Start robot in the wall-stop arena: the left wheel slips against the box, the child presses the switch at tick 60 (an input, not a fault), and the goal is not met.', data: runRollingStartRun },
+];
+
+export interface MigrationFixture extends Fixture {
+  /** The same build after migrateBlueprint, validateBlueprint and canonical form: canonicalJson of it is the saved bytes. */
+  readonly migrated: unknown;
+}
+
+/** Blueprints stored in synthetic version 0 (docs/migrations.md), each with its migrated form, for testing migration on load. */
+export const v0Blueprints: readonly MigrationFixture[] = [
+  { name: 'rolling-start', description: 'The Rolling Start robot as version 0 stored it: parts in the order they were placed, and two power wires written from the other end. Migrated, it is the version 1 rolling-start fixture apart from its derived id.', data: v0RollingStart, migrated: v0RollingStartMigrated },
+  { name: 'light-and-motor', description: 'A shared workbench circuit with no author: numbered ids with gaps, an LED and a DC motor turned, a stored default that canonical form drops, and three power wires written from the other end.', data: v0LightAndMotor, migrated: v0LightAndMotorMigrated },
 ];

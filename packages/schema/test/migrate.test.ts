@@ -1,19 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { invalidBlueprints, validBlueprints } from '../src/fixtures.ts';
+import { exampleChallenges, invalidBlueprints, v0Blueprints, validBlueprints } from '../src/fixtures.ts';
 import {
   BLUEPRINT_VERSION,
   ISSUE_CODES,
+  canonicalJson,
   canonicalizeBlueprint,
   migrateBlueprint,
   serializeBlueprint,
   validateBlueprint,
   validateBlueprintShape,
+  validateChallenge,
 } from '../src/index.ts';
 import type { Blueprint, Issue, MigrationResult, ValidationResult } from '../src/index.ts';
 import { BLUEPRINT_MIGRATIONS } from '../src/migrate/blueprint.ts';
 import { runMigrations } from '../src/migrate/runner.ts';
 import type { MigrationStep } from '../src/migrate/runner.ts';
-import { catalogue, copy, reasons, unwrap } from './support.ts';
+import { catalogue, copy, issuesOf, reasons, unwrap } from './support.ts';
 
 // The done-when suite for task 0.3: a version 0 fixture migrates to version 1, validates, and round-trips
 // byte for byte. Each step is tested on its own in migrate-v0-to-v1.test.ts.
@@ -22,7 +24,14 @@ const raw = (files: Record<string, string>) =>
   Object.entries(files).map(([file, text]) => ({ name: file.slice(file.lastIndexOf('/') + 1, -'.json'.length), text }));
 const stored = raw(import.meta.glob('../fixtures/v0/*.json', { query: '?raw', import: 'default', eager: true }));
 const expected = raw(import.meta.glob('../fixtures/v0/migrated/*.json', { query: '?raw', import: 'default', eager: true }));
-const v0Fixtures = stored.map(({ name, text }) => ({ name, text, migratedText: expected.find((file) => file.name === name)?.text }));
+const textOf = (files: readonly { name: string; text: string }[], name: string): string => files.find((file) => file.name === name)?.text ?? '';
+const v0Fixtures = v0Blueprints.map(({ name, data, migrated }) => ({
+  name,
+  data,
+  migrated,
+  text: textOf(stored, name),
+  migratedText: textOf(expected, name),
+}));
 
 const migrated = (value: unknown): { readonly value: Blueprint; readonly from: number } => {
   const result = migrateBlueprint(value);
@@ -36,13 +45,19 @@ const saved = (blueprint: Blueprint): string => serializeBlueprint(canonicalizeB
 const outcome = <T>(result: MigrationResult<T> | ValidationResult<T>) => (result.ok ? { ok: true, value: result.value } : { ok: false, issues: result.issues });
 
 describe('version 0 fixtures migrate to version 1, validate, and round-trip byte for byte', () => {
-  it('has a migrated form for every version 0 fixture, and no other', () => {
-    expect(stored.length).toBeGreaterThanOrEqual(1);
-    expect(expected.map((file) => file.name).sort()).toEqual(stored.map((file) => file.name).sort());
+  it('exports every version 0 file in fixtures/v0, each with its migrated form, and no other', () => {
+    expect(v0Blueprints.length).toBeGreaterThanOrEqual(1);
+    const names = v0Blueprints.map((fixture) => fixture.name).sort();
+    expect(stored.map((file) => file.name).sort()).toEqual(names);
+    expect(expected.map((file) => file.name).sort()).toEqual(names);
+    for (const fixture of v0Fixtures) {
+      expect(canonicalJson(fixture.data)).toBe(fixture.text);
+      expect(canonicalJson(fixture.migrated)).toBe(fixture.migratedText);
+    }
   });
 
-  it.each(v0Fixtures)('$name', ({ text, migratedText }) => {
-    const result = migrated(JSON.parse(text));
+  it.each(v0Fixtures)('$name', ({ data, migratedText }) => {
+    const result = migrated(data);
     expect(result.from).toBe(0);
     expect(result.value.version).toBe(BLUEPRINT_VERSION);
     expect(reasons(validateBlueprint(result.value, catalogue))).toEqual([]);
@@ -117,10 +132,37 @@ describe('the version field', () => {
     expect(negative.value.meta.id).toBe(migrated(JSON.parse(v0)).value.meta.id);
   });
 
-  it('refuses the version 2 fixture as newer, where validateBlueprint calls it unsupported', () => {
+  it.each([2, 3, 1_000_000])('gives version %i the same refusal from validateBlueprint as from migrateBlueprint', (version) => {
+    const document = { ...copy(validBlueprints[0]?.data as object), version };
+    const issues = issuesOf(validateBlueprint(document, catalogue));
+    expect(issues).toEqual(issuesOf(migrateBlueprint(document)));
+    expect(issues).toEqual([
+      {
+        code: 'blueprint.newer_version',
+        path: '$.version',
+        message: `This blueprint is from a newer version of Servo: it is version ${version}, and the newest this schema reads is version 1. It is refused, never guessed at.`,
+      },
+    ]);
+    expect(issues[0]?.message).not.toContain('Migrate it first');
+  });
+
+  it('refuses the version 2 fixture as newer in both, with the same message', () => {
     const fixture = invalidBlueprints.find((entry) => entry.name === 'version-2');
-    expect(reasons(migrateBlueprint(fixture?.data))).toEqual(['blueprint.newer_version at $.version']);
-    expect(reasons(validateBlueprint(fixture?.data, catalogue))).toEqual(['blueprint.unsupported_version at $.version']);
+    expect(reasons(validateBlueprint(fixture?.data, catalogue))).toEqual(['blueprint.newer_version at $.version']);
+    expect(issuesOf(validateBlueprint(fixture?.data, catalogue))).toEqual(issuesOf(migrateBlueprint(fixture?.data)));
+  });
+
+  it('still tells validateBlueprint callers to migrate a version 0 blueprint first', () => {
+    const v0 = v0Fixtures.find((entry) => entry.name === 'rolling-start')?.data;
+    const issues = issuesOf(validateBlueprint(v0, catalogue));
+    expect(issues.map((issue) => `${issue.code} at ${issue.path}`)).toEqual(['blueprint.unsupported_version at $.version']);
+    expect(issues[0]?.message).toContain('Migrate it first');
+  });
+
+  it('refuses a newer blueprint inside a challenge at its own path', () => {
+    const challenge = copy(exampleChallenges.find((entry) => entry.name === 'one-motor-backwards')?.data) as { start: { version: number } };
+    challenge.start.version = 2;
+    expect(reasons(validateChallenge(challenge, catalogue))).toContain('blueprint.newer_version at $.start.version');
   });
 
   it.each([

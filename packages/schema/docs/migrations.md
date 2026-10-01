@@ -18,9 +18,9 @@ Back to the [README](../README.md). The code is in `src/migrate/` (task 0.3). Gr
 | not a whole number from 0 up | `value.wrong_type`, `value.not_integer` or `value.out_of_range` at `$.version` |
 | 0 | migrated one step at a time to 1 |
 | 1 | no step runs: the same object comes back, with `from: 1`, once it passes the structure check |
-| 2 or more | `blueprint.newer_version` at `$.version` |
+| 2 or more | `blueprint.newer_version` at `$.version`: the blueprint is from a newer version of Servo |
 
-- **A newer version is refused, never guessed at.** An older app can meet a newer blueprint after sync. It should leave that document exactly as stored (task 5.5).
+- **A newer version is refused, never guessed at.** An older app can meet a newer blueprint after sync. It should leave that document exactly as stored (task 5.5). `validateBlueprint` gives the same refusal, message included, so either path answers it the same way. For an older version, `validateBlueprint` still says to migrate it first (`blueprint.unsupported_version`).
 - **Issue paths point into the stored document.** If a later step, or the final structure check, refuses a document the steps made, the path points into that document and the message starts "After migrating from version 0 to version 1:". That means a bug in a step, not bad data.
 - **No catalogue.** Content changes between releases, and a migration must give the same result whatever content is loaded. So it checks structure only.
 
@@ -71,7 +71,7 @@ Part ids, positions and settings, the wires, `meta.level` and `meta.author` carr
 
 ## Fixtures
 
-`fixtures/v0/` holds stored version 0 documents. `fixtures/v0/migrated/` holds the same builds migrated, checked against the fixture catalogue and in canonical form.
+`fixtures/v0/` holds stored version 0 documents. `fixtures/v0/migrated/` holds the same builds migrated, checked against the fixture catalogue and in canonical form. `@servo/schema/fixtures` exports each pair as `v0Blueprints` (`data` and `migrated`), so task 4.9 can test migration on load.
 
 - `rolling-start`: the Rolling Start robot, with its parts in the order they were placed and two power wires written from the other end. Migrated, it is byte for byte the version 1 `rolling-start` fixture apart from its derived id.
 - `light-and-motor`: a shared workbench circuit with no author. It has numbered ids with gaps, an LED a quarter turn round, a DC motor three quarter turns round, a stored default that canonical form drops, and three power wires written from the other end.
@@ -83,9 +83,4 @@ Part ids, positions and settings, the wires, `meta.level` and `meta.author` carr
 1. Bump `BLUEPRINT_VERSION` and the `Blueprint` type's `version` together, and change the types and readers.
 2. Write `src/migrate/v1-to-v2.ts`. Its reader is today's version 1 structure check, copied and frozen.
 3. Append the step to `BLUEPRINT_MIGRATIONS`. Never edit `v0ToV1`.
-4. Add stored version 1 documents to `fixtures/v1/` with their migrated forms, and regenerate `fixtures/v0/migrated/` as version 2. Point the v0 → v1 step tests at the frozen version 1 reader.
-
-## Open questions
-
-1. Task 4.9 can only reach fixtures through `@servo/schema/fixtures`. Should `src/fixtures.ts` list the version 0 fixtures? It was outside this task's files.
-2. `validateBlueprint` answers a version 2 blueprint with "Migrate it first", but nothing can migrate a newer version. Should that message point to `blueprint.newer_version` instead?
+4. Add stored version 1 documents to `fixtures/v1/` with their migrated forms, list them in `src/fixtures.ts`, and regenerate `fixtures/v0/migrated/` as version 2. Point the v0 → v1 step tests at the frozen version 1 reader.
