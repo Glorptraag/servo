@@ -486,7 +486,7 @@
       "completed_by": "orchestrator-provisional"
     },
     "3.1": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -502,8 +502,8 @@
       ],
       "done_when": "60 fps (16 ms frame budget) on a 25-part fixture in the e2e harness's iPad profile; layer order verified by screenshot tests; tests pass.",
       "contracts": "Canvas imports sim-core only through packages/sim-core/src/interface.ts.",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T08:34:36+00:00",
+      "completed_by": "W-3.1",
       "dispatched_at": "2026-10-01T04:52:13+00:00"
     },
     "3.2": {
@@ -1708,6 +1708,14 @@
       "question": "Gate G2 sign-off (provisionally closed so the build continues): Drew reads every Level 1\u20132 spec card in docs/gates/G2.md (14 parts, every card line, hint and teaching note) and marks any change.",
       "recommendation": "Read docs/gates/G2.md; tick the sign-off box with the date; any line to change becomes a content fix task. Nothing technical waits on this.",
       "confidence": "high",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D65",
+      "question": "D55 updated (review R-3.1): the canvas renderer's default choices are now the ten listed in packages/canvas/docs/renderer.md (scale, socket layout, tile sizes, mount-point drawing, mirrored light, trackpad zoom, fonts and three more). Known issue for task 3.3: sockets of neighbouring parts overlap on the Level 2 bumper robot and the Circuit Crew kit robot (5.6 px apart).",
+      "recommendation": "Review renderer.md's ten choices with the canvas interaction spec; task 3.3 fixes the socket overlap before G3.",
+      "confidence": "medium",
       "blocks": [],
       "resolved": false
     }
