@@ -224,7 +224,7 @@
       "dispatched_at": "2026-10-01T04:45:51+00:00"
     },
     "1.3": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -239,8 +239,8 @@
       ],
       "done_when": "DC motor, LED, buzzer, switch and servo behave per their Level 1\u20132 records including every failure mode, proven by behaviour fixtures generated from the content records; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T07:42:43+00:00",
+      "completed_by": "W-1.3",
       "dispatched_at": "2026-10-01T05:23:27+00:00"
     },
     "1.4": {
@@ -1635,6 +1635,30 @@
       "id": "D55",
       "question": "Canvas rendering defaults chosen in task 3.1 (all in packages/canvas/docs/renderer.md): 2.5 px per mm at zoom 1; power and signal sockets side by side on a part's back edge; tiles at least 96 px or larger to fit their sockets; mount points drawn on the chassis under the parts on them; a mirrored picture's light ends up bottom-left; trackpad scroll zooms rather than pans; which fonts ship.",
       "recommendation": "Accept these as the defaults and settle them in the canvas interaction spec (brief Section 15, sub-draft 2) and the art style sheet; ship one rounded open-licence sans-serif (brief Section 11) once Drew names it.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D56",
+      "question": "Battery model (task 1.2): open-circuit volts fall in a straight line from volts to emptyVolts as charge is used, cutting off at empty, so a shorted pack empties in 35.0 s (1-cell) and 23.4 s (2-cell) rather than the constant-current 28.8 s and 19.2 s; a drained pack gives nothing; current either way drains a pack.",
+      "recommendation": "Accept: it follows the schema's source definition and keeps the short's drain visible within half a minute; the capacity is a teaching value, not a real one.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D57",
+      "question": "Motor driver brown-out (task 1.2): when its supply sags below onVolts, it stutters at the duty that holds its supply at onVolts, so its motors turn slowly while the driver shows its own low-voltage; the alternative is that it cuts out.",
+      "recommendation": "Accept the stutter (motors slow, driver shows low-voltage); it is the honest average of a real driver resetting under load and keeps the cause visible.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D58",
+      "question": "Servo motor draw and stall (tasks 1.2, 1.3): draw rises with load from idleMilliamps to stallMilliamps at holdingTorqueNmm, and the arm stalls at holdingTorqueNmm \u00d7 volts \u00f7 ratedVolts; the record states neither.",
+      "recommendation": "Accept both for v1; the Level 4 spec line and the behaviour-rules sub-draft (brief Section 15, item 4) confirm them with a robotics teacher.",
       "confidence": "medium",
       "blocks": [],
       "resolved": false
