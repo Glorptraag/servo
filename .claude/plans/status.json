@@ -462,7 +462,7 @@
       "dispatched_at": "2026-10-01T06:17:01+00:00"
     },
     "G2": {
-      "status": "pending",
+      "status": "done",
       "model": "opus",
       "size": "micro",
       "batch": null,
@@ -482,8 +482,8 @@
       ],
       "done_when": "docs/gates/G2.md records validator results and Drew's sign-off on every spec card.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null
+      "completed_at": "2026-10-01T08:08:35+00:00",
+      "completed_by": "orchestrator-provisional"
     },
     "3.1": {
       "status": "dispatched",
@@ -1699,6 +1699,14 @@
       "id": "D63",
       "question": "D61 figures corrected (review R-2.6 N1): without a caster, the most front-heavy Level 1\u20132 load reaches 34.2 mm (not 30.9) against the 40 mm axle, and tips on a slope only from 47.9 degrees (not 49.7); the conclusion stands: no Level 1\u20132 build tips.",
       "recommendation": "No change to D61's recommendation; the figures in its question were for the build with a caster.",
+      "confidence": "high",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D64",
+      "question": "Gate G2 sign-off (provisionally closed so the build continues): Drew reads every Level 1\u20132 spec card in docs/gates/G2.md (14 parts, every card line, hint and teaching note) and marks any change.",
+      "recommendation": "Read docs/gates/G2.md; tick the sign-off box with the date; any line to change becomes a content fix task. Nothing technical waits on this.",
       "confidence": "high",
       "blocks": [],
       "resolved": false
