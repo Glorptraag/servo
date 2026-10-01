@@ -11,8 +11,17 @@ import type { ArenaPreset, AssetKey, Catalogue, Challenge, IssueCode, Kit, PartR
 /** The content validator's kinds of record. The loader keeps parts, arenas, kits and challenges. */
 export type RecordKind = 'part' | 'arena' | 'kit' | 'challenge' | 'blueprint' | 'run-record';
 
-/** The schema's codes, plus the two of the content validator's that a loaded file can meet. */
-export type ContentIssueCode = IssueCode | 'file.unknown_kind' | 'content.duplicate_id';
+/**
+ * The schema's codes, the two of the content validator's that a loaded file can meet, and the fixtures' own:
+ * a fixture names a blueprint or challenge that is not there, or a blueprint file no fixture uses.
+ */
+export type ContentIssueCode =
+  | IssueCode
+  | 'file.unknown_kind'
+  | 'content.duplicate_id'
+  | 'fixture.unknown_blueprint'
+  | 'fixture.unknown_challenge'
+  | 'fixture.unused_blueprint';
 
 /** One problem in one file, as the content validator reports it, with the file's path inside packages/content. */
 export interface ContentIssue {

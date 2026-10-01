@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { applyEdit, mountCanvas } from '@servo/canvas';
 import type { CanvasHandle, EditCommand } from '@servo/canvas';
 import { loadContent } from '@servo/content';
-import type { Blueprint, Catalogue } from '@servo/schema';
+import type { ContentFixture } from '@servo/content/fixtures';
+import type { Blueprint, Catalogue, FaultSeen } from '@servo/schema';
 import { createSimulation } from '@servo/sim-core';
 import type { Simulation } from '@servo/sim-core';
 import { mountApp } from '../src/index.ts';
@@ -31,6 +32,22 @@ const runOnce = async (canvas: CanvasHandle, child: ProfileStore, seed: number):
   canvas.setMode('build');
 };
 
+/** A content fixture replayed as the challenge runner's tests (4.5) and golden runs (1.7) do; true when its verdict holds. */
+const replay = async (fixture: ContentFixture): Promise<boolean> => {
+  const { content } = loadContent();
+  const arena = content.catalogue.arenas?.get(fixture.blueprint.arena.preset);
+  if (!arena) return false;
+  const simulation = await createSimulation({ blueprint: fixture.blueprint, catalogue: content.catalogue, arena, seed: fixture.seed });
+  for (let tick = 0; tick < fixture.ticks; tick += 1) {
+    for (const press of fixture.inputs.filter((input) => input.tick === tick)) simulation.input(press);
+    simulation.step();
+  }
+  const times = { startedAt: '2026-10-01T09:00:00.000Z', endedAt: '2026-10-01T09:00:05.000Z' };
+  const record = simulation.record({ id: crypto.randomUUID(), ...times, runNumber: 1, hints: [], ...(fixture.challenge ? { challenge: fixture.challenge } : {}) });
+  const faults = (list: readonly Pick<FaultSeen, 'partId' | 'failure'>[]): string => list.map(({ partId, failure }) => `${partId} ${failure}`).sort().join();
+  return faults(record.faults) === faults(fixture.expect.faults);
+};
+
 /** The hint ladder's do-it: a motor placed straight onto a mount point, as one undo step. */
 const doIt: EditCommand = {
   kind: 'batch',
@@ -46,6 +63,6 @@ describe('the contracts the app builds against', () => {
     await expect(createSimulation({ blueprint: {} as Blueprint, catalogue: {} as Catalogue, arena: {} as never, seed: 1 })).rejects.toThrow(/task 1\.5/);
     await expect(openStore()).rejects.toThrow(/task 4\.9/);
     await expect(mountApp(host)).rejects.toThrow(/task 4\.1/);
-    expect(runOnce).toBeTypeOf('function');
+    expect([runOnce, replay].every((flow) => typeof flow === 'function')).toBe(true);
   });
 });

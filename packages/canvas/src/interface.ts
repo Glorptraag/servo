@@ -372,8 +372,9 @@ export interface SetArena {
 
 /**
  * Adds a prop from the arena strip (D36) with the next `prop-<n>` id: one more than the highest such id among the
- * preset's features and the arena's props. `at` is in arena millimetres; omitted (the list view), the placement rule
- * picks a free spot on the floor (task 3.2).
+ * preset's features and the arena's props. So after the highest is removed its id can be given out again, unlike a
+ * part's or a wire's; that is harmless in v1, because props carry no faults or goals. `at` is in arena millimetres;
+ * omitted (the list view), the placement rule picks a free spot on the floor (task 3.2).
  */
 export interface PlaceProp {
   readonly kind: 'place-prop';
@@ -399,7 +400,11 @@ export interface Rename {
   readonly name: string;
 }
 
-/** Commands applied in order, all or nothing: one `edit` event, one undo step. The hint ladder's do-it is one batch. */
+/**
+ * Commands applied in order, all or nothing: one `edit` event, one undo step. The hint ladder's do-it is one batch.
+ * A later command names a part an earlier one places by the id the schema's `claimPartId` predicts: each
+ * `place-part` takes the next `p<n>` in turn, so the batch's author can claim them in order beforehand.
+ */
 export interface EditBatch {
   readonly kind: 'batch';
   readonly commands: readonly SingleEdit[];

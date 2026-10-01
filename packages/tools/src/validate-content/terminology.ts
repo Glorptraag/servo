@@ -142,17 +142,21 @@ const within = (spans: readonly Span[], from: number, to: number): boolean => sp
 /**
  * Banned words and phrases in one line of system text: whole words, ignoring case, accents and the
  * punctuation between words. A banned word that sits inside an allowed phrase, a real name or a gloss is
- * not refused, so `mount points` passes while `points` alone does not. One finding per banned entry.
+ * not refused, so `mount points` passes while `points` alone does not. One finding per banned entry, and a
+ * banned word inside a longer banned phrase is left to that phrase: `Great job` is one finding, not two.
  */
 export const bannedFindings = (text: string, matcher: TermMatcher): Finding[] => {
   if (matcher.banned.length === 0) return [];
   const words = wordsOf(text);
   const realTerms = [...matcher.allowed, ...matcher.components.flatMap(({ name, glosses }) => [name, ...glosses])];
   const allowedSpans = spansOf(words, realTerms);
+  const bannedSpans = spansOf(words, matcher.banned.map(({ phrase }) => phrase));
+  const inLongerBan = (from: number, to: number): boolean =>
+    bannedSpans.some(([spanFrom, spanTo]) => spanFrom <= from && to <= spanTo && spanTo - spanFrom > to - from);
   const findings: Finding[] = [];
   for (const { entry, phrase } of matcher.banned) {
     const length = phrase.keys.length;
-    const start = findKeys(words, phrase.keys).find((from) => !within(allowedSpans, from, from + length));
+    const start = findKeys(words, phrase.keys).find((from) => !within(allowedSpans, from, from + length) && !inLongerBan(from, from + length));
     if (start === undefined) continue;
     findings.push({
       code: 'terminology.banned',
@@ -423,8 +427,17 @@ const readBanned = (root: unknown, report: Report): BannedFile => {
   return { banned, allowed };
 };
 
-/** A banned phrase that is also an allowed phrase, a real name or a gloss could never be refused. */
-const reportContradictions = (file: BannedFile, components: readonly ComponentTerm[], report: Report): void => {
+/**
+ * A banned phrase that is also an allowed phrase, a real name or a gloss could never be refused. A qualifier
+ * that holds a banned phrase, outside any of those, could never be used: the name check takes it, but the
+ * banned check refuses every name that has it.
+ */
+const reportContradictions = (
+  file: BannedFile,
+  components: readonly ComponentTerm[],
+  qualifiers: readonly string[],
+  report: Report,
+): void => {
   const permitted = [
     ...file.allowed.map(({ value }) => ({ phrase: phraseOf(value), as: 'an allowed phrase' })),
     ...components.map(({ name }) => ({ phrase: phraseOf(name), as: `a real component name in ${TERMINOLOGY_FILES.components}` })),
@@ -432,10 +445,19 @@ const reportContradictions = (file: BannedFile, components: readonly ComponentTe
       glosses.map((gloss) => ({ phrase: phraseOf(gloss), as: `a gloss for ${quoted(name)} in ${TERMINOLOGY_FILES.components}` })),
     ),
   ];
+  const shields = permitted.map(({ phrase }) => phrase);
+  const qualifierPhrases = qualifiers.map(phraseOf);
   for (const { value, where } of file.banned) {
     const banned = phraseOf(value.phrase);
     const clash = permitted.find(({ phrase }) => sameKeys(phrase, banned));
     if (clash) report(where, `${quoted(value.phrase)} is banned but is also ${clash.as}.`);
+    for (const qualifier of qualifierPhrases) {
+      const shielded = spansOf(qualifier.words, shields);
+      const length = banned.keys.length;
+      if (findKeys(qualifier.words, banned.keys).some((from) => !within(shielded, from, from + length))) {
+        report(where, `${quoted(value.phrase)} is banned, so the qualifier ${quoted(qualifier.text)} in ${TERMINOLOGY_FILES.components} could never be used.`);
+      }
+    }
   }
 };
 
@@ -469,7 +491,7 @@ export const loadTerminology = (folder: string): LoadedTerminology => {
     ? readComponents(componentsJson.value, reporter(componentsFile))
     : { components: [], qualifiers: [] };
   const banned = bannedJson ? readBanned(bannedJson.value, reporter(bannedFile)) : { banned: [], allowed: [] };
-  reportContradictions(banned, components, reporter(bannedFile));
+  reportContradictions(banned, components, qualifiers, reporter(bannedFile));
   return {
     terminology: {
       components,

@@ -97,7 +97,7 @@
       "dispatched_at": "2026-10-01T02:52:50+00:00"
     },
     "0.4": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -118,8 +118,8 @@
       ],
       "done_when": "Each README names its public functions, events and owning package; each interface.ts compiles; orchestrator has reviewed and signed off in the PR.",
       "contracts": "RunEvent = { tick, partId, kind: 'value'|'motion'|'sound'|'fault', payload }. Canvas never imports sim-core internals \u2014 only packages/sim-core/src/interface.ts.",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T05:10:10+00:00",
+      "completed_by": "W-0.4",
       "dispatched_at": "2026-10-01T02:52:50+00:00"
     },
     "0.5": {
@@ -162,7 +162,7 @@
       "dispatched_at": "2026-10-01T02:52:50+00:00"
     },
     "G0": {
-      "status": "pending",
+      "status": "done",
       "model": "opus",
       "size": "micro",
       "batch": null,
@@ -181,11 +181,11 @@
       ],
       "done_when": "docs/gates/G0.md exists with every Phase 0 task ticked and the schema v1 tag recorded.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null
+      "completed_at": "2026-10-01T05:11:24+00:00",
+      "completed_by": "orchestrator"
     },
     "1.1": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -200,8 +200,8 @@
       ],
       "done_when": "Nets, links and mounts match the hand-written expectations for 8 fixture builds (add them under packages/sim-core/fixtures/graph/); tests pass.",
       "contracts": "Uses only packages/schema types; exports buildGraph(blueprint): SimGraph.",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T05:32:07+00:00",
+      "completed_by": "W-1.1",
       "dispatched_at": "2026-10-01T04:09:31+00:00"
     },
     "1.2": {
@@ -224,7 +224,7 @@
       "dispatched_at": "2026-10-01T04:45:51+00:00"
     },
     "1.3": {
-      "status": "pending",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -239,11 +239,12 @@
       ],
       "done_when": "DC motor, LED, buzzer, switch and servo behave per their Level 1\u20132 records including every failure mode, proven by behaviour fixtures generated from the content records; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null
+      "completed_at": "2026-10-01T07:42:43+00:00",
+      "completed_by": "W-1.3",
+      "dispatched_at": "2026-10-01T05:23:27+00:00"
     },
     "1.4": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -258,7 +259,8 @@
       "done_when": "A two-motor robot drives straight, turns on the spot when one motor reverses, stops at a wall, and tips with the top-heavy fixture; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T06:12:30+00:00"
     },
     "1.5": {
       "status": "pending",
@@ -282,7 +284,7 @@
       "completed_by": null
     },
     "1.6": {
-      "status": "pending",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -296,8 +298,9 @@
       ],
       "done_when": "Interface documented; a fixture containing a microcontroller runs without error and with no effect; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null
+      "completed_at": "2026-10-01T07:44:24+00:00",
+      "completed_by": "W-1.6",
+      "dispatched_at": "2026-10-01T06:12:30+00:00"
     },
     "1.7": {
       "status": "pending",
@@ -344,7 +347,7 @@
       "completed_by": null
     },
     "2.1": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -358,12 +361,12 @@
       ],
       "done_when": "`pnpm validate-content packages/content/parts/level-1` passes; every part has \u22652 failure modes with teaching notes and spec-card layers 1 and 2.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T05:22:15+00:00",
+      "completed_by": "W-2.1",
       "dispatched_at": "2026-10-01T04:01:20+00:00"
     },
     "2.2": {
-      "status": "pending",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -377,11 +380,12 @@
       ],
       "done_when": "Validator passes; spec-card layers 1\u20132 plus a popular-mechanics line on every Level 2 part.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null
+      "completed_at": "2026-10-01T06:16:05+00:00",
+      "completed_by": "W-2.2",
+      "dispatched_at": "2026-10-01T05:12:50+00:00"
     },
     "2.3": {
-      "status": "pending",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -395,8 +399,9 @@
       ],
       "done_when": "Each kit validates and its fixture robot builds a valid blueprint that sim-core runs without faults.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null
+      "completed_at": "2026-10-01T07:06:44+00:00",
+      "completed_by": "W-2.3",
+      "dispatched_at": "2026-10-01T06:17:01+00:00"
     },
     "2.4": {
       "status": "done",
@@ -437,7 +442,7 @@
       "dispatched_at": "2026-10-01T04:01:20+00:00"
     },
     "2.6": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -453,7 +458,8 @@
       "done_when": "All 16 validate; each broken fixture's named fault reproduces in sim-core (a failing assertion per fixture); tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T06:17:01+00:00"
     },
     "G2": {
       "status": "pending",
@@ -480,7 +486,7 @@
       "completed_by": null
     },
     "3.1": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -497,10 +503,11 @@
       "done_when": "60 fps (16 ms frame budget) on a 25-part fixture in the e2e harness's iPad profile; layer order verified by screenshot tests; tests pass.",
       "contracts": "Canvas imports sim-core only through packages/sim-core/src/interface.ts.",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T04:52:13+00:00"
     },
     "3.2": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -515,7 +522,8 @@
       "done_when": "E2E scripts for the touch path and the pointer path both place every part of every fixture; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T06:59:05+00:00"
     },
     "3.3": {
       "status": "pending",
@@ -654,7 +662,7 @@
       "completed_by": null
     },
     "4.1": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -670,7 +678,8 @@
       "done_when": "Layout tests at 10-inch landscape, 13-inch and tablet portrait pass; tuck states persist across reload; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T06:59:05+00:00"
     },
     "4.2": {
       "status": "pending",
@@ -1545,6 +1554,119 @@
       "id": "D45",
       "question": "DC motor strength: brief Section 6's example spec says 'stall torque 0.4 kg\u00b7cm at 6 V', but task 2.1 used 0.12 kg\u00b7cm (a realistic small hobby motor) so the bare motor cannot climb the ramp and the Level 2 gearbox has a job. Which?",
       "recommendation": "Keep 0.12 kg\u00b7cm at 6 V: it is a real small-motor figure and it makes the gearbox lesson work; the Level 4 spec line shows the real value. Switch to 0.4 only if Drew wants the brief's number literally.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": true,
+      "answer": "Superseded by D46 (orchestrator housekeeping): the 0.12 kg\u00b7cm default was withdrawn after review R-2.1; D46 (0.4 kg\u00b7cm, the brief's figure) stays open for Drew."
+    },
+    {
+      "id": "D46",
+      "question": "D45 corrected (review R-2.1): the DC motor drawn is a TT-type gear motor (rated about 0.8 kg\u00b7cm), so 0.12 kg\u00b7cm was not realistic, and choosing it to make the gentle hill need a gearbox reversed D33 and stopped any wheel slipping at Levels 1\u20132.",
+      "recommendation": "Use the brief's own figure, 0.4 kg\u00b7cm at 6 V (as the schema fixture does); the bare motor climbs the gentle Level 1 hill; the Level 2 gearbox lesson uses a steeper ramp preset per D33. This supersedes D45's recommendation.",
+      "confidence": "high",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D47",
+      "question": "Is the LED a Level 1 or a Level 2 part? Plan task 2.1 lists it at Level 1, but brief Section 4's Rolling Start kit and Section 2's Level 1 list leave it out, and Section 5 puts it in the Level 2 kit; an LED wired the wrong way round stays dark, a polarity lesson, which D23 keeps out of Level 1. (R-2.1 Q2)",
+      "recommendation": "Follow the brief: the LED is introduced at Level 2 (identity.level 2, parts/level-2/) and is in the Level 2 kit, not Rolling Start.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D48",
+      "question": "The DC motor's Direction setting unlocks at Level 2 (brief Section 6), so a child could 'fix' the 'one motor wired backwards' breakdown by flipping the setting while the wiring fault stays. (R-2.1 Q3)",
+      "recommendation": "Keep the brief's Level 2 unlock; breakdown goals require the named fault to be gone, not only the right motion, so flipping the setting does not pass the breakdown.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D49",
+      "question": "Where does a Level 1\u20132 child see a robot tip? (R-2.1 Q4)",
+      "recommendation": "In the Level 2 'top-heavy chassis' breakdown, when the caster is removed (the frame drops and drags or tips), and on the steeper ramp preset from D33.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D50",
+      "question": "How does a child meet the servo motor at Level 2? It needs 4.8\u20136 V and a signal, and Level 2 has no signal source. (R-2.2 Q1)",
+      "recommendation": "A Level 2 part introduction with two 2-cell packs in series, so the only thing missing is the signal: the arm holds and hums, and the card says it is waiting for a signal. The servo is in the Level 2 kit for that introduction.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D51",
+      "question": "Must a geared Level 2 robot carry the whole Level 2 kit? Today the chassis has no free mount point for a buzzer once gearboxes are fitted. (R-2.2 Q3)",
+      "recommendation": "No change now; if task 4.8 writes a geared challenge that needs more than three of motor driver, switch, bumper switch, LED and buzzer, it first adds two deck mount points to the chassis record.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D52",
+      "question": "Gearbox lesson: a ramp preset at about 20 degrees (narrow window, clearance and tipping risks), or a heavy prop the bare motor cannot push? (R-2.2 Q4, D33, D46)",
+      "recommendation": "A heavy box in a push challenge: the bare motor stalls or slips against it and the geared robot pushes it; keep the gentle hill as it is.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D53",
+      "question": "Circuit Crew (Level 2) kit contents: brief Section 5 lists battery pack, switch, 2 DC motors, motor driver, 2 wheels, caster, LED, buzzer; the Level 2 roster also has the 1-cell pack, gearbox, bumper switch, small wheel and servo motor.",
+      "recommendation": "The kit is the parts Level 2 unlocks plus what its challenges need: the brief's list, plus a 1-cell pack, a second 2-cell pack (for the servo introduction), 2 gearboxes, a bumper switch, 2 small wheels and a servo motor, grouped by family.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D54",
+      "question": "Level 3 signal mappings chosen in task 1.3: a signal level (0 to 1) maps linearly onto a servo's angle range and onto a motor driver channel's command range. Confirm or replace in the Level 3 design.",
+      "recommendation": "Accept the linear mappings for v1; revisit with the Level 3 design (brief Section 15, sub-draft 6). Levels 1\u20132 never produce a signal (D41), so nothing a tester sees depends on them.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D55",
+      "question": "Canvas rendering defaults chosen in task 3.1 (all in packages/canvas/docs/renderer.md): 2.5 px per mm at zoom 1; power and signal sockets side by side on a part's back edge; tiles at least 96 px or larger to fit their sockets; mount points drawn on the chassis under the parts on them; a mirrored picture's light ends up bottom-left; trackpad scroll zooms rather than pans; which fonts ship.",
+      "recommendation": "Accept these as the defaults and settle them in the canvas interaction spec (brief Section 15, sub-draft 2) and the art style sheet; ship one rounded open-licence sans-serif (brief Section 11) once Drew names it.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D56",
+      "question": "Battery model (task 1.2): open-circuit volts fall in a straight line from volts to emptyVolts as charge is used, cutting off at empty, so a shorted pack empties in 35.0 s (1-cell) and 23.4 s (2-cell) rather than the constant-current 28.8 s and 19.2 s; a drained pack gives nothing; current either way drains a pack.",
+      "recommendation": "Accept: it follows the schema's source definition and keeps the short's drain visible within half a minute; the capacity is a teaching value, not a real one.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D57",
+      "question": "Motor driver brown-out (task 1.2): when its supply sags below onVolts, it stutters at the duty that holds its supply at onVolts, so its motors turn slowly while the driver shows its own low-voltage; the alternative is that it cuts out.",
+      "recommendation": "Accept the stutter (motors slow, driver shows low-voltage); it is the honest average of a real driver resetting under load and keeps the cause visible.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D58",
+      "question": "Servo motor draw and stall (tasks 1.2, 1.3): draw rises with load from idleMilliamps to stallMilliamps at holdingTorqueNmm, and the arm stalls at holdingTorqueNmm \u00d7 volts \u00f7 ratedVolts; the record states neither.",
+      "recommendation": "Accept both for v1; the Level 4 spec line and the behaviour-rules sub-draft (brief Section 15, item 4) confirm them with a robotics teacher.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D59",
+      "question": "D54 wording correction (review R-1.3): in the v1 runtime a signal level drives a motor driver channel forward only (0 to 1 maps onto 0 to full forward); reversing from a signal is not modelled.",
+      "recommendation": "Accept forward-only for v1; the Level 3 design decides whether a signal can reverse a channel.",
       "confidence": "medium",
       "blocks": [],
       "resolved": false

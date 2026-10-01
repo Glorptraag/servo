@@ -7,7 +7,7 @@ Ground rule 8 asks for a touch path, a pointer path and a list-view path for eve
 ## What `applyEdit` promises
 
 - A blueprint `validateBlueprint` accepts goes in, and one it accepts comes out, in canonical form (`canonicalizeBlueprint`).
-- New ids come from `claimPartId` and `claimWireId`, which raise `meta.highWater`, so the same commands give the same ids. Ids are never reused. A prop takes the next `prop-<n>`.
+- New ids come from `claimPartId` and `claimWireId`, which raise `meta.highWater`, so the same commands give the same ids, and part and wire ids are never reused. A prop takes the next `prop-<n>` above those in the arena, so a removed prop's id can come back; that is harmless in v1, because props carry no faults or goals.
 - Wires go through `planWire`: it refuses impossible drops with the schema's `wire.*` codes and `mount.cycle`, and gives the stored orientation. Legal-but-wrong wiring is always accepted, because its failure on Run is the lesson.
 - A part held by a mount or a shaft is stored where that mount or shaft puts it, by every path (`placeParts`, `canvasPoseOf`).
 - It is pure. It never reads the clock (`meta.updatedAt` is stamped by the store on save), never changes its input, and never throws, except the RangeError the id claims give once ids run out.
@@ -27,7 +27,7 @@ Ground rule 8 asks for a touch path, a pointer path and a list-view path for eve
 | `set-arena` | Replaces the arena: the preset picker, and Reset arena, which drops the child's props (D29) | `ref.unknown_arena`, `arena.outside`, `id.duplicate` |
 | `place-prop`, `move-prop`, `remove-prop` | A prop from the arena strip, Build mode only (D36); `at` in arena millimetres, or the free spot | `arena.outside`, `edit.unknown_prop` |
 | `rename` | The blueprint's name: child text, 1–60 characters on one line | `value.bad_format` |
-| `batch` | Single commands in order, all or nothing: one `edit` event, one undo step. The hint ladder's do-it is one batch | the first refusal, with its `index` |
+| `batch` | Single commands in order, all or nothing: one `edit` event, one undo step. The hint ladder's do-it is one batch. A command that wires a part placed earlier in the batch names it by the id `claimPartId` predicts: each `place-part` takes the next `p<n>` in turn (tasks 3.2 and 4.6) | the first refusal, with its `index` |
 
 The handle adds two refusals of its own: `edit.locked` in Run mode or on a read-only canvas, and `edit.no_build` before the first `load`.
 

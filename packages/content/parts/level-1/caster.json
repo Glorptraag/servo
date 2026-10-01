@@ -1,0 +1,94 @@
+{
+  "behaviour": [
+    {
+      "id": "roller",
+      "kind": "support",
+      "mount": "mount",
+      "rollingFriction": 0.02
+    }
+  ],
+  "body": {
+    "centreOfMass": {
+      "x": 0,
+      "y": 0,
+      "z": 6
+    },
+    "grams": 12,
+    "size": {
+      "x": 22,
+      "y": 22,
+      "z": 16.5
+    }
+  },
+  "card": {
+    "does": "Holds up one end of the chassis (frame) and rolls whichever way the robot goes.",
+    "gives": "Gives: a rolling support, so the chassis does not scrape the floor.",
+    "needs": "Needs: a mount (grey) under the chassis, with its ball on the floor.",
+    "popularMechanics": "Office chairs and shopping trolleys roll on casters that turn any way you push.",
+    "safetyNote": "A real caster has a small ball that can come out, so build with an adult nearby."
+  },
+  "failureModes": [
+    {
+      "cardLine": "Loose: the chassis (frame) drags on the floor.",
+      "hint": "This caster is not fixed to the chassis",
+      "id": "loose",
+      "need": "fixed",
+      "shows": [
+        "drag"
+      ],
+      "teachingNote": "A caster holds one end of the chassis off the floor and rolls with the robot. Left loose, it holds up nothing, so that end of the chassis scrapes the floor and the robot drags.",
+      "unmet": "absent"
+    },
+    {
+      "cardLine": "Off the floor: the chassis (frame) drags.",
+      "hint": "This caster does not reach the floor",
+      "id": "lifted",
+      "need": "on-floor",
+      "shows": [
+        "drag"
+      ],
+      "teachingNote": "A caster holds the chassis up only where its ball reaches the floor. Fixed too high, it hangs in the air and the chassis scrapes.",
+      "unmet": "lifted"
+    }
+  ],
+  "id": "caster",
+  "identity": {
+    "art": "part/caster",
+    "colours": {
+      "accent": "#424242",
+      "main": "#9e9e9e"
+    },
+    "domains": [
+      "mechanics"
+    ],
+    "family": "structure-and-ride",
+    "level": 1,
+    "name": "caster"
+  },
+  "needs": [
+    {
+      "id": "fixed",
+      "kind": "mount",
+      "port": "mount"
+    },
+    {
+      "id": "on-floor",
+      "kind": "floor"
+    }
+  ],
+  "ports": [
+    {
+      "at": {
+        "x": 0,
+        "y": 0,
+        "z": 16.5
+      },
+      "id": "mount",
+      "label": "mount",
+      "role": "mount",
+      "type": "mechanical",
+      "yaw": 0
+    }
+  ],
+  "settings": []
+}

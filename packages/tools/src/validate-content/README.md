@@ -1,6 +1,6 @@
 # Content validator
 
-`pnpm validate-content <path>...` checks content records against the schema and against the terminology lists. It is task 0.5, and task 2.5 wrote the real lists and the qualifier rule for part names. Every content task runs it before it is done (ground rule 14).
+`pnpm validate-content <path>...` checks content records against the schema and against the terminology lists. It is task 0.5, and task 2.5 wrote the real lists and the qualifier rule for part names. Every content task runs it before it is done (ground rule 14), and CI runs `pnpm validate-content packages/content --terminology packages/content/terminology` after the tests on every push.
 
 ```sh
 pnpm validate-content packages/content                      # everything in content
@@ -18,8 +18,8 @@ pnpm -w validate-content parts                              # from inside packag
 
 The exit status is 0 when every record passes and 1 when there are issues. It is 2 when the command is misused: no path, an unknown option, a path that does not exist, a folder with no records, or an option folder that does not exist.
 
-- A folder with no records includes one that holds only skipped files (see [Records and their kinds](#records-and-their-kinds)). So `pnpm validate-content packages/content` exits 2 until content has its first part, arena or kit, because the terminology lists are not records. The message says what is not a record.
-- A folder named on the command line that cannot be listed is not misuse. The run reports it as `file.unreadable` with its cause, such as `EACCES`, and exits 1.
+- A folder with no records includes one that holds only skipped files (see [Records and their kinds](#records-and-their-kinds)). So `pnpm validate-content packages/content` would exit 2 if content held only its terminology lists and art, which are not records. The message says what is not a record.
+- A folder named on the command line that cannot be listed is not misuse. The run reports it as `file.unreadable` with its cause, such as `EACCES`, and exits 1. Before task 2.5 it was refused as a folder with no records, which hid the cause.
 
 ## Output
 
@@ -34,7 +34,7 @@ validate-content: 3 records checked, 3 issues in 3 files.
 ```
 
 - Folders that cannot be listed come first. From code, a path that does not exist is reported with them. Issues in the terminology files follow, then the records' issues, file by file in walk order.
-- `note:` lines then say what the run could not check, such as a missing terminology list, and where the catalogue came from. Notes never fail a run.
+- `note:` lines then say what the run could not check, such as a terminology list that is missing or cannot be used, and where the catalogue came from. Notes never fail a run.
 - The last line is the summary.
 - Paths inside the folder the command was typed in are shown relative to it, and other paths in full.
 
@@ -44,6 +44,7 @@ A folder is walked recursively in name order. The walk skips these:
 - `node_modules`;
 - folders whose names start with `.`;
 - any `terminology` folder, which holds lists, not records;
+- any `art` folder, which holds part art: `pnpm art` writes placeholders and `registry.json` to `art/generated/`, and final renders go in `art/final/`;
 - `package.json` and `tsconfig*.json`;
 - symbolic links.
 
@@ -99,7 +100,7 @@ Kits, challenges, blueprints and run records name parts, arenas and kits, and th
 
 ## Terminology format
 
-The real lists are in `packages/content/terminology/`, and the app may read them later. There are two JSON files. A missing file is an empty list, and an empty list turns its checks off, with a note. Unknown fields are refused, as in the schema.
+The real lists are in `packages/content/terminology/`, and the app may read them later. There are two JSON files. A missing file is an empty list, and an empty list turns its checks off, with a note. A file that cannot be read, is not JSON or is not an object is refused as `terminology.bad_file` at `$`, and its checks are off too, with a note that it cannot be used. Unknown fields are refused, as in the schema.
 
 `components.json` holds the real names, the plain-language glosses that may sit beside them (brief Section 12), and the qualifiers a part's name may use:
 
@@ -136,13 +137,14 @@ The real lists are in `packages/content/terminology/`, and the app may read them
 ```
 
 - `reason` ends the message, so write it as a sentence that names its source.
-- A ban matches whole words only, so list each form that matters, such as `score`, `scores` and `scored`.
-- `allowed` is optional. It lists real terms that hold a banned word, such as `mount points` (D22). A real name needs no entry, because a banned word inside it is never refused.
+- A ban matches whole words only, so list each form that matters, such as `score`, `scores` and `scored`. A word may be banned beside a phrase that holds it, such as `great` beside `great job`: see [Matching](#matching).
+- `allowed` is optional. It lists real terms that hold a banned word, such as `mount points` (D22) and the hint ladder's last rung, `do it for me`. A real name needs no entry, because a banned word inside it is never refused.
 - Exclamation marks need no entry, because the schema refuses them everywhere (`text.exclamation`). An entry such as `!` holds no word, so the format refuses it.
 
 Every name, gloss, qualifier, phrase and reason must be one line with no spaces at either end, and every name, gloss, qualifier and phrase must hold at least one word. Anything else is refused as `terminology.bad_file`, and so are:
 - an entry listed twice;
-- a banned phrase that is also allowed, a real name or a gloss, because it could never be refused.
+- a banned phrase that is also allowed, a real name or a gloss, because it could never be refused;
+- a banned phrase that a qualifier holds, outside an allowed phrase, a real name or a gloss, because no part's name could use that qualifier. A `large` ban refuses the qualifiers `large` and `extra-large`.
 
 A malformed entry is left out of the run, and the rest of its file is still used.
 
@@ -151,6 +153,7 @@ A malformed entry is left out of the run, and the rest of its file is still used
 - A **word** is a run of letters and digits. Spaces, hyphens, apostrophes and punctuation only separate words. Words compare without case, accents or full-width forms, so `brain-y bit`, `Brain-Y bit` and `brain y bit` match the same entry.
 - A banned word or phrase matches **whole words** only. `points` matches `Points` and `points,`, but not `checkpoints`.
 - A banned word inside an **allowed phrase, a real name or a gloss** is not refused (D22). `mount points` passes, while `Score points on the mount points` is refused for its first `points`.
+- A banned word inside a **longer banned phrase** is left to that phrase, so `Great job` is one issue, for `great job`, and not a second one for `great`. Elsewhere in the field it is refused as usual: `A great job and a great robot` is refused for both.
 - There is one issue per banned entry per field. The message quotes the text as written.
 
 ### Glosses
@@ -218,12 +221,18 @@ The validator takes these conservative readings, for review:
 4. Run records are checked against the schema only, so that fixture folders check cleanly. They are not content.
 5. While `packages/content` holds no part record files, the command's default catalogue falls back to the schema's examples at run time. The task 0.5 brief said the fixtures were the catalogue "in tests". Every such run says so in a note.
 
+Task 2.5 changed two behaviours beyond the README fixes its brief named. Both answer the task 0.5 review and are tested in `validate-content.test.ts`:
+
+1. A folder named on the command line that cannot be listed is reported as `file.unreadable` with its cause, and the run exits 1. It was refused as misuse (exit 2) with "No .json records", which hid the cause (0.5 review, finding 5).
+2. A terminology file that cannot be read, is not JSON or is not an object gets the note "cannot be used" beside its `terminology.bad_file` issue. It got the note for an empty list, such as "names no components", which was wrong (0.5 review, finding 6).
+
 The real lists take these readings, for review:
 
 1. Wire and port terms are listed as real names. A banned word inside one is never refused, and a part could be named after one, such as `mount`. No such part is planned.
 2. `servo` is not listed. It is the short form of servo motor, so text may use it, and a part is named `servo motor`.
 3. `gripper` (brief Section 3) and `breadboard` (brief Sections 2 and 3) are listed, though no Level 1–2 part uses them.
-4. `I`, `me`, `my` and `myself` are banned as the robot's voice, because system text talks to the child in the second person (brief Section 12). A spec line with `I/O` would be refused; allow it if one is needed.
+4. `I`, `me`, `my` and `myself` are banned as the robot's voice, because system text talks to the child in the second person (brief Section 12). The hint ladder's last rung is allowed by name, `do it for me` (rule 9, brief Section 5) and `place it for me` (brief Section 10), because the child says it, not the robot. A spec line with `I/O` would be refused; allow it if one is needed.
 5. `character` and `characters` are banned. A later display part may need another word for the letters on a screen.
-6. Bans list the forms that matter beyond the words CLAUDE.md and the task name: `mascots`, `streak`, `scores`, `scored`, `earns`, `earned`, `levels up` and `levelled up`. `badge` and `badges` come from brief Section 8. The praise list adds `nice job`, `great work`, `good work`, `nice work`, `congratulations`, `congrats` and `you did it` to the task's five phrases.
-7. Whole-word bans also refuse verbs, as D22's default keeps them: "the arm points forward" and "the battery pack lives under the chassis" are refused. Reword such lines.
+6. Bans list the forms that matter beyond the words CLAUDE.md and the task name: `mascots`, `brain-y`, `brainy`, `zappy`, `coin`, `streak`, `scores`, `scored`, `scoring`, `earns`, `earned`, `earning`, `levels up`, `levelled up` and `levelling up`. `badge` and `badges` come from brief Section 8.
+7. Praise and cheering go beyond the task's five phrases (task 2.5 review, finding 2). `great` is banned on its own, so descriptive uses such as "a great weight" or "a brilliant white LED" are refused too; reword them. Left off, because build text uses them literally: `spot on` ("the spot on the floor"), `way to go` ("which way to go"), `keep it up` ("keep it up off the floor"), and `nice`, `super` and `cool` alone ("let the motor cool").
+8. Whole-word bans also refuse verbs, as D22's default keeps them: "the arm points forward" and "the battery pack lives under the chassis" are refused. Reword such lines.
