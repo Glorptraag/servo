@@ -66,7 +66,7 @@ export interface FixtureLoad {
 
 /** Every fixture, by name. Tasks 2.6, 4.7 and 4.8 add theirs, with their blueprints in fixtures/blueprints/. */
 export const FIXTURES: Readonly<Record<string, FixtureSpec>> = {
-  // Task 2.6, working builds: each Run shows no fault, except the 1-cell what-if, whose DC motors run below their range.
+  // Task 2.6, working builds: each Run shows no fault.
   'level-1-roller': {
     description: 'Level 1: two DC motors wired red to red on the 2-cell battery pack drive the robot forward.',
     blueprint: 'level-1-roller',
@@ -84,17 +84,12 @@ export const FIXTURES: Readonly<Record<string, FixtureSpec>> = {
     ticks: 90,
     expect: { faults: [] },
   },
-  'one-cell-roller': {
-    description: 'Level 2 what-if: on the 1-cell battery pack the robot drives forward at about half speed, and both DC motors show low voltage.',
-    blueprint: 'one-cell-roller',
+  'small-wheel-roller': {
+    description: 'Level 2: the Level 1 roller on small wheels drives forward more slowly, its chassis tilted nose down and clear of the floor.',
+    blueprint: 'small-wheel-roller',
     inputs: [],
     ticks: 90,
-    expect: {
-      faults: [
-        { partId: 'motor-left', failure: 'low-voltage' },
-        { partId: 'motor-right', failure: 'low-voltage' },
-      ],
-    },
+    expect: { faults: [] },
   },
   'motor-driver-robot': {
     description: 'Level 2: the motor driver, behind the switch, runs both DC motors forward.',
@@ -154,14 +149,16 @@ export const FIXTURES: Readonly<Record<string, FixtureSpec>> = {
     expect: { faults: [{ partId: 'servo', failure: 'no-signal' }], namedFault: { partId: 'servo', failure: 'no-signal' } },
   },
   'broken-underpowered-pack': {
-    description: 'Level 2: the 1-cell battery pack cannot switch the motor driver on, so it gives its DC motors nothing; the fault is the driver’s.',
+    description:
+      'Level 2: the 1-cell battery pack cannot switch the motor driver on, so the driver gives its DC motors nothing and holds the one fault; wired straight to the pack, both motors would show low voltage.',
     blueprint: 'broken-underpowered-pack',
     inputs: [],
     ticks: 60,
     expect: { faults: [{ partId: 'driver', failure: 'low-voltage' }], namedFault: { partId: 'driver', failure: 'low-voltage' } },
   },
   'broken-top-heavy-chassis': {
-    description: 'Level 2: with no caster, the geared robot’s centre of mass sits behind its wheels, outside its supports, so it tips back (D49).',
+    description:
+      'Level 2: with no caster, the geared robot’s centre of mass sits behind its wheels, outside its supports, so it tips back; D49’s route, since no Level 1–2 load moves it outside a wheel-and-caster base.',
     blueprint: 'broken-top-heavy-chassis',
     inputs: [],
     ticks: 90,
@@ -187,6 +184,19 @@ export const FIXTURES: Readonly<Record<string, FixtureSpec>> = {
     inputs: [],
     ticks: 90,
     expect: { faults: [{ partId: 'caster', failure: 'loose' }], namedFault: { partId: 'caster', failure: 'loose' } },
+  },
+  // Task 2.6, extra: the battery what-if for task 4.8. Neither working nor broken, so not one of the eight and eight.
+  'one-cell-roller': {
+    description: 'Level 2 what-if, neither working nor broken: on the 1-cell battery pack the robot drives at about half speed, and both DC motors show low voltage.',
+    blueprint: 'one-cell-roller',
+    inputs: [],
+    ticks: 90,
+    expect: {
+      faults: [
+        { partId: 'motor-left', failure: 'low-voltage' },
+        { partId: 'motor-right', failure: 'low-voltage' },
+      ],
+    },
   },
 };
 

@@ -31,15 +31,16 @@ import type {
   PortRef,
   PowerNeed,
   Primitive,
-  Vec2,
+  Vec3,
   Wire,
 } from '@servo/schema';
 import { FIXTURES, loadFixtures } from '../src/fixtures.ts';
 import type { ContentFixture, FaultExpectation } from '../src/fixtures.ts';
 import { loadArenas, loadCatalogue } from '../src/index.ts';
 
-// Task 2.6: eight working and eight broken fixture blueprints for the simulation and canvas teams. sim-core's tick
-// loop (task 1.5) is not here yet, so this file reproduces each verdict statically with the schema's own rules:
+// Task 2.6: eight working and eight broken fixture blueprints for the simulation and canvas teams, and the battery
+// what-if for task 4.8. sim-core's tick loop (task 1.5) is not here yet, so this file reproduces each verdict
+// statically with the schema's own rules:
 // - the wiring: `wiredNeeds` decides power and loop `open` and isolation `shorted`, and says what explains each;
 // - the voltages: nominal volts (batteries at full charge, no sag), judged for `low`, `high` and `reversed` and
 //   explained in the schema's order with `explainByControls`, then by an unpowered motor driver feeding the part;
@@ -50,7 +51,7 @@ import { loadArenas, loadCatalogue } from '../src/index.ts';
 const WORKING = [
   'level-1-roller',
   'switch-in-the-line',
-  'one-cell-roller',
+  'small-wheel-roller',
   'motor-driver-robot',
   'bumper-stops-at-wall',
   'led-and-buzzer-robot',
@@ -69,7 +70,10 @@ const BROKEN = [
   'broken-loose-caster',
 ] as const;
 
-const TASK_FIXTURES: readonly string[] = [...WORKING, ...BROKEN];
+/** Neither working nor broken, and not one of the eight and eight: the battery what-if, kept for task 4.8. */
+const WHAT_IF = ['one-cell-roller'] as const;
+
+const TASK_FIXTURES: readonly string[] = [...WORKING, ...BROKEN, ...WHAT_IF];
 
 const catalogue = loadCatalogue();
 const load = loadFixtures();
@@ -325,46 +329,67 @@ const robotsOf = (blueprint: Blueprint): Robot[] => {
     });
 };
 
-const cross = (o: Vec2, a: Vec2, b: Vec2): number => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+const minus = (a: Vec3, b: Vec3): Vec3 => ({ x: a.x - b.x, y: a.y - b.y, z: a.z - b.z });
+const scaled = (v: Vec3, k: number): Vec3 => ({ x: v.x * k, y: v.y * k, z: v.z * k });
+const dot = (a: Vec3, b: Vec3): number => a.x * b.x + a.y * b.y + a.z * b.z;
+const crossed = (a: Vec3, b: Vec3): Vec3 => ({ x: a.y * b.z - a.z * b.y, y: a.z * b.x - a.x * b.z, z: a.x * b.y - a.y * b.x });
 
-/** The convex hull of points on the floor, anticlockwise (Andrew's monotone chain). */
-const hull = (points: readonly Vec2[]): Vec2[] => {
-  const sorted = [...points].sort((a, b) => a.x - b.x || a.y - b.y);
-  if (sorted.length < 3) return sorted;
-  const half = (list: readonly Vec2[]): Vec2[] => {
-    const chain: Vec2[] = [];
-    for (const point of list) {
-      while (chain.length >= 2 && cross(chain[chain.length - 2] as Vec2, chain[chain.length - 1] as Vec2, point) <= 0) chain.pop();
-      chain.push(point);
-    }
-    return chain.slice(0, -1);
-  };
-  return [...half(sorted), ...half(sorted.toReversed())];
-};
-
-/** Whether a point lies over the polygon the supports make (a segment for two, a point for one), edges included. */
-const over = (supports: readonly Vec2[], point: Vec2): boolean => {
-  const polygon = hull(supports);
-  if (polygon.length === 0) return false;
-  if (polygon.length === 1) return polygon[0]?.x === point.x && polygon[0]?.y === point.y;
-  if (polygon.length === 2) {
-    const [a, b] = polygon as [Vec2, Vec2];
-    const within = (point.x - a.x) * (point.x - b.x) + (point.y - a.y) * (point.y - b.y) <= 0;
-    return Math.abs(cross(a, b, point)) < 1e-9 && within;
-  }
-  return polygon.every((corner, index) => cross(corner, polygon[(index + 1) % polygon.length] as Vec2, point) >= -1e-9);
+/**
+ * The floor a robot rests on: the plane through its three wheels and supports, as a point on it and its upward unit
+ * normal, in the robot's frame. It tilts when they sit at different heights, as small wheels do beside the caster.
+ * Undefined with fewer than three.
+ */
+const floorOf = (robot: Robot): { readonly at: Vec3; readonly up: Vec3 } | undefined => {
+  if (robot.contacts.length > 3) throw new Error('No static judge for more than three wheels and supports.');
+  const [a, b, c] = robot.contacts;
+  if (!a || !b || !c) return undefined;
+  const normal = crossed(minus(b, a), minus(c, a));
+  return { at: a, up: scaled(normal, Math.sign(normal.z) / Math.sqrt(dot(normal, normal))) };
 };
 
 /**
- * Balance: the robot rides upright while its centre of mass lies over the polygon its wheels and supports make.
- * When it does not, a support of the build that is not fixed (a loose caster) stands for it with its own fault, as
- * an unpowered motor driver stands for its motors; otherwise the chassis is top-heavy (balance · lost). This is the
- * reading these fixtures take for task 1.4 (see the report on D49).
+ * Whether the robot rides upright: its centre of mass, dropped onto its floor, lands inside the triangle of its three
+ * wheels and supports, edges included. On two alone it stays up only over the line between them, seen from above.
+ */
+const upright = (robot: Robot): boolean => {
+  const floor = floorOf(robot);
+  const { centre, contacts } = robot;
+  if (!floor) {
+    const [a, b] = contacts;
+    if (!a || !b) return false;
+    const between = (centre.x - a.x) * (centre.x - b.x) + (centre.y - a.y) * (centre.y - b.y) <= 0;
+    return between && Math.abs((b.x - a.x) * (centre.y - a.y) - (b.y - a.y) * (centre.x - a.x)) < 1e-9;
+  }
+  const dropped = minus(centre, scaled(floor.up, dot(minus(centre, floor.at), floor.up)));
+  const sides = contacts.map((corner, index) => dot(crossed(minus(contacts[(index + 1) % 3] as Vec3, corner), minus(dropped, corner)), floor.up));
+  return sides.every((side) => side >= -1e-9) || sides.every((side) => side <= 1e-9);
+};
+
+/** How far the lowest body on a robot, its wheels and supports left out, stands above its floor. */
+const clearance = (blueprint: Blueprint, robot: Robot): number => {
+  const floor = floorOf(robot);
+  if (!floor) throw new Error(`The ${robot.root} rests on fewer than three wheels and supports.`);
+  const placements = placeParts(blueprint, catalogue);
+  const touching = new Set(robot.contacts.map((contact) => contact.id));
+  const heights = blueprint.parts.flatMap((part) => {
+    const where = placements.get(part.id);
+    if (where?.root !== robot.root || touching.has(part.id)) return [];
+    const { size } = typeOf(blueprint, part.id).body;
+    const corners = [-1, 1].flatMap((sx) => [-1, 1].map((sy) => placePoint(where.placement, { x: (sx * size.x) / 2, y: (sy * size.y) / 2, z: 0 })));
+    return corners.map((corner) => dot(minus(corner, floor.at), floor.up));
+  });
+  return Math.min(...heights);
+};
+
+/**
+ * Balance: the robot rides upright while its centre of mass lies over its wheels and supports. When it does not, a
+ * support of the build that is not fixed (a loose caster) stands for it with its own fault, as an unpowered motor
+ * driver stands for its motors; otherwise the chassis is top-heavy (balance · lost). This is the reading these
+ * fixtures take; the mechanical solver (task 1.4) decides it.
  */
 const balanceFaults = (blueprint: Blueprint): string[] =>
   robotsOf(blueprint).flatMap((robot) => {
-    if (new Set(robot.contacts.map((contact) => contact.z)).size > 1) throw new Error(`The ${robot.root}'s wheels and supports do not share one floor.`);
-    if (over(robot.contacts, robot.centre)) return [];
+    if (upright(robot)) return [];
     const looseSupport = blueprint.parts.some(
       (part) =>
         typeOf(blueprint, part.id).behaviour.some((primitive) => primitive.kind === 'support') &&
@@ -458,13 +483,14 @@ const casterOnItsMount = (): PlacedPart => {
 // ---------------------------------------------------------------------------------------------
 
 describe('task 2.6 fixtures', () => {
-  it('holds eight working and eight broken fixtures, each on its own blueprint, all valid against the content', () => {
+  it('holds eight working and eight broken fixtures and the battery what-if, each on its own blueprint, all valid against the content', () => {
     expect(load.issues.map(({ file, code, path }) => `${file} ${code} at ${path}`)).toEqual([]);
+    expect([WORKING.length, BROKEN.length, WHAT_IF.length]).toEqual([8, 8, 1]);
     for (const name of TASK_FIXTURES) {
       expect(FIXTURES[name]?.blueprint).toBe(name);
       expect(fixture(name).seed).toBe(1);
     }
-    expect(new Set(TASK_FIXTURES.map((name) => fixture(name).blueprint.meta.id)).size).toBe(16);
+    expect(new Set(TASK_FIXTURES.map((name) => fixture(name).blueprint.meta.id)).size).toBe(TASK_FIXTURES.length);
   });
 
   it.each(TASK_FIXTURES)('%s is committed in canonical form', (name) => {
@@ -482,7 +508,7 @@ describe('task 2.6 fixtures', () => {
     expect(levels(BROKEN)).toEqual([1, 2]);
   });
 
-  it('names exactly one fault in each broken fixture, or one refused drop, and none in a working one but the 1-cell what-if', () => {
+  it('names exactly one fault in each broken fixture, or one refused drop, and none in a working one', () => {
     for (const name of BROKEN) {
       const { expect: verdict } = fixture(name);
       const one = verdict.faults.length === 1 && verdict.namedFault !== undefined && verdict.refused === undefined;
@@ -490,11 +516,16 @@ describe('task 2.6 fixtures', () => {
       expect(one || refusal, name).toBe(true);
       if (one) expect(verdict.faults[0]).toEqual(verdict.namedFault);
     }
-    for (const name of WORKING) {
-      const { expect: verdict } = fixture(name);
-      expect([verdict.namedFault, verdict.refused, verdict.goal]).toEqual([undefined, undefined, undefined]);
-      expect(verdict.faults.length === 0 || name === 'one-cell-roller', name).toBe(true);
-    }
+    for (const name of WORKING) expect(fixture(name).expect, name).toEqual({ faults: [] });
+  });
+
+  it('keeps the 1-cell roller as the battery what-if: both DC motors low, no named fault, so neither working nor broken', () => {
+    expect(fixture('one-cell-roller').expect).toEqual({
+      faults: [
+        { partId: 'motor-left', failure: 'low-voltage' },
+        { partId: 'motor-right', failure: 'low-voltage' },
+      ],
+    });
   });
 
   it('presses a switch only in switch-in-the-line, and gives every Run time to show its behaviour', () => {
@@ -627,12 +658,12 @@ describe('each broken fixture’s named fault reproduces, and fixing the build c
     expect(robot.contacts.map((contact) => contact.id)).toEqual(['wheel-left', 'wheel-right']);
     const axle = robot.contacts[0]?.x ?? 0;
     expect(robot.centre.x).toBeLessThan(axle);
-    expect(over(robot.contacts, robot.centre)).toBe(false);
+    expect(upright(robot)).toBe(false);
     expect([...wiringFaults(blueprint, {}), ...voltageFaults(blueprint, {}), ...linkFaults(blueprint)]).toEqual([]);
     expect(judge(blueprint)).toEqual(['chassis: top-heavy']);
     const fixed = edited(blueprint, { add: [['caster.mount', 'chassis.caster']], parts: (parts) => [...parts, casterOnItsMount()] });
     const [steady] = robotsOf(fixed);
-    expect(steady && over(steady.contacts, steady.centre)).toBe(true);
+    expect(steady && upright(steady)).toBe(true);
     expect([judge(fixed), motion(fixed)]).toEqual([[], 'forward']);
   });
 
@@ -679,7 +710,7 @@ describe('each broken fixture’s named fault reproduces, and fixing the build c
     const [robot] = robotsOf(blueprint);
     if (!robot) throw new Error('No robot.');
     expect(robot.contacts.map((contact) => contact.id)).toEqual(['wheel-left', 'wheel-right']);
-    expect(over(robot.contacts, robot.centre)).toBe(false);
+    expect(upright(robot)).toBe(false);
     expect(judge(blueprint)).toEqual(['caster: loose']);
     const fixed = edited(blueprint, {
       add: [['caster.mount', 'chassis.caster']],
@@ -693,7 +724,7 @@ describe('motion and balance', () => {
   it.each([
     ['level-1-roller', 'forward'],
     ['switch-in-the-line', 'forward'],
-    ['one-cell-roller', 'forward'],
+    ['small-wheel-roller', 'forward'],
     ['motor-driver-robot', 'forward'],
     ['bumper-stops-at-wall', 'forward'],
     ['led-and-buzzer-robot', 'forward'],
@@ -705,17 +736,32 @@ describe('motion and balance', () => {
     ['broken-top-heavy-chassis', 'forward'],
     ['broken-short-circuit', 'still'],
     ['broken-loose-caster', 'forward'],
+    ['one-cell-roller', 'forward'],
   ])('%s moves %s at rest', (name, expected) => {
     expect(motion(fixture(name).blueprint)).toBe(expected);
   });
 
-  it('stands every robot with a fixed caster level on its wheels and caster, its centre of mass over them', () => {
+  it('rests every robot with a fixed caster on its wheels and caster, upright and with its chassis clear of the floor', () => {
     for (const name of TASK_FIXTURES) {
-      for (const robot of robotsOf(fixture(name).blueprint)) {
-        expect(new Set(robot.contacts.map((contact) => contact.z)).size, name).toBe(1);
-        if (robot.contacts.length === 3) expect(over(robot.contacts, robot.centre), name).toBe(true);
+      const { blueprint } = fixture(name);
+      for (const robot of robotsOf(blueprint).filter((candidate) => candidate.contacts.length === 3)) {
+        expect(upright(robot), name).toBe(true);
+        expect(clearance(blueprint, robot), name).toBeGreaterThan(2);
       }
     }
+  });
+
+  it('tilts the small-wheel roller nose down onto its caster, clear of the floor, where large wheels keep it level', () => {
+    const [tilted] = robotsOf(fixture('small-wheel-roller').blueprint);
+    const [level] = robotsOf(fixture('level-1-roller').blueprint);
+    if (!tilted || !level) throw new Error('No robot.');
+    const [tiltedFloor, levelFloor] = [floorOf(tilted), floorOf(level)];
+    if (!tiltedFloor || !levelFloor) throw new Error('No robot on three wheels and supports.');
+    expect(Math.abs(levelFloor.up.x) + Math.abs(levelFloor.up.y)).toBe(0);
+    // The floor's normal leans back in the robot's frame: the chassis's front is nearer the floor than its rear.
+    expect(tiltedFloor.up.x).toBeLessThan(0);
+    expect(clearance(fixture('small-wheel-roller').blueprint, tilted)).toBeGreaterThan(4);
+    expect(clearance(fixture('level-1-roller').blueprint, level)).toBe(16.5);
   });
 
   it('starts every loose part on the arena floor, clear of the path its robot drives (D19)', () => {
