@@ -123,7 +123,7 @@
       "dispatched_at": "2026-10-01T02:52:50+00:00"
     },
     "0.5": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -137,8 +137,8 @@
       ],
       "done_when": "CLI rejects a record with a character-style name or a missing port type with a readable message and non-zero exit; accepts the schema fixtures; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T04:00:42+00:00",
+      "completed_by": "W-0.5",
       "dispatched_at": "2026-10-01T02:52:50+00:00"
     },
     "0.6": {
