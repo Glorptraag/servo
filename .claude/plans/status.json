@@ -97,7 +97,7 @@
       "dispatched_at": "2026-10-01T02:52:50+00:00"
     },
     "0.4": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -118,8 +118,8 @@
       ],
       "done_when": "Each README names its public functions, events and owning package; each interface.ts compiles; orchestrator has reviewed and signed off in the PR.",
       "contracts": "RunEvent = { tick, partId, kind: 'value'|'motion'|'sound'|'fault', payload }. Canvas never imports sim-core internals \u2014 only packages/sim-core/src/interface.ts.",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T05:10:10+00:00",
+      "completed_by": "W-0.4",
       "dispatched_at": "2026-10-01T02:52:50+00:00"
     },
     "0.5": {
@@ -480,7 +480,7 @@
       "completed_by": null
     },
     "3.1": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -497,7 +497,8 @@
       "done_when": "60 fps (16 ms frame budget) on a 25-part fixture in the e2e harness's iPad profile; layer order verified by screenshot tests; tests pass.",
       "contracts": "Canvas imports sim-core only through packages/sim-core/src/interface.ts.",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T04:52:13+00:00"
     },
     "3.2": {
       "status": "pending",
@@ -1545,6 +1546,38 @@
       "id": "D45",
       "question": "DC motor strength: brief Section 6's example spec says 'stall torque 0.4 kg\u00b7cm at 6 V', but task 2.1 used 0.12 kg\u00b7cm (a realistic small hobby motor) so the bare motor cannot climb the ramp and the Level 2 gearbox has a job. Which?",
       "recommendation": "Keep 0.12 kg\u00b7cm at 6 V: it is a real small-motor figure and it makes the gearbox lesson work; the Level 4 spec line shows the real value. Switch to 0.4 only if Drew wants the brief's number literally.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D46",
+      "question": "D45 corrected (review R-2.1): the DC motor drawn is a TT-type gear motor (rated about 0.8 kg\u00b7cm), so 0.12 kg\u00b7cm was not realistic, and choosing it to make the gentle hill need a gearbox reversed D33 and stopped any wheel slipping at Levels 1\u20132.",
+      "recommendation": "Use the brief's own figure, 0.4 kg\u00b7cm at 6 V (as the schema fixture does); the bare motor climbs the gentle Level 1 hill; the Level 2 gearbox lesson uses a steeper ramp preset per D33. This supersedes D45's recommendation.",
+      "confidence": "high",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D47",
+      "question": "Is the LED a Level 1 or a Level 2 part? Plan task 2.1 lists it at Level 1, but brief Section 4's Rolling Start kit and Section 2's Level 1 list leave it out, and Section 5 puts it in the Level 2 kit; an LED wired the wrong way round stays dark, a polarity lesson, which D23 keeps out of Level 1. (R-2.1 Q2)",
+      "recommendation": "Follow the brief: the LED is introduced at Level 2 (identity.level 2, parts/level-2/) and is in the Level 2 kit, not Rolling Start.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D48",
+      "question": "The DC motor's Direction setting unlocks at Level 2 (brief Section 6), so a child could 'fix' the 'one motor wired backwards' breakdown by flipping the setting while the wiring fault stays. (R-2.1 Q3)",
+      "recommendation": "Keep the brief's Level 2 unlock; breakdown goals require the named fault to be gone, not only the right motion, so flipping the setting does not pass the breakdown.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D49",
+      "question": "Where does a Level 1\u20132 child see a robot tip? (R-2.1 Q4)",
+      "recommendation": "In the Level 2 'top-heavy chassis' breakdown, when the caster is removed (the frame drops and drags or tips), and on the steeper ramp preset from D33.",
       "confidence": "medium",
       "blocks": [],
       "resolved": false
