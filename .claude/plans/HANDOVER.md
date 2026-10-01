@@ -126,7 +126,7 @@ Usage limit reached mid-run. State lives in status.json (pharao.py); this file l
 - task/1.7 (golden runs): building on task/1.5; must re-merge task/1.5 before recording goldens; asserts every content fixture's expect.
 - task/3.3 (wiring): building on task/3.2 (merged); must re-merge main; fixes socket overlap.
 - task/3.8 (e2e harness): fixing review (diff sensitivity, CI sharding).
-- task/6.3 (release): fixing review (shared invite hash, app tests).
+- task/6.3 (release): review fixes DONE (8708b80 merge main, b9a8cb9: one invite hash in @servo/app/invite-code imported by tools; app 93 tests, tools 686; check, build, release:dry green). NEEDS RE-REVIEW (reviewer agent a846447c292bec684 wrote docs/reviews/tasks/6.3.md) then merge. Suggested CLAUDE.md How-to-run row: `pnpm release:dry` builds a tester release into dist/release and prints the content version; `pnpm release:preview` serves it.
 - task/4.9 (store): fixing round 3 (stale journal note must not overwrite a newer build; latest wins, both kept).
 
 Per-task flow used: Opus builder in worktree → orchestrator verifies → Opus reviewer writes docs/reviews/tasks/{id}.md → merge --no-ff → checks (under heavy load: lint, typecheck, serial tests with --retry 2; CI is authoritative) → pharao done → push.
