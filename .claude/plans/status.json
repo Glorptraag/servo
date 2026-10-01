@@ -284,7 +284,7 @@
       "completed_by": null
     },
     "1.6": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -298,8 +298,8 @@
       ],
       "done_when": "Interface documented; a fixture containing a microcontroller runs without error and with no effect; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T07:44:24+00:00",
+      "completed_by": "W-1.6",
       "dispatched_at": "2026-10-01T06:12:30+00:00"
     },
     "1.7": {
@@ -1659,6 +1659,14 @@
       "id": "D58",
       "question": "Servo motor draw and stall (tasks 1.2, 1.3): draw rises with load from idleMilliamps to stallMilliamps at holdingTorqueNmm, and the arm stalls at holdingTorqueNmm \u00d7 volts \u00f7 ratedVolts; the record states neither.",
       "recommendation": "Accept both for v1; the Level 4 spec line and the behaviour-rules sub-draft (brief Section 15, item 4) confirm them with a robotics teacher.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D59",
+      "question": "D54 wording correction (review R-1.3): in the v1 runtime a signal level drives a motor driver channel forward only (0 to 1 maps onto 0 to full forward); reversing from a signal is not modelled.",
+      "recommendation": "Accept forward-only for v1; the Level 3 design decides whether a signal can reverse a channel.",
       "confidence": "medium",
       "blocks": [],
       "resolved": false
