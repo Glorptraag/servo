@@ -179,7 +179,8 @@ export const FIXTURES: Readonly<Record<string, FixtureSpec>> = {
     expect: { faults: [], refused: { from: { part: 'battery', port: 'plus' }, to: { part: 'driver', port: 'in-a' }, code: 'wire.type_mismatch' } },
   },
   'broken-loose-caster': {
-    description: 'Level 1: the caster lies behind the robot, not fixed to the chassis, so the chassis drags on the floor.',
+    description:
+      'Level 1: the caster lies behind the robot, fixed to nothing, so the chassis rests on its rear edge and drags; the loose caster’s own fault stands for the chassis’s balance, as a motor driver stands for its motors, so it is the one fault (R-2.6 Q2).',
     blueprint: 'broken-loose-caster',
     inputs: [],
     ticks: 90,

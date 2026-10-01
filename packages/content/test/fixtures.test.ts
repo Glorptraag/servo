@@ -839,7 +839,7 @@ describe('each broken fixture’s named fault reproduces, and fixing the build c
     expect(judge(blueprint)).toEqual([]);
   });
 
-  it('broken-loose-caster: the caster is fixed to nothing, so it holds up no end of the chassis', () => {
+  it('broken-loose-caster: the caster is fixed to nothing, so the chassis rests on its rear edge, and the caster holds the one fault', () => {
     const { blueprint } = fixture('broken-loose-caster');
     expect(linked(blueprint, 'caster', 'mount', 'mount')).toBe(false);
     expect(placeParts(blueprint, catalogue).get('caster')?.by).toBe('root');
@@ -847,6 +847,8 @@ describe('each broken fixture’s named fault reproduces, and fixing the build c
     if (!robot) throw new Error('No robot.');
     expect(robot.contacts.map((contact) => contact.id)).toEqual(['wheel-left', 'wheel-right']);
     expect(upright(robot)).toBe(false);
+    // Grounded, as broken-chassis-on-the-floor is; the fixture's description gives that to the caster's own `loose`.
+    expect(landingOf(blueprint, robot).rests).toBe(true);
     expect(judge(blueprint)).toEqual(['caster: loose']);
     const fixed = edited(blueprint, {
       add: [['caster.mount', 'chassis.caster']],
