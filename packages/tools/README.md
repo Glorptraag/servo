@@ -6,16 +6,17 @@ Developer tools and the tests that need the whole system. Dev-only: nothing at r
 
 | Area | Folder | Task | Entry | What |
 | --- | --- | --- | --- | --- |
-| Content validator | `src/validate-content/` | 0.5 | `pnpm validate-content <path>` | Checks part records, kits, arenas and challenges, one file or a folder, against the schema's validators and the terminology and banned-words lists in `packages/content/terminology/` (a missing list counts as empty). Readable messages; a non-zero exit on any issue |
-| Placeholder art | `src/placeholder-art/` | 0.6 | a generator over part records | One SVG tile per part from `identity.colours` and `body.size`: true proportions, a consistent three-quarter view, no faces. Written to `packages/content/art/generated/` |
-| Swap registry | `src/swap-registry/` | 0.6 | `registry.json` | Maps every asset key to `{ src, isPlaceholder }`. A final render in `packages/content/art/final/` wins over the placeholder, which stays as the fallback. Content's `loadArtRegistry()` reads the result |
+| Content validator | `src/validate-content/` | 0.5 | `pnpm validate-content <path>` | Checks part records, kits, arenas, challenges, blueprints and run records, one file or a folder, against the schema's validators and the terminology and banned-words lists. Readable messages; a non-zero exit on any issue ([README](src/validate-content/README.md)) |
+| Placeholder art | `src/placeholder-art/` | 0.6 | `pnpm art` | One SVG tile per part from `identity.colours` and `body.size`: true proportions, one three-quarter view, no faces. Written to `packages/content/art/generated/` ([README](src/placeholder-art/README.md)) |
+| Swap registry | `src/swap-registry/` | 0.6 | `registry.json` | Every art key to `{ src, isPlaceholder }`, `src` relative to the registry's folder. A final render in `packages/content/art/final/` wins over the placeholder. Content's `loadArtRegistry()` reads it; a key it lacks gives `undefined` there, and the canvas draws a neutral tile |
 | Golden runs | `src/golden-runs/` | 1.7 | a CI check, and `--accept` | Records a reference run per fixture blueprint in `packages/sim-core/golden/` and fails CI with a readable per-tick diff when a run changes. `--accept` regenerates, for intended solver changes, with an orchestrator note |
 | Canvas e2e harness | `src/e2e/` | 3.8 | Vitest browser mode | Touch and pointer emulation, screenshot diffs, an iPad-class performance profile, and the parity check that touch, pointer and list view give byte-identical blueprints. Under 10 minutes in CI |
 | Release | `src/release/` | 6.3 | a tagged commit | The web build, a versioned content bundle shown in Settings, and tester invite codes. Deploying waits for a host (D10) |
 
 ## Tests here
 
-- Behaviour tests against the real content records live here, because only tools may import both content and sim-core. sim-core's own tests use `@servo/schema/fixtures`.
+- Behaviour tests against the real content records and `@servo/content/fixtures` live here, as ruled; sim-core's own tests use `@servo/schema/fixtures`, so they do not move when content does.
+- `test/content-loader.test.ts` holds content's loader to these tools: it reads real `pnpm art` output, and it must give the same verdicts as the content validator on the same trees and on `packages/content` itself.
 - `test/lint-rules.test.ts` lints sample files through the real ESLint config and proves each rule fires (task 0.1). Extend it whenever a rule changes.
 
 ## Running

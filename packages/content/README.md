@@ -1,48 +1,43 @@
 # @servo/content
 
-Servo's content as data: part records, kits, arena presets, challenges, terminology lists, fixture blueprints and art. One JSON record per file, named by its id. It depends only on `@servo/schema`, so adding a part is adding a file here and its fixtures, never code (ground rule 1). Content workers own the records (Phases 2 and 4); task 0.4 owns the loaders in [src/index.ts](src/index.ts).
+Servo's content as data: part records, kits, arena presets, challenges, terminology lists, fixture blueprints and art. One JSON record per file, named by its id. It depends only on `@servo/schema` (and on Vite at build time), so adding a part is adding a file here and its fixtures, never code (ground rule 1). Content workers own the records (Phases 2 and 4); task 0.4 owns the loaders in [src/index.ts](src/index.ts) and [src/fixtures.ts](src/fixtures.ts).
 
 ```ts
-import { loadContent, loadCatalogue } from '@servo/content';
-const catalogue = loadCatalogue(); // parts, arenas and kits by id, for validateBlueprint, sim-core and the canvas
+import { loadContent } from '@servo/content';
+const { content, issues } = loadContent(); // content.catalogue: parts, arenas and kits by id
+import { loadBlueprintFixtures } from '@servo/content/fixtures'; // tests only, never in the app bundle
 ```
 
 ## Layout
 
-| Folder | Holds | Checked by | Task |
-| --- | --- | --- | --- |
-| `parts/level-1/`, `parts/level-2/` | `PartRecord` | `validatePartRecord` | 2.1, 2.2 |
-| `arenas/` | `ArenaPreset` | `validateArenaPreset` | 2.4 |
-| `kits/` | `Kit` | `validateKit` | 2.3 |
-| `challenges/level-1/`, `challenges/level-2/` | `Challenge` | `validateChallenge` | 4.7, 4.8 |
-| `terminology/` | The terminology and banned-words lists | the tools CLI; the format is task 0.5's and 2.5's | 2.5 |
-| `fixtures/blueprints/` | Working and broken blueprints, each in a wrapper naming its fault | `validateBlueprint` | 2.6 |
-| `art/generated/` | Placeholder SVGs and `registry.json`, written by tools | tools | 0.6 |
-| `art/final/` | Final renders as they are dropped in (D6) | tools | later |
-
-Later levels add `parts/level-3/` and so on; the loaders already read every level folder. Task 2.6 adds a `./fixtures` export for the fixture blueprints, so the app bundle never carries them.
+| Folder | Holds | Task |
+| --- | --- | --- |
+| `parts/level-1/`, `parts/level-2/` | Part records | 2.1, 2.2 |
+| `arenas/` | Arena presets | 2.4 |
+| `kits/` | Kits | 2.3 |
+| `challenges/level-1/`, `challenges/level-2/` | Challenges | 4.7, 4.8 |
+| `terminology/` | `components.json` and `banned.json`, in the content validator's format | 2.5 |
+| `fixtures/blueprints/` | Bare blueprints for tests, each named in `FIXTURE_NOTES` (src/fixtures.ts) with what a Run of it shows | 2.6 |
+| `art/final/` | Final renders, dropped in by hand (D6) | later |
+| `art/generated/` | Placeholders and `registry.json` from `pnpm art`; gitignored | 0.6 |
 
 ## Loaders
 
-| Function | Returns |
-| --- | --- |
-| `loadContent()` | `ContentResult`: every record validated, or every issue with its `file`. Never throws |
-| `loadCatalogue()` | The schema's `Catalogue` of parts, arenas and kits (`makeCatalogue`) |
-| `loadParts()`, `loadArenas()`, `loadKits()`, `loadChallenges()` | The records, each list in id order |
-| `loadTerminology()` | `{ id, data }` per file in `terminology/`, as authored |
-| `loadArtRegistry()` | Asset key → `{ src, isPlaceholder }`, with `src` a URL the browser can load |
+`contentFrom(files)` is the pure core and `loadContent()` feeds it this package's files once, through Vite's eager `import.meta.glob`. It runs in the app build and under Vitest, not under plain Node.
 
-- Records are validated with the schema's validators in dependency order: parts and arenas, then kits against them, then challenges against all three. A file whose name differs from its record's id, or a second file with the same id, is an issue too.
-- Content loads once and is cached. The single loaders throw a `ContentError` (with `issues`) when anything fails, because content ships as one validated bundle.
-- The loaders read the folders with Vite's eager `import.meta.glob` (typed by `vite/client`), so they run in the app build and in every Vitest test, but not under plain Node. The tools CLI reads files from disk instead.
-
-## Validation
-
-Content has no validator of its own. Records are checked with the schema's validators in three places: `loadContent()` over the whole tree; `pnpm validate-content <path>` (tools, task 0.5) over any file or folder, which also checks terminology, banned words and the folder layout; and CI on every push.
+- **The same verdicts as the content validator** (task 0.5). A file's kind comes from its nearest record folder (`parts/`, `arenas/`, `kits/`, `challenges/`, `blueprints/`, `run-records/`), at any depth, or else from the fields only one kind has. Parts and arenas are checked alone, kits against them, challenges against all three, with the schema's validators. When records of one kind share an id, the first in the validator's walk order is kept and the others are `content.duplicate_id`. A test in packages/tools runs both over the same trees and over this package, and fails on any difference.
+- **Never throws, never locks out.** `loadContent()` returns `{ content, issues }`. A record with issues is left out and the rest load, so a defect breaks only builds that use that record. Each issue names its file. CI fails on any issue (test/loaders.test.ts).
+- **Not checked here.** Terminology, banned words and glosses are checked only when content is authored, by `pnpm validate-content`. The loader passes the terminology files through as `{ id, data }`.
+- **Left to others.** The loader skips `art/` (pictures go through the registry), `fixtures/`, `test/` and `terminology/`.
+- `loadCatalogue()`, `loadParts()`, `loadArenas()`, `loadKits()`, `loadChallenges()`, `loadTerminology()` and `loadArtRegistry()` return pieces of the same load.
 
 ## The art registry
 
-`art/generated/registry.json` maps each asset key (`part/dc-motor`) to `{ src, isPlaceholder }`, with `src` relative to `art/`. Tools writes it (task 0.6): a final render in `art/final/` wins over the generated placeholder for the same key. The loader turns each `src` into a bundled URL. The app builds the canvas's `resolveArt` from it, so the canvas never imports content. Agents never generate final art (ground rule 12).
+`pnpm art` (task 0.6) writes `art/generated/registry.json`: every art key to `{ src, isPlaceholder }`, with `src` relative to `art/generated/` (`part/led.svg`, or `../final/part/led.png` once a final render is dropped in). `loadArtRegistry()` turns each `src` into a bundled URL. Final renders may be avif, jpeg, jpg, png, svg or webp, in any case. A key the registry lacks gives `undefined`, and the canvas draws a neutral tile; before `pnpm art` has run, every key does. An entry whose picture is missing is an issue, and its key is left out. A test in packages/tools runs the real generator and reads its output.
+
+## Fixtures
+
+`@servo/content/fixtures` exports `loadBlueprintFixtures()`, `fixturesFrom()` and `FIXTURE_NOTES`. Each fixture is a bare blueprint, so the content validator checks it as one, and its note says what a Run of it shows: it works, it has one named fault, or it is the build before an impossible drop that is refused with a named code. A file without a note, or a note without a file, is an issue.
 
 ## Voice
 

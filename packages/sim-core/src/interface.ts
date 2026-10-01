@@ -40,7 +40,10 @@ export interface SimulationOptions {
   readonly arena: ArenaPreset;
   /** Unsigned 32-bit, recorded in the run record. The run's only source of chance. */
   readonly seed: number;
-  /** The brain's program slot (Level 3). Omitted, every brain is the v1 no-op: it runs no rules and drives no outputs. */
+  /**
+   * The brain's program slot (Level 3). Omitted, every brain is the v1 no-op: it runs no rules and drives no
+   * outputs, so a servo motor on a brain's output gets no signal (D41).
+   */
   readonly program?: ProgramRuntime;
 }
 
@@ -81,10 +84,11 @@ export interface Simulation {
   /**
    * A child's control during the Run: flipping a manual switch. It is recorded as a RunInput with the current
    * tick and takes effect in the next step. Returns false, and records nothing, when the part has no manual
-   * switch or the switch is already that way. A switch the child opens is control, never a fault.
+   * switch or the switch is already that way. Faults follow the schema's rule (packages/schema/docs/parts.md):
+   * what a flip leaves unmet is behaviour, while a short it closes is a fault for as long as it lasts.
    */
   input(control: ControlInput): boolean;
-  /** The whole state at the current tick: solvers, physics world, chance, inputs and the events so far. */
+  /** The whole state at the current tick: solvers, physics world, chance, program states, inputs and the events so far. */
   snapshot(): SimSnapshot;
   /**
    * Returns to exactly the state `snapshot` holds, and that tick's frame. The app snapshots at tick 0 and
@@ -166,32 +170,46 @@ export interface RunRecordContext {
   readonly goal?: { readonly met: boolean; readonly tick?: number };
   /** Hint steps used since the previous Run. */
   readonly hints: readonly HintUse[];
-  /** The previous Run of the same challenge, or of the same blueprint in the sandbox. Gives `fixed`: each of its faults this Run did not show, with the build changes since. */
+  /**
+   * The previous Run of the same challenge, or of the same blueprint in the sandbox. Gives `fixed`: each of its
+   * faults this Run did not show, with the build changes since that touch the faulted part, its ports or its wires (D31).
+   */
   readonly previous?: RunRecord;
   /** 'drop' records a summary without `events`. Default 'keep'. */
   readonly events?: 'keep' | 'drop';
 }
 
 /**
- * The brain's program slot: the block-rule interface Level 3 fills (task 1.6 documents it; the rule
- * vocabulary is Level 3's). Each tick, for each part with a `program` primitive whose supply is at or above
- * its `onVolts`, the loop calls `run` after the electrical solver and before the mechanical solver. A runtime
- * must be a pure function of its BrainTick, or runs stop replaying exactly.
+ * The brain's program slot: the block-rule interface Level 3 fills (task 1.6 documents it; the rule vocabulary is
+ * Level 3's). Each tick, for each part with a `program` primitive whose supply is at or above its `onVolts`, the
+ * loop calls `run` after the electrical solver and before the mechanical solver. A brain's variables and timers
+ * live in its ProgramState, which the loop holds between ticks and keeps in snapshots, so a Run replays and
+ * restores exactly. `run` must be pure: the same tick and state always give the same step.
  */
 export interface ProgramRuntime {
-  run(brain: BrainTick): BrainOutputs;
+  /** A brain's state as a Run starts. */
+  start(brain: BrainInfo): ProgramState;
+  run(tick: BrainTick, state: ProgramState): BrainStep;
 }
 
-export interface BrainTick {
-  readonly tick: number;
+/** Plain JSON, so a snapshot can hold it and equal states give equal bytes. */
+export type ProgramState = null | boolean | number | string | readonly ProgramState[] | { readonly [key: string]: ProgramState };
+
+export interface BrainInfo {
   readonly partId: PlacedPartId;
   /** The part's `program` primitive. */
   readonly primitive: PrimitiveId;
+}
+
+export interface BrainTick extends BrainInfo {
+  readonly tick: number;
   /** The level, 0–1, on each of the primitive's inputs, as sampled at the end of the previous tick. An input nothing drives is absent. */
   readonly inputs: Readonly<Record<PortId, number>>;
 }
 
-export interface BrainOutputs {
+export interface BrainStep {
   /** The level, 0–1, to drive on each of the primitive's outputs this tick. An output left out carries no signal. */
   readonly outputs: Readonly<Record<PortId, number>>;
+  /** The state for the next tick. */
+  readonly state: ProgramState;
 }

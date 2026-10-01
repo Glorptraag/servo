@@ -3,7 +3,7 @@
 The simulation engine. It turns a blueprint into a wired graph and steps it tick by tick through the electrical, program and mechanical solvers, giving RunEvents, live values and a run record. It is pure and deterministic (ground rule 2) and depends only on `@servo/schema` and Rapier's deterministic build ([docs/stack.md](../../docs/stack.md)). Phase 1 owns it: graph 1.1, electrical 1.2, behaviour 1.3, mechanical 1.4, loop and recorder 1.5, program slot 1.6. Task 0.4 owns this interface, typed in [src/interface.ts](src/interface.ts).
 
 ```ts
-import { createSimulation } from '@servo/sim-core'; // the app and tools (src/index.ts, task 1.5)
+import { createSimulation } from '@servo/sim-core'; // the app and tools; a stub that rejects until task 1.5
 import type { RunFrame } from '@servo/sim-core/interface'; // the canvas: this file only, types only
 ```
 
@@ -16,9 +16,9 @@ import type { RunFrame } from '@servo/sim-core/interface'; // the canvas: this f
 | `RunFrame` | `{ tick, events, live, flows }`: one tick, for the app and for `canvas.applyRunFrame` |
 | `LiveState`, `WireFlow` | One subject's state now (`values`, `motion`, `sounds`, `faults`); what flows along one wire |
 | `ControlInput`, `SimSnapshot`, `RunRecordContext` | A switch flip; the opaque whole state; what only the app knows about a Run |
-| `ProgramRuntime`, `BrainTick`, `BrainOutputs` | The brain's program slot (task 1.6, Level 3) |
+| `ProgramRuntime`, `ProgramState`, `BrainTick`, `BrainStep` | The brain's program slot (task 1.6, Level 3) |
 
-The catalogue is the schema's `makeCatalogue` result, passed in: sim-core never imports content. `arena` is the preset record that `blueprint.arena.preset` names, and the child's props come from `blueprint.arena.props`.
+`@servo/sim-core` re-exports every type. The catalogue is the schema's `makeCatalogue` result, passed in: sim-core never imports content. `arena` is the preset record that `blueprint.arena.preset` names, and the child's props come from `blueprint.arena.props`.
 
 ## In brief
 
@@ -26,11 +26,10 @@ The catalogue is the schema's `makeCatalogue` result, passed in: sim-core never 
 - **Tick 0** is the starting state, before any time passes: its frame has every part's values and every body's pose, so the wires light before anything moves.
 - **Events** are the schema's `RunEvent`: `value` and `sound` per placed part, `fault` when one of the part's own failure modes starts or ends, and `motion` per body (the robot's root part, a loose part or a prop `arena:<propId>`). Parts on the robot ride with it, placed by `placeParts`.
 - **Live values.** `frame.live` is the fold of every event so far, so the spec card can join a Run at any tick. `frame.flows` gives each wire's flow for the canvas's dots and is not recorded.
-- **Faults** follow the schema's `wiredNeeds` and its `explainedBy` rule; sim-core judges the voltage ways (`low`, `high`, `reversed`) and the rest from the simulation. Control never makes a fault.
+- **Faults** are the schema's rule, by reference: `wiredNeeds(blueprint, catalogue, state)` with the controls' state (`controlsOf`), and `explainByControls` for the voltage ways, to which sim-core adds the short step and the feeder step itself (N10). Details: [docs/runs.md](docs/runs.md#faults).
 - **Inputs.** `input()` records a switch flip at the current tick, effective from the next step, so a run record replays exactly.
-- **Stop.** The app snapshots at tick 0 and restores on Stop (ground rule 4). Nothing is ever written back to the blueprint.
-
-Detail: [docs/runs.md](docs/runs.md).
+- **Stop.** The app snapshots at tick 0 and restores on Stop, keeping the Simulation and its seed while the build is unchanged (D37). Nothing is ever written back to the blueprint (ground rule 4).
+- **The program slot** holds each brain's state as plain JSON, kept in snapshots. The v1 brain drives nothing (D41).
 
 ## Rules every sim-core task keeps
 
@@ -43,4 +42,4 @@ Detail: [docs/runs.md](docs/runs.md).
 
 ## Tests
 
-sim-core's own tests use `@servo/schema/fixtures`. Behaviour tests against the real content records live in packages/tools, which may import everything. Golden runs (task 1.7) live in `golden/`.
+sim-core's own tests use `@servo/schema/fixtures`, so they do not move when content does. Behaviour tests against the real content records and `@servo/content/fixtures` live in packages/tools, beside the golden-run harness (task 1.7), whose references live in `golden/`.
