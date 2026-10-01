@@ -1,0 +1,65 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case schema/motor-off-pin
+seed 2026
+ticks 30
+inputs none
+blueprint dbf4b61f0bc39e3d
+arena open-floor 297edbfc7ad9a93c
+part battery-pack-2-cell 4f06898988ddc4d3
+part dc-motor 860878b9ebd9b2f6
+part microcontroller 3a6a9384d36797a6
+part servo-motor 5d68db52aaa87fc7
+record 9a094ee6277a2a3e9b01a43f187fad018f678b46476e4dabcf51c0e7db63eb92
+fault brain low-voltage first-tick=2
+fault servo low-voltage first-tick=2
+subjects battery brain motor servo
+tick 0 d0eb0985
+  battery volts=2.949 milliamps=127.9 charge=1 x=180 y=600 heading=0
+  brain volts=2.949 milliamps=119.5 x=300 y=600 heading=0
+  motor volts=0.45 milliamps=90 rpm=0 x=420 y=660 heading=0
+  servo volts=2.949 milliamps=8.4 angle=90 x=420 y=540 heading=0
+tick 1 37517e5f
+tick 2 e1278ec8
+  brain faults=low-voltage
+  servo faults=low-voltage
+tick 3 d78274e2
+  battery charge=0.9999
+tick 4 fdc1b369
+tick 5 db0053db
+tick 6 69bcccf6
+tick 7 6975bf3b
+  battery charge=0.9998
+tick 8 e09fcddc
+tick 9 8f6be730
+tick 10 02f5b312
+  battery charge=0.9997
+tick 11 23b3b46d
+tick 12 ee1f12f8
+tick 13 6ef7512a
+  battery volts=2.948 charge=0.9996
+  brain volts=2.948
+  servo volts=2.948
+tick 14 fb33c5cb
+tick 15 741094ff
+tick 16 9a6725ff
+tick 17 b4bab17e
+  battery charge=0.9995
+tick 18 100a5cd0
+tick 19 326c1372
+tick 20 3e831704
+  battery charge=0.9994
+tick 21 09ced874
+tick 22 e938bc49
+tick 23 2c7d25ce
+  battery charge=0.9993
+tick 24 ce38deb6
+tick 25 3d64ee1f
+tick 26 d8c12969
+tick 27 d32e7cea
+  battery charge=0.9992
+tick 28 fbd25c93
+tick 29 7ce07f6f
+tick 30 ce3c942d
+  battery charge=0.9991

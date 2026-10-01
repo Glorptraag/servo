@@ -1,0 +1,414 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/broken-chassis-on-the-floor
+seed 1
+ticks 90
+inputs none
+blueprint 1679721ff123134c
+arena open-floor 297edbfc7ad9a93c
+part battery-pack-2-cell ac49444ad3a2e166
+part chassis 2b67875c3e879e19
+part dc-motor e80cd3eae3017bf6
+part gearbox 36f60677ea150571
+part switch 0a304ca511260dde
+part wheel-large c182e441f60c54e3
+record 224d33a54f5018a94f8ff51b55300daa7fd8910fce2b91fc992845739934cd33
+fault chassis scraping first-tick=2
+subjects battery chassis gear-left gear-right motor-left motor-right switch wheel-left wheel-right
+tick 0 6d8772c6
+  battery volts=2.586 milliamps=1034.5 charge=1
+  chassis x=300 y=600 heading=0 pitch=7.83 roll=0
+  gear-left rpm=28.7
+  gear-right rpm=28.7
+  motor-left volts=2.586 milliamps=517.2 rpm=86.2 sound.motor=0.431
+  motor-right volts=2.586 milliamps=517.2 rpm=86.2 sound.motor=0.431
+  switch volts=0 milliamps=1034.5 closed=true
+  wheel-left rpm=28.7
+  wheel-right rpm=28.7
+tick 1 29e9108f
+  chassis x=301.5
+tick 2 76814323
+  battery volts=2.717 milliamps=706.7 charge=0.9998
+  chassis x=303.8 faults=scraping
+  gear-left rpm=18.7
+  gear-right rpm=18.7
+  motor-left volts=2.717 milliamps=353.4 rpm=56 sound.motor=0.28
+  motor-right volts=2.717 milliamps=353.4 rpm=56 sound.motor=0.28
+  switch milliamps=706.7
+  wheel-left rpm=18.7
+  wheel-right rpm=18.7
+tick 3 13ba2323
+  battery volts=2.764 milliamps=589.5 charge=0.9996
+  chassis x=306.3
+  gear-left rpm=21.5
+  gear-right rpm=21.5
+  motor-left volts=2.764 milliamps=294.8 rpm=64.6 sound.motor=0.323
+  motor-right volts=2.764 milliamps=294.8 rpm=64.6 sound.motor=0.323
+  switch milliamps=589.5
+  wheel-left rpm=21.5
+  wheel-right rpm=21.5
+tick 4 335dd108
+  battery volts=2.777 milliamps=556.1 charge=0.9995
+  chassis x=308.8
+  gear-left rpm=22.2
+  gear-right rpm=22.2
+  motor-left volts=2.777 milliamps=278 rpm=66.7 sound.motor=0.333
+  motor-right volts=2.777 milliamps=278 rpm=66.7 sound.motor=0.333
+  switch milliamps=556.1
+  wheel-left rpm=22.2
+  wheel-right rpm=22.2
+tick 5 ede6a11d
+  battery volts=2.781 milliamps=546.7 charge=0.9993
+  chassis x=311.3
+  gear-left rpm=22.4
+  gear-right rpm=22.4
+  motor-left volts=2.781 milliamps=273.3 rpm=67.3 sound.motor=0.336
+  motor-right volts=2.781 milliamps=273.3 rpm=67.3 sound.motor=0.336
+  switch milliamps=546.7
+  wheel-left rpm=22.4
+  wheel-right rpm=22.4
+tick 6 609835dd
+  battery volts=2.782 milliamps=544 charge=0.9992
+  chassis x=313.9
+  gear-left rpm=22.5
+  gear-right rpm=22.5
+  motor-left volts=2.782 milliamps=272 rpm=67.4 sound.motor=0.337
+  motor-right volts=2.782 milliamps=272 rpm=67.4 sound.motor=0.337
+  switch milliamps=544
+  wheel-left rpm=22.5
+  wheel-right rpm=22.5
+tick 7 b1655dad
+  battery milliamps=543.3 charge=0.9991
+  chassis x=316.5
+  motor-left milliamps=271.6 rpm=67.5
+  motor-right milliamps=271.6 rpm=67.5
+  switch milliamps=543.3
+tick 8 5900eff3
+  battery milliamps=543.1 charge=0.999
+  chassis x=319
+  motor-left milliamps=271.5
+  motor-right milliamps=271.5
+  switch milliamps=543.1
+tick 9 67703f36
+  battery milliamps=543 charge=0.9988
+  chassis x=321.6
+  switch milliamps=543
+tick 10 f7e68ba1
+  battery charge=0.9987
+  chassis x=324.1
+tick 11 fe279002
+  battery volts=2.781 charge=0.9986
+  chassis x=326.7
+  motor-left volts=2.781
+  motor-right volts=2.781
+tick 12 d3fa7bc4
+  battery milliamps=542.9 charge=0.9985
+  chassis x=329.2
+  switch milliamps=542.9
+tick 13 6ec598b6
+  battery charge=0.9983
+  chassis x=331.8
+  motor-left milliamps=271.4
+  motor-right milliamps=271.4
+tick 14 426db16a
+  battery milliamps=542.8 charge=0.9982
+  chassis x=334.3
+  switch milliamps=542.8
+tick 15 33a16f96
+  battery charge=0.9981
+  chassis x=336.9
+tick 16 e2574033
+  battery milliamps=542.7 charge=0.9979
+  chassis x=339.4
+  switch milliamps=542.7
+tick 17 56059aa7
+  battery milliamps=542.8 charge=0.9978
+  chassis x=342
+  motor-left rpm=67.4
+  motor-right rpm=67.4
+  switch milliamps=542.8
+tick 18 6a716e30
+  battery charge=0.9977
+  chassis x=344.5
+tick 19 e0d89077
+  battery volts=2.78 milliamps=542.7 charge=0.9976
+  chassis x=347.1
+  motor-left volts=2.78
+  motor-right volts=2.78
+  switch milliamps=542.7
+tick 20 b998b886
+  battery milliamps=542.8 charge=0.9974
+  chassis x=349.6
+  switch milliamps=542.8
+tick 21 030242b8
+  battery charge=0.9973
+  chassis x=352.2
+tick 22 94501275
+  battery charge=0.9972
+  chassis x=354.7
+tick 23 974cd658
+  battery charge=0.9971
+  chassis x=357.3
+tick 24 08a9c1b3
+  battery charge=0.9969
+  chassis x=359.8
+tick 25 509d400e
+  battery charge=0.9968
+  chassis x=362.4
+tick 26 d05eb1c9
+  battery charge=0.9967
+  chassis x=364.9
+tick 27 39bbfea1
+  battery volts=2.779 charge=0.9966
+  chassis x=367.5
+  motor-left volts=2.779
+  motor-right volts=2.779
+tick 28 b5a29456
+  battery charge=0.9964
+  chassis x=370
+tick 29 5a74382f
+  battery charge=0.9963
+  chassis x=372.6
+tick 30 a5b7701e
+  battery charge=0.9962
+  chassis x=375.1
+tick 31 d70ff317
+  battery charge=0.9961
+  chassis x=377.7
+tick 32 2c832f51
+  battery milliamps=542.7 charge=0.9959
+  chassis x=380.2
+  switch milliamps=542.7
+tick 33 4acdc7f6
+  battery milliamps=542.8 charge=0.9958
+  chassis x=382.8
+  switch milliamps=542.8
+tick 34 900d5607
+  battery charge=0.9957
+  chassis x=385.3
+tick 35 f824efaa
+  battery volts=2.778 milliamps=542.7 charge=0.9956
+  chassis x=387.8
+  motor-left volts=2.778
+  motor-right volts=2.778
+  switch milliamps=542.7
+tick 36 3bcba9a6
+  battery milliamps=542.8 charge=0.9954
+  chassis x=390.4
+  switch milliamps=542.8
+tick 37 8f2712f0
+  battery charge=0.9953
+  chassis x=392.9
+tick 38 3e4a8a8d
+  battery milliamps=542.7 charge=0.9952
+  chassis x=395.5
+  switch milliamps=542.7
+tick 39 1b37c6f8
+  battery milliamps=542.8 charge=0.9951
+  chassis x=398
+  switch milliamps=542.8
+tick 40 e7bb305f
+  battery charge=0.9949
+  chassis x=400.6
+tick 41 15f2bf51
+  battery milliamps=542.7 charge=0.9948
+  chassis x=403.1
+  switch milliamps=542.7
+tick 42 e217a1e4
+  battery milliamps=542.8 charge=0.9947
+  chassis x=405.7
+  gear-left rpm=22.4
+  gear-right rpm=22.4
+  motor-left rpm=67.3
+  motor-right rpm=67.3
+  switch milliamps=542.8
+  wheel-left rpm=22.4
+  wheel-right rpm=22.4
+tick 43 2b626bf3
+  battery volts=2.777 charge=0.9946
+  chassis x=408.2
+  motor-left volts=2.777
+  motor-right volts=2.777
+tick 44 741af93c
+  battery milliamps=542.7 charge=0.9944
+  chassis x=410.8
+  switch milliamps=542.7
+tick 45 fa09d39d
+  battery milliamps=542.8 charge=0.9943
+  chassis x=413.3
+  switch milliamps=542.8
+tick 46 85767ab3
+  battery charge=0.9942
+  chassis x=415.9
+tick 47 a3fde915
+  battery milliamps=542.7 charge=0.9941
+  chassis x=418.4
+  switch milliamps=542.7
+tick 48 d793149d
+  battery milliamps=542.8 charge=0.9939
+  chassis x=421
+  switch milliamps=542.8
+tick 49 17931a18
+  battery charge=0.9938
+  chassis x=423.5
+tick 50 e4458448
+  battery milliamps=542.7 charge=0.9937
+  chassis x=426.1
+  switch milliamps=542.7
+tick 51 839ce82f
+  battery volts=2.776 milliamps=542.8 charge=0.9936
+  chassis x=428.6
+  motor-left volts=2.776
+  motor-right volts=2.776
+  switch milliamps=542.8
+tick 52 f4467829
+  battery charge=0.9934
+  chassis x=431.1
+tick 53 9219ed5b
+  battery milliamps=542.7 charge=0.9933
+  chassis x=433.7
+  switch milliamps=542.7
+tick 54 0eb2a1b7
+  battery milliamps=542.8 charge=0.9932
+  chassis x=436.2
+  motor-left sound.motor=0.336
+  motor-right sound.motor=0.336
+  switch milliamps=542.8
+tick 55 96bc29c4
+  battery charge=0.993
+  chassis x=438.8
+tick 56 3892db97
+  battery milliamps=542.7 charge=0.9929
+  chassis x=441.3
+  switch milliamps=542.7
+tick 57 17baf987
+  battery milliamps=542.8 charge=0.9928
+  chassis x=443.9
+  switch milliamps=542.8
+tick 58 9576e58a
+  battery charge=0.9927
+  chassis x=446.4
+tick 59 2147b452
+  battery volts=2.775 charge=0.9925
+  chassis x=449
+  motor-left volts=2.775
+  motor-right volts=2.775
+tick 60 42704a2f
+  battery charge=0.9924
+  chassis x=451.5
+tick 61 d62f8a5b
+  battery charge=0.9923
+  chassis x=454
+tick 62 eca48c9d
+  battery charge=0.9922
+  chassis x=456.6
+tick 63 20d41e92
+  battery charge=0.992
+  chassis x=459.1
+tick 64 95891f4c
+  battery charge=0.9919
+  chassis x=461.7
+tick 65 6be570e5
+  battery charge=0.9918
+  chassis x=464.2
+tick 66 bd697b91
+  battery charge=0.9917
+  chassis x=466.8
+  motor-left rpm=67.2
+  motor-right rpm=67.2
+tick 67 0d13f9b8
+  battery volts=2.774 charge=0.9915
+  chassis x=469.3
+  motor-left volts=2.774
+  motor-right volts=2.774
+tick 68 6bb5c806
+  battery charge=0.9914
+  chassis x=471.8
+tick 69 f9be7c5c
+  battery milliamps=542.7 charge=0.9913
+  chassis x=474.4
+  switch milliamps=542.7
+tick 70 359db000
+  battery milliamps=542.8 charge=0.9912
+  chassis x=476.9
+  switch milliamps=542.8
+tick 71 8d23a518
+  battery charge=0.991
+  chassis x=479.5
+tick 72 7cd6c388
+  battery milliamps=542.7 charge=0.9909
+  chassis x=482
+  switch milliamps=542.7
+tick 73 c76d4958
+  battery milliamps=542.8 charge=0.9908
+  chassis x=484.6
+  switch milliamps=542.8
+tick 74 51ff8f55
+  battery charge=0.9907
+  chassis x=487.1
+tick 75 cda5c853
+  battery volts=2.773 milliamps=542.7 charge=0.9905
+  chassis x=489.6
+  motor-left volts=2.773
+  motor-right volts=2.773
+  switch milliamps=542.7
+tick 76 6f24b3d2
+  battery milliamps=542.8 charge=0.9904
+  chassis x=492.2
+  switch milliamps=542.8
+tick 77 6609d95f
+  battery charge=0.9903
+  chassis x=494.7
+tick 78 a52834db
+  battery milliamps=542.7 charge=0.9902
+  chassis x=497.3
+  switch milliamps=542.7
+tick 79 37665080
+  battery milliamps=542.8 charge=0.99
+  chassis x=499.8
+  switch milliamps=542.8
+tick 80 49bc4c53
+  battery charge=0.9899
+  chassis x=502.3
+tick 81 62adc52c
+  battery milliamps=542.7 charge=0.9898
+  chassis x=504.9
+  switch milliamps=542.7
+tick 82 4189d7d0
+  battery milliamps=542.9 charge=0.9897
+  chassis x=507.4
+  switch milliamps=542.9
+tick 83 70707fb9
+  battery volts=2.772 charge=0.9895
+  chassis x=510
+  motor-left volts=2.772 milliamps=271.5
+  motor-right volts=2.772 milliamps=271.5
+tick 84 8b99b10f
+  battery charge=0.9894
+  chassis x=512.5
+  motor-left milliamps=271.4
+  motor-right milliamps=271.4
+tick 85 237a6b67
+  battery milliamps=542.8 charge=0.9893
+  chassis x=515
+  switch milliamps=542.8
+tick 86 efc3332d
+  battery charge=0.9892
+  chassis x=517.6
+tick 87 bdd0ed02
+  battery milliamps=542.7 charge=0.989
+  chassis x=520.1
+  switch milliamps=542.7
+tick 88 3b561000
+  battery charge=0.9889
+  chassis x=522.7
+  motor-left milliamps=271.3
+  motor-right milliamps=271.3
+tick 89 a718bc29
+  battery charge=0.9888
+  chassis x=525.2
+tick 90 4bd0fe2a
+  battery milliamps=542.6 charge=0.9887
+  chassis x=527.7
+  switch milliamps=542.6

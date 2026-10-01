@@ -1,0 +1,1165 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/kit-circuit-crew
+seed 1
+ticks 360
+inputs none
+blueprint edecfc69ac5dad92
+arena wall-stop 1d8d0f6a65d48689
+part battery-pack-2-cell ac49444ad3a2e166
+part bumper-switch 07e8a283c2f64a5b
+part buzzer d100587ca3edbd2e
+part caster 85cad363c9f68e25
+part chassis 2b67875c3e879e19
+part dc-motor e80cd3eae3017bf6
+part led f79a09a51f13bec4
+part motor-driver 7bba5ed414f432a1
+part switch 0a304ca511260dde
+part wheel-large c182e441f60c54e3
+record 3daf8f7c4e8bf8f8f1f7c51e0acafbba598eeaadd9e07fd2efcf8febd4826d04
+faults none
+subjects battery bumper buzzer caster chassis driver led motor-left motor-right switch wheel-left wheel-right
+tick 0 183e2ed0
+  battery volts=2.616 milliamps=960.8 charge=1
+  bumper volts=0 milliamps=960.8 closed=true
+  buzzer volts=2.616 milliamps=24.2 sound.buzz=0.808@2300hz
+  chassis x=300 y=600 heading=0 pitch=0 roll=0
+  driver volts=2.616 milliamps=926.4
+  led volts=2.616 milliamps=10.2 light=0.68
+  motor-left volts=2.311 milliamps=462.2 rpm=77 sound.motor=0.385
+  motor-right volts=2.311 milliamps=462.2 rpm=77 sound.motor=0.385
+  switch volts=0 milliamps=960.8 closed=true
+  wheel-left rpm=77
+  wheel-right rpm=77
+tick 1 2abb676c
+  chassis x=301.7 heading=360
+tick 2 1c831d47
+  battery volts=2.629 milliamps=927.7 charge=0.9998
+  bumper milliamps=927.7
+  buzzer volts=2.629 milliamps=24.4 sound.buzz=0.814@2300hz
+  chassis x=305.6 heading=359.99
+  driver volts=2.629 milliamps=892.9
+  led volts=2.629 milliamps=10.4 light=0.691
+  motor-left volts=2.324 milliamps=445 rpm=23.7 sound.motor=0.119
+  motor-right volts=2.324 milliamps=445.9 rpm=23.6 sound.motor=0.118
+  switch milliamps=927.7
+  wheel-left rpm=23.7
+  wheel-right rpm=23.6
+tick 3 d1cc680d
+  battery volts=2.695 milliamps=762 charge=0.9996
+  bumper milliamps=762
+  buzzer volts=2.695 milliamps=25.4 sound.buzz=0.847@2300hz
+  chassis x=310.9 heading=359.98
+  driver volts=2.695 milliamps=725.4
+  led volts=2.695 milliamps=11.2 light=0.746
+  motor-left volts=2.391 milliamps=361.1 rpm=41.8 sound.motor=0.209
+  motor-right volts=2.391 milliamps=362.4 rpm=41.5 sound.motor=0.208
+  switch milliamps=762
+  wheel-left rpm=41.8
+  wheel-right rpm=41.5
+tick 4 c49badb7
+  battery volts=2.743 milliamps=640.4 charge=0.9994
+  bumper milliamps=640.4
+  buzzer volts=2.743 milliamps=26.1 sound.buzz=0.872@2300hz
+  chassis x=317.4 heading=359.97
+  driver volts=2.743 milliamps=602.4
+  led volts=2.743 milliamps=11.8 light=0.786
+  motor-left volts=2.44 milliamps=299.5 rpm=53.1 sound.motor=0.265
+  motor-right volts=2.44 milliamps=300.9 rpm=52.8 sound.motor=0.264
+  switch milliamps=640.4
+  wheel-left rpm=53.1
+  wheel-right rpm=52.8
+tick 5 eeb773fd
+  battery volts=2.779 milliamps=551.1 charge=0.9992
+  bumper milliamps=551.1
+  buzzer volts=2.779 milliamps=26.7 sound.buzz=0.889@2300hz
+  chassis x=324.7 heading=359.96
+  driver volts=2.779 milliamps=512.2
+  led volts=2.779 milliamps=12.2 light=0.816
+  motor-left volts=2.476 milliamps=254.4 rpm=61.3 sound.motor=0.307
+  motor-right volts=2.476 milliamps=255.7 rpm=61.1 sound.motor=0.306
+  switch milliamps=551.1
+  wheel-left rpm=61.3
+  wheel-right rpm=61.1
+tick 6 07ecb458
+  battery volts=2.805 milliamps=485.5 charge=0.9991
+  bumper milliamps=485.5
+  buzzer volts=2.805 milliamps=27.1 sound.buzz=0.902@2300hz
+  chassis x=332.6 heading=359.95
+  driver volts=2.805 milliamps=445.8
+  led volts=2.805 milliamps=12.6 light=0.837
+  motor-left volts=2.503 milliamps=221.3 rpm=67.4 sound.motor=0.337
+  motor-right volts=2.503 milliamps=222.5 rpm=67.2 sound.motor=0.336
+  switch milliamps=485.5
+  wheel-left rpm=67.4
+  wheel-right rpm=67.2
+tick 7 67b20f86
+  battery volts=2.824 milliamps=437.3 charge=0.999
+  bumper milliamps=437.3
+  buzzer volts=2.824 milliamps=27.4 sound.buzz=0.912@2300hz
+  chassis x=340.9
+  driver volts=2.824 milliamps=397.1
+  led volts=2.824 milliamps=12.8 light=0.853
+  motor-left volts=2.522 milliamps=197 rpm=71.9 sound.motor=0.359
+  motor-right volts=2.522 milliamps=198.1 rpm=71.7 sound.motor=0.359
+  switch milliamps=437.3
+  wheel-left rpm=71.9
+  wheel-right rpm=71.7
+tick 8 969720d6
+  battery volts=2.838 milliamps=401.9 charge=0.9989
+  bumper milliamps=401.9
+  buzzer volts=2.838 milliamps=27.6 sound.buzz=0.919@2300hz
+  chassis x=349.5 heading=359.94
+  driver volts=2.838 milliamps=361.3
+  led volts=2.838 milliamps=13 light=0.865
+  motor-left volts=2.536 milliamps=179.2 rpm=75.1 sound.motor=0.376
+  motor-right volts=2.536 milliamps=180.1 rpm=75 sound.motor=0.375
+  switch milliamps=401.9
+  wheel-left rpm=75.1
+  wheel-right rpm=75
+tick 9 7045b531
+  battery volts=2.848 milliamps=375.9 charge=0.9988
+  bumper milliamps=375.9
+  buzzer volts=2.848 milliamps=27.7 sound.buzz=0.924@2300hz
+  chassis x=358.4
+  driver volts=2.848 milliamps=335.1
+  led volts=2.848 milliamps=13.1 light=0.874
+  motor-left volts=2.547 milliamps=166.2 rpm=77.5 sound.motor=0.388
+  motor-right volts=2.547 milliamps=166.9 rpm=77.4 sound.motor=0.387
+  switch milliamps=375.9
+  wheel-left rpm=77.5
+  wheel-right rpm=77.4
+tick 10 70d80914
+  battery volts=2.856 milliamps=356.8 charge=0.9987
+  bumper milliamps=356.8
+  buzzer volts=2.856 milliamps=27.8 sound.buzz=0.928@2300hz
+  chassis x=367.5 heading=359.93
+  driver volts=2.856 milliamps=315.7
+  led volts=2.856 milliamps=13.2 light=0.88
+  motor-left volts=2.554 milliamps=156.6 rpm=79.3 sound.motor=0.397
+  motor-right volts=2.554 milliamps=157.1 rpm=79.2 sound.motor=0.396
+  switch milliamps=356.8
+  wheel-left rpm=79.3
+  wheel-right rpm=79.2
+tick 11 e0b9ef7e
+  battery volts=2.862 milliamps=342.7 charge=0.9986
+  bumper milliamps=342.7
+  buzzer volts=2.862 milliamps=27.9 sound.buzz=0.931@2300hz
+  chassis x=376.7
+  driver volts=2.862 milliamps=301.5
+  led volts=2.862 milliamps=13.3 light=0.885
+  motor-left volts=2.56 milliamps=149.5 rpm=80.6 sound.motor=0.403
+  motor-right volts=2.56 milliamps=150 rpm=80.5 sound.motor=0.403
+  switch milliamps=342.7
+  wheel-left rpm=80.6
+  wheel-right rpm=80.5
+tick 12 36c97065
+  battery volts=2.866 milliamps=332.5
+  bumper milliamps=332.5
+  buzzer volts=2.866 milliamps=28 sound.buzz=0.933@2300hz
+  chassis x=386
+  driver volts=2.866 milliamps=291.2
+  led volts=2.866 light=0.888
+  motor-left volts=2.564 milliamps=144.6 rpm=81.5 sound.motor=0.408
+  motor-right volts=2.564 milliamps=144.6 rpm=81.5 sound.motor=0.408
+  switch milliamps=332.5
+  wheel-left rpm=81.5
+  wheel-right rpm=81.5
+tick 13 d576aa50
+  battery volts=2.869 milliamps=324.9 charge=0.9985
+  bumper milliamps=324.9
+  buzzer volts=2.869 sound.buzz=0.934@2300hz
+  chassis x=395.3
+  driver volts=2.869 milliamps=283.5
+  led volts=2.869 milliamps=13.4 light=0.89
+  motor-left volts=2.567 milliamps=140.8 rpm=82.2 sound.motor=0.411
+  motor-right volts=2.567 milliamps=140.8 rpm=82.2 sound.motor=0.411
+  switch milliamps=324.9
+  wheel-left rpm=82.2
+  wheel-right rpm=82.2
+tick 14 17931ab0
+  battery volts=2.871 milliamps=319.3 charge=0.9984
+  bumper milliamps=319.3
+  buzzer volts=2.871 milliamps=28.1 sound.buzz=0.935@2300hz
+  chassis x=404.7
+  driver volts=2.871 milliamps=277.9
+  led volts=2.871 light=0.892
+  motor-left volts=2.569 milliamps=138 rpm=82.7 sound.motor=0.414
+  motor-right volts=2.569 milliamps=138 rpm=82.7 sound.motor=0.414
+  switch milliamps=319.3
+  wheel-left rpm=82.7
+  wheel-right rpm=82.7
+tick 15 1c626de9
+  battery volts=2.872 milliamps=315.3 charge=0.9983
+  bumper milliamps=315.3
+  buzzer volts=2.872 sound.buzz=0.936@2300hz
+  chassis x=414.2 y=599.9
+  driver volts=2.872 milliamps=273.8
+  led volts=2.872 light=0.894
+  motor-left volts=2.571 milliamps=135.9 rpm=83.1 sound.motor=0.415
+  motor-right volts=2.571 milliamps=135.9 rpm=83.1 sound.motor=0.415
+  switch milliamps=315.3
+  wheel-left rpm=83.1
+  wheel-right rpm=83.1
+tick 16 cb6b2364
+  battery volts=2.873 milliamps=312.3
+  bumper milliamps=312.3
+  buzzer volts=2.873 sound.buzz=0.937@2300hz
+  chassis x=423.6
+  driver volts=2.873 milliamps=270.8
+  led volts=2.873
+  motor-left volts=2.572 milliamps=134.4 rpm=83.4 sound.motor=0.417
+  motor-right volts=2.572 milliamps=134.4 rpm=83.4 sound.motor=0.417
+  switch milliamps=312.3
+  wheel-left rpm=83.4
+  wheel-right rpm=83.4
+tick 17 c8e39b7e
+  battery volts=2.874 milliamps=310.1 charge=0.9982
+  bumper milliamps=310.1
+  buzzer volts=2.874
+  chassis x=433.1
+  driver volts=2.874 milliamps=268.5
+  led volts=2.874 light=0.895
+  motor-left volts=2.573 milliamps=133.3 rpm=83.6 sound.motor=0.418
+  motor-right volts=2.573 milliamps=133.3 rpm=83.6 sound.motor=0.418
+  switch milliamps=310.1
+  wheel-left rpm=83.6
+  wheel-right rpm=83.6
+tick 18 21133cb5
+  battery volts=2.875 milliamps=308.5 charge=0.9981
+  bumper milliamps=308.5
+  buzzer volts=2.875
+  chassis x=442.6
+  driver volts=2.875 milliamps=266.9
+  led volts=2.875 light=0.896
+  motor-left milliamps=132.5 rpm=83.7 sound.motor=0.419
+  motor-right milliamps=132.5 rpm=83.7 sound.motor=0.419
+  switch milliamps=308.5
+  wheel-left rpm=83.7
+  wheel-right rpm=83.7
+tick 19 4828de68
+  battery milliamps=307.3 charge=0.998
+  bumper milliamps=307.3
+  buzzer sound.buzz=0.938@2300hz
+  chassis x=452.1
+  driver milliamps=265.8
+  motor-left volts=2.574 milliamps=131.9 rpm=83.8
+  motor-right volts=2.574 milliamps=131.9 rpm=83.8
+  switch milliamps=307.3
+  wheel-left rpm=83.8
+  wheel-right rpm=83.8
+tick 20 a5a77da8
+  battery milliamps=306.5
+  bumper milliamps=306.5
+  chassis x=461.7
+  driver milliamps=264.9
+  motor-left milliamps=131.4 rpm=83.9 sound.motor=0.42
+  motor-right milliamps=131.4 rpm=83.9 sound.motor=0.42
+  switch milliamps=306.5
+  wheel-left rpm=83.9
+  wheel-right rpm=83.9
+tick 21 a93bf13d
+  battery volts=2.876 milliamps=305.8 charge=0.9979
+  bumper milliamps=305.8
+  buzzer volts=2.876
+  chassis x=471.2
+  driver volts=2.876 milliamps=264.2
+  led volts=2.876
+  motor-left milliamps=131.1 rpm=84
+  motor-right milliamps=131.1 rpm=84
+  switch milliamps=305.8
+  wheel-left rpm=84
+  wheel-right rpm=84
+tick 22 5c4ae3bc
+  battery milliamps=305.4 charge=0.9978
+  bumper milliamps=305.4
+  chassis x=480.7
+  driver milliamps=263.8
+  motor-left milliamps=130.9
+  motor-right milliamps=130.9
+  switch milliamps=305.4
+tick 23 50e1ee22
+  battery milliamps=305
+  bumper milliamps=305
+  chassis x=490.3
+  driver milliamps=263.4
+  motor-left milliamps=130.7
+  motor-right milliamps=130.7
+  switch milliamps=305
+tick 24 38fa19da
+  battery milliamps=304.8 charge=0.9977
+  bumper milliamps=304.8
+  chassis x=499.8 y=599.8
+  driver milliamps=263.2
+  motor-left milliamps=130.6 rpm=84.1
+  motor-right milliamps=130.6 rpm=84.1
+  switch milliamps=304.8
+  wheel-left rpm=84.1
+  wheel-right rpm=84.1
+tick 25 adc0d95b
+  battery milliamps=304.6 charge=0.9976
+  bumper milliamps=304.6
+  chassis x=509.3
+  driver milliamps=263
+  motor-left milliamps=130.5
+  motor-right milliamps=130.5
+  switch milliamps=304.6
+tick 26 15ed534e
+  battery milliamps=304.4 charge=0.9975
+  bumper milliamps=304.4
+  chassis x=518.9
+  driver milliamps=262.8
+  motor-left milliamps=130.4
+  motor-right milliamps=130.4
+  switch milliamps=304.4
+tick 27 75333058
+  battery milliamps=304.3
+  bumper milliamps=304.3
+  chassis x=528.4
+  switch milliamps=304.3
+tick 28 bcaa337f
+  battery charge=0.9974
+  chassis x=538
+  driver milliamps=262.7
+tick 29 bcf2fbf2
+  battery charge=0.9973
+  chassis x=547.5
+tick 30 d25b4f3f
+  chassis x=557
+  motor-left milliamps=130.3
+  motor-right milliamps=130.3
+tick 31 8c7ec26f
+  battery volts=2.875 milliamps=304.2 charge=0.9972
+  bumper milliamps=304.2
+  buzzer volts=2.875
+  chassis x=566.6
+  driver volts=2.875
+  led volts=2.875
+  switch milliamps=304.2
+tick 32 6747ccf8
+  battery charge=0.9971
+  chassis x=576.1
+  driver milliamps=262.6
+tick 33 c4172e9c
+  chassis x=585.6 y=599.7
+tick 34 35b6d50e
+  battery charge=0.997
+  chassis x=595.2
+tick 35 88049ac8
+  battery milliamps=304.1 charge=0.9969
+  bumper milliamps=304.1
+  chassis x=604.7
+  switch milliamps=304.1
+tick 36 14a3b01a
+  battery charge=0.9968
+  chassis x=614.3
+  driver milliamps=262.5
+tick 37 46ef84af
+  chassis x=623.8
+tick 38 29d5253a
+  battery charge=0.9967
+  chassis x=633.3
+  motor-left milliamps=130.2
+  motor-right milliamps=130.2
+tick 39 f6497694
+  battery milliamps=304 charge=0.9966
+  bumper milliamps=304
+  chassis x=642.9
+  switch milliamps=304
+tick 40 5aae8955
+  buzzer sound.buzz=0.937@2300hz
+  chassis x=652.4
+  driver milliamps=262.4
+tick 41 327e8dab
+  battery charge=0.9965
+  chassis x=662
+tick 42 79a5f1ef
+  battery charge=0.9964
+  chassis x=671.5
+tick 43 7417420f
+  battery milliamps=303.9 charge=0.9963
+  bumper milliamps=303.9
+  chassis x=681 y=599.6
+  motor-left volts=2.573
+  motor-right volts=2.573
+  switch milliamps=303.9
+tick 44 e2fa0283
+  chassis x=690.6
+tick 45 3851b45c
+  battery charge=0.9962
+  chassis x=700.1
+  driver milliamps=262.3
+tick 46 940c8650
+  battery charge=0.9961
+  chassis x=709.7
+  led light=0.895
+tick 47 790f7e7e
+  battery milliamps=303.8
+  bumper milliamps=303.8
+  chassis x=719.2
+  motor-left milliamps=130.1
+  motor-right milliamps=130.1
+  switch milliamps=303.8
+tick 48 7ea7452a
+  battery volts=2.874 charge=0.996
+  buzzer volts=2.874
+  chassis x=728.7
+  driver volts=2.874
+  led volts=2.874
+tick 49 3090dc1a
+  battery charge=0.9959
+  chassis x=738.3
+  driver milliamps=262.2
+tick 50 dc1f4f73
+  chassis x=747.8
+tick 51 9fa3ac08
+  battery milliamps=303.7 charge=0.9958
+  bumper milliamps=303.7
+  chassis x=757.4
+  switch milliamps=303.7
+tick 52 c18e343d
+  battery charge=0.9957
+  chassis x=766.9 y=599.5
+tick 53 59f4c1ec
+  battery charge=0.9956
+  chassis x=776.4
+  driver milliamps=262.1
+tick 54 452b330c
+  chassis x=786
+tick 55 40886a4c
+  battery milliamps=303.6 charge=0.9955
+  bumper milliamps=303.6
+  chassis x=795.5
+  motor-left milliamps=130
+  motor-right milliamps=130
+  switch milliamps=303.6
+tick 56 d0aa8cff
+  battery charge=0.9954
+  chassis x=805
+tick 57 bd804ee1
+  chassis x=814.6
+  driver milliamps=262
+tick 58 dede47f3
+  battery milliamps=303.5 charge=0.9953
+  bumper milliamps=303.5
+  chassis x=824.1
+  switch milliamps=303.5
+tick 59 c80ca8c4
+  battery charge=0.9952
+  chassis x=833.7
+tick 60 1dbedf7d
+  chassis x=843.2
+  motor-left volts=2.572
+  motor-right volts=2.572
+tick 61 e8e2fa41
+  battery milliamps=303.6 charge=0.9951
+  bumper milliamps=303.6
+  chassis x=852.7 y=599.4
+  switch milliamps=303.6
+tick 62 54b03b26
+  battery milliamps=303.5 charge=0.995
+  bumper milliamps=303.5
+  chassis x=862.3
+  switch milliamps=303.5
+tick 63 fe37e415
+  battery charge=0.9949
+  chassis x=871.8
+tick 64 8931e749
+  battery volts=2.873
+  buzzer volts=2.873
+  chassis x=881.4
+  driver volts=2.873
+  led volts=2.873
+tick 65 33086361
+  battery charge=0.9948
+  chassis x=890.9
+  led light=0.894
+tick 66 83eb3704
+  battery charge=0.9947
+  chassis x=900.4
+tick 67 7a2852a9
+  chassis x=910
+tick 68 9589f988
+  battery charge=0.9946
+  chassis x=919.5
+tick 69 55fff3e8
+  battery charge=0.9945
+  chassis x=929
+tick 70 4f39d697
+  chassis x=938.6
+tick 71 96490bb1
+  battery charge=0.9944
+  buzzer sound.buzz=0.936@2300hz
+  chassis x=948.1 y=599.3
+tick 72 88a80b1e
+  battery charge=0.9943
+  chassis x=957.6
+  motor-left rpm=84
+  motor-right rpm=84
+  wheel-left rpm=84
+  wheel-right rpm=84
+tick 73 3a408d5f
+  battery charge=0.9942
+  chassis x=967.2
+tick 74 6477eb4c
+  chassis x=976.7
+  motor-left volts=2.571
+  motor-right volts=2.571
+tick 75 24ffe215
+  battery charge=0.9941
+  chassis x=986.2
+tick 76 c472c703
+  battery charge=0.994
+  chassis x=995.8
+tick 77 b08b9f4a
+  chassis x=1005.3
+tick 78 b39387f6
+  battery volts=2.872 charge=0.9939
+  buzzer volts=2.872
+  chassis x=1014.9
+  driver volts=2.872
+  led volts=2.872
+tick 79 abdc506d
+  battery charge=0.9938
+  chassis x=1024.4
+tick 80 123d8db5
+  battery charge=0.9937
+  chassis x=1033.9 y=599.2
+tick 81 19231d05
+  chassis x=1043.4
+tick 82 e4fdf066
+  battery charge=0.9936
+  chassis x=1053
+tick 83 2a1d950e
+  battery milliamps=303.4 charge=0.9935
+  bumper milliamps=303.4
+  chassis x=1062.5
+  led light=0.893
+  switch milliamps=303.4
+tick 84 39d66159
+  chassis x=1072
+  driver milliamps=261.9
+tick 85 2a184e5b
+  battery charge=0.9934
+  chassis x=1081.6
+tick 86 2e4a01e3
+  battery charge=0.9933
+  chassis x=1091.1
+  motor-left milliamps=129.9
+  motor-right milliamps=129.9
+tick 87 cd386c4f
+  battery milliamps=303.3
+  bumper milliamps=303.3
+  chassis x=1100.6
+  switch milliamps=303.3
+tick 88 7ea43fde
+  battery charge=0.9932
+  chassis x=1110.2
+  driver milliamps=261.8
+tick 89 84e0c95e
+  battery charge=0.9931
+  chassis x=1119.7 y=599.1
+tick 90 3c400245
+  battery charge=0.993
+  chassis x=1129.2
+  motor-left volts=2.57
+  motor-right volts=2.57
+tick 91 b0b255eb
+  battery milliamps=303.2
+  bumper milliamps=303.2
+  chassis x=1138.8
+  switch milliamps=303.2
+tick 92 35c3c104
+  battery charge=0.9929
+  chassis x=1148.3
+  driver milliamps=261.7
+tick 93 c12a37e9
+  battery charge=0.9928
+  chassis x=1157.8
+tick 94 01cfe7b8
+  chassis x=1167.4
+  motor-left milliamps=129.8
+  motor-right milliamps=129.8
+tick 95 f0872cbd
+  battery volts=2.871 milliamps=303.1 charge=0.9927
+  bumper milliamps=303.1
+  buzzer volts=2.871
+  chassis x=1176.9
+  driver volts=2.871
+  led volts=2.871
+  switch milliamps=303.1
+tick 96 02911679
+  battery charge=0.9926
+  chassis x=1186.4
+  driver milliamps=261.6
+tick 97 3a66602e
+  chassis x=1196
+tick 98 ec6f788f
+  battery charge=0.9925
+  chassis x=1205.5
+tick 99 dd2cae88
+  battery milliamps=303 charge=0.9924
+  bumper milliamps=303
+  chassis x=1215 y=599
+  switch milliamps=303
+tick 100 77be79bb
+  battery charge=0.9923
+  chassis x=1224.6
+  driver milliamps=261.5
+tick 101 b0e12637
+  chassis x=1234.1
+tick 102 5d072262
+  battery charge=0.9922
+  chassis x=1243.6
+  motor-left milliamps=129.7
+  motor-right milliamps=129.7
+tick 103 2d6051c7
+  battery milliamps=302.9 charge=0.9921
+  bumper milliamps=302.9
+  buzzer sound.buzz=0.935@2300hz
+  chassis x=1253.2
+  led light=0.892
+  switch milliamps=302.9
+tick 104 7618f384
+  chassis x=1262.7
+  driver milliamps=261.4
+tick 105 b1de78a2
+  battery charge=0.992
+  chassis x=1272.2
+tick 106 b65dfb3a
+  battery milliamps=302.8 charge=0.9919
+  bumper milliamps=302.8
+  chassis x=1281.8
+  motor-left volts=2.569
+  motor-right volts=2.569
+  switch milliamps=302.8
+tick 107 90c1ab67
+  chassis x=1291.3
+tick 108 d32e7a61
+  battery milliamps=303 charge=0.9918
+  bumper milliamps=303
+  chassis x=1300.8 y=598.9
+  driver milliamps=261.5
+  motor-left milliamps=129.8
+  motor-right milliamps=129.8
+  switch milliamps=303
+tick 109 38bb2dba
+  battery milliamps=302.9 charge=0.9917
+  bumper milliamps=302.9
+  chassis x=1310.4
+  switch milliamps=302.9
+tick 110 4fb3f628
+  battery volts=2.87 charge=0.9916
+  buzzer volts=2.87
+  chassis x=1319.9
+  driver volts=2.87
+  led volts=2.87
+  motor-left milliamps=129.7
+  motor-right milliamps=129.7
+tick 111 560def04
+  chassis x=1329.4
+tick 112 b0fc541f
+  battery charge=0.9915
+  chassis x=1339
+  driver milliamps=261.4
+tick 113 e07ffa52
+  battery milliamps=302.8 charge=0.9914
+  bumper milliamps=302.8
+  chassis x=1348.5
+  switch milliamps=302.8
+tick 114 a2bda9ba
+  chassis x=1358
+tick 115 29b49de9
+  battery milliamps=303 charge=0.9913
+  bumper milliamps=303
+  chassis x=1367.6
+  driver milliamps=261.5
+  motor-left milliamps=129.8
+  motor-right milliamps=129.8
+  switch milliamps=303
+tick 116 e1802875
+  battery milliamps=302.9 charge=0.9912
+  bumper milliamps=302.9
+  chassis x=1377.1
+  switch milliamps=302.9
+tick 117 873c8ba9
+  buzzer milliamps=28
+  chassis x=1386.6 y=598.8
+  motor-left milliamps=129.7
+  motor-right milliamps=129.7
+tick 118 7678a261
+  battery charge=0.9911
+  chassis x=1396.1
+tick 119 56f6dfd7
+  battery charge=0.991
+  chassis x=1405.7
+  driver milliamps=261.4
+tick 120 e1d9e970
+  battery milliamps=302.8 charge=0.9909
+  bumper milliamps=302.8
+  chassis x=1415.2
+  switch milliamps=302.8
+tick 121 2d98719e
+  chassis x=1424.7
+  led light=0.891
+  motor-left volts=2.568
+  motor-right volts=2.568
+tick 122 21835157
+  battery charge=0.9908
+  chassis x=1434.3
+tick 123 0ccecd12
+  battery milliamps=302.9 charge=0.9907
+  bumper milliamps=302.9
+  chassis x=1443.8
+  driver milliamps=261.5
+  motor-left milliamps=129.8
+  motor-right milliamps=129.8
+  switch milliamps=302.9
+tick 124 42e7f73e
+  battery volts=2.869
+  buzzer volts=2.869
+  chassis x=1453.3
+  driver volts=2.869
+  led volts=2.869
+tick 125 6688dbdc
+  battery charge=0.9906
+  chassis x=1462.8
+  motor-left milliamps=129.7
+  motor-right milliamps=129.7
+tick 126 d9744d2c
+  battery charge=0.9905
+  chassis x=1472.4
+tick 127 e509c03f
+  battery milliamps=302.8
+  bumper milliamps=302.8
+  chassis x=1481.9 y=598.7
+  driver milliamps=261.4
+  switch milliamps=302.8
+tick 128 815e18f3
+  battery charge=0.9904
+  chassis x=1491.4
+tick 129 a95fa725
+  battery charge=0.9903
+  chassis x=1500.9
+tick 130 e9536f6f
+  battery milliamps=302.9 charge=0.9902
+  bumper milliamps=302.9
+  chassis x=1510.5
+  driver milliamps=261.5
+  motor-left milliamps=129.8
+  motor-right milliamps=129.8
+  switch milliamps=302.9
+tick 131 719936f4
+  chassis x=1520
+tick 132 835fbfb1
+  battery charge=0.9901
+  buzzer sound.buzz=0.934@2300hz
+  chassis x=1529.5
+  motor-left milliamps=129.7
+  motor-right milliamps=129.7
+tick 133 a33b08e3
+  battery charge=0.99
+  chassis x=1539.1
+tick 134 c5c0bc6d
+  battery milliamps=302.8
+  bumper milliamps=302.8
+  chassis x=1548.6
+  driver milliamps=261.4
+  switch milliamps=302.8
+tick 135 862fccb4
+  battery charge=0.9899
+  chassis x=1558.1
+  motor-left volts=2.567
+  motor-right volts=2.567
+tick 136 c78d3367
+  battery charge=0.9898
+  chassis x=1567.6 y=598.6
+tick 137 c52b1989
+  battery charge=0.9897
+  chassis x=1577.2
+tick 138 17dac2f2
+  battery milliamps=302.9
+  bumper milliamps=302.9
+  chassis x=1586.7
+  driver milliamps=261.5
+  led light=0.89
+  motor-left milliamps=129.8 rpm=83.9
+  motor-right milliamps=129.8 rpm=83.9
+  switch milliamps=302.9
+  wheel-left rpm=83.9
+  wheel-right rpm=83.9
+tick 139 31ff0b0d
+  battery volts=2.868 charge=0.9896
+  buzzer volts=2.868
+  chassis x=1596.2
+  driver volts=2.868
+  led volts=2.868
+tick 140 8a10a509
+  battery charge=0.9895
+  chassis x=1605.7
+  motor-left milliamps=129.7
+  motor-right milliamps=129.7
+tick 141 7ff1881d
+  battery milliamps=302.8
+  bumper milliamps=302.8
+  chassis x=1615.2
+  switch milliamps=302.8
+tick 142 95e30ef6
+  battery charge=0.9894
+  chassis x=1624.8
+  driver milliamps=261.4
+tick 143 2dcc4ce9
+  battery charge=0.9893
+  chassis x=1634.3
+tick 144 b3763289
+  chassis x=1643.8
+tick 145 5634657b
+  battery milliamps=302.9 charge=0.9892
+  bumper milliamps=302.9
+  chassis x=1653.3 y=598.5
+  driver milliamps=261.5
+  motor-left milliamps=129.8
+  motor-right milliamps=129.8
+  switch milliamps=302.9
+tick 146 358241d1
+  battery charge=0.9891
+  chassis x=1662.9
+  led milliamps=13.3
+tick 147 904b38c7
+  battery charge=0.989
+  chassis x=1672.4
+  motor-left milliamps=129.7
+  motor-right milliamps=129.7
+tick 148 6d99c5cb
+  battery milliamps=302.8
+  bumper milliamps=302.8
+  chassis x=1681.9
+  switch milliamps=302.8
+tick 149 5601759e
+  battery charge=0.9889
+  chassis x=1691.4
+  driver milliamps=261.4
+  motor-left volts=2.566
+  motor-right volts=2.566
+tick 150 9c549f82
+  battery charge=0.9888
+  chassis x=1700.9
+tick 151 f14cacf6
+  chassis x=1710.5
+tick 152 eb792e3a
+  battery milliamps=302.7 charge=0.9887
+  bumper milliamps=302.7
+  chassis x=1720
+  switch milliamps=302.7
+tick 153 1aaade6c
+  battery volts=2.867 milliamps=302.9 charge=0.9886
+  bumper milliamps=302.9
+  buzzer volts=2.867
+  chassis x=1729.5
+  driver volts=2.867 milliamps=261.5
+  led volts=2.867
+  motor-left milliamps=129.8
+  motor-right milliamps=129.8
+  switch milliamps=302.9
+tick 154 ee595fc8
+  chassis x=1739
+tick 155 e7d65d9e
+  battery milliamps=302.8 charge=0.9885
+  bumper milliamps=302.8
+  chassis x=1748.5 y=598.4
+  led light=0.889
+  motor-left milliamps=129.7
+  motor-right milliamps=129.7
+  switch milliamps=302.8
+tick 156 34a5180f
+  battery charge=0.9884
+  chassis x=1758.1
+tick 157 9c29730d
+  battery charge=0.9883
+  chassis x=1767.6
+  driver milliamps=261.4
+tick 158 6620c17a
+  chassis x=1777.1
+tick 159 084a8c9a
+  battery milliamps=302.7 charge=0.9882
+  bumper milliamps=302.7
+  chassis x=1786.6
+  switch milliamps=302.7
+tick 160 9031369b
+  battery milliamps=302.9 charge=0.9881
+  bumper milliamps=302.9
+  buzzer sound.buzz=0.933@2300hz
+  chassis x=1796.1
+  driver milliamps=261.5
+  motor-left milliamps=129.8 sound.motor=0.419
+  motor-right milliamps=129.8 sound.motor=0.419
+  switch milliamps=302.9
+tick 161 f51d44c2
+  chassis x=1805.7
+tick 162 98c45e30
+  battery milliamps=302.8 charge=0.988
+  bumper milliamps=302.8
+  chassis x=1815.2
+  motor-left milliamps=129.7
+  motor-right milliamps=129.7
+  switch milliamps=302.8
+tick 163 ffb8244d
+  battery charge=0.9879
+  chassis x=1824.7
+tick 164 9d1552d1
+  chassis x=1834.2 y=598.3
+  driver milliamps=261.4
+  motor-left volts=2.565
+  motor-right volts=2.565
+tick 165 559d8131
+  battery charge=0.9878
+  chassis x=1843.7
+tick 166 d54e456b
+  battery milliamps=302.7 charge=0.9877
+  bumper milliamps=302.7
+  chassis x=1853.2
+  switch milliamps=302.7
+tick 167 9e472723
+  battery charge=0.9876
+  chassis x=1862.8
+tick 168 01ddeef2
+  battery volts=2.866 milliamps=302.8
+  bumper milliamps=302.8
+  buzzer volts=2.866
+  chassis x=1870 heading=360 sound.knock=0.714
+  driver volts=2.866 milliamps=261.5
+  led volts=2.866
+  motor-left milliamps=129.8
+  motor-right milliamps=129.8
+  switch milliamps=302.8
+tick 169 6ae5f4ae
+  battery volts=2.988 milliamps=0 charge=0.9875
+  bumper volts=2.988 milliamps=0 closed=false
+  buzzer volts=0 milliamps=0 sound.buzz=none
+  chassis y=598.2 heading=0.05 sound.knock=none
+  driver volts=0 milliamps=0
+  led volts=0 milliamps=0 light=0
+  motor-left volts=0 milliamps=0 rpm=0 sound.motor=none
+  motor-right volts=-0.392 milliamps=0 rpm=0 sound.motor=none
+  switch milliamps=0
+  wheel-left rpm=0
+  wheel-right rpm=0
+tick 170 14609709
+  chassis heading=0.06
+  motor-left volts=0.585
+  motor-right volts=-0.593
+tick 171 6444efb1
+  motor-left volts=0
+  motor-right volts=0
+tick 172 c5e664fd
+  battery volts=2.605 milliamps=956.3
+  bumper volts=0 milliamps=956.3 closed=true
+  buzzer volts=2.605 milliamps=24.1 sound.buzz=0.802@2300hz
+  chassis y=598.3 heading=0 sound.knock=0.1
+  driver volts=2.605 milliamps=922.2
+  led volts=2.605 milliamps=10.1 light=0.671
+  motor-left volts=2.3 milliamps=460.1 rpm=76.7 sound.motor=0.383
+  motor-right volts=2.3 milliamps=460.1 rpm=76.7 sound.motor=0.383
+  switch milliamps=956.3
+  wheel-left rpm=76.7
+  wheel-right rpm=76.7
+tick 173 292ca327
+  battery volts=2.987 milliamps=0 charge=0.9873
+  bumper volts=2.987 milliamps=0 closed=false
+  buzzer volts=0 milliamps=0 sound.buzz=none
+  chassis sound.knock=none
+  driver volts=0 milliamps=0
+  led volts=0 milliamps=0 light=0
+  motor-left volts=0 milliamps=0 rpm=0 sound.motor=none
+  motor-right volts=0 milliamps=0 rpm=0 sound.motor=none
+  switch milliamps=0
+  wheel-left rpm=0
+  wheel-right rpm=0
+tick 174 37517e5f
+tick 175 37517e5f
+tick 176 37517e5f
+tick 177 37517e5f
+tick 178 37517e5f
+tick 179 37517e5f
+tick 180 37517e5f
+tick 181 37517e5f
+tick 182 37517e5f
+tick 183 37517e5f
+tick 184 37517e5f
+tick 185 37517e5f
+tick 186 37517e5f
+tick 187 37517e5f
+tick 188 37517e5f
+tick 189 37517e5f
+tick 190 37517e5f
+tick 191 37517e5f
+tick 192 37517e5f
+tick 193 37517e5f
+tick 194 37517e5f
+tick 195 37517e5f
+tick 196 37517e5f
+tick 197 37517e5f
+tick 198 37517e5f
+tick 199 37517e5f
+tick 200 37517e5f
+tick 201 37517e5f
+tick 202 37517e5f
+tick 203 37517e5f
+tick 204 37517e5f
+tick 205 37517e5f
+tick 206 37517e5f
+tick 207 37517e5f
+tick 208 37517e5f
+tick 209 37517e5f
+tick 210 37517e5f
+tick 211 37517e5f
+tick 212 37517e5f
+tick 213 37517e5f
+tick 214 37517e5f
+tick 215 37517e5f
+tick 216 37517e5f
+tick 217 37517e5f
+tick 218 37517e5f
+tick 219 37517e5f
+tick 220 37517e5f
+tick 221 37517e5f
+tick 222 37517e5f
+tick 223 37517e5f
+tick 224 37517e5f
+tick 225 37517e5f
+tick 226 37517e5f
+tick 227 37517e5f
+tick 228 37517e5f
+tick 229 37517e5f
+tick 230 37517e5f
+tick 231 37517e5f
+tick 232 37517e5f
+tick 233 37517e5f
+tick 234 37517e5f
+tick 235 37517e5f
+tick 236 37517e5f
+tick 237 37517e5f
+tick 238 37517e5f
+tick 239 37517e5f
+tick 240 37517e5f
+tick 241 37517e5f
+tick 242 37517e5f
+tick 243 37517e5f
+tick 244 37517e5f
+tick 245 37517e5f
+tick 246 37517e5f
+tick 247 37517e5f
+tick 248 37517e5f
+tick 249 37517e5f
+tick 250 37517e5f
+tick 251 37517e5f
+tick 252 37517e5f
+tick 253 37517e5f
+tick 254 37517e5f
+tick 255 37517e5f
+tick 256 37517e5f
+tick 257 37517e5f
+tick 258 37517e5f
+tick 259 37517e5f
+tick 260 37517e5f
+tick 261 37517e5f
+tick 262 37517e5f
+tick 263 37517e5f
+tick 264 37517e5f
+tick 265 37517e5f
+tick 266 37517e5f
+tick 267 37517e5f
+tick 268 37517e5f
+tick 269 37517e5f
+tick 270 37517e5f
+tick 271 37517e5f
+tick 272 37517e5f
+tick 273 37517e5f
+tick 274 37517e5f
+tick 275 37517e5f
+tick 276 37517e5f
+tick 277 37517e5f
+tick 278 37517e5f
+tick 279 37517e5f
+tick 280 37517e5f
+tick 281 37517e5f
+tick 282 37517e5f
+tick 283 37517e5f
+tick 284 37517e5f
+tick 285 37517e5f
+tick 286 37517e5f
+tick 287 37517e5f
+tick 288 37517e5f
+tick 289 37517e5f
+tick 290 37517e5f
+tick 291 37517e5f
+tick 292 37517e5f
+tick 293 37517e5f
+tick 294 37517e5f
+tick 295 37517e5f
+tick 296 37517e5f
+tick 297 37517e5f
+tick 298 37517e5f
+tick 299 37517e5f
+tick 300 37517e5f
+tick 301 37517e5f
+tick 302 37517e5f
+tick 303 37517e5f
+tick 304 37517e5f
+tick 305 37517e5f
+tick 306 37517e5f
+tick 307 37517e5f
+tick 308 37517e5f
+tick 309 37517e5f
+tick 310 37517e5f
+tick 311 37517e5f
+tick 312 37517e5f
+tick 313 37517e5f
+tick 314 37517e5f
+tick 315 37517e5f
+tick 316 37517e5f
+tick 317 37517e5f
+tick 318 37517e5f
+tick 319 37517e5f
+tick 320 37517e5f
+tick 321 37517e5f
+tick 322 37517e5f
+tick 323 37517e5f
+tick 324 37517e5f
+tick 325 37517e5f
+tick 326 37517e5f
+tick 327 37517e5f
+tick 328 37517e5f
+tick 329 37517e5f
+tick 330 37517e5f
+tick 331 37517e5f
+tick 332 37517e5f
+tick 333 37517e5f
+tick 334 37517e5f
+tick 335 37517e5f
+tick 336 37517e5f
+tick 337 37517e5f
+tick 338 37517e5f
+tick 339 37517e5f
+tick 340 37517e5f
+tick 341 37517e5f
+tick 342 37517e5f
+tick 343 37517e5f
+tick 344 37517e5f
+tick 345 37517e5f
+tick 346 37517e5f
+tick 347 37517e5f
+tick 348 37517e5f
+tick 349 37517e5f
+tick 350 37517e5f
+tick 351 37517e5f
+tick 352 37517e5f
+tick 353 37517e5f
+tick 354 37517e5f
+tick 355 37517e5f
+tick 356 37517e5f
+tick 357 37517e5f
+tick 358 37517e5f
+tick 359 37517e5f
+tick 360 37517e5f
