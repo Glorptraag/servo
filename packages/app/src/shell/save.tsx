@@ -2,8 +2,9 @@
 // quiet second after the last edit (autosave.ts), and at once when Run is pressed, when the page is hidden or left (noted
 // in the journal first, autosave.ts), and when the slot goes away. An Undo, which loads the build's earlier form onto the canvas, saves like an edit. Save
 // stores the build at once. One plain line beside the button, never a dialog (ground rule 9), says what the child
-// needs to know: a failed save (until a save succeeds), the outcome of pressing Save, a version another tab saved being
-// kept as a copy, or that this device is not keeping builds at all. A save that went as expected says nothing.
+// needs to know: a failed save (until a save succeeds), the outcome of pressing Save, another version being kept as a
+// copy (another tab's, or one a page left unsaved that the build has moved on from), or that this device is not keeping
+// builds at all. A save that went as expected says nothing.
 import { useEffect, useRef, useState } from 'react';
 import type { Blueprint } from '@servo/schema';
 import { Autosaver } from './autosave.ts';
@@ -13,7 +14,7 @@ import { useShell } from './context.ts';
 export const SAVE_LINES = {
   saved: 'Saved',
   notSaved: 'Not saved',
-  keptCopy: 'Saved, and the other version kept as a copy',
+  keptCopy: 'A copy of the other version was kept',
   notKept: 'Builds are not being kept on this device',
 } as const;
 

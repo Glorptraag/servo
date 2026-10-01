@@ -7,14 +7,16 @@
 //
 // A page that is reloaded or closed is gone before an IndexedDB save it starts can finish, so as the page is hidden or
 // left, the app's autosaver first notes each build still waiting or saving in a journal (localStorage, which writes at
-// once), then saves. A note goes once its build is saved. A note the page left behind is saved by `recoverUnsaved` the
-// next time the app opens, before it opens a build. That journal is the one place a build waits outside the store, and
-// only between an edit and its save.
-import { serializeBlueprint } from '@servo/schema';
+// once): the build, the stored version it was edited from, when it was noted and a hash of its content. Then it saves.
+// A note goes once its build is saved. The next time the app opens, `recover` replays each note the page left behind
+// through the store by the project's rule, the latest wins and both are kept (`replayUnsaved`), before the app opens a
+// build. That journal is the one place a build waits outside the store, and only between an edit and its save.
 import type { Blueprint, BlueprintId, ProfileId, Timestamp } from '@servo/schema';
-import { keptCopyOf } from '../store/blueprints.ts';
+import { contentHashOf, keptCopyOf } from '../store/blueprints.ts';
+import type { UnsavedNote } from '../store/blueprints.ts';
 import { isRecord, isTimestamp } from '../store/context.ts';
 import type { BlueprintSummary, ProfileStore, ServoStore } from '../store/index.ts';
+import { replayForOpening } from '../store/open.ts';
 import { uuidV4 } from '../store/uuid.ts';
 
 /** How long after the last edit a build saves itself, in milliseconds. */
@@ -32,7 +34,10 @@ export type SaveOutcome =
       readonly build: Blueprint;
       /** Save was pressed; otherwise the build saved itself. */
       readonly pressed: boolean;
-      /** The other version, kept as its own blueprint because another tab had saved the build since. */
+      /**
+       * The other version, kept as its own blueprint: another tab's, which had saved the build since; or, replaying the
+       * journal as the app opens, the version a page left unsaved, which the build had moved on from since.
+       */
       readonly keptCopy?: BlueprintSummary;
     }
   | { readonly kind: 'failed'; readonly build: Blueprint; readonly pressed: boolean; readonly error: unknown };
@@ -50,11 +55,9 @@ interface Job {
   readonly pressed: boolean;
 }
 
-/** A journal note: the build, its profile, and the stored version it was edited from. */
-interface Note {
+/** A journal note: the build, its profile, the stored version it was edited from, when it was noted and its hash. */
+interface Note extends UnsavedNote {
   readonly profile: ProfileId;
-  readonly base: Timestamp;
-  readonly build: Blueprint;
 }
 
 const keyOf = (profile: ProfileId, id: BlueprintId): string => `${profile} ${id}`;
@@ -70,6 +73,8 @@ export class Autosaver {
   /** The version this tab last saw stored, per profile and build. */
   private readonly bases = new Map<string, Timestamp>();
   private readonly listeners = new Set<(outcome: SaveOutcome) => void>();
+  /** Outcomes from before anything listened, such as the journal's replay as the app opens, for the first listener. */
+  private backlog: SaveOutcome[] = [];
   private readonly journal: Journal | undefined;
   /** This page's mark on its journal notes, so two pages left at once never write over each other's. */
   private readonly page = uuidV4();
@@ -83,9 +88,12 @@ export class Autosaver {
     this.journal = journal;
   }
 
-  /** Hears each save's outcome. Returns the unsubscribe function. */
+  /** Hears each save's outcome, starting with any from before anything listened. Returns the unsubscribe function. */
   subscribe(listener: (outcome: SaveOutcome) => void): () => void {
     this.listeners.add(listener);
+    const backlog = this.backlog;
+    this.backlog = [];
+    for (const outcome of backlog) listener(outcome);
     return () => {
       this.listeners.delete(listener);
     };
@@ -182,7 +190,13 @@ export class Autosaver {
 
   private note(key: string, job: Job): void {
     if (!this.journal) return;
-    const note: Note = { profile: job.child.profile, base: this.baseOf(key, job.build), build: job.build };
+    const note: Note = {
+      profile: job.child.profile,
+      base: this.baseOf(key, job.build),
+      notedAt: new Date().toISOString(),
+      hash: contentHashOf(job.build),
+      build: job.build,
+    };
     try {
       this.journal.storage.setItem(this.itemOf(key), JSON.stringify(note));
     } catch (error) {
@@ -199,12 +213,46 @@ export class Autosaver {
   }
 
   private emit(outcome: SaveOutcome): void {
+    if (this.listeners.size === 0) this.backlog.push(outcome);
     for (const listener of this.listeners) listener(outcome);
   }
-}
 
-/** The build's bytes but for when it was saved. */
-const contentOf = (build: Blueprint): string => serializeBlueprint({ ...build, meta: { ...build.meta, updatedAt: '' } });
+  /**
+   * Replays each build a page of the app noted in this journal and left before saving it, and forgets the note. The app
+   * runs it as it opens, before it opens a build. Each goes through `replayUnsaved`, by the project's rule: the latest
+   * wins and both are kept. A note already stored, at its build or as a copy kept from it, is only forgotten; a note
+   * edited from the version stored now saves to its build; a note the stored build has moved on from since (another tab
+   * saved it) is kept as a copy, and the line says so (an outcome with `keptCopy`); a note whose build was removed is
+   * kept as a build of its own. A note whose profile is gone goes with the profile (D38). A note that cannot be replayed
+   * now stays for next time. Notes of other databases are left alone.
+   */
+  async recover(store: ServoStore): Promise<void> {
+    if (!this.journal) return;
+    const { storage, scope } = this.journal;
+    const prefix = `${UNSAVED_PREFIX}${scope}:`;
+    const items: string[] = [];
+    for (let index = 0; index < storage.length; index += 1) {
+      const item = storage.key(index);
+      if (item?.startsWith(prefix)) items.push(item);
+    }
+    if (items.length === 0) return;
+    const profiles = new Set((await store.profiles.list()).map((profile) => profile.id));
+    for (const item of items) {
+      const note = noteOf(storage.getItem(item));
+      if (!note || !profiles.has(note.profile)) {
+        storage.removeItem(item);
+        continue;
+      }
+      const replay = await replayForOpening(store, note.profile, note).catch((error: unknown) => {
+        console.warn('A build left unsaved could not be replayed; it stays noted for next time.', error);
+        return undefined;
+      });
+      if (!replay) continue;
+      storage.removeItem(item);
+      if (replay.outcome === 'kept-copy') this.emit({ kind: 'saved', build: note.build, pressed: false, keptCopy: replay.copy });
+    }
+  }
+}
 
 const noteOf = (text: string | null): Note | undefined => {
   try {
@@ -213,44 +261,5 @@ const noteOf = (text: string | null): Note | undefined => {
     return value as unknown as Note;
   } catch {
     return undefined;
-  }
-};
-
-/**
- * Saves each build a page of the app noted in `journal` and left before saving it, and forgets the note. The app runs
- * it as it opens, before it opens a build. Each goes through the store's save, from the version it was edited from, so
- * the conflict rule keeps any other version as a copy; one the same as the stored build is only forgotten. A build that
- * can no longer be saved under its id (removed meanwhile, or stored by a newer version of Servo) is kept as its own
- * build. A note whose profile is gone goes with the profile (D38). A note that cannot be saved now stays for next time.
- */
-export const recoverUnsaved = async (store: ServoStore, journal: Journal): Promise<void> => {
-  const { storage, scope } = journal;
-  const prefix = `${UNSAVED_PREFIX}${scope}:`;
-  const items: string[] = [];
-  for (let index = 0; index < storage.length; index += 1) {
-    const item = storage.key(index);
-    if (item?.startsWith(prefix)) items.push(item);
-  }
-  if (items.length === 0) return;
-  const profiles = new Set((await store.profiles.list()).map((profile) => profile.id));
-  for (const item of items) {
-    const note = noteOf(storage.getItem(item));
-    if (!note || !profiles.has(note.profile)) {
-      storage.removeItem(item);
-      continue;
-    }
-    const child = store.forProfile(note.profile);
-    const stored = await child.blueprints.load(note.build.meta.id).catch(() => undefined);
-    if (stored?.ok && contentOf(stored.blueprint) === contentOf(note.build)) {
-      storage.removeItem(item);
-      continue;
-    }
-    try {
-      await child.blueprints.save({ ...note.build, meta: { ...note.build.meta, updatedAt: note.base } });
-      storage.removeItem(item);
-    } catch {
-      const kept = await child.blueprints.copy(note.build).catch(() => undefined);
-      if (kept?.ok) storage.removeItem(item);
-    }
   }
 };

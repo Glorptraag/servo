@@ -399,8 +399,11 @@ describe('leaving the page', () => {
         if (!frame.contentWindow?.servoTest || nameShown() === null) throw new Error('the page has not mounted yet');
       }, { timeout: 90_000, interval: 50 });
     await ready();
+    const header = (): Element | null | undefined => frame.contentDocument?.querySelector('[data-region="header"]');
     return {
       name: nameShown,
+      status: () => header()?.querySelector('[role="status"]')?.textContent ?? '',
+      save: () => ([...(header()?.querySelectorAll('button') ?? [])].find((button) => button.textContent === 'Save') as HTMLButtonElement).click(),
       rename: (next: string) => frame.contentWindow?.servoTest?.rename(next),
       reload: async () => {
         const loaded = new Promise((resolve) => frame.addEventListener('load', resolve, { once: true }));
@@ -436,6 +439,36 @@ describe('leaving the page', () => {
       reader.close();
     }
     // Every note the pages left has been saved and forgotten.
+    expect(Object.keys(localStorage).filter((item) => item.startsWith(`${UNSAVED_PREFIX}${name}:`))).toEqual([]);
+  }, 300_000);
+
+  it('keeps a newer save from another tab at the id when a page left its edit unsaved, and says a copy was kept', async () => {
+    // The reviewer's sequence: tab A edits and is closed at once; tab B saves later; tab A is opened again.
+    const { store, name, build } = await childWithBuild();
+    store.close();
+    const tabA = await openSavePage(name);
+    const tabB = await openSavePage(name);
+    tabA.rename('A edit, tab closed at once');
+    tabA.close();
+    tabB.rename('B edit, saved later');
+    tabB.save();
+    await vi.waitFor(() => expect([SAVE_LINES.saved, SAVE_LINES.keptCopy]).toContain(tabB.status()), SOON);
+
+    const again = await openSavePage(name);
+    // The newer build opens, at its id, and A's edit is kept as a copy of it, once. Whichever saw the two versions meet,
+    // B's save (when A's had landed as its page went) or A's opening (when it had not), says a copy was kept.
+    await vi.waitFor(() => expect(again.name()).toBe('B edit, saved later'), SOON);
+    expect([again.status(), tabB.status()]).toContain(SAVE_LINES.keptCopy);
+    const reader = await openStore({ name });
+    try {
+      const builds = await reader.forProfile((await reader.profiles.list())[0]?.id ?? '').blueprints.list();
+      expect(builds.map(({ id, name: built, keptFrom }) => ({ id: id === build.meta.id ? 'the build' : 'a copy', built, keptFrom }))).toEqual([
+        { id: 'the build', built: 'B edit, saved later', keptFrom: undefined },
+        { id: 'a copy', built: 'A edit, tab closed at once', keptFrom: build.meta.id },
+      ]);
+    } finally {
+      reader.close();
+    }
     expect(Object.keys(localStorage).filter((item) => item.startsWith(`${UNSAVED_PREFIX}${name}:`))).toEqual([]);
   }, 300_000);
 });

@@ -85,6 +85,31 @@ const justAfter = (time: Timestamp): Timestamp => new Date(Date.parse(time) + 1)
 /** The same build but for when it was saved. */
 const sameBuild = (a: Blueprint, b: Blueprint): boolean => serializeBlueprint(withUpdated(a, b.meta.updatedAt)) === serializeBlueprint(b);
 
+/**
+ * A build's bytes in canonical form but for its id and when it was saved: what versions of a build are compared by, so
+ * a version kept as a copy, under its own id, still matches the build it was.
+ */
+const contentOf = (blueprint: Blueprint): string => serializeBlueprint({ ...blueprint, meta: { ...blueprint.meta, id: '', updatedAt: '' } });
+
+/**
+ * A hash of a build's content: its canonical bytes but for its id and when it was saved (cyrb53, 53 bits, in hex). The app's
+ * journal notes each unsaved build's (task 4.9), and replaying a note compares it with the stored builds', confirming a
+ * match byte for byte. A build put in canonical form first hashes the same however its parts and wires were ordered.
+ */
+export const contentHashOf = (blueprint: Blueprint): string => {
+  const text = contentOf(blueprint);
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
+  for (let index = 0; index < text.length; index += 1) {
+    const code = text.charCodeAt(index);
+    h1 = Math.imul(h1 ^ code, 2654435761);
+    h2 = Math.imul(h2 ^ code, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
+};
+
 /** The other version each conflicting save kept as its own blueprint, by the blueprint that save returned. */
 const keptCopies = new WeakMap<Blueprint, BlueprintSummary>();
 
@@ -139,7 +164,11 @@ export const openingBuild = (ctx: StoreContext, profile: ProfileId, init: NewBui
       const summary = summaryOf(row);
       return summary ? [{ row, summary }] : [];
     });
-    for (const { row } of listed.sort((a, b) => newestFirst(a.summary, b.summary))) {
+    // A kept copy is the version that lost its build's id: the build at the id opens first, then any other build, and
+    // copies only when nothing else loads.
+    const copiesLast = (a: { readonly row: BlueprintRow }, b: { readonly row: BlueprintRow }): number =>
+      Number(a.row.keptFrom !== undefined) - Number(b.row.keptFrom !== undefined);
+    for (const { row } of listed.sort((a, b) => copiesLast(a, b) || newestFirst(a.summary, b.summary))) {
       const loaded = openRow(row, ctx.content.catalogue);
       if (loaded.ok) return loaded.blueprint;
     }
@@ -147,6 +176,65 @@ export const openingBuild = (ctx: StoreContext, profile: ProfileId, init: NewBui
     await putRow(ctx, profile, blueprint);
     return blueprint;
   });
+
+/** A build a page left unsaved, as the app's journal notes it (task 4.9). */
+export interface UnsavedNote {
+  readonly build: Blueprint;
+  /** The stored version the build was edited from: its `updatedAt`. */
+  readonly base: Timestamp;
+  /** When the page noted it, which is when the copy is said to be from if it is kept as one. */
+  readonly notedAt: Timestamp;
+  /** `contentHashOf` the build, as the page noted it. */
+  readonly hash: string;
+}
+
+/** What replaying a note did. */
+export type Replay =
+  | { readonly outcome: 'stored-already' }
+  | { readonly outcome: 'saved'; readonly saved: Blueprint }
+  | { readonly outcome: 'kept-copy'; readonly copy: BlueprintSummary };
+
+/**
+ * Replays a build a page of the app left unsaved (its journal, task 4.9), in one transaction, by the project's rule:
+ * the latest blueprint wins, and both are kept.
+ * - The same as the stored build at its id, or as a copy kept from it, but for when it was saved: nothing to do, so
+ *   the note's own save, which landed as its page went, is never stored twice.
+ * - Edited from the version stored now: the note is the newer, and saves at its id, as a save does.
+ * - Otherwise the stored build moved on since the note's base (another tab saved it), so it is the newer, and stays at
+ *   its id; the note is kept as its own blueprint, `keptFrom` naming the build, from when it was noted. The same when
+ *   the stored build does not load (a newer version of Servo stored it). A note whose build was removed meanwhile is
+ *   kept as a build of its own. The note's build must validate.
+ */
+export const replayUnsaved = (ctx: StoreContext, profile: ProfileId, note: UnsavedNote): Promise<Replay> =>
+  write(ctx, profile, async () => {
+    const { catalogue } = ctx.content;
+    const draft = checked(note.build, catalogue, 'The unsaved build');
+    const id = draft.meta.id;
+    const hash = isHash(note.hash) ? note.hash : contentHashOf(draft);
+    const same = (stored: Blueprint): boolean => contentHashOf(stored) === hash && contentOf(stored) === contentOf(draft);
+    const row = await heldBy(ctx, profile, id);
+    const stored = row ? openRow(row, catalogue) : undefined;
+    if (stored?.ok && same(stored.blueprint)) return { outcome: 'stored-already' };
+    const copies = (await ctx.db.blueprints.where('profile').equals(profile).toArray()).filter((other) => other.keptFrom === id);
+    for (const other of copies) {
+      const kept = openRow(other, catalogue);
+      if (kept.ok && same(kept.blueprint)) return { outcome: 'stored-already' };
+    }
+    if (row && stored?.ok && stored.blueprint.meta.updatedAt === note.base) {
+      const now = ctx.now();
+      const later = now > stored.blueprint.meta.updatedAt ? now : justAfter(stored.blueprint.meta.updatedAt);
+      const saved = withUpdated(draft, later);
+      await putRow(ctx, profile, saved, row.keptFrom);
+      return { outcome: 'saved', saved };
+    }
+    const notedAt = isTimestamp(note.notedAt) ? note.notedAt : note.base;
+    const copy: Blueprint = { ...draft, meta: { ...draft.meta, id: uuidV4(), updatedAt: notedAt } };
+    await putRow(ctx, profile, copy, row ? id : undefined);
+    const { name, level, updatedAt } = copy.meta;
+    return { outcome: 'kept-copy', copy: { id: copy.meta.id, name, level, updatedAt, ...(row ? { keptFrom: id } : {}) } };
+  });
+
+const isHash = (value: unknown): value is string => typeof value === 'string' && /^[0-9a-f]{1,14}$/.test(value);
 
 export const blueprintsOf = (ctx: StoreContext, profile: ProfileId): Blueprints => {
   const { db, content, now } = ctx;

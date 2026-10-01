@@ -3,8 +3,8 @@
 // (task 4.9), which are not part of the contract: each runs in one transaction. See docs/store.md.
 import type { ContentLoad } from '@servo/content';
 import type { Blueprint, ProfileId } from '@servo/schema';
-import { blueprintsOf, openingBuild } from './blueprints.ts';
-import type { NewBuild } from './blueprints.ts';
+import { blueprintsOf, openingBuild, replayUnsaved } from './blueprints.ts';
+import type { NewBuild, Replay, UnsavedNote } from './blueprints.ts';
 import type { StoreContext } from './context.ts';
 import { DATABASE_NAME, openDatabase } from './database.ts';
 import type { Profile, ServoStore, StoreOptions } from './index.ts';
@@ -59,6 +59,10 @@ export const openStoreWith = async (load: ContentLoad, options: StoreOptions = {
 /** The app's first run (task 4.9): the device's profiles, oldest first, with one named `name` made when there are none. */
 export const profilesForOpening = async (store: ServoStore, name: string): Promise<readonly Profile[]> => profilesOrFirst(contextOf(store), name);
 
-/** The build the app opens for `profile` (task 4.9): its newest that loads, or a new empty one from `init`. */
+/** The build the app opens for `profile` (task 4.9): its newest that loads and is not a kept copy, or a new empty one from `init`. */
 export const buildForOpening = async (store: ServoStore, profile: ProfileId, init: NewBuild): Promise<Blueprint> =>
   openingBuild(contextOf(store), profile, init);
+
+/** A build a page of the app left unsaved, replayed as the app opens (task 4.9): the latest wins and both are kept. */
+export const replayForOpening = async (store: ServoStore, profile: ProfileId, note: UnsavedNote): Promise<Replay> =>
+  replayUnsaved(contextOf(store), profile, note);

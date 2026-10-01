@@ -5,11 +5,11 @@ import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
 import type { Blueprint } from '@servo/schema';
 import { validBlueprints } from '@servo/schema/fixtures';
-import { Autosaver, UNSAVED_PREFIX, recoverUnsaved } from '../../src/shell/autosave.ts';
+import { Autosaver, UNSAVED_PREFIX } from '../../src/shell/autosave.ts';
 import type { Journal, SaveOutcome } from '../../src/shell/autosave.ts';
-import { openStoreWith } from '../../src/store/open.ts';
+import { buildForOpening, openStoreWith } from '../../src/store/open.ts';
 import type { ProfileStore, ServoStore } from '../../src/store/index.ts';
-import { openFor, schemaContent, withMeta } from './support.ts';
+import { clock, openFor, schemaContent, withMeta } from './support.ts';
 
 const led = validBlueprints.find((fixture) => fixture.name === 'led-circuit')?.data as Blueprint;
 
@@ -43,7 +43,7 @@ const setUp = async () => {
 
 const namesIn = async (child: ProfileStore): Promise<string[]> => (await child.blueprints.list()).map((summary) => summary.name);
 
-const reopen = (name: string): Promise<ServoStore> => openStoreWith(schemaContent, { name });
+const reopen = (name: string, now?: () => string): Promise<ServoStore> => openStoreWith(schemaContent, now ? { name, now } : { name });
 
 describe('the autosaver', () => {
   it('lets the app wait for every save it started before closing the store', async () => {
@@ -103,79 +103,142 @@ describe('the autosaver', () => {
 });
 
 describe('builds a page left unsaved', () => {
-  /** A page that noted `build` as it went, and whose save never finished: its store closed first. */
-  const leftUnsaved = async (store: ServoStore, child: ProfileStore, build: Blueprint, journal: Journal): Promise<void> => {
-    const saving = new Autosaver(journal);
-    saving.edited(build, child);
+  const T1 = '2026-10-02T10:30:00.000Z';
+  const T2 = '2026-10-03T11:45:00.000Z';
+  const init = { name: 'Build 1', level: 1, arena: { preset: 'open-floor', props: [] } } as const;
+
+  /** Tab A: `build` edited, and the page closed at once, before its save could land (its store closes first). */
+  const closedAtOnce = async (store: ServoStore, child: ProfileStore, build: Blueprint, journal: Journal): Promise<void> => {
+    const tabA = new Autosaver(journal);
+    tabA.edited(build, child);
     store.close();
-    saving.leaving();
-    await saving.settled();
-    saving.dispose();
+    tabA.leaving();
+    await tabA.settled();
+    tabA.dispose();
     expect(notes(journal)).toHaveLength(1);
   };
 
-  it('are saved the next time the app opens, to the build they were made on, and forgotten', async () => {
+  /** Tab A: `build` edited, and the page closed as its save landed, so it never forgot the note. */
+  const landedThenClosed = async (child: ProfileStore, build: Blueprint, journal: Journal): Promise<void> => {
+    const tabA = new Autosaver(journal);
+    tabA.edited(build, child);
+    tabA.leaving();
+    const [item] = notes(journal);
+    const note = journal.storage.getItem(item ?? '') ?? '';
+    await tabA.settled();
+    tabA.dispose();
+    journal.storage.setItem(item ?? '', note);
+  };
+
+  /** The app opening again: the journal replayed, every outcome heard, then the build it opens. */
+  const reopenApp = async (name: string, profile: string, journal: Journal, now: () => string) => {
+    const store = await reopen(name, now);
+    const saving = new Autosaver(journal);
+    await saving.recover(store);
+    const outcomes: SaveOutcome[] = [];
+    saving.subscribe((outcome) => outcomes.push(outcome));
+    const opened = await buildForOpening(store, profile, init);
+    return { store, kid: store.forProfile(profile), outcomes, opened };
+  };
+
+  it('save to the build they were edited from when it has not moved on since (no conflict)', async () => {
     const { store, name, child, build, journal } = await setUp();
-    await leftUnsaved(store, child, withMeta(build, { name: 'Left unsaved' }), journal);
-    const again = await reopen(name);
-    await recoverUnsaved(again, journal);
-    const kid = again.forProfile(child.profile);
-    expect((await kid.blueprints.list()).map(({ id, name: built }) => ({ id, built }))).toEqual([{ id: build.meta.id, built: 'Left unsaved' }]);
+    await closedAtOnce(store, child, withMeta(build, { name: 'A edit, tab closed at once' }), journal);
+    const app = await reopenApp(name, child.profile, journal, clock(T2).now);
+    expect((await app.kid.blueprints.list()).map(({ id, name: built }) => ({ id, built }))).toEqual([{ id: build.meta.id, built: 'A edit, tab closed at once' }]);
+    expect(app.opened.meta).toMatchObject({ id: build.meta.id, name: 'A edit, tab closed at once' });
+    expect(app.outcomes).toEqual([]);
     expect(notes(journal)).toEqual([]);
-    again.close();
+    app.store.close();
   });
 
-  it('keep the other version as a copy when the build was saved elsewhere since', async () => {
+  it('are kept as a copy when another tab saved the build later: the newer build keeps its id, opens, and the line is told', async () => {
+    // The reviewer's sequence: A edits and is closed at once; B saves later; A is reopened.
     const { store, name, child, build, journal } = await setUp();
-    await leftUnsaved(store, child, withMeta(build, { name: 'Left unsaved' }), journal);
-    const again = await reopen(name);
-    const kid = again.forProfile(child.profile);
-    await kid.blueprints.save(withMeta(build, { name: 'Saved in another tab' }));
-    await recoverUnsaved(again, journal);
-    expect(await namesIn(kid)).toEqual(expect.arrayContaining(['Left unsaved', 'Saved in another tab']));
-    expect(await namesIn(kid)).toHaveLength(2);
-    again.close();
+    await closedAtOnce(store, child, withMeta(build, { name: 'A edit, tab closed at once' }), journal);
+    const tabB = await reopen(name, clock(T1).now);
+    const inB = await tabB.forProfile(child.profile).blueprints.load(build.meta.id);
+    if (!inB.ok) throw new Error('not loaded');
+    await tabB.forProfile(child.profile).blueprints.save(withMeta(inB.blueprint, { name: 'B edit, saved later' }));
+    tabB.close();
+
+    const app = await reopenApp(name, child.profile, journal, clock(T2).now);
+    const builds = await app.kid.blueprints.list();
+    expect(builds.map(({ id, name: built, keptFrom }) => ({ id: id === build.meta.id ? 'the build' : 'a copy', built, keptFrom }))).toEqual([
+      { id: 'the build', built: 'B edit, saved later', keptFrom: undefined },
+      { id: 'a copy', built: 'A edit, tab closed at once', keptFrom: build.meta.id },
+    ]);
+    expect(builds[0]?.updatedAt).toBe(T1);
+    // The newest build opens, and the line says a copy was kept.
+    expect(app.opened.meta).toMatchObject({ id: build.meta.id, name: 'B edit, saved later' });
+    expect(app.outcomes).toMatchObject([{ kind: 'saved', keptCopy: { name: 'A edit, tab closed at once', keptFrom: build.meta.id } }]);
+    expect(notes(journal)).toEqual([]);
+    app.store.close();
   });
 
-  it('are kept as their own build when theirs was removed meanwhile, and only forgotten when already saved', async () => {
+  it('are only forgotten when their own save had landed, so nothing is stored twice, with or without a later save', async () => {
+    // A's save landed as its page went, but the page never forgot its note.
+    const { name, child, build, journal } = await setUp();
+    await landedThenClosed(child, withMeta(build, { name: 'A edit, saved as the page went' }), journal);
+    expect(notes(journal)).toHaveLength(1);
+    // B, which opened the build before A's save, saves later: A's version is kept as a copy then, by save's rule.
+    const tabB = await reopen(name, clock(T1).now);
+    await tabB.forProfile(child.profile).blueprints.save(withMeta(build, { name: 'B edit, saved later' }));
+    tabB.close();
+
+    const app = await reopenApp(name, child.profile, journal, clock(T2).now);
+    expect((await app.kid.blueprints.list()).map(({ name: built, keptFrom }) => ({ built, keptFrom }))).toEqual([
+      { built: 'B edit, saved later', keptFrom: undefined },
+      { built: 'A edit, saved as the page went', keptFrom: build.meta.id },
+    ]);
+    expect(app.opened.meta.name).toBe('B edit, saved later');
+    expect(app.outcomes).toEqual([]);
+    expect(notes(journal)).toEqual([]);
+    app.store.close();
+
+    // Without B's save: the note is the build at its id already, so it is only forgotten.
+    const alone = await setUp();
+    await landedThenClosed(alone.child, withMeta(alone.build, { name: 'A edit, saved as the page went' }), alone.journal);
+    const before = (await alone.child.blueprints.list())[0];
+    alone.store.close();
+    const again = await reopenApp(alone.name, alone.child.profile, alone.journal, clock(T2).now);
+    expect(await again.kid.blueprints.list()).toEqual([before]);
+    expect(again.outcomes).toEqual([]);
+    expect(notes(alone.journal)).toEqual([]);
+    again.store.close();
+  });
+
+  it('are kept as their own build when theirs was removed meanwhile', async () => {
     const { store, name, child, build, journal } = await setUp();
-    await leftUnsaved(store, child, withMeta(build, { name: 'Left unsaved' }), journal);
-    const again = await reopen(name);
-    const kid = again.forProfile(child.profile);
-    await kid.blueprints.remove(build.meta.id);
-    await recoverUnsaved(again, journal);
-    const kept = await kid.blueprints.list();
-    expect(kept.map((summary) => summary.name)).toEqual(['Left unsaved']);
+    await closedAtOnce(store, child, withMeta(build, { name: 'Left unsaved' }), journal);
+    const removing = await reopen(name);
+    await removing.forProfile(child.profile).blueprints.remove(build.meta.id);
+    removing.close();
+    const app = await reopenApp(name, child.profile, journal, clock(T2).now);
+    const kept = await app.kid.blueprints.list();
+    expect(kept.map(({ name: built, keptFrom }) => ({ built, keptFrom }))).toEqual([{ built: 'Left unsaved', keptFrom: undefined }]);
     expect(kept[0]?.id).not.toBe(build.meta.id);
+    expect(app.opened.meta.name).toBe('Left unsaved');
     expect(notes(journal)).toEqual([]);
-
-    // A note whose build was saved after all, as the page went, is forgotten and saves nothing.
-    const stored = await kid.blueprints.load(kept[0]?.id ?? '');
-    if (!stored.ok) throw new Error('not loaded');
-    const note = { profile: kid.profile, base: '2026-01-01T00:00:00.000Z', build: stored.blueprint };
-    journal.storage.setItem(`${UNSAVED_PREFIX}${name}:a-page:${kid.profile} ${stored.blueprint.meta.id}`, JSON.stringify(note));
-    await recoverUnsaved(again, journal);
-    expect((await kid.blueprints.list()).map((summary) => [summary.name, summary.updatedAt])).toEqual([['Left unsaved', stored.blueprint.meta.updatedAt]]);
-    expect(notes(journal)).toEqual([]);
-    again.close();
+    app.store.close();
   });
 
-  it('stay for next time when the store cannot save them now, and go with their profile when it is removed', async () => {
+  it('stay for next time when the store cannot replay them now, and go with their profile when it is removed', async () => {
     const { store, name, child, build, journal } = await setUp();
-    await leftUnsaved(store, child, withMeta(build, { name: 'Left unsaved' }), journal);
-    // The store is closed again: nothing can be saved, and the note stays.
+    await closedAtOnce(store, child, withMeta(build, { name: 'Left unsaved' }), journal);
+    // The store is closed again: nothing can be replayed, and the note stays.
     const closed = await reopen(name);
     closed.close();
-    await expect(recoverUnsaved(closed, journal)).rejects.toThrow();
+    await expect(new Autosaver(journal).recover(closed)).rejects.toThrow();
     expect(notes(journal)).toHaveLength(1);
     // The adult removes the child's profile, and everything of it goes, the note too (D38).
     const again = await reopen(name);
     await again.profiles.remove(child.profile);
-    await recoverUnsaved(again, journal);
+    await new Autosaver(journal).recover(again);
     expect(notes(journal)).toEqual([]);
     // Another database's notes are not this store's to touch.
     journal.storage.setItem(`${UNSAVED_PREFIX}another-database:a-page:${child.profile} ${build.meta.id}`, '{}');
-    await recoverUnsaved(again, journal);
+    await new Autosaver(journal).recover(again);
     expect(notes(journal)).toHaveLength(1);
     again.close();
   });

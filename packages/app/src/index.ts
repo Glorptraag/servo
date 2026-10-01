@@ -6,7 +6,7 @@ import type { Content } from '@servo/content';
 import { BLUEPRINT_VERSION } from '@servo/schema';
 import type { ArenaRef, Blueprint } from '@servo/schema';
 import { App, START_LEVEL } from './App.tsx';
-import { Autosaver, pageStorage, recoverUnsaved } from './shell/index.ts';
+import { Autosaver, pageStorage } from './shell/index.ts';
 import type { Journal } from './shell/index.ts';
 import { DATABASE_NAME } from './store/database.ts';
 import { openStore } from './store/index.ts';
@@ -87,12 +87,14 @@ export const mountApp: MountApp = async (host, options = {}) => {
     console.warn('The store could not be opened, so builds are not kept on this device.', error);
     return null;
   });
-  // Builds a page of the app noted as it was left, before their saves finished, are saved first (autosave.ts).
+  // Builds a page of the app noted as it was left, before their saves finished, are replayed first, so the build the
+  // app then opens is the newest (autosave.ts). A copy that replay kept is said in Save's line.
   const storage = pageStorage();
   const journal: Journal | undefined = storage ? { storage, scope: options.store?.name ?? DATABASE_NAME } : undefined;
-  if (store && journal) {
-    await recoverUnsaved(store, journal).catch((error: unknown) => {
-      console.warn('Builds left unsaved could not all be saved; they stay noted for next time.', error);
+  const saving = new Autosaver(journal);
+  if (store) {
+    await saving.recover(store).catch((error: unknown) => {
+      console.warn('Builds left unsaved could not all be replayed; they stay noted for next time.', error);
     });
   }
   const opened = store
@@ -104,7 +106,6 @@ export const mountApp: MountApp = async (host, options = {}) => {
   const content = store?.content ?? loadContent().content;
   const child = opened.child;
   const start = child ? opened.start : unsavedBuild(content);
-  const saving = new Autosaver(journal);
   return new Promise<AppHandle>((resolve, reject) => {
     const root = createRoot(host, {
       onUncaughtError: (error) => {

@@ -23,7 +23,7 @@ export {
 export type { Hand, LayoutInput, Orientation, Rect, SafeArea, ShellLayout } from './layout.ts';
 export { tidyName } from './name.tsx';
 export { PLACEHOLDER_SLOTS } from './placeholders.tsx';
-export { AUTOSAVE_MS, Autosaver, RETRY_MAX_MS, UNSAVED_PREFIX, recoverUnsaved } from './autosave.ts';
+export { AUTOSAVE_MS, Autosaver, RETRY_MAX_MS, UNSAVED_PREFIX } from './autosave.ts';
 export type { Journal, SaveOutcome } from './autosave.ts';
 export { SAVE_LINES, SaveControl } from './save.tsx';
 export type { SaveControlProps } from './save.tsx';
