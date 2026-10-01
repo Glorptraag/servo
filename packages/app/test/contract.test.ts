@@ -57,7 +57,8 @@ const doIt: EditCommand = {
 describe('the contracts the app builds against', () => {
   it('has typed stubs that refuse until their tasks land', async () => {
     const host = {} as HTMLElement;
-    expect(() => mountCanvas(host, { catalogue: {} as Catalogue, resolveArt: () => undefined, level: 1, prefs: { dragSensitivity: 1, leftHanded: false, highContrast: false, typeface: 'standard' } })).toThrow(/task 3\.1/);
+    // Task 3.1 has landed: mountCanvas draws in a browser, and packages/canvas tests it there.
+    expect(mountCanvas).toBeTypeOf('function');
     expect(() => applyEdit({} as Blueprint, doIt, {} as Catalogue)).toThrow(/tasks 3\.2 and 3\.3/);
     await expect(createSimulation({ blueprint: {} as Blueprint, catalogue: {} as Catalogue, arena: {} as never, seed: 1 })).rejects.toThrow(/task 1\.5/);
     await expect(openStore()).rejects.toThrow(/task 4\.9/);
