@@ -1,0 +1,106 @@
+{
+  "behaviour": [
+    {
+      "grip": 1,
+      "hub": "hub",
+      "id": "tyre",
+      "kind": "wheel",
+      "radiusMm": 24,
+      "widthMm": 20
+    }
+  ],
+  "body": {
+    "centreOfMass": {
+      "x": 0,
+      "y": 0,
+      "z": 24
+    },
+    "grams": 15,
+    "size": {
+      "x": 48,
+      "y": 20,
+      "z": 48
+    }
+  },
+  "card": {
+    "does": "Rolls your robot along the floor, less far for each turn than the large wheel.",
+    "gives": "Gives: movement along the floor, slower than the large wheel.",
+    "needs": "Needs: a turning shaft (grey) in its hub, and the floor under it.",
+    "popularMechanics": "A skateboard rolls on small wheels like these, close to the ground."
+  },
+  "failureModes": [
+    {
+      "cardLine": "No shaft in its hub: the wheel stays still.",
+      "hint": "This wheel needs a shaft in its hub",
+      "id": "not-driven",
+      "need": "driven",
+      "shows": [
+        "still"
+      ],
+      "teachingNote": "A wheel moves the robot only when a shaft turns it. With no shaft in its hub, it stays still and drives nothing.",
+      "unmet": "absent"
+    },
+    {
+      "cardLine": "Off the floor: the wheel spins in the air.",
+      "hint": "This wheel does not reach the floor",
+      "id": "lifted",
+      "need": "on-floor",
+      "shows": [
+        "slip"
+      ],
+      "teachingNote": "A wheel pushes the robot only while its tyre touches the floor. Lifted off it, such as when the robot tips over, it spins in the air and moves nothing.",
+      "unmet": "lifted"
+    },
+    {
+      "cardLine": "Slipping: the wheel spins but the robot stays put.",
+      "hint": "This wheel is spinning in place",
+      "id": "slipping",
+      "need": "on-floor",
+      "shows": [
+        "slip"
+      ],
+      "teachingNote": "A wheel pushes only as hard as its tyre grips the floor. Turned with the same force, a small wheel pushes harder than a large one, so against a wall or through a gearbox it spins in place sooner.",
+      "unmet": "slipping"
+    }
+  ],
+  "id": "wheel-small",
+  "identity": {
+    "art": "part/wheel-small",
+    "colours": {
+      "accent": "#eceff1",
+      "main": "#212121"
+    },
+    "domains": [
+      "mechanics"
+    ],
+    "family": "drivetrain",
+    "level": 2,
+    "name": "small wheel"
+  },
+  "needs": [
+    {
+      "id": "driven",
+      "kind": "drive",
+      "port": "hub"
+    },
+    {
+      "id": "on-floor",
+      "kind": "floor"
+    }
+  ],
+  "ports": [
+    {
+      "at": {
+        "x": 0,
+        "y": -10,
+        "z": 24
+      },
+      "axis": "+y",
+      "id": "hub",
+      "label": "hub",
+      "role": "drive-in",
+      "type": "mechanical"
+    }
+  ],
+  "settings": []
+}

@@ -1,0 +1,122 @@
+{
+  "behaviour": [
+    {
+      "efficiency": 0.8,
+      "id": "gears",
+      "input": "input",
+      "kind": "ratio",
+      "mount": "mount",
+      "output": "output",
+      "ratio": 3
+    }
+  ],
+  "body": {
+    "centreOfMass": {
+      "x": 0,
+      "y": 0,
+      "z": 11
+    },
+    "grams": 18,
+    "size": {
+      "x": 36,
+      "y": 22,
+      "z": 22
+    }
+  },
+  "card": {
+    "does": "Makes a turning shaft slower but stronger, so your robot can climb steeper slopes.",
+    "gives": "Gives: a slower, stronger turning shaft (grey).",
+    "needs": "Needs: a turning shaft (grey) at its input, and a mount (grey) on the chassis (frame).",
+    "popularMechanics": "A bike's low gears work the same way: slower up a hill, but easier to pedal.",
+    "safetyNote": "Real gearboxes have small gears inside, so build with an adult nearby."
+  },
+  "failureModes": [
+    {
+      "cardLine": "Loose: the housing turns instead of the output shaft.",
+      "hint": "This gearbox is not fixed to the chassis",
+      "id": "loose",
+      "need": "fixed",
+      "shows": [
+        "still"
+      ],
+      "teachingNote": "A gearbox turns its output shaft only while its housing is held still on a mount point. Left loose, the housing turns round instead, and the output shaft stays still.",
+      "unmet": "absent"
+    },
+    {
+      "cardLine": "Nothing turning it: the output shaft stays still.",
+      "hint": "This gearbox needs a turning shaft at its input",
+      "id": "not-driven",
+      "need": "driven",
+      "shows": [
+        "still"
+      ],
+      "teachingNote": "A gearbox changes the turning it is given and makes none of its own. With no shaft turning its input, its output shaft stays still.",
+      "unmet": "absent"
+    }
+  ],
+  "id": "gearbox",
+  "identity": {
+    "art": "part/gearbox",
+    "colours": {
+      "accent": "#616161",
+      "main": "#fbc02d"
+    },
+    "domains": [
+      "mechanics"
+    ],
+    "family": "drivetrain",
+    "level": 2,
+    "name": "gearbox"
+  },
+  "needs": [
+    {
+      "id": "driven",
+      "kind": "drive",
+      "port": "input"
+    },
+    {
+      "id": "fixed",
+      "kind": "mount",
+      "port": "mount"
+    }
+  ],
+  "ports": [
+    {
+      "at": {
+        "x": 0,
+        "y": -11,
+        "z": 10
+      },
+      "axis": "+y",
+      "id": "input",
+      "label": "input",
+      "role": "drive-in",
+      "type": "mechanical"
+    },
+    {
+      "at": {
+        "x": 0,
+        "y": 13,
+        "z": 10
+      },
+      "axis": "+y",
+      "id": "output",
+      "label": "output shaft",
+      "role": "drive-out",
+      "type": "mechanical"
+    },
+    {
+      "at": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "id": "mount",
+      "label": "mount",
+      "role": "mount",
+      "type": "mechanical",
+      "yaw": 0
+    }
+  ],
+  "settings": []
+}

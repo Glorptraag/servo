@@ -185,7 +185,7 @@
       "completed_by": "orchestrator"
     },
     "1.1": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -200,8 +200,8 @@
       ],
       "done_when": "Nets, links and mounts match the hand-written expectations for 8 fixture builds (add them under packages/sim-core/fixtures/graph/); tests pass.",
       "contracts": "Uses only packages/schema types; exports buildGraph(blueprint): SimGraph.",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T05:32:07+00:00",
+      "completed_by": "W-1.1",
       "dispatched_at": "2026-10-01T04:09:31+00:00"
     },
     "1.2": {
@@ -224,7 +224,7 @@
       "dispatched_at": "2026-10-01T04:45:51+00:00"
     },
     "1.3": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -240,10 +240,11 @@
       "done_when": "DC motor, LED, buzzer, switch and servo behave per their Level 1\u20132 records including every failure mode, proven by behaviour fixtures generated from the content records; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T05:23:27+00:00"
     },
     "1.4": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -258,7 +259,8 @@
       "done_when": "A two-motor robot drives straight, turns on the spot when one motor reverses, stops at a wall, and tips with the top-heavy fixture; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T06:12:30+00:00"
     },
     "1.5": {
       "status": "pending",
@@ -282,7 +284,7 @@
       "completed_by": null
     },
     "1.6": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -297,7 +299,8 @@
       "done_when": "Interface documented; a fixture containing a microcontroller runs without error and with no effect; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T06:12:30+00:00"
     },
     "1.7": {
       "status": "pending",
@@ -363,7 +366,7 @@
       "dispatched_at": "2026-10-01T04:01:20+00:00"
     },
     "2.2": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -377,8 +380,8 @@
       ],
       "done_when": "Validator passes; spec-card layers 1\u20132 plus a popular-mechanics line on every Level 2 part.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T06:16:05+00:00",
+      "completed_by": "W-2.2",
       "dispatched_at": "2026-10-01T05:12:50+00:00"
     },
     "2.3": {
