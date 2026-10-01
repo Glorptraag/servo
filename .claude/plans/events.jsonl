@@ -85,3 +85,8 @@
 {"ts": "2026-10-01T07:42:43+00:00", "event": "done", "tasks": ["1.3"], "by": "W-1.3"}
 {"ts": "2026-10-01T07:44:24+00:00", "event": "done", "tasks": ["1.6"], "by": "W-1.6"}
 {"ts": "2026-10-01T07:44:25+00:00", "event": "decision_add", "id": "D59", "blocks": []}
+{"ts": "2026-10-01T07:46:20+00:00", "event": "decision_add", "id": "D60", "blocks": []}
+{"ts": "2026-10-01T07:48:45+00:00", "event": "decision_add", "id": "D61", "blocks": []}
+{"ts": "2026-10-01T08:07:35+00:00", "event": "done", "tasks": ["2.6"], "by": "W-2.6"}
+{"ts": "2026-10-01T08:07:36+00:00", "event": "decision_add", "id": "D62", "blocks": []}
+{"ts": "2026-10-01T08:07:36+00:00", "event": "decision_add", "id": "D63", "blocks": []}
