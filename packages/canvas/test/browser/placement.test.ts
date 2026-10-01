@@ -178,6 +178,50 @@ describe('placing from the tray', () => {
   });
 });
 
+describe('snap or slide (brief Section 10)', () => {
+  beforeAll(async () => {
+    await cdp().send('Emulation.setEmulatedMedia', { features: [] });
+  });
+
+  afterAll(async () => {
+    await cdp().send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+  });
+
+  const drawnAt = (id: string): Vec2 => {
+    const node = bench.surface.partView(id)?.node;
+    return { x: node?.position.x ?? NaN, y: node?.position.y ?? NaN };
+  };
+
+  it('snaps a part let go within reach of a free spot there at once, and slides one let go in the void', async () => {
+    load(fixture('led-circuit'));
+    bench.tile('led', 'drag');
+    // Just over the battery pack's edge: the free spot is 10 mm (25 px) away.
+    await drag('mouse', middleOf(bench.tray), client({ x: -80, y: 35 }));
+    expect(at('p1')).toEqual({ x: -80, y: 45, rotation: 0 });
+    expect(drawnAt('p1')).toEqual({ x: -80, y: 45 });
+    // On the middle of the battery pack: the free spot is out of reach, so the part slides there from the drop. The
+    // page's frames are held while it lands, so the slide can be seen at its start.
+    await press('mouse', middleOf(bench.tray), [client({ x: -80, y: -5 })]);
+    const original = window.requestAnimationFrame;
+    const held: FrameRequestCallback[] = [];
+    window.requestAnimationFrame = (callback) => {
+      held.push(callback);
+      return 0;
+    };
+    try {
+      await lift('mouse', client({ x: -80, y: -5 }));
+      const landed = at('p2');
+      expect(Math.hypot(landed.x + 80, landed.y + 5) * 2.5).toBeGreaterThan(48);
+      expect(drawnAt('p2')).toEqual({ x: -80, y: -5 });
+    } finally {
+      window.requestAnimationFrame = original;
+      for (const callback of held) original.call(window, callback);
+    }
+    const landed = at('p2');
+    await expect.poll(() => drawnAt('p2'), { timeout: 2000 }).toEqual({ x: landed.x, y: landed.y });
+  });
+});
+
 describe('moving a part (D34)', () => {
   it('moves a loose part with a mouse drag, and its wires follow it on the way', async () => {
     load(fixture('led-circuit'));

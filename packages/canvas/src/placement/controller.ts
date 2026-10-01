@@ -284,16 +284,21 @@ export class PlacementController {
     if (!before || !scene || after !== this.surface.blueprint) return;
     const loose = leftLoose(before, after, this.host.catalogue);
     if (loose.length === 0) return;
+    // Above where the removed part was and everything it left loose, so the line covers none of their sockets.
     let over: Rect | undefined;
     for (const part of before.parts) {
       if (!after.parts.some((other) => other.id === part.id)) over = unionRect(over, scene.partById.get(part.id)?.bounds);
+    }
+    const holding = readHolding(after, this.host.catalogue);
+    for (const id of loose) {
+      for (const held of subtreeOf(holding, id)) over = unionRect(over, this.surface.scene.partById.get(held)?.bounds);
     }
     const names = loose.map((id) => {
       const type = after.parts.find((part) => part.id === id)?.part ?? '';
       return this.host.catalogue.parts.get(type)?.identity.name ?? type;
     });
     if (!over) return;
-    this.callout.show(looseLine(names), over, this.host.drawContext());
+    this.callout.show(looseLine(names), over, this.surface.camera.visible(), this.host.drawContext());
     this.surface.requestFrame();
   }
 
@@ -354,9 +359,12 @@ export class PlacementController {
   // ---------------------------------------------------------------------------------------------------------
   // In from the tray or the arena strip
 
-  /** Starts carrying the incoming part or prop with `pointer`, or, with none, waits for a tap (tap-then-tap). */
+  /**
+   * Starts carrying the incoming part or prop with `pointer`, or, with none, waits for a tap (tap-then-tap). A pointer
+   * with no button down (a click, a lifted finger) is not carrying anything, so it waits for the tap too.
+   */
   private enter(pointer: PointerEvent | undefined): void {
-    if (pointer) {
+    if (pointer && pointer.buttons !== 0) {
       this.carrying = pointer.pointerId;
       for (const [type, listener] of this.windowListeners) window.addEventListener(type, listener, true);
       this.follow(pointer);
@@ -686,7 +694,10 @@ export class PlacementController {
     this.surface.requestFrame();
   }
 
-  /** Slides parts from where they were let go to where they landed (brief Section 10: a part slides to the free spot). */
+  /**
+   * Brief Section 10: a part lands on a free spot within the forgiveness radius at once (it snaps there), and one let
+   * go further away, in the void, slides to the nearest free spot.
+   */
   private slide(from: ReadonlyMap<PlacedPartId, PartPose>): void {
     this.stopSlide();
     const scene = this.surface.scene;
@@ -696,7 +707,7 @@ export class PlacementController {
       const end = scene.partById.get(id)?.pose;
       if (!end) continue;
       to.set(id, end);
-      if (distance(pose, end) * this.surface.camera.scale > 1) far = true;
+      if (distance(pose, end) > this.snapRadius) far = true;
     }
     if (!far || reducedMotion()) return;
     const started = performance.now();

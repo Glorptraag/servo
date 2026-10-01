@@ -142,17 +142,26 @@ export class Callout {
     return this.container.visible ? this.text.text : undefined;
   }
 
-  show(line: string, over: Rect, context: DrawContext): void {
+  /**
+   * Centred over `over`, or under it when there is no room above in `view` (what the screen shows), and held inside
+   * the view where it can be.
+   */
+  show(line: string, over: Rect, view: Rect, context: DrawContext): void {
     const { palette } = context;
     this.text.text = line;
     this.text.style = { fontFamily: [...FONT_STACKS[context.typeface]], fontSize: CALLOUT_PX, fill: palette.label };
     this.text.resolution = context.resolution * 2;
     this.text.scale.set(1 / PX_PER_MM);
-    const x = (over.minX + over.maxX) / 2;
-    const y = over.minY - CALLOUT_GAP_MM;
-    this.text.position.set(x, y);
     const w = this.text.width + 2 * CALLOUT_PADDING_MM;
     const h = this.text.height + CALLOUT_PADDING_MM;
+    const hold = (value: number, min: number, max: number): number => (min > max ? (min + max) / 2 : Math.min(Math.max(value, min), max));
+    const x = hold((over.minX + over.maxX) / 2, view.minX + w / 2, view.maxX - w / 2);
+    // `y` is the text's baseline edge: the bottom of the text, the box reaching half a padding beyond it.
+    const above = over.minY - CALLOUT_GAP_MM;
+    const below = over.maxY + CALLOUT_GAP_MM + this.text.height;
+    const roomAbove = above - this.text.height - CALLOUT_PADDING_MM / 2 >= view.minY;
+    const y = hold(roomAbove ? above : below, view.minY + this.text.height + CALLOUT_PADDING_MM / 2, view.maxY - CALLOUT_PADDING_MM / 2);
+    this.text.position.set(x, y);
     this.back.clear();
     this.back
       .roundRect(x - w / 2, y - this.text.height - CALLOUT_PADDING_MM / 2, w, h, h / 2)
@@ -197,12 +206,15 @@ export class Handles {
     for (const at of [this.places.rotate, this.places.bin]) {
       g.circle(at.x, at.y, r).fill({ color: palette.tile }).stroke({ color: palette.tileEdge, width: mmOf(2), alignment: 1 });
     }
-    // A turning arrow: three quarters of a circle with its head.
+    // A clockwise arrow, the way a tap turns the part: three quarters of a circle from the top round to the left,
+    // with its head pointing on round towards the top.
     const { rotate, bin } = this.places;
     const arc = r * 0.5;
-    g.arc(rotate.x, rotate.y, arc, -Math.PI / 2, Math.PI).stroke({ color: palette.label, width: ICON_MM, cap: 'round' });
-    const tip = { x: rotate.x - arc, y: rotate.y };
-    g.poly([tip.x - arc * 0.45, tip.y - arc * 0.2, tip.x + arc * 0.45, tip.y - arc * 0.2, tip.x, tip.y + arc * 0.45], true).fill({
+    g.moveTo(rotate.x, rotate.y - arc)
+      .arc(rotate.x, rotate.y, arc, -Math.PI / 2, Math.PI)
+      .stroke({ color: palette.label, width: ICON_MM, cap: 'round' });
+    const tip = { x: rotate.x - arc, y: rotate.y - arc * 0.5 };
+    g.poly([tip.x - arc * 0.45, tip.y + arc * 0.35, tip.x + arc * 0.45, tip.y + arc * 0.35, tip.x, tip.y - arc * 0.2], true).fill({
       color: palette.label,
     });
     // A bin: a lid with a handle, and a body.
