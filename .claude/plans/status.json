@@ -205,7 +205,7 @@
       "dispatched_at": "2026-10-01T04:09:31+00:00"
     },
     "1.2": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -219,8 +219,8 @@
       ],
       "done_when": "A motor on a 1-cell vs 2-cell pack shows the speed ratio stated in the part record; a shorted pack drains in the specified time; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T08:38:47+00:00",
+      "completed_by": "W-1.2",
       "dispatched_at": "2026-10-01T04:45:51+00:00"
     },
     "1.3": {
