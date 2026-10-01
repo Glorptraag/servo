@@ -163,7 +163,7 @@ const text = (tick: BehaviourTick): string => JSON.stringify({ parts: [...tick.p
 describe('a speed actuator (the DC motor: 200 rpm and 39 N·mm at its rated 6 V, from 1 V)', () => {
   it('turns at no-load rpm at its rated volts, showing nothing wrong', () => {
     const motor = motorAt(6);
-    expect(speedOf(motor)).toMatchObject({ state: 'turning', rpm: 200, ratedRpm: 200, reversed: false, capacityNmm: 39, working: true });
+    expect(speedOf(motor)).toMatchObject({ state: 'turning', rpm: 200, ratedRpm: 200, direction: 1, capacityNmm: 39, working: true });
     expect(motor.values).toEqual({ rpm: 200 });
     expect(motor.sounds).toEqual([{ sound: 'motor', level: 1 }]);
     expect(motor.effects).toEqual([]);
@@ -196,7 +196,7 @@ describe('a speed actuator (the DC motor: 200 rpm and 39 N·mm at its rated 6 V,
   it('stays still and silent below its start volts, with no torque need to judge', () => {
     const motor = motorAt(0.9, { loads: { 'dc-motor.motor': 30 } });
     expect(speedOf(motor)).toMatchObject({ state: 'idle', rpm: 0, capacityNmm: 0, working: false });
-    expect(motor.effects).toEqual(['still', 'off']);
+    expect(motor.effects).toEqual(['still', 'silent', 'off']);
     expect(motor.sounds).toEqual([]);
     expect(motor.needs).toEqual([{ need: 'load', kind: 'torque' }]);
     expect(motor.faults).toEqual([]);
@@ -204,16 +204,16 @@ describe('a speed actuator (the DC motor: 200 rpm and 39 N·mm at its rated 6 V,
 
   it('turns the other way with its wires swapped', () => {
     const motor = motorAt(-6);
-    expect(speedOf(motor)).toMatchObject({ state: 'turning', rpm: -200, ratedRpm: 200, reversed: true });
+    expect(speedOf(motor)).toMatchObject({ state: 'turning', rpm: -200, ratedRpm: 200, direction: 1 });
     expect(motor.effects).toEqual(['reverse']);
   });
 
   it('follows its direction and speed settings: backward is not a fault to show, and a lower speed setting is not slow', () => {
     const backward = motorAt(6, {}, { direction: 'backward' });
-    expect(speedOf(backward)).toMatchObject({ rpm: -200, ratedRpm: -200, reversed: false });
+    expect(speedOf(backward)).toMatchObject({ rpm: -200, ratedRpm: -200, direction: -1 });
     expect(backward.effects).toEqual([]);
     const crossed = motorAt(-6, {}, { direction: 'backward' });
-    expect(speedOf(crossed)).toMatchObject({ rpm: 200, reversed: true });
+    expect(speedOf(crossed)).toMatchObject({ rpm: 200, direction: -1 });
     expect(crossed.effects).toEqual(['reverse']);
     const half = motorAt(6, {}, { speed: 50 });
     expect(speedOf(half)).toMatchObject({ rpm: 100, ratedRpm: 100 });
@@ -221,7 +221,7 @@ describe('a speed actuator (the DC motor: 200 rpm and 39 N·mm at its rated 6 V,
   });
 
   it('does not turn at all when it blocks reversed volts', () => {
-    expect(motorAt(-6, {}, undefined, 'blocking-motor').effects).toEqual(['still', 'off']);
+    expect(motorAt(-6, {}, undefined, 'blocking-motor').effects).toEqual(['still', 'silent', 'off']);
     expect(speedOf(motorAt(6, {}, undefined, 'blocking-motor')).rpm).toBe(200);
   });
 
@@ -269,11 +269,11 @@ describe('a position actuator (the servo motor: 0–180°, rests at 90°, 600°/
     expect(low.effects).toEqual(['slow']);
   });
 
-  it('stays still with no power, and then its missing signal is not judged: it cannot hold or hum', () => {
+  it('stays still and silent with no power, and then its missing signal is not judged: it cannot hold or hum', () => {
     for (const volts of [0, 3, -5]) {
       const servo = servoAt(volts, {}, 2);
       expect(armOf(servo)).toMatchObject({ state: 'idle', angle: 90, capacityNmm: 0, working: false });
-      expect(servo.effects).toEqual(['still', 'off']);
+      expect(servo.effects).toEqual(['still', 'silent', 'off']);
       expect(servo.sounds).toEqual([]);
       expect(servo.faults).toEqual([]);
     }
@@ -542,8 +542,8 @@ describe('the runtime as a whole', () => {
       seconds: Number.NaN,
     };
     const tick = behaviourTick(model, { arms: [] }, odd);
-    expect(partOf(tick, 'motor-left').effects).toEqual(['still', 'off']);
-    expect(partOf(tick, 'servo').effects).toEqual(['still', 'off']);
+    expect(partOf(tick, 'motor-left').effects).toEqual(['still', 'silent', 'off']);
+    expect(partOf(tick, 'servo').effects).toEqual(['still', 'silent', 'off']);
     expect(partOf(tick, 'driver').primitives.map((output) => (output.kind === 'driver' ? output.command : undefined))).toEqual([1, 0]);
     expect(tick.state).toEqual({ arms: [90] });
     expect(JSON.stringify(tick.state)).not.toContain('null');

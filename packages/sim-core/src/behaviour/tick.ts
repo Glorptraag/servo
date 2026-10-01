@@ -5,6 +5,7 @@ import {
   FLOWING_MILLIAMPS,
   channelCommand,
   clean,
+  directionOf,
   loadLevel,
   magnitude,
   positionRule,
@@ -101,7 +102,7 @@ const runActuators = (model: BehaviourModel, state: BehaviourState, readers: Rea
           state: rule.state,
           rpm: clean(rule.rpm),
           ratedRpm: clean(speedRule(spec, spec.ratedVolts, load).rpm),
-          reversed: rule.reversed,
+          direction: directionOf(spec),
           capacityNmm: rule.capacityNmm,
           working: rule.state !== 'idle',
         });

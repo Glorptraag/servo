@@ -143,8 +143,8 @@ export interface SpeedOutput {
   readonly rpm: number;
   /** Its speed at its rated volts with the same load and settings: what `slow` compares with. */
   readonly ratedRpm: number;
-  /** Turning the other way from the way its settings turn it, because its supply is the wrong way round. */
-  readonly reversed: boolean;
+  /** The way its settings turn it: 1, or −1 when `reverse` is set. With its supply the wrong way round it turns against this. */
+  readonly direction: 1 | -1;
   /** The most torque it can give now, at a standstill, N·mm: what the torque need compares the load with. 0 when idle. */
   readonly capacityNmm: number;
   /** It is driven: turning or stalled. */

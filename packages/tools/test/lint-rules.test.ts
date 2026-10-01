@@ -60,10 +60,24 @@ describe('package map (ground rule 6)', () => {
     ['a package.json imports alias', 'packages/canvas/src/probe.ts', "export * from '#engine';"],
     ['import.meta.glob of another package', 'packages/canvas/src/probe.ts', "export const modules = import.meta.glob('../../sim-core/src/*.ts');"],
     ['import.meta.glob of code outside src', 'packages/canvas/src/probe.ts', "export const modules = import.meta.glob('../test/*.ts');"],
+    // Review R-1.3 finding 2: the behaviour runtime is for packages/tools only, though app's map allows every sim-core entry.
+    ['the behaviour runtime from app', 'packages/app/src/probe.ts', "export * from '@servo/sim-core/behaviour';"],
+    ['a behaviour type from app', 'packages/app/src/probe.ts', "import type { BehaviourModel } from '@servo/sim-core/behaviour';\nexport type { BehaviourModel };"],
+    ['a behaviour import() type from app', 'packages/app/src/probe.ts', "export type Model = import('@servo/sim-core/behaviour').BehaviourModel;"],
+    ['dynamic import() of the behaviour runtime from app', 'packages/app/src/probe.ts', "export const runtime = await import('@servo/sim-core/behaviour');"],
+    ['the behaviour runtime from canvas', 'packages/canvas/src/probe.ts', "export * from '@servo/sim-core/behaviour';"],
+    ['the behaviour runtime from parent', 'packages/parent/src/probe.ts', "export * from '@servo/sim-core/behaviour';"],
   ];
 
   it.each(bypasses)('reports %s', async (_name, filePath, code) => {
     expect(await ruleIds(filePath, code)).toContain('servo/package-boundaries');
+  });
+
+  it('names the behaviour runtime as tools-only, not as an export app lacks', async () => {
+    const [result] = await eslint.lintText("export * from '@servo/sim-core/behaviour';", { filePath: 'packages/app/src/probe.ts' });
+    expect(result?.messages.map((message) => message.message)).toEqual([
+      "'@servo/sim-core/behaviour' is for packages/tools only. Run a simulation through createSimulation from @servo/sim-core.",
+    ]);
   });
 
   const allowed: Case[] = [
@@ -71,7 +85,9 @@ describe('package map (ground rule 6)', () => {
     ['canvas importing schema', 'packages/canvas/src/probe.ts', "export * from '@servo/schema';"],
     ['a relative import inside the package', 'packages/canvas/src/a/probe.ts', "export * from '../index.ts';"],
     ['a relative template inside the package', 'packages/canvas/src/probe.ts', 'export const load = (name: string) => import(`./art/${name}.ts`);'],
-    ['app importing every sim-core entry', 'packages/app/src/probe.ts', "export * from '@servo/sim-core';\nexport * from '@servo/sim-core/interface';"],
+    ['app importing the sim-core entry and interface', 'packages/app/src/probe.ts', "export * from '@servo/sim-core';\nexport * from '@servo/sim-core/interface';"],
+    ['tools importing the behaviour runtime', 'packages/tools/src/probe.ts', "export * from '@servo/sim-core/behaviour';"],
+    ['a test importing the behaviour runtime', 'packages/app/test/probe.test.ts', "export * from '@servo/sim-core/behaviour';"],
     ['parent importing the app store', 'packages/parent/src/probe.ts', "export * from '@servo/app/store';"],
     ['tools importing parent', 'packages/tools/src/probe.ts', "export * from '@servo/parent';"],
     ['a test using another package', 'packages/sim-core/test/probe.test.ts', "export * from '@servo/content';"],

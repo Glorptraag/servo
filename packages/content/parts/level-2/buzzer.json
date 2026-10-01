@@ -1,0 +1,128 @@
+{
+  "behaviour": [
+    {
+      "emits": {
+        "hz": 2300,
+        "kind": "sound"
+      },
+      "id": "sounder",
+      "kind": "load",
+      "onVolts": 1,
+      "ratedMilliamps": 30,
+      "ratedVolts": 3,
+      "supply": {
+        "neg": "minus",
+        "pos": "plus"
+      },
+      "whenReversed": "blocks"
+    }
+  ],
+  "body": {
+    "centreOfMass": {
+      "x": 0,
+      "y": 0,
+      "z": 5
+    },
+    "grams": 2,
+    "size": {
+      "x": 12,
+      "y": 12,
+      "z": 10
+    }
+  },
+  "card": {
+    "does": "Makes a buzzing sound when power flows through it.",
+    "gives": "Gives: a buzz you can hear across the room.",
+    "needs": "Needs: power (red), with its plus side towards plus.",
+    "popularMechanics": "A washing machine beeps with a buzzer like this when the wash is done.",
+    "safetyNote": "Real buzzers are small parts, so build with an adult nearby."
+  },
+  "failureModes": [
+    {
+      "cardLine": "Wires swapped: it stays silent.",
+      "hint": "This buzzer's plus and minus are swapped",
+      "id": "reversed",
+      "need": "power",
+      "shows": [
+        "silent"
+      ],
+      "teachingNote": "A buzzer like this has a plus side and a minus side, and it sounds only with its plus side towards plus. Wired the other way round, it stays silent.",
+      "unmet": "reversed"
+    },
+    {
+      "cardLine": "No complete circuit: it stays silent.",
+      "hint": "This buzzer is not in a loop with the battery pack",
+      "id": "no-circuit",
+      "need": "power",
+      "shows": [
+        "silent"
+      ],
+      "teachingNote": "Sound needs current, and current needs a complete loop: from plus, through the buzzer, and back to minus.",
+      "unmet": "open"
+    },
+    {
+      "cardLine": "Too little power: it buzzes quietly.",
+      "hint": "This buzzer is not getting enough power",
+      "id": "low-voltage",
+      "need": "power",
+      "shows": [
+        "quiet"
+      ],
+      "teachingNote": "A buzzer sounds louder as its voltage rises. On too little, such as a single cell, it still buzzes, but quietly, and below about 1 volt it falls silent.",
+      "unmet": "low"
+    }
+  ],
+  "id": "buzzer",
+  "identity": {
+    "art": "part/buzzer",
+    "colours": {
+      "accent": "#cfd8dc",
+      "main": "#263238"
+    },
+    "domains": [
+      "electronics-and-power"
+    ],
+    "family": "output",
+    "level": 2,
+    "name": "buzzer"
+  },
+  "needs": [
+    {
+      "id": "power",
+      "kind": "power",
+      "maxVolts": 6,
+      "minVolts": 2.5,
+      "supply": {
+        "neg": "minus",
+        "pos": "plus"
+      }
+    }
+  ],
+  "ports": [
+    {
+      "id": "plus",
+      "label": "plus (+)",
+      "polarity": "positive",
+      "type": "power"
+    },
+    {
+      "id": "minus",
+      "label": "minus (−)",
+      "polarity": "negative",
+      "type": "power"
+    },
+    {
+      "at": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "id": "mount",
+      "label": "mount",
+      "role": "mount",
+      "type": "mechanical",
+      "yaw": 0
+    }
+  ],
+  "settings": []
+}
