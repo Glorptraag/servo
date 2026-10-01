@@ -19,7 +19,8 @@ const model = mechanicalModel(behaviourModel, arenaPreset); // once per Run: pur
 let state = startMechanics(model); // the world as built, everything at rest
 const tick = mechanicalTick(model, state, { behaviour: behaviourTick }); // seconds: 0 at tick 0
 state = tick.state;
-// next tick: behaviour reads tick.loads; controls read tick.switches; the electrical solver reads tick.actuators
+// next tick: behaviour reads tick.loads; controls read tick.switches;
+// the electrical solver reads electricalActuators(graph.uses, tick.actuators)
 const bytes = mechanicalSnapshot(state); // and restoreMechanics(model, bytes) gives it back, bit for bit
 ```
 
@@ -39,8 +40,8 @@ const bytes = mechanicalSnapshot(state); // and restoreMechanics(model, bytes) g
 | `bodies` | Every body's pose by event subject: the robot's root part, loose parts (D19) and props (`arena:<id>`) |
 | `wheels` | Each wheel on the robot: hub `rpm` (signed like the behaviour runtime's), `groundMmPerSecond`, `slipMmPerSecond`, `onFloor`, `slipping` and `loadNewtons` |
 | `contacts` | What the robot touches now: `{ kind: 'wall' \| 'prop' \| 'edge' \| 'ledge', id }`, walls and edges before props |
-| `actuators` | Every actuator: actual `rpm`, the `torqueNmm` its drive gives, and `held`. For the electrical solver's `ActuatorState` |
-| `loads` | The next tick's `BehaviourInputs.loads`: `torqueNmm`, or `Infinity` where held |
+| `actuators` | Every actuator: actual `rpm`, the `loadNmm` its drive gives, and `held`. `electricalActuators(graph.uses, actuators)` lists them as the electrical solver's `actuators` input (its `ActuatorState`, indexed like `graph.uses`) |
+| `loads` | The next tick's `BehaviourInputs.loads`: `loadNmm`, or `Infinity` where held |
 | `switches` | Every contact switch's state from its probe, true when closed: the next tick's `ControlState.switches` for them |
 | `parts` | Every placed part: its floor and balance `needs`, the `faults` they make active, `effects` (`slip`, `tip`, `drag`) and `sounds` (`squeal`, `knock`) |
 | `state` | The state for the next tick |
@@ -87,6 +88,7 @@ The robot's own drive is worked by hand, deterministically. Rapier only stops it
   - A wheel past its grip is fixed at its limit, and the rest solved again.
   - So is a dragging point that the solve speeds up instead (the robot pulling away): it is held to exactly μN against its new motion. A robot whose frame drags so starts at once, close to a fine-step integration of the same model.
 - **Contacts.** The velocity goes to Rapier, which steps the world and stops the robot at whatever it meets. The robot's next velocity is read from how far it actually moved. Rapier's own velocity record is not physical in a stack of contacts, such as a robot pushing a box into a wall.
+- **Rest.** Rapier keeps positions in single precision, so a velocity read back from them comes in whole units. Below 0.1 mm/s along the floor, or turning slower than that at its radius of gyration, the robot is at rest: that part of its velocity is 0. A robot that moves less than that in a substep (a wall, a prop or its own drag holds it) is put back exactly where it was. So a stopped robot never creeps, and a robot stalled at a wall keeps one pose for the rest of the Run (review R-1.4 finding 3).
 
 **Time.** A tick is 4 substeps of 1/120 s. The Level 1–2 robot moves under 3 mm between collision checks.
 
@@ -183,15 +185,17 @@ Parts with no active mechanical failure show none of them.
   - the world's handles;
   - what the robot touches.
 
-  Every −0 is written as 0, so equal states give equal bytes. A restored world steps bit-identically to the original, and the tests resume a Run from mid-way and compare every frame. `restoreMechanics` refuses bytes from another model.
+  Every −0 is written as 0, so equal states give equal bytes. A restored world steps bit-identically to the original, and the tests resume a Run from mid-way and compare every frame.
+- **Another model's bytes.** The header starts with the model's fingerprint (`modelPrint`): a 32-bit FNV-1a hash of the robot, arena, probes and loose parts as JSON, whose numbers every engine writes alike. `restoreMechanics` refuses bytes whose fingerprint is not its model's, even with as many props and walls (review R-1.4 finding 5).
+- **Memory.** Restoring a world frees Rapier's serialization pipeline and the restored world's empty shell at once, rather than when the garbage collector runs. So a Run stepped in one synchronous loop (a golden run, a search) keeps its WebAssembly memory flat (review R-1.4 finding 4).
 - **Order.** Parts, wheels, props and solids are visited in a fixed order.
 - **Maths.** Plain arithmetic and `Math.sqrt` only, with angles through the schema's `cosSin` and slopes into degrees through `atanDegrees` (a fixed series). No clock and no randomness. Rapier's profiler stays off and its timing is never read.
 - **Speed.** A tick of the bumper robot takes about 1.7 ms on an M-series Mac, behaviour runtime included. Most of it is restoring and snapshotting the world.
 
 ## Tests
 
-**`test/mechanical.test.ts`** uses the schema's example parts, blueprints and arenas only. It also uses five test variants:
-- a whisker switch;
+**`test/mechanical.test.ts`** uses the schema's example parts, blueprints and arenas only. It also uses six test variants:
+- a whisker switch, and a bumper switch whose probe lies to one side;
 - a tall, heavy battery pack;
 - a strong motor;
 - a grippy wheel;
@@ -200,10 +204,12 @@ Parts with no active mechanical failure show none of them.
 Each Run steps the behaviour runtime with an ideal 2.8 V pack standing in for the electrical solver. Every Run happens twice and must give the same frames and bytes.
 
 It covers:
-- straight drive, and the loads fed back;
+- straight drive, and the loads fed back, also as the electrical solver reads them;
+- a launch whose push beats the grip: the wheels spin, and the robot speeds up only as fast as the grip allows;
+- coming to rest exactly when the switch is opened;
 - turning on the spot (`reversed-motor`), and pivoting;
 - rule 1, with a renamed wheel;
-- a wall: the direct-drive stall and the geared slip, per the numbers;
+- a wall: the direct-drive stall and the geared slip, per the numbers, and a pose that never changes once stopped;
 - pushing and fixed props;
 - a 2 kg box that stalls direct drive and slips geared drive, unmoved, and D52's lesson with a 160 g box;
 - the loose caster: grounded, explained, exactly one fault;
@@ -216,10 +222,11 @@ It covers:
 - a ramp and the ridge;
 - the bumper switch flipping at the wall;
 - a whisker that flips before the body arrives;
+- a loose switch on a mirrored mount, its probe mirrored;
 - the probe's sweep;
 - loose parts with no robot;
 - tick 0;
-- mid-Run snapshot and restore.
+- mid-Run snapshot and restore, and refusing another build's snapshot.
 
 ## Decisions and open questions
 

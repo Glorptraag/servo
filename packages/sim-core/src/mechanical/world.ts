@@ -1,4 +1,4 @@
-import { ColliderDesc, ConvexPolygon, RigidBodyDesc, RigidBodyType, Segment, World, init } from '@dimforge/rapier2d-deterministic-compat';
+import { ColliderDesc, ConvexPolygon, RigidBodyDesc, RigidBodyType, Segment, SerializationPipeline, World, init } from '@dimforge/rapier2d-deterministic-compat';
 import type { Collider, RigidBody, Shape } from '@dimforge/rapier2d-deterministic-compat';
 import type { Vec2 } from '@servo/schema';
 import { RADIANS_PER_DEGREE, clean, length, magnitude, wrapRadians } from './maths.ts';
@@ -99,12 +99,25 @@ export const buildWorld = (model: MechanicalModel, substep: number): { readonly 
   }
 };
 
-/** The world a state holds, ready to step. The caller frees it. */
+/**
+ * The world a state holds, ready to step. The caller frees it. This is `World.restoreSnapshot` with its two leftovers
+ * freed here rather than whenever the garbage collector runs (review R-1.4 finding 4): the serialization pipeline it
+ * makes, and the shell of the deserialized world once its parts are taken. A Run stepped in one synchronous loop (a
+ * golden run, a search) so keeps its WebAssembly memory flat.
+ */
 export const openWorld = (bytes: Uint8Array, substep: number): World => {
   needEngine();
-  const world = World.restoreSnapshot(bytes);
-  configure(world, substep);
-  return world;
+  const pipeline = new SerializationPipeline();
+  try {
+    const raw = pipeline.raw.deserializeAll(bytes);
+    if (!raw) throw new Error('The physics world could not be restored from its bytes.');
+    const world = World.fromRaw(raw);
+    raw.free();
+    configure(world, substep);
+    return world;
+  } finally {
+    pipeline.free();
+  }
 };
 
 /** A body the layout names. */

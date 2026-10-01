@@ -5,9 +5,10 @@ export { EDGE_THICKNESS_MM, LEDGE_MM, arenaModel, floorAt } from './arena.ts';
 export { coast, driveStep, motorDrive } from './drive.ts';
 export type { DriveStep, MotorDrive, PropPush, PushOutcome, Velocity, WheelForce } from './drive.ts';
 export { atanDegrees } from './maths.ts';
+export { modelPrint } from './snapshot.ts';
 export { GRAVITY, hullOf, loadingOf, shareWeight, stanceOf, stancePoints } from './stance.ts';
 export type { Loading, Placing, Stance, StanceContact, StancePoint } from './stance.ts';
-export { HELD_SHARE, SUBSTEPS, mechanicalModel, mechanicalSnapshot, mechanicalTick, restoreMechanics, startMechanics } from './tick.ts';
+export { HELD_SHARE, SUBSTEPS, electricalActuators, mechanicalModel, mechanicalSnapshot, mechanicalTick, restoreMechanics, startMechanics } from './tick.ts';
 export { TOUCH_MM, initMechanics, mechanicsReady } from './world.ts';
 export type {
   ActuatorMotion,

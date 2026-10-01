@@ -8,12 +8,27 @@ import type { MechanicalModel, MechanicalState, WorldLayout } from './types.ts';
  */
 
 /** Marks the format; a change to it is a new number. */
-const FORMAT = 1_404_001;
+const FORMAT = 1_404_002;
+
+/**
+ * A fingerprint of everything a model builds its world from and steps it with: the robot, the arena, the probes and the
+ * loose parts, as JSON (whose numbers every engine writes alike), hashed with 32-bit FNV-1a. A snapshot carries it, so a
+ * snapshot from another build is refused even when it has as many props and walls (review R-1.4 finding 5).
+ */
+export const modelPrint = (model: MechanicalModel): number => {
+  const text = JSON.stringify([model.robot ?? null, model.arena, model.probes, model.loose, model.looseSupports, model.parts]);
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index += 1) {
+    hash = Math.imul(hash ^ text.charCodeAt(index), 0x01000193) >>> 0;
+  }
+  return hash;
+};
 
 export const encodeState = (state: MechanicalState): Uint8Array => {
   const { layout } = state;
   const numbers = [
     FORMAT,
+    state.print,
     state.world.length,
     state.velocity.forward,
     state.velocity.left,
@@ -58,6 +73,8 @@ export const decodeState = (model: MechanicalModel, bytes: Uint8Array): Mechanic
     return value;
   };
   if (next() !== FORMAT) throw new Error('These bytes are not a mechanical snapshot.');
+  const print = modelPrint(model);
+  if (next() !== print) throw new Error('The mechanical snapshot came from another Run.');
   const worldLength = count();
   const velocity = { forward: next(), left: next(), turn: next() };
   const floorForce = { x: next(), y: next() };
@@ -75,6 +92,7 @@ export const decodeState = (model: MechanicalModel, bytes: Uint8Array): Mechanic
   if (at + worldLength !== bytes.byteLength) throw new Error('The mechanical snapshot is not well formed.');
   const layout: WorldLayout = { ...(hasRobot ? { robot: { body: robotBody, colliders } } : {}), props, solids };
   return {
+    print,
     world: bytes.slice(at, at + worldLength),
     layout,
     velocity,

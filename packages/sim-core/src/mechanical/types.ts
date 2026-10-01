@@ -216,6 +216,8 @@ export interface WorldLayout {
 
 /** What the solver carries from one tick to the next. */
 export interface MechanicalState {
+  /** The model's fingerprint (`modelPrint`): a snapshot restores only into the model it came from. */
+  readonly print: number;
   /** The physics world, as the engine's snapshot of it. */
   readonly world: Uint8Array;
   readonly layout: WorldLayout;
@@ -274,7 +276,7 @@ export interface ActuatorMotion {
   /** How fast its drive actually turns, rpm, signed as the shaft turns. */
   readonly rpm: number;
   /** The torque its drive gives against what it turns, N·mm: 0 when nothing resists. */
-  readonly torqueNmm: number;
+  readonly loadNmm: number;
   /** What it turns cannot move (a wall, or more load than it can turn): its load reads as Infinity, so it stalls. */
   readonly held: boolean;
 }
@@ -330,7 +332,7 @@ export interface MechanicalTick {
   readonly contacts: readonly ArenaContact[];
   /** Every actuator primitive of every part, by part (id order) and primitive. */
   readonly actuators: ReadonlyMap<PlacedPartId, Readonly<Record<PrimitiveId, ActuatorMotion>>>;
-  /** The next tick's behaviour `loads`: torqueNmm, or Infinity where held. */
+  /** The next tick's behaviour `loads`: loadNmm, or Infinity where held. */
   readonly loads: ReadonlyMap<PlacedPartId, Readonly<Record<PrimitiveId, number>>>;
   /** Every contact switch's state from its probe, true when closed: the next tick's `ControlState.switches` for them. */
   readonly switches: Readonly<Record<ControlId, boolean>>;

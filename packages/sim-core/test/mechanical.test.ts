@@ -10,15 +10,18 @@ import { behaviourModel, behaviourTick, startBehaviour } from '../src/behaviour/
 import type { BehaviourTick, PartPower, PowerReading, SpeedOutput } from '../src/behaviour/index.ts';
 import { buildGraph, liveAt } from '../src/graph/index.ts';
 import type { SimGraph } from '../src/graph/index.ts';
+import type { ActuatorState } from '../src/electrical/index.ts';
 import {
   atanDegrees,
   driveStep,
+  electricalActuators,
   initMechanics,
   loadingOf,
   mechanicalModel,
   mechanicalSnapshot,
   mechanicalTick,
   mechanicsReady,
+  modelPrint,
   restoreMechanics,
   stanceOf,
   stancePoints,
@@ -53,6 +56,12 @@ const variants: readonly PartRecord[] = [
   variant('bumper-switch', 'whisker-switch', (base) => ({
     behaviour: base.behaviour.map((spec) =>
       spec.kind === 'switch' && spec.actuation.kind === 'contact' ? { ...spec, actuation: { ...spec.actuation, probe: { from: { x: 35, y: -20 }, to: { x: 35, y: 20 } } } } : spec,
+    ),
+  })),
+  // A bumper switch whose probe lies off to one side, 5 to 30 mm to its left: on a mirrored mount it lies to the right.
+  variant('bumper-switch', 'offset-bumper', (base) => ({
+    behaviour: base.behaviour.map((spec) =>
+      spec.kind === 'switch' && spec.actuation.kind === 'contact' ? { ...spec, actuation: { ...spec.actuation, probe: { from: { x: 10, y: 5 }, to: { x: 10, y: 30 } } } } : spec,
     ),
   })),
   // A tall, heavy battery pack (600 g, its centre of mass 250 mm up): the high mass a top-heavy build needs, since no
@@ -249,8 +258,14 @@ const text = (tick: MechanicalTick): string =>
     (_, value: unknown) => (value === Number.POSITIVE_INFINITY ? 'Infinity' : value),
   );
 
+/** The child opens a switch: it is open from the tick after `tick` on. */
+interface Press {
+  readonly control: string;
+  readonly tick: number;
+}
+
 /** One Run of `ticks` ticks after tick 0, from `start` when given. */
-const simulate = (blueprint: Blueprint, presetId: string, ticks: number, start?: { readonly bytes: Uint8Array; readonly from: Frame }): Run => {
+const simulate = (blueprint: Blueprint, presetId: string, ticks: number, start?: { readonly bytes: Uint8Array; readonly from: Frame }, press?: Press): Run => {
   const graph = buildGraph(blueprint, catalogue);
   const bmodel = behaviourModel(graph);
   const model = mechanicalModel(bmodel, arena(presetId));
@@ -261,7 +276,7 @@ const simulate = (blueprint: Blueprint, presetId: string, ticks: number, start?:
   const first = start ? start.from.tick + 1 : 0;
   const frames: Frame[] = [];
   for (let tick = first; tick <= first + ticks - (start ? 1 : 0); tick += 1) {
-    const controls: ControlState = { switches: { ...contact } };
+    const controls: ControlState = { switches: { ...contact, ...(press && tick > press.tick ? { [press.control]: false } : {}) } };
     const seconds = tick === 0 ? { seconds: 0 } : {};
     const b = behaviourTick(bmodel, bstate, { power: idealPower(graph, controls), controls, ...(loads ? { loads } : {}), ...seconds });
     bstate = b.state;
@@ -275,9 +290,9 @@ const simulate = (blueprint: Blueprint, presetId: string, ticks: number, start?:
 };
 
 /** A Run, done twice: both must give the same frames and end in the same bytes. */
-const run = (blueprint: Blueprint, presetId: string, ticks: number): Run => {
-  const first = simulate(blueprint, presetId, ticks);
-  const second = simulate(blueprint, presetId, ticks);
+const run = (blueprint: Blueprint, presetId: string, ticks: number, press?: Press): Run => {
+  const first = simulate(blueprint, presetId, ticks, undefined, press);
+  const second = simulate(blueprint, presetId, ticks, undefined, press);
   expect(second.frames.map((frame) => text(frame.mechanics))).toEqual(first.frames.map((frame) => text(frame.mechanics)));
   expect(mechanicalSnapshot(second.last.mechanics.state)).toEqual(mechanicalSnapshot(first.last.mechanics.state));
   return first;
@@ -399,10 +414,19 @@ describe('a two-motor robot drives', () => {
     for (const motor of ['motor-left', 'motor-right']) {
       const motion = before.mechanics.actuators.get(motor)?.motor;
       expect(motion?.held).toBe(false);
-      expect(motion?.torqueNmm).toBeGreaterThan(0);
-      expect(before.mechanics.loads.get(motor)?.motor).toBe(motion?.torqueNmm);
+      expect(motion?.loadNmm).toBeGreaterThan(0);
+      expect(before.mechanics.loads.get(motor)?.motor).toBe(motion?.loadNmm);
       expect(speedOutput(after, motor).rpm).toBeCloseTo(motion?.rpm ?? Number.NaN, 9);
     }
+    // And the electrical solver reads the same motions, one for each of the graph's power uses (review R-1.4 finding 8).
+    const graph = buildGraph(fixture('rolling-start'), catalogue);
+    const states: readonly (ActuatorState | undefined)[] = electricalActuators(graph.uses, before.mechanics.actuators);
+    expect(states).toHaveLength(graph.uses.length);
+    graph.uses.forEach((use, index) => {
+      const motion = before.mechanics.actuators.get(use.part)?.[use.primitive];
+      expect(states[index]).toBe(use.spec.kind === 'actuator' ? motion : undefined);
+    });
+    expect(states.filter((state) => state !== undefined)).toHaveLength(2);
   });
 
   it('turns on the spot when one motor is wired the other way: clockwise, about the middle of its axle', () => {
@@ -425,6 +449,32 @@ describe('a two-motor robot drives', () => {
     // It turned well over a full turn, clockwise all the way.
     const turned = frames.slice(1).reduce((sum, frame) => sum + robotOf(frame).turnDegPerSecond / 30, 0);
     expect(turned).toBeLessThan(-360);
+  });
+
+  it('spins its wheels at launch when its motors push past the tyres’ grip, and speeds up only as fast as the grip lets it', () => {
+    const strong = run(edited('rolling-start', { retype: { 'motor-left': 'strong-motor', 'motor-right': 'strong-motor' } }), 'open-floor', 30);
+    const first = strong.frames[1] as Frame;
+    // The stall push at each tyre, 400 N·mm × 2.8 / 6 over 32.5 mm = 5.7 N, is far past grip × floor friction × its weight.
+    expect((400 * (PACK_VOLTS / 6)) / 32.5).toBeGreaterThan(5 * strong.model.arena.friction * wheelOf(first, 'wheel-left').loadNewtons);
+    expect(wheelOf(first, 'wheel-left').slipping).toBe(true);
+    expect(partOf(first, 'wheel-left').effects).toEqual(['slip']);
+    // So its first tick gains less than friction on its whole weight could give it, μ g × 1/30 s; unchecked, the push would
+    // take it to the motors' free speed within the tick.
+    expect(robotOf(first).forwardMmPerSecond).toBeLessThan((strong.model.arena.friction * 9810) / 30);
+    expect(robotOf(first).forwardMmPerSecond).toBeGreaterThan(100);
+    // Once its speed takes the push within the grip, the tyres roll: no slip after the first tick, and the free speed.
+    expect(strong.frames.slice(2).every((frame) => !wheelOf(frame, 'wheel-left').slipping && !wheelOf(frame, 'wheel-right').slipping)).toBe(true);
+    expect(robotOf(strong.last).forwardMmPerSecond).toBeGreaterThan(0.99 * freeRim(PACK_VOLTS));
+  });
+
+  it('comes to rest exactly: its switch opened, it coasts to a stop and its pose never changes again (review R-1.4)', () => {
+    const stopped = run(fixture('rolling-start'), 'open-floor', 300, { control: controlId('switch', 'contacts'), tick: 20 });
+    const rest = stopped.frames.findIndex((frame) => frame.tick > 20 && robotOf(frame).forwardMmPerSecond === 0);
+    expect(rest).toBeGreaterThan(21);
+    expect(rest).toBeLessThan(60);
+    const pose = robotOf(stopped.frames[rest] as Frame).pose;
+    for (const frame of stopped.frames.slice(rest)) expect(robotOf(frame).pose).toEqual(pose);
+    expect(pose.x).toBeGreaterThan(robotOf(stopped.frames[21] as Frame).pose.x);
   });
 
   it('pivots about a wheel whose motor has no power: its gear train drags it to a creep', () => {
@@ -456,7 +506,7 @@ describe('at a wall', () => {
     expect(push).toBeLessThan(1 * model.arena.friction * wheel.loadNewtons);
     expect(wheel).toMatchObject({ onFloor: true, slipping: false });
     for (const motor of ['motor-left', 'motor-right']) {
-      expect(last.mechanics.actuators.get(motor)?.motor).toEqual({ held: true, rpm: 0, torqueNmm: 39 * (PACK_VOLTS / 6) });
+      expect(last.mechanics.actuators.get(motor)?.motor).toEqual({ held: true, rpm: 0, loadNmm: 39 * (PACK_VOLTS / 6) });
       expect(last.mechanics.loads.get(motor)?.motor).toBe(Number.POSITIVE_INFINITY);
       expect(speedOutput(last, motor).state).toBe('stalled');
     }
@@ -486,7 +536,7 @@ describe('at a wall', () => {
       const motion = last.mechanics.actuators.get(motor)?.motor;
       expect(motion?.held).toBe(false);
       // The grip's drag at the motor: its share of the friction torque, through the gearbox.
-      expect(motion?.torqueNmm).toBeCloseTo((1 * model.arena.friction * wheel.loadNewtons * 32.5) / (3 * 0.8), 6);
+      expect(motion?.loadNmm).toBeCloseTo((1 * model.arena.friction * wheel.loadNewtons * 32.5) / (3 * 0.8), 6);
       expect(speedOutput(last, motor).state).toBe('turning');
     }
     // The servo motor starts at 3.5 V, above the pack's 2.8 V, so it stays still: no fault of its own.
@@ -516,7 +566,7 @@ describe('at a wall', () => {
     expect(robotOf(direct.last).pose.x + 80).toBeCloseTo(500 - 30, 1);
     expect(direct.last.mechanics.contacts).toEqual([{ kind: 'prop', id: 'box' }]);
     for (const motor of ['motor-left', 'motor-right']) {
-      expect(direct.last.mechanics.actuators.get(motor)?.motor).toEqual({ held: true, rpm: 0, torqueNmm: 39 * (PACK_VOLTS / 6) });
+      expect(direct.last.mechanics.actuators.get(motor)?.motor).toEqual({ held: true, rpm: 0, loadNmm: 39 * (PACK_VOLTS / 6) });
       expect(speedOutput(direct.last, motor).state).toBe('stalled');
     }
     expect(direct.frames.every((frame) => !wheelOf(frame, 'wheel-left').slipping)).toBe(true);
@@ -524,8 +574,7 @@ describe('at a wall', () => {
     // Geared, the push at the tyres (1.3 N each) is past their grip, so they spin against the box instead.
     const geared = run(gearedRollingStart([boxAhead(2000)]), 'open-floor', 90);
     expect(geared.last.mechanics.bodies.get('arena:box')).toEqual({ x: 500, y: 600, heading: 0 });
-    expect(wheelOf(geared.last, 'wheel-left').slipping).toBe(true);
-    expect(Math.abs(wheelOf(geared.last, 'wheel-left').groundMmPerSecond)).toBeLessThan(0.5);
+    expect(wheelOf(geared.last, 'wheel-left')).toMatchObject({ slipping: true, groundMmPerSecond: 0 });
     expect(geared.last.mechanics.actuators.get('motor-left')?.motor?.held).toBe(false);
     expect(faultsOf(geared)).toEqual(['wheel-left: slipping', 'wheel-right: slipping']);
   });
@@ -551,6 +600,19 @@ describe('at a wall', () => {
     expect(robotOf(geared.last).forwardMmPerSecond).toBeLessThan(0.6 * robotOf(run(gearedRollingStart(), 'open-floor', 60).last).forwardMmPerSecond);
     expect(geared.frames.every((frame) => !wheelOf(frame, 'wheel-left').slipping && !wheelOf(frame, 'wheel-right').slipping)).toBe(true);
     expect(faultsOf(geared)).toEqual([]);
+  });
+
+  it('stays exactly where a wall stops it: stalled against it, or stopped short by its bumper switch (review R-1.4)', { timeout: 30_000 }, () => {
+    for (const blueprint of [edited('rolling-start', { preset: 'near-wall' }), edited('bumper-robot', { preset: 'near-wall' })]) {
+      const held = run(blueprint, 'near-wall', 600);
+      const rest = held.frames.findIndex((frame) => frame.tick > 0 && robotOf(frame).forwardMmPerSecond === 0);
+      expect(rest).toBeGreaterThan(0);
+      expect(rest).toBeLessThan(120);
+      const pose = robotOf(held.frames[rest] as Frame).pose;
+      for (const frame of held.frames.slice(rest)) expect(robotOf(frame).pose).toEqual(pose);
+      // One knock, as it arrives.
+      expect(held.frames.filter((frame) => partOf(frame, 'chassis').sounds.some((sound) => sound.sound === 'knock'))).toHaveLength(1);
+    }
   });
 });
 
@@ -669,7 +731,7 @@ describe('balance', () => {
       expect(partOf(tipped.last, id).effects).toEqual(['slip']);
       expect(partOf(tipped.last, id).needs).toEqual([{ need: 'on-floor', kind: 'floor' }]);
     }
-    expect(tipped.last.mechanics.actuators.get('motor-left')?.motor).toMatchObject({ held: false, torqueNmm: 0 });
+    expect(tipped.last.mechanics.actuators.get('motor-left')?.motor).toMatchObject({ held: false, loadNmm: 0 });
     expect(faultsOf(tipped)).toEqual(['chassis: top-heavy']);
   });
 
@@ -775,6 +837,25 @@ describe('a bumper switch', () => {
     expect(robotOf(whiskered.last).pose.x + 90).toBeLessThan(1780);
   });
 
+  it('lying loose on a mirrored mount, has its probe mirrored too (review R-1.4)', () => {
+    // A second chassis lies on the floor, held by nothing, with the switch on its mirrored right motor mount.
+    const lying = (y: number): Blueprint =>
+      edited('rolling-start', {
+        addParts: [
+          { id: 'frame', part: 'chassis', position: { x: 600, y: 0 }, rotation: 0, settings: {} },
+          { id: 'feeler', part: 'offset-bumper', position: { x: 630, y: 53 }, rotation: 0, settings: {} },
+        ],
+        wires: (wires) => [...wires, { id: 'w13', from: { part: 'feeler', port: 'mount' }, to: { part: 'frame', port: 'motor-right' } }],
+        props: [{ id: 'post', shape: 'cylinder', size: { x: 10, y: 10, z: 40 }, grams: 50, at: { x: 940, y, heading: 0 }, fixed: true }],
+      });
+    const control = controlId('feeler', 'contacts');
+    const probe = simulate(lying(525), 'open-floor', 0).model.probes.find((each) => each.part === 'feeler');
+    // The switch lies at (930, 547): its probe, 5 to 30 mm to its left as drawn, reaches 5 to 30 mm to its right.
+    expect(probe).toMatchObject({ onRobot: false, from: { x: 940, y: 542 }, to: { x: 940, y: 517 } });
+    expect(simulate(lying(525), 'open-floor', 0).last.mechanics.switches[control]).toBe(false);
+    expect(simulate(lying(565), 'open-floor', 0).last.mechanics.switches[control]).toBe(true);
+  });
+
   it('sweeps its probe through each substep: a thin wall it passes between two checks still counts', () => {
     const model = mechanicalModel(behaviourModel(buildGraph(edited('bumper-robot', { preset: 'thin' }), catalogue)), arena('thin'));
     const { bytes, layout } = buildWorld(model, 1 / 120);
@@ -836,5 +917,10 @@ describe('tick 0 and snapshots', () => {
     const other = simulate(edited('rolling-start', { preset: 'near-wall' }), 'near-wall', 1);
     expect(() => restoreMechanics(one.model, mechanicalSnapshot(other.last.mechanics.state))).toThrow('another Run');
     expect(() => restoreMechanics(one.model, new Uint8Array(16))).toThrow();
+    // The same arena, so as many props and walls, but another robot: the model's fingerprint tells them apart (review R-1.4).
+    const geared = simulate(gearedRollingStart(), 'open-floor', 1);
+    expect(geared.model.arena).toEqual(one.model.arena);
+    expect(() => restoreMechanics(one.model, mechanicalSnapshot(geared.last.mechanics.state))).toThrow('another Run');
+    expect(modelPrint(one.model)).toBe(modelPrint(simulate(fixture('rolling-start'), 'open-floor', 1).model));
   });
 });

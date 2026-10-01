@@ -7,7 +7,7 @@ import { coast, driveStep, motorDrive } from './drive.ts';
 import type { DriveStep, MotorDrive, PropPush, Velocity } from './drive.ts';
 import { DEGREES_PER_RADIAN, atanDegrees, clamp, clean, finite, length, magnitude, wrapRadians } from './maths.ts';
 import { robotParts } from './robot.ts';
-import { decodeState, encodeState } from './snapshot.ts';
+import { decodeState, encodeState, modelPrint } from './snapshot.ts';
 import { loadingOf, stanceOf, stancePoints } from './stance.ts';
 import type { Placing, Stance, StancePoint } from './stance.ts';
 import type {
@@ -34,6 +34,14 @@ export const SUBSTEPS = 4;
 /** A driven motor turning slower than this share of its free speed, the way it drives, is held: it stalls. */
 export const HELD_SHARE = 0.01;
 
+/**
+ * Below this speed, mm/s, the robot is at rest along the floor, and below it at its radius of gyration it is not turning:
+ * that part of its velocity is set to 0 (review R-1.4 finding 3). The engine keeps positions in single precision, so a
+ * velocity read back from them is in steps of whole units; without this a robot coming to rest, or held against a wall,
+ * could creep or turn a unit a substep forever.
+ */
+const REST_MM_S = 0.1;
+
 /** Slip, mm/s, at which a wheel's squeal is loudest. */
 const SQUEAL_FULL_MM_S = 300;
 
@@ -56,7 +64,7 @@ export const mechanicalModel = (behaviour: BehaviourModel, preset: ArenaPreset):
 /** The state a Run starts from: the world as built, everything at rest. Needs `initMechanics` to have finished. */
 export const startMechanics = (model: MechanicalModel): MechanicalState => {
   const { bytes, layout } = buildWorld(model, 1 / (TICK_RATE * SUBSTEPS));
-  return { world: bytes, layout, velocity: { forward: 0, left: 0, turn: 0 }, floorForce: { x: 0, y: 0 }, touching: [] };
+  return { print: modelPrint(model), world: bytes, layout, velocity: { forward: 0, left: 0, turn: 0 }, floorForce: { x: 0, y: 0 }, touching: [] };
 };
 
 /** The state as bytes, for the Run's snapshot: equal states give equal bytes. */
@@ -64,6 +72,15 @@ export const mechanicalSnapshot = (state: MechanicalState): Uint8Array => encode
 
 /** The state `mechanicalSnapshot` wrote. Throws when the bytes come from another Run's model. */
 export const restoreMechanics = (model: MechanicalModel, bytes: Uint8Array): MechanicalState => decodeState(model, bytes);
+
+/**
+ * A tick's `actuators` as the electrical solver reads them (its `ElectricalInputs.actuators`, review R-1.4 finding 8): one
+ * entry for each of the graph's power uses, in order, with `rpm` and `loadNmm` for an actuator and undefined for the rest.
+ */
+export const electricalActuators = (
+  uses: readonly { readonly part: PlacedPartId; readonly primitive: PrimitiveId }[],
+  actuators: MechanicalTick['actuators'],
+): readonly (ActuatorMotion | undefined)[] => uses.map((use) => actuators.get(use.part)?.[use.primitive]);
 
 // ---------------------------------------------------------------------------------------------
 
@@ -192,6 +209,8 @@ export const mechanicalTick = (model: MechanicalModel, state: MechanicalState, i
             pushes = propPushes(touches, drive);
           }
         }
+        if (length(wanted.forward, wanted.left) < REST_MM_S) wanted = { forward: 0, left: 0, turn: wanted.turn };
+        if (magnitude(wanted.turn) * robot.gyration < REST_MM_S) wanted = { ...wanted, turn: 0 };
         const body = bodyOf(world, layout.robot.body);
         body.setLinvel({ x: clean(wanted.forward * at.cos - wanted.left * at.sin), y: clean(wanted.forward * at.sin + wanted.left * at.cos) }, true);
         body.setAngvel(wanted.turn, true);
@@ -199,18 +218,26 @@ export const mechanicalTick = (model: MechanicalModel, state: MechanicalState, i
       const marks = brakeProps(world, model, layout, substep, pushes);
       world.step();
       settleProps(world, model, layout, marks, substep, pushes);
-      const after = poseOf(world, layout);
-      if (wanted && before && after && at) {
+      let after = poseOf(world, layout);
+      if (wanted && before && after && at && robot && layout.robot) {
         // How it actually moved, from where it went: the engine's own velocity record is not physical in a contact stack.
         const vx = (after.comX - before.comX) / substep;
         const vy = (after.comY - before.comY) / substep;
-        const actual: Velocity = {
+        let actual: Velocity = {
           forward: clean(vx * at.cos + vy * at.sin),
           left: clean(-vx * at.sin + vy * at.cos),
           turn: clean(wrapRadians(after.angle - before.angle) / substep),
         };
+        if (length(actual.forward, actual.left) < REST_MM_S && magnitude(actual.turn) * robot.gyration < REST_MM_S) {
+          // Held where it is (by a wall, a prop, its own drag): it stays exactly there, not a rounding error away.
+          const body = bodyOf(world, layout.robot.body);
+          body.setTranslation({ x: before.x, y: before.y }, true);
+          body.setRotation(before.angle, true);
+          after = poseOf(world, layout);
+          actual = { forward: 0, left: 0, turn: 0 };
+        }
         // How hard it could hit something this tick: its speed going into each substep.
-        fastest = Math.max(fastest, length(velocity.forward, velocity.left) + magnitude(velocity.turn) * (robot?.gyration ?? 0));
+        fastest = Math.max(fastest, length(velocity.forward, velocity.left) + magnitude(velocity.turn) * robot.gyration);
         velocity = actual;
       }
       const later = after ? placingOf(after) : undefined;
@@ -238,6 +265,7 @@ export const mechanicalTick = (model: MechanicalModel, state: MechanicalState, i
     const touching = steps > 0 ? robotTouching(world, layout) : state.touching;
     const knocked = touching.some((index) => !state.touching.includes(index));
     const next: MechanicalState = {
+      print: state.print,
       world: world.takeSnapshot(),
       layout,
       velocity,
@@ -351,7 +379,7 @@ const outputs = (model: MechanicalModel, behaviour: BehaviourTick, state: Mechan
       slipping,
       loadNewtons: clean(load),
     });
-    if (wheel.drive && motorRpm !== undefined) setActuator(wheel.drive.part, wheel.drive.primitive, { rpm: clean(motorRpm), torqueNmm: clean(torque), held });
+    if (wheel.drive && motorRpm !== undefined) setActuator(wheel.drive.part, wheel.drive.primitive, { rpm: clean(motorRpm), loadNmm: clean(torque), held });
     const entry = parts.get(wheel.part);
     if (!entry) return;
     // A wheel that turns but does not move the robot: spinning against the floor, or in the air.
@@ -365,12 +393,12 @@ const outputs = (model: MechanicalModel, behaviour: BehaviourTick, state: Mechan
       if (spec.kind !== 'actuator' || actuators.get(part.id)?.[spec.id]) continue;
       const output = behaviour.parts.get(part.id)?.primitives.find((each) => each.primitive === spec.id);
       const rpm = output?.kind === 'actuator' ? output.rpm : 0;
-      setActuator(part.id, spec.id, { rpm: clean(finite(rpm)), torqueNmm: 0, held: false });
+      setActuator(part.id, spec.id, { rpm: clean(finite(rpm)), loadNmm: 0, held: false });
     }
   }
   const loads = new Map<PlacedPartId, Record<PrimitiveId, number>>();
   for (const [part, record] of actuators) {
-    loads.set(part, Object.fromEntries(Object.entries(record).map(([primitive, motion]) => [primitive, motion.held ? Number.POSITIVE_INFINITY : motion.torqueNmm])));
+    loads.set(part, Object.fromEntries(Object.entries(record).map(([primitive, motion]) => [primitive, motion.held ? Number.POSITIVE_INFINITY : motion.loadNmm])));
   }
 
   // ---- Needs, faults, effects and sounds, part by part.
