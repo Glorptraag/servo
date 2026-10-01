@@ -105,13 +105,12 @@ export type Landing =
  * - on a fanned-out socket's 44 px target (drawn above everything), that socket decides: it takes the wire, or
  *   refuses it (a wrong colour, no room);
  * - nearest to where a fanned-out crowd was (its shadow), nothing: the wire goes to one of the fanned sockets;
- * - on one socket's target, that socket decides; on two at once, they overlap, and their crowd fans out first when
- *   one of it would take the wire;
+ * - on one socket's target, that socket decides, and on its own source's (with the hub on its shaft) it goes back;
+ *   on two at once, they overlap, and their crowd fans out first when one of it would take the wire;
  * - between sockets, within reach of one that would take it, the wire lands there (brief Section 10's 32 px), unless
  *   another of its crowd is within reach too: then the crowd fans out first;
  * - else within reach of one that would refuse it, it is refused there; within reach of its own source only, it
  *   goes back; and anywhere else it goes back.
- * The wire's own source (with the hub on its shaft) is never what it is on.
  */
 export const landingAt = (point: Vec2, sockets: readonly Socket[], reach: number): Landing => {
   const source = sockets.find((socket) => socket.source)?.member;
@@ -123,9 +122,10 @@ export const landingAt = (point: Vec2, sockets: readonly Socket[], reach: number
   if (nearest(point, sockets, reach, (socket) => socket.member !== source || socket.shadow === true)?.shadow) return { kind: 'none' };
   const others = sockets.filter((socket) => socket.member !== source && !socket.shadow);
   const on = others.filter((socket) => distance(point, socket.at) <= PORT_MM / 2).sort((a, b) => distance(point, a.at) - distance(point, b.at));
+  const onSource = sockets.some((socket) => socket.member === source && !socket.shadow && distance(point, socket.at) <= PORT_MM / 2);
   const members = new Set(on.map((socket) => socket.member));
   const [first] = on;
-  if (first && members.size > 1) {
+  if (first && (members.size > 1 || onSource)) {
     const crowdTakes = first.crowd !== undefined && others.some((socket) => socket.crowd === first.crowd && socket.legal);
     return crowdTakes ? { kind: 'spread', socket: first } : { kind: 'refuse', socket: first };
   }
@@ -133,6 +133,7 @@ export const landingAt = (point: Vec2, sockets: readonly Socket[], reach: number
     const taker = on.find((socket) => socket.legal);
     return taker ? { kind: 'land', socket: taker } : { kind: 'refuse', socket: first };
   }
+  if (onSource) return { kind: 'source' };
   const target = nearest(point, others, reach, (socket) => socket.legal);
   if (target) {
     const crowded =

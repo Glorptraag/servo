@@ -1,7 +1,8 @@
 // Where a wire lands (task 3.3), by the rules every input path shares: every pair of sockets in every legal schema
 // fixture and the Circuit Crew kit robot, each wire dropped on its far socket at the default zoom, fanning a crowd out
 // first where the rules say so. A wire lands exactly where `planWire` accepts it, and every impossible pair is refused
-// with the schema's code. Around every crowd, no drop ever lands on a socket other than the one under it. Pure.
+// with the schema's code. Around every crowd and every socket, no drop ever lands on a socket other than the one under
+// it, and a drop on the wire's own source sends it back. Pure.
 import { describe, expect, it } from 'vitest';
 import { planWire } from '@servo/schema';
 import type { Blueprint, Catalogue, Vec2 } from '@servo/schema';
@@ -73,7 +74,6 @@ describe.each(builds)('%s: every wire dropped on every socket', (_, build, again
       const middle = crowd.members.reduce((sum, member) => ({ x: sum.x + member.at.x / crowd.members.length, y: sum.y + member.at.y / crowd.members.length }), { x: 0, y: 0 });
       for (const source of drawnSockets(scene)) {
         const sockets = socketsFrom(scene, crowds, judgeSockets(build, against, scene, source.ref), source);
-        const sourceMember = crowds.memberOf(source.key)?.key;
         for (let dx = -40; dx <= 40; dx += 4) {
           for (let dy = -40; dy <= 40; dy += 4) {
             const point: Vec2 = { x: middle.x + dx, y: middle.y + dy };
@@ -81,13 +81,31 @@ describe.each(builds)('%s: every wire dropped on every socket', (_, build, again
             if (landing.kind !== 'land') continue;
             const label = `${source.key} dropped at (${point.x}, ${point.y}) on ${landing.socket.port.key}`;
             expect(landing.socket.legal, label).toBe(true);
-            const under = sockets.filter((socket) => socket.member !== sourceMember && distance(point, socket.at) <= PORT_MM / 2);
+            // Its own source too: a drop on it is never a drop on a neighbour.
+            const under = sockets.filter((socket) => !socket.shadow && distance(point, socket.at) <= PORT_MM / 2);
             for (const socket of under) expect(socket.member, label).toBe(landing.socket.member);
           }
         }
       }
     }
   }, 60_000);
+
+  it('sends a wire dropped on its own source back, wherever a neighbour would take it', () => {
+    for (const source of drawnSockets(scene)) {
+      const sockets = socketsFrom(scene, crowds, judgeSockets(build, against, scene, source.ref), source);
+      for (let angle = 0; angle < 360; angle += 30) {
+        for (const px of [0, 6, 12, 18]) {
+          const radians = (angle * Math.PI) / 180;
+          const point: Vec2 = { x: source.at.x + (Math.cos(radians) * px) / PX_PER_MM, y: source.at.y + (Math.sin(radians) * px) / PX_PER_MM };
+          const landing = landingAt(point, sockets, REACH);
+          const label = `${source.key} dropped ${px} px from its centre at ${angle}°: ${landing.kind}`;
+          // On another socket's target as well, its crowd fans out or that socket refuses; never a landing.
+          const others = sockets.filter((socket) => socket.member !== crowds.memberOf(source.key)?.key && !socket.shadow && distance(point, socket.at) <= PORT_MM / 2);
+          expect(landing.kind, label).toBe(others.length === 0 ? 'source' : landing.kind === 'spread' ? 'spread' : 'refuse');
+        }
+      }
+    }
+  });
 });
 
 describe('the free end of a wire under a finger', () => {
