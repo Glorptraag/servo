@@ -1,0 +1,747 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "meta": {
+    "createdAt": "2026-10-01T09:00:00.000Z",
+    "highWater": {
+      "parts": 0,
+      "wires": 43
+    },
+    "id": "1310ec9c-8c46-4628-bcb6-64989d0e1098",
+    "level": 2,
+    "name": "Robot and test circuits",
+    "updatedAt": "2026-10-01T09:00:00.000Z"
+  },
+  "parts": [
+    {
+      "id": "battery",
+      "part": "battery-pack-2-cell",
+      "position": {
+        "x": -45,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "bench-battery",
+      "part": "battery-pack-2-cell",
+      "position": {
+        "x": -150,
+        "y": 220
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "bench-buzzer",
+      "part": "buzzer",
+      "position": {
+        "x": 30,
+        "y": 310
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "bench-driver",
+      "part": "motor-driver",
+      "position": {
+        "x": 30,
+        "y": 220
+      },
+      "rotation": 0,
+      "settings": {
+        "motor-b": "backward"
+      }
+    },
+    {
+      "id": "bench-led-1",
+      "part": "led",
+      "position": {
+        "x": -60,
+        "y": 310
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "bench-led-2",
+      "part": "led",
+      "position": {
+        "x": -60,
+        "y": 400
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "bench-led-3",
+      "part": "led",
+      "position": {
+        "x": 30,
+        "y": 400
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "bench-motor-a",
+      "part": "dc-motor",
+      "position": {
+        "x": 120,
+        "y": 220
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "bench-motor-b",
+      "part": "dc-motor",
+      "position": {
+        "x": 120,
+        "y": 310
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "bench-motor-c",
+      "part": "dc-motor",
+      "position": {
+        "x": 210,
+        "y": 220
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "bench-switch",
+      "part": "switch",
+      "position": {
+        "x": -60,
+        "y": 220
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "bumper",
+      "part": "bumper-switch",
+      "position": {
+        "x": 80,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "buzzer",
+      "part": "buzzer",
+      "position": {
+        "x": 30,
+        "y": -29
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "caster",
+      "part": "caster",
+      "position": {
+        "x": -70,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "chassis",
+      "part": "chassis",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "driver",
+      "part": "motor-driver",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "lamp-battery",
+      "part": "battery-pack-2-cell",
+      "position": {
+        "x": 300,
+        "y": 220
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "lamp-led",
+      "part": "led",
+      "position": {
+        "x": 300,
+        "y": 400
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "lamp-switch",
+      "part": "switch",
+      "position": {
+        "x": 300,
+        "y": 310
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "led",
+      "part": "led",
+      "position": {
+        "x": 55,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "motor-left",
+      "part": "dc-motor",
+      "position": {
+        "x": 19,
+        "y": -53
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "motor-right",
+      "part": "dc-motor",
+      "position": {
+        "x": 19,
+        "y": 53
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "switch",
+      "part": "switch",
+      "position": {
+        "x": 30,
+        "y": 29
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "wheel-left",
+      "part": "wheel-large",
+      "position": {
+        "x": 40,
+        "y": -79
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "wheel-right",
+      "part": "wheel-large",
+      "position": {
+        "x": 40,
+        "y": 79
+      },
+      "rotation": 0,
+      "settings": {}
+    }
+  ],
+  "version": 1,
+  "wires": [
+    {
+      "from": {
+        "part": "battery",
+        "port": "mount"
+      },
+      "id": "w1",
+      "to": {
+        "part": "chassis",
+        "port": "deck-rear"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-left",
+        "port": "shaft"
+      },
+      "id": "w10",
+      "to": {
+        "part": "wheel-left",
+        "port": "hub"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-right",
+        "port": "shaft"
+      },
+      "id": "w11",
+      "to": {
+        "part": "wheel-right",
+        "port": "hub"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "plus"
+      },
+      "id": "w12",
+      "to": {
+        "part": "switch",
+        "port": "a"
+      }
+    },
+    {
+      "from": {
+        "part": "bumper",
+        "port": "a"
+      },
+      "id": "w13",
+      "to": {
+        "part": "switch",
+        "port": "b"
+      }
+    },
+    {
+      "from": {
+        "part": "bumper",
+        "port": "b"
+      },
+      "id": "w14",
+      "to": {
+        "part": "driver",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "minus"
+      },
+      "id": "w15",
+      "to": {
+        "part": "driver",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "driver",
+        "port": "a-plus"
+      },
+      "id": "w16",
+      "to": {
+        "part": "motor-left",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "driver",
+        "port": "a-minus"
+      },
+      "id": "w17",
+      "to": {
+        "part": "motor-left",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "driver",
+        "port": "b-plus"
+      },
+      "id": "w18",
+      "to": {
+        "part": "motor-right",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "driver",
+        "port": "b-minus"
+      },
+      "id": "w19",
+      "to": {
+        "part": "motor-right",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "bumper",
+        "port": "mount"
+      },
+      "id": "w2",
+      "to": {
+        "part": "chassis",
+        "port": "bumper"
+      }
+    },
+    {
+      "from": {
+        "part": "bumper",
+        "port": "b"
+      },
+      "id": "w20",
+      "to": {
+        "part": "led",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "minus"
+      },
+      "id": "w21",
+      "to": {
+        "part": "led",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "bumper",
+        "port": "b"
+      },
+      "id": "w22",
+      "to": {
+        "part": "buzzer",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "minus"
+      },
+      "id": "w23",
+      "to": {
+        "part": "buzzer",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "bench-battery",
+        "port": "plus"
+      },
+      "id": "w24",
+      "to": {
+        "part": "bench-switch",
+        "port": "a"
+      }
+    },
+    {
+      "from": {
+        "part": "bench-driver",
+        "port": "plus"
+      },
+      "id": "w25",
+      "to": {
+        "part": "bench-switch",
+        "port": "b"
+      }
+    },
+    {
+      "from": {
+        "part": "bench-battery",
+        "port": "minus"
+      },
+      "id": "w26",
+      "to": {
+        "part": "bench-driver",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "bench-driver",
+        "port": "a-plus"
+      },
+      "id": "w27",
+      "to": {
+        "part": "bench-motor-a",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "bench-driver",
+        "port": "a-minus"
+      },
+      "id": "w28",
+      "to": {
+        "part": "bench-motor-a",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "bench-driver",
+        "port": "b-plus"
+      },
+      "id": "w29",
+      "to": {
+        "part": "bench-motor-b",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "buzzer",
+        "port": "mount"
+      },
+      "id": "w3",
+      "to": {
+        "part": "chassis",
+        "port": "motor-left-inner"
+      }
+    },
+    {
+      "from": {
+        "part": "bench-driver",
+        "port": "b-minus"
+      },
+      "id": "w30",
+      "to": {
+        "part": "bench-motor-b",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "bench-motor-c",
+        "port": "plus"
+      },
+      "id": "w31",
+      "to": {
+        "part": "bench-switch",
+        "port": "b"
+      }
+    },
+    {
+      "from": {
+        "part": "bench-battery",
+        "port": "minus"
+      },
+      "id": "w32",
+      "to": {
+        "part": "bench-motor-c",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "bench-led-1",
+        "port": "plus"
+      },
+      "id": "w33",
+      "to": {
+        "part": "bench-switch",
+        "port": "b"
+      }
+    },
+    {
+      "from": {
+        "part": "bench-battery",
+        "port": "minus"
+      },
+      "id": "w34",
+      "to": {
+        "part": "bench-led-1",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "bench-led-2",
+        "port": "plus"
+      },
+      "id": "w35",
+      "to": {
+        "part": "bench-switch",
+        "port": "b"
+      }
+    },
+    {
+      "from": {
+        "part": "bench-battery",
+        "port": "minus"
+      },
+      "id": "w36",
+      "to": {
+        "part": "bench-led-2",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "bench-led-3",
+        "port": "plus"
+      },
+      "id": "w37",
+      "to": {
+        "part": "bench-switch",
+        "port": "b"
+      }
+    },
+    {
+      "from": {
+        "part": "bench-battery",
+        "port": "minus"
+      },
+      "id": "w38",
+      "to": {
+        "part": "bench-led-3",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "bench-buzzer",
+        "port": "plus"
+      },
+      "id": "w39",
+      "to": {
+        "part": "bench-switch",
+        "port": "b"
+      }
+    },
+    {
+      "from": {
+        "part": "caster",
+        "port": "mount"
+      },
+      "id": "w4",
+      "to": {
+        "part": "chassis",
+        "port": "caster"
+      }
+    },
+    {
+      "from": {
+        "part": "bench-battery",
+        "port": "minus"
+      },
+      "id": "w40",
+      "to": {
+        "part": "bench-buzzer",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "lamp-battery",
+        "port": "plus"
+      },
+      "id": "w41",
+      "to": {
+        "part": "lamp-switch",
+        "port": "a"
+      }
+    },
+    {
+      "from": {
+        "part": "lamp-led",
+        "port": "plus"
+      },
+      "id": "w42",
+      "to": {
+        "part": "lamp-switch",
+        "port": "b"
+      }
+    },
+    {
+      "from": {
+        "part": "lamp-battery",
+        "port": "minus"
+      },
+      "id": "w43",
+      "to": {
+        "part": "lamp-led",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "driver",
+        "port": "mount"
+      },
+      "id": "w5",
+      "to": {
+        "part": "chassis",
+        "port": "deck-middle"
+      }
+    },
+    {
+      "from": {
+        "part": "led",
+        "port": "mount"
+      },
+      "id": "w6",
+      "to": {
+        "part": "chassis",
+        "port": "deck-front"
+      }
+    },
+    {
+      "from": {
+        "part": "switch",
+        "port": "mount"
+      },
+      "id": "w7",
+      "to": {
+        "part": "chassis",
+        "port": "motor-right-inner"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-left",
+        "port": "mount"
+      },
+      "id": "w8",
+      "to": {
+        "part": "chassis",
+        "port": "motor-left"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-right",
+        "port": "mount"
+      },
+      "id": "w9",
+      "to": {
+        "part": "chassis",
+        "port": "motor-right"
+      }
+    }
+  ]
+}

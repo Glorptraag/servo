@@ -184,7 +184,8 @@ const singleUses = (graph: SimGraph) =>
   });
 
 describe('live nets agree with the schema and with brute force', () => {
-  it('on 400 random circuits, at rest and at random control states', () => {
+  // A bulk property test: a few seconds alone, more on a busy machine, so not Vitest's 5 s default (R-1.2 finding 8).
+  it('on 400 random circuits, at rest and at random control states', { timeout: 60_000 }, () => {
     const next = generator(20261001);
     // How often the sample reaches each case it is meant to test, in states.
     const seen = { states: 0, live: 0, joined: 0, output: 0, stopped: 0, shorted: 0, bridged: 0 };
