@@ -15,7 +15,7 @@ import { buildGraph } from '../src/graph/index.ts';
 import { initMechanics } from '../src/mechanical/index.ts';
 import { blockRuleRuntime } from '../src/program/index.ts';
 import { buildChanges, fixedFaults } from '../src/recorder/index.ts';
-import { eventsOf, liveOf } from '../src/loop/frame.ts';
+import { FAULT_DEBOUNCE_TICKS, eventsOf, liveOf } from '../src/loop/frame.ts';
 import { buildModels } from '../src/loop/models.ts';
 import { solveTick, startState } from '../src/loop/tick.ts';
 import { warmControls } from '../src/loop/warm.ts';
@@ -124,8 +124,12 @@ describe('tick 0', () => {
     expect(frame.live.get('battery')?.values).toMatchObject({ volts: expect.any(Number), milliamps: expect.any(Number), charge: 1 });
     expect(frame.live.get('bumper')?.values.closed).toBe(true);
     expect(frame.live.get('caster')).toEqual({ values: {}, sounds: [], faults: [] });
-    // The example servo motor starts at 3.5 V, above a 2-cell pack: it is low from tick 0 (docs/electrical.md).
-    expect(frame.live.get('servo')?.faults).toEqual(['low-voltage']);
+    // The example servo motor starts at 3.5 V, above a 2-cell pack: it is low from tick 0 (docs/electrical.md), and the
+    // fault shows from tick 2, once it has lasted FAULT_DEBOUNCE_TICKS.
+    expect(frame.live.get('servo')?.faults).toEqual([]);
+    expect(frame.events.some((event) => event.kind === 'fault')).toBe(false);
+    stepTo(simulation, 2);
+    expect(simulation.frame.live.get('servo')?.faults).toEqual(['low-voltage']);
     simulation.dispose();
   });
 
@@ -250,8 +254,10 @@ describe('inputs', () => {
 describe('faults', () => {
   it('merges the electrical solver’s faults', async () => {
     const shorted = await make(fixture('short-circuit'));
+    stepTo(shorted, 2);
     expect(shorted.frame.live.get('battery')?.faults).toEqual(['short-circuit']);
     const reversed = await make(fixture('reversed-motor'));
+    stepTo(reversed, 2);
     expect(reversed.frame.live.get('motor-right')?.faults).toEqual(['reversed']);
     shorted.dispose();
     reversed.dispose();
@@ -260,6 +266,7 @@ describe('faults', () => {
   it('merges the behaviour runtime’s faults', async () => {
     // The left wheel's hub is linked to nothing, so it is not driven.
     const simulation = await make(unlinked('rolling-start', ['w6']));
+    stepTo(simulation, 2);
     expect(simulation.frame.live.get('wheel-left')?.faults).toEqual(['not-driven']);
     simulation.dispose();
   });
@@ -268,28 +275,63 @@ describe('faults', () => {
     const simulation = await make(without('rolling-start', ['caster']));
     stepTo(simulation, 10);
     expect(simulation.frame.live.get('chassis')?.faults).toEqual(['scraping']);
-    expect(simulation.record(CONTEXT).faults).toContainEqual({ partId: 'chassis', failure: 'scraping', firstTick: 0 });
+    expect(simulation.record(CONTEXT).faults).toContainEqual({ partId: 'chassis', failure: 'scraping', firstTick: 2 });
     simulation.dispose();
   });
 
   it('keeps a short the child closes for as long as it lasts, and lists it once', async () => {
     const simulation = await make(fixture('switch-across-pack'));
-    expect(simulation.frame.live.get('switch')?.faults).toEqual(['across-the-pack']);
-    expect(simulation.frame.live.get('battery')?.faults).toEqual(['short-circuit']);
+    // Opened at tick 6, closed again at tick 11.
     const inputs = [
       { tick: 5, partId: 'switch', kind: 'switch' as const, closed: false },
       { tick: 10, partId: 'switch', kind: 'switch' as const, closed: true },
     ];
     const frames = stepTo(simulation, 15, inputs);
-    expect(frames[6]?.events.filter((event) => event.kind === 'fault').map((event) => [event.partId, event.kind === 'fault' && event.payload.active])).toEqual([
+    const faultEvents = (tick: number) => frames[tick]?.events.filter((event) => event.kind === 'fault').map((event) => [event.partId, event.kind === 'fault' && event.payload.active]);
+    expect(faultEvents(2)).toEqual([
+      ['battery', true],
+      ['switch', true],
+    ]);
+    expect(faultEvents(8)).toEqual([
       ['battery', false],
       ['switch', false],
     ]);
-    expect(frames[11]?.live.get('switch')?.faults).toEqual(['across-the-pack']);
+    expect(frames[12]?.live.get('switch')?.faults).toEqual([]);
+    expect(frames[13]?.live.get('switch')?.faults).toEqual(['across-the-pack']);
     expect(simulation.record(CONTEXT).faults).toEqual([
-      { partId: 'battery', failure: 'short-circuit', firstTick: 0 },
-      { partId: 'switch', failure: 'across-the-pack', firstTick: 0 },
+      { partId: 'battery', failure: 'short-circuit', firstTick: 2 },
+      { partId: 'switch', failure: 'across-the-pack', firstTick: 2 },
     ]);
+    simulation.dispose();
+  });
+
+  it(`debounces faults: one shows at its ${FAULT_DEBOUNCE_TICKS}rd tick and ends at its ${FAULT_DEBOUNCE_TICKS}rd tick away, and readouts show every tick`, async () => {
+    expect(FAULT_DEBOUNCE_TICKS).toBe(3);
+    const blueprint = fixture('switch-across-pack');
+    const simulation = await make(blueprint);
+    const flip = (tick: number, closed: boolean) => ({ tick, partId: 'switch', kind: 'switch' as const, closed });
+    // The short lasts one tick (tick 0, as the switch rests closed), one tick (5), two ticks (10 and 11), then ticks 16 to 25.
+    const inputs = [flip(0, false), flip(4, true), flip(5, false), flip(9, true), flip(11, false), flip(15, true), flip(25, false)];
+    const frames = stepTo(simulation, 30, inputs);
+    const faultEvents = frames.flatMap((frame) => frame.events.filter((event) => event.kind === 'fault').map((event) => [event.tick, event.partId, event.kind === 'fault' && event.payload.active]));
+    expect(faultEvents).toEqual([
+      [18, 'battery', true],
+      [18, 'switch', true],
+      [28, 'battery', false],
+      [28, 'switch', false],
+    ]);
+    const record = simulation.record(CONTEXT);
+    expect(record.faults).toEqual([
+      { partId: 'battery', failure: 'short-circuit', firstTick: 18 },
+      { partId: 'switch', failure: 'across-the-pack', firstTick: 18 },
+    ]);
+    const valid = validateRunRecord(JSON.parse(JSON.stringify(record)), catalogue);
+    expect(valid.ok ? [] : valid.issues).toEqual([]);
+    // The switch's position and the short's current show at every tick, glitches and all.
+    const closed = frames.flatMap((frame) => frame.events.filter((event) => event.partId === 'switch' && event.kind === 'value' && event.payload.closed !== undefined));
+    expect(closed.map((event) => event.tick)).toEqual([0, 1, 5, 6, 10, 12, 16, 26]);
+    expect(frames[5]?.live.get('battery')?.values.milliamps).toBeGreaterThan(1000);
+    expect(frames[5]?.live.get('battery')?.faults).toEqual([]);
     simulation.dispose();
   });
 
@@ -358,11 +400,13 @@ describe('snapshot and restore', () => {
     const unbroken = await make(blueprint);
     stepTo(unbroken, 30, inputs);
     const simulation = await make(blueprint);
-    stepTo(simulation, 12, inputs);
+    // At tick 8 the short has been gone two ticks: its end is still counting (FAULT_DEBOUNCE_TICKS), in the snapshot.
+    stepTo(simulation, 8, inputs);
+    expect(simulation.frame.live.get('switch')?.faults).toEqual(['across-the-pack']);
     const middle = simulation.snapshot();
     const tail = stepTo(simulation, 30, inputs).map(frameText);
     simulation.restore(middle);
-    expect(simulation.tick).toBe(12);
+    expect(simulation.tick).toBe(8);
     expect(stepTo(simulation, 30, inputs).map(frameText)).toEqual(tail);
     expect(JSON.stringify(simulation.record(CONTEXT))).toBe(JSON.stringify(unbroken.record(CONTEXT)));
     // A snapshot holds the whole state, so equal states are equal bytes.
@@ -416,8 +460,9 @@ describe('the program slot', () => {
     // With no program, the v1 no-op brain drives nothing (D41): the servo motor holds and hums, with no signal.
     const plain = await make(blueprint);
     expect(plain.frame.flows.get(line.id)).toEqual({});
-    expect(plain.frame.live.get('servo')?.faults).toEqual(['no-signal']);
     expect(plain.frame.live.get('servo')?.sounds.map((sound) => sound.sound)).toEqual(['hum']);
+    stepTo(plain, 2);
+    expect(plain.frame.live.get('servo')?.faults).toEqual(['no-signal']);
     plain.dispose();
     const middle = await make(blueprint, 7, program);
     stepTo(middle, 1);
@@ -445,7 +490,7 @@ describe('the warm-up', () => {
     let opened = false;
     for (let tick = 0; tick <= 600 && !opened; tick += 1) {
       const solved = solveTick(models, state, tick);
-      state = { ...solved.state, live: liveOf(models, solved.readouts, state.live, eventsOf(models, tick, solved.readouts, state.live)) };
+      state = { ...solved.state, live: liveOf(models, solved.readouts, state.live, eventsOf(models, tick, solved.readouts, state.live)), pending: {} };
       opened = state.contact['bumper/contacts'] === false;
     }
     expect(opened).toBe(true);
@@ -515,7 +560,7 @@ describe('record', () => {
       goal: { met: false },
       hints,
     });
-    expect(record.faults).toEqual([{ partId: 'motor-right', failure: 'reversed', firstTick: 0 }]);
+    expect(record.faults).toEqual([{ partId: 'motor-right', failure: 'reversed', firstTick: 2 }]);
     // validateRunRecord checks the challenge only as an id, so the record still validates.
     const result = validateRunRecord(stored(record), catalogue);
     expect(result.ok ? [] : result.issues).toEqual([]);
@@ -564,7 +609,7 @@ const mended = (): Blueprint => {
 describe('fixed (D31)', () => {
   it('lists each fault of the previous Run this Run did not show, with the changes that touch its part', async () => {
     const previous = await recordOf(fixture('reversed-motor'), 30);
-    expect(previous.faults).toEqual([{ partId: 'motor-right', failure: 'reversed', firstTick: 0 }]);
+    expect(previous.faults).toEqual([{ partId: 'motor-right', failure: 'reversed', firstTick: 2 }]);
     const simulation = await make(mended());
     stepTo(simulation, 30);
     const record = simulation.record({ ...CONTEXT, runNumber: 2, previous });

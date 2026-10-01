@@ -1,5 +1,5 @@
 import { RUN_SOUNDS } from '@servo/schema';
-import type { EventSubject, MotionPayload, RunEvent, RunSound, SoundPayload, ValuePayload } from '@servo/schema';
+import type { EventSubject, FailureModeId, MotionPayload, RunEvent, RunSound, SoundPayload, ValuePayload } from '@servo/schema';
 import type { LiveState } from '../interface.ts';
 import type { Models } from './models.ts';
 import type { Readout } from './tick.ts';
@@ -15,8 +15,49 @@ const copyValue = <K extends ValueKey>(to: Values, from: ValuePayload, key: K): 
   to[key] = from[key];
 };
 
+/**
+ * Faults are debounced (the orchestrator's ruling on task 1.5). A failure mode shows, with its fault event and its entry
+ * in the run record, only once it has been active for this many consecutive ticks, and it ends only once it has been
+ * inactive for as many: 3 ticks, 0.1 s. So a glitch of a tick or two never reaches the child, the spec card or the parent
+ * view: a motor driver browning out at tick 0, a wheel slipping for a tick as the robot meets a heavy prop, a bumper
+ * switch closing for a tick as the robot settles. Readouts, poses and sounds are never debounced.
+ */
+export const FAULT_DEBOUNCE_TICKS = 3;
+
 /** A subject before its first event: no readouts, no pose, silent and with no fault. */
 export const UNSEEN: LiveState = Object.freeze({ values: Object.freeze({}), sounds: Object.freeze([]), faults: Object.freeze([]) });
+
+/**
+ * Each subject's readouts with its faults as they show after debouncing, and the counts still running. A failure mode
+ * whose state this tick differs from what the last frame showed counts one more tick (`pending`, keyed `<subject>
+ * <failure>`); at FAULT_DEBOUNCE_TICKS it shows the new state and its count ends. One that agrees has no count, so a fault
+ * flickering back before then never moved.
+ */
+export const debounceFaults = (
+  models: Models,
+  readouts: readonly Readout[],
+  live: ReadonlyMap<EventSubject, LiveState>,
+  pending: Readonly<Record<string, number>>,
+): { readonly readouts: readonly Readout[]; readonly pending: Readonly<Record<string, number>> } => {
+  const counts: Record<string, number> = {};
+  const shown = readouts.map((now, index): Readout => {
+    const subject = models.subjects[index];
+    if (!subject || subject.failures.length === 0) return now;
+    const was = (live.get(subject.id) ?? UNSEEN).faults;
+    const faults = subject.failures.filter((failure: FailureModeId) => {
+      const showing = was.includes(failure);
+      if (now.faults.includes(failure) === showing) return showing;
+      const key = `${subject.id} ${failure}`;
+      const count = (pending[key] ?? 0) + 1;
+      if (count >= FAULT_DEBOUNCE_TICKS) return !showing;
+      counts[key] = count;
+      return showing;
+    });
+    const same = faults.length === was.length && faults.every((failure, at) => was[at] === failure);
+    return { ...now, faults: same ? was : Object.freeze(faults) };
+  });
+  return { readouts: shown, pending: counts };
+};
 
 /** The readouts that differ from the last frame's, in ValuePayload's order; undefined when none does. */
 const changedValues = (now: ValuePayload, was: ValuePayload): ValuePayload | undefined => {
