@@ -441,6 +441,10 @@ export class CanvasSurface implements CanvasHandle {
     const renderer = this.renderer;
     if (renderer && (renderer.screen.width !== width || renderer.screen.height !== height || renderer.resolution !== this.resolution)) {
       renderer.resize(width, height, this.resolution);
+      // Resizing clears the drawing buffer, and this runs after the frame's animation callbacks and before it is
+      // painted. Draw now, as Pixi's own ResizePlugin does, so a sliding edge never shows a blank canvas.
+      if (this.frame(performance.now())) this.loop.request();
+      return;
     }
     this.loop.request();
   }

@@ -65,7 +65,24 @@ export interface FixtureLoad {
 }
 
 /** Every fixture, by name. Tasks 2.6, 4.7 and 4.8 add theirs, with their blueprints in fixtures/blueprints/. */
-export const FIXTURES: Readonly<Record<string, FixtureSpec>> = {};
+export const FIXTURES: Readonly<Record<string, FixtureSpec>> = {
+  // Task 2.3: each launch kit's robot (test/kits.test.ts). 360 ticks is over twice the drive to the far wall at the motors' top speed.
+  'kit-circuit-crew': {
+    description: 'The Circuit Crew kit robot drives through the motor driver to the far wall, where its bumper switch opens and stops it, with no fault.',
+    blueprint: 'kit-circuit-crew',
+    inputs: [],
+    ticks: 360,
+    expect: { faults: [] },
+  },
+  // Pressed open after 2 s; in 4 s, even at the motors' top speed, it cannot reach the floor's edge.
+  'kit-rolling-start': {
+    description: 'The Rolling Start kit robot drives forward on the open floor until the child opens its switch, with no fault.',
+    blueprint: 'kit-rolling-start',
+    inputs: [{ tick: 60, partId: 'switch', kind: 'switch', closed: false }],
+    ticks: 120,
+    expect: { faults: [] },
+  },
+};
 
 const MANIFEST = 'src/fixtures.ts';
 const FOLDER = 'fixtures/blueprints';

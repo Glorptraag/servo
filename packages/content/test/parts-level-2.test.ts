@@ -760,7 +760,7 @@ const clearance = (blueprint: Blueprint): number => {
 };
 
 describe('the small wheel', () => {
-  it('curves the robot towards the small wheel when it replaces one large wheel, in a circle that fits the open floor (the what-if)', () => {
+  it('curves the robot towards the small wheel when it replaces one large wheel, the midpoint of its wheels on a circle about 515 mm in radius, narrower than the open floor (the what-if)', () => {
     const blueprint = robot(directDrive('wheel-large', 'wheel-small'));
     expect(pushes(blueprint)).toEqual(['wheel-left 1', 'wheel-right 1']);
     const [left, right] = ['wheel-left', 'wheel-right'].map((wheel) => primitive(typeOf(blueprint, wheel), 'wheel').radiusMm);
@@ -768,7 +768,11 @@ describe('the small wheel', () => {
     // Both motors turn alike, so each wheel rolls its radius times as far: the right one less far, so the robot turns right.
     const yawRate = ((right ?? 0) - (left ?? 0)) / track;
     expect(yawRate).toBeLessThan(0);
+    // The radius of the path the point midway between the two tyres' contacts follows. Only that path is checked: from the
+    // preset's start pose the turn meets the floor's side edge part-way round, which task 4.8 must allow for (R-2.2).
     const radius = ((track / 2) * ((left ?? 0) + (right ?? 0))) / ((left ?? 0) - (right ?? 0));
+    expect(radius).toBeGreaterThan(500);
+    expect(radius).toBeLessThan(530);
     expect(2 * radius).toBeLessThan(arena('open-floor').size.y);
   });
 

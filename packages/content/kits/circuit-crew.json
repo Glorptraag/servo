@@ -1,0 +1,109 @@
+{
+  "id": "circuit-crew",
+  "level": 2,
+  "name": "Circuit Crew",
+  "parts": [
+    {
+      "part": "battery-pack-2-cell",
+      "quantity": 2
+    },
+    {
+      "part": "battery-pack-1-cell",
+      "quantity": 1
+    },
+    {
+      "part": "switch",
+      "quantity": 1
+    },
+    {
+      "part": "motor-driver",
+      "quantity": 1
+    },
+    {
+      "part": "bumper-switch",
+      "quantity": 1
+    },
+    {
+      "part": "dc-motor",
+      "quantity": 2
+    },
+    {
+      "part": "servo-motor",
+      "quantity": 1
+    },
+    {
+      "part": "wheel-large",
+      "quantity": 2
+    },
+    {
+      "part": "wheel-small",
+      "quantity": 2
+    },
+    {
+      "part": "gearbox",
+      "quantity": 2
+    },
+    {
+      "part": "chassis",
+      "quantity": 1
+    },
+    {
+      "part": "caster",
+      "quantity": 1
+    },
+    {
+      "part": "led",
+      "quantity": 1
+    },
+    {
+      "part": "buzzer",
+      "quantity": 1
+    }
+  ],
+  "tray": [
+    {
+      "family": "power",
+      "parts": [
+        "battery-pack-2-cell",
+        "battery-pack-1-cell",
+        "switch",
+        "motor-driver"
+      ]
+    },
+    {
+      "family": "sense",
+      "parts": [
+        "bumper-switch"
+      ]
+    },
+    {
+      "family": "actuators",
+      "parts": [
+        "dc-motor",
+        "servo-motor"
+      ]
+    },
+    {
+      "family": "drivetrain",
+      "parts": [
+        "wheel-large",
+        "wheel-small",
+        "gearbox"
+      ]
+    },
+    {
+      "family": "structure-and-ride",
+      "parts": [
+        "chassis",
+        "caster"
+      ]
+    },
+    {
+      "family": "output",
+      "parts": [
+        "led",
+        "buzzer"
+      ]
+    }
+  ]
+}
