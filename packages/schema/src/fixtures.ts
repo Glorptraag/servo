@@ -118,7 +118,7 @@ export const validBlueprints: readonly BlueprintFixture[] = [
   { name: 'led-circuit', description: 'An LED and a switch on a battery pack, with no chassis: a circuit on the workbench.', motion: 'none', data: blueprintLedCircuit },
   { name: 'reversed-motor', description: 'Legal but wrong: the right motor is wired the other way round, so on Run the robot spins on the spot.', motion: 'spin', data: blueprintReversedMotor },
   { name: 'short-circuit', description: "Legal but wrong: a wire joins the 1-cell pack's plus straight to its minus, so on Run it drains fast.", motion: 'none', data: blueprintShortCircuit },
-  { name: 'switch-across-pack', description: 'Legal but wrong: a switch wired straight across the 2-cell pack, so closing it makes a short circuit. The switch shows across-the-pack and the pack its short circuit, one fault each.', motion: 'none', data: blueprintSwitchAcrossPack },
+  { name: 'switch-across-pack', description: 'Legal but wrong: a switch wired straight across the 2-cell pack. While it is closed, as it rests, the switch shows across-the-pack and the pack its short circuit, one fault each; opened, nothing is wrong.', motion: 'none', data: blueprintSwitchAcrossPack },
   { name: 'bumper-robot', description: 'A Level 2 robot: motor driver with both channels forward, gearboxes (the motors on the inner motor mounts), bumper switch, buzzer, and a servo motor with power but no signal. It drives forward.', motion: 'forward', data: blueprintBumperRobot },
   { name: 'motor-off-pin', description: "Legal but wrong (Level 3 slot): a DC motor on the microcontroller's 3V pin, and a servo motor on a no-op brain's output.", motion: 'none', data: blueprintMotorOffPin },
 ];

@@ -168,7 +168,7 @@ describe('placing the fixture robots', () => {
 });
 
 /**
- * Which way an actuator turns from its wiring, by the power need's rule: every switch counts as closed.
+ * Which way an actuator turns from its wiring, with every switch closed, as each fixture's switches rest.
  * +1 when its plus side traces to a source's plus and its minus side to that source's minus, −1 when
  * crossed, 0 with no such loop. A driver channel counts as a source whose sign is its command, when its
  * own supply traces the right way round.

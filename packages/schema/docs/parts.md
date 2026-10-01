@@ -41,21 +41,26 @@ Settings may drive `actuator.throttle`, `actuator.reverse`, `actuator.target`, `
 
 ## Needs, unmet ways and effects
 
-**Judged as wired.** Power, loop and isolation needs are judged on the circuit the child built, with every switch counted closed and every motor-driver channel at full forward command.
+**A fault is something the child's controls cannot fix.** Every need is judged on the build as it stands, with each switch and each motor-driver channel at its current setting. An unmet need is a fault only when no other setting of those controls would meet it and no short circuit or unpowered driver starves it; otherwise the part simply shows the behaviour, and `explainedBy` says why. A short circuit (a closed loop through sources, with nothing that uses power, whose source voltages do not cancel) is a fault for as long as it lasts.
 
-- A switch's state and a driver's command are control, never faults. When one of them cuts or reverses a part's supply, the part shows that behaviour (it stops, or turns the other way) with no fault.
-- A part fed through a motor-driver channel or a regulator whose own power need is unmet, or starved by a short circuit elsewhere in its circuit, shows no power fault of its own: that part's fault, or the short's, stands for it. A motor beside a switch wired across the pack runs while the switch is open, so only the switch and the pack show faults.
-- `wiredNeeds(blueprint, catalogue)` gives the verdicts the wiring alone decides: power `open`, loop `open` and isolation `shorted`, plus `explainedBy` for a part behind a driver or regulator without power. sim-core judges `low`, `high` and `reversed` on the voltages of the same as-wired circuit.
+- **The controls** (`controlsOf`) are every switch's position and every driver channel's command (forward, stop or backward). A bumper switch counts at its current state.
+- **Explaining an unmet power or loop need**, in this order:
+  - by a short circuit that starves it: it would be met with the wires and closed switches that make the short taken away (`by: 'short'`, naming the parts whose short-circuit faults stand for it);
+  - by the controls: the first other setting that meets it (`by: 'controls'`, naming the controls it changes);
+  - by a motor driver or regulator without power that feeds it (`by: 'feeder'`): that part's own fault stands for it.
+- **The search is bounded.** With at most `CONTROL_COMBINATION_CAP` (1024, 2^10) combinations of settings, every combination is tried, fewest changes first, then in control order. With more, only single-control changes are tried.
+- **Who judges what.** `wiredNeeds(blueprint, catalogue, state)` is pure, so sim-core can call it with the control state each tick and keep the result until a control changes. It decides what the wiring decides: power `open`, loop `open` and isolation `shorted`. sim-core judges `low`, `high` and `reversed` on its voltages by the same rule, with `explainByControls` trying the settings in the same order.
+- **Outputs are approximate.** A loop through a driver channel's or regulator's output never cancels here. Task 1.2's solver treats these outputs as sources with limited current.
 
 | Need | True when | Unmet as |
 | --- | --- | --- |
-| `power` (`supply`, `minVolts`, `maxVolts`) | a complete circuit, the right way round, within the range | `open` (no closed path through a source joins the supply's ports outside the part), `low`, `high`, `reversed` |
-| `loop` (`ports`) | a closed path joins the two ports outside the part, through a source unless this part is the source | `open`, only when there is no closed path at all. A closed path with nothing that uses power is isolation's `shorted`, never `open` |
+| `power` (`supply`, `minVolts`, `maxVolts`) | a complete circuit, the right way round, within the range | `open` (no closed path through a source giving power joins the supply's ports outside the part), `low`, `high`, `reversed` |
+| `loop` (`ports`) | a closed path joins the two ports outside the part, through a source giving power unless this part is the source | `open` when there is none. A closed path with nothing that uses power is isolation's `shorted`, never `open` |
 | `signal` (`port`) | a signal source drives the signal in | `absent` |
 | `mount` (`port`) | the mount is fixed to a mount point | `absent` |
 | `drive` (`port`) | the drive-in is linked to a drive-out | `absent` |
 | `torque` (`port`, an actuator's drive) | the load stays below what the actuator can turn | `exceeded` |
-| `isolation` (`ports`) | no closed path of wires, closed switches and sources with power (nothing that uses power) joins the two ports through a source | `shorted` |
+| `isolation` (`ports`) | no short circuit runs through the part's own source or closed switch on these ports. Going round the loop, add each battery's volts from − to + and take them away from + to −: a total that is not zero is a short | `shorted`, a fault while it lasts |
 | `floor` (a part with a `wheel` or `support`) | it rests on the floor | `lifted`, and for a wheel `slipping` (pushing past its grip) |
 | `balance` | the robot rides upright on its wheels and supports | `lost` (it falls over), `grounded` (its frame rests on the floor and drags) |
 
@@ -70,13 +75,15 @@ Settings may drive `actuator.throttle`, `actuator.reverse`, `actuator.target`, `
 
 `slow`, `quiet` and `dim` mean less than at the rated voltage.
 
-**One fault for each wiring mistake** (test/circuit.test.ts):
+**Examples** (test/circuit.test.ts):
 
-- The short-circuit fixture: the battery pack's loop is closed by the wire, so it shows `short-circuit` only.
-- `switch-across-pack`: the switch shows `across-the-pack` and the pack `short-circuit`, one each.
-- A switch wired off to one side of the loop, or bypassed by a wire, shows `outside-loop`.
-- A motor-driver channel set to stop or backward: no fault. The motor stops or turns backward.
-- A motor driver with no power shows `no-power`, and its motors show nothing of their own.
+- A series switch: open, the motor and the pack are explained by the switch; closed, every need is met. Two series switches work the same way.
+- A switch across the pack, with a motor beside it: open, nothing is wrong. Closed, the switch shows `across-the-pack` and the pack `short-circuit`, and the motor is explained by that short. A series switch beside it is never `outside-loop`.
+- The short-circuit fixture: the battery pack's loop is closed by the wire, so it shows `short-circuit` only. An LED on that pack is explained by the short.
+- Equal packs side by side share the load. A 2-cell pack beside a 1-cell pack: both show `short-circuit`.
+- A switch wired off to one side of the loop, or bypassed by a wire, shows `outside-loop` whatever the controls do.
+- A motor-driver channel at stop is explained by its control. At backward the wiring meets the need, and sim-core explains the `reversed` motor by the same control.
+- A motor driver with no power shows `no-power`, and its motors are explained by it.
 
 ## The Level 1–2 roster and the Level 3 slot
 
@@ -93,7 +100,7 @@ Every Level 1–2 example part has at least two failure modes (a test checks it)
 | chassis (frame) | Structure & Ride | body + eleven mount points (the right-hand ones mirrored) | balance | top-heavy: balance · lost → tip; frame on the floor: balance · grounded → drag |
 | LED | Output | `load` blocks, light | power 2–6 V | reversed → dark; no circuit → dark; low → dim |
 | buzzer | Output | `load` blocks, sound | power 3–6 V | reversed → silent; low → quiet |
-| motor driver | Power | `driver` × 2 (channel settings) | power 2.5–10 V | no power → off; low → off (its motors show no fault of their own) |
+| motor driver | Power | `driver` × 2 (channel settings, which are controls) | power 2.5–10 V | no power → off; low → off (its motors show no fault of their own) |
 | gearbox | Drivetrain | `ratio` | drive, mount | not driven → still; loose: mount · absent → still |
 | servo motor (preview) | Actuators | `actuator` position | power 4.8–6 V, signal, torque | no signal: signal · absent → hold, hum; no circuit → still; low → slow; overload → stall, hum |
 | microcontroller (Level 3 slot) | Brain | `program` (no-op), `regulator` (3V pin) | power 3–6 V | no power → off; low → off |
@@ -104,11 +111,11 @@ The DC motor's range starts at 2.2 V, so a fresh 2-cell pack under normal load (
 
 | Failure | Recorded as | Produced by |
 | --- | --- | --- |
-| No complete circuit: the part stays still | DC motor power · open | No closed path through a source joins the motor's supply, judged as wired (every switch closed, every driver channel at full forward), so it gets 0 V. |
+| No complete circuit: the part stays still | DC motor power · open | No closed path through a source giving power joins the motor's supply, whatever the controls do, so it gets 0 V. |
 | Low voltage: slow, battery drains faster | DC motor power · low | Speed ∝ voltage, while the current for the same load does not fall, so the pack drains more for each turn. |
 | Overload: stall and hum | DC motor torque · exceeded | Load torque reaches stall torque: speed 0, stall current, hum. |
 | Reversed polarity: motor backwards, LED dark | DC motor or LED power · reversed | `whenReversed: 'reverses'` gives negative speed; `'blocks'` gives no current, so no light. |
-| Short circuit: rapid drain | battery pack isolation · shorted | A loop through the source with no load draws volts ÷ internalOhms, which empties `capacityMah` in seconds. |
+| Short circuit: rapid drain | battery pack isolation · shorted | A loop through the source with no load, whose voltages do not cancel, draws the leftover volts ÷ the loop's internalOhms, which empties `capacityMah` in seconds. |
 | Servo with power, no signal: holds and hums | servo motor signal · absent | The position actuator has power and no command. |
 | Top-heavy chassis: tips over | chassis balance · lost | Each body's mass, placed through the mounts, sums to one centre of mass. It falls outside the wheels and supports, or a start or a ramp pushes it out. |
 | Loose caster: drags | caster mount · absent | A support carries weight only while mounted. Loose, the frame rests on the floor and slides with the floor's friction. |

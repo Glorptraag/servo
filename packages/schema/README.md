@@ -22,7 +22,7 @@ import { exampleParts, validBlueprints } from '@servo/schema/fixtures'; // test 
 | Validators | `validatePartRecord`, `validateArenaPreset`, `validateKit`, `validateBlueprint`, `validateBlueprintShape`, `validateChallenge`, `validateRunRecord`, `makeCatalogue` | [validation](docs/validation.md) |
 | Wiring (ground rule 3) | `checkPortPair`, `planWire`, `judgeWire`, `SOCKET_CAPACITY` | [wiring](docs/wiring.md) |
 | Geometry | `placeParts`, `drivePushes`, `robotRoot`, `mountPlacement`, `canvasPoseOf`, `arenaPoseOf`, `cosSin` | [geometry](docs/geometry.md) |
-| Needs judged as wired | `wiredNeeds` | [parts](docs/parts.md) |
+| Faults and controls | `wiredNeeds`, `controlsOf`, `explainByControls` | [parts](docs/parts.md) |
 | Canonical form and ids | `serializeBlueprint`, `canonicalizeBlueprint`, `canonicalJson`, `claimPartId`, `claimWireId` | [documents](docs/documents.md) |
 
 ## In brief
@@ -31,7 +31,7 @@ import { exampleParts, validBlueprints } from '@servo/schema/fixtures'; // test 
 - **Behaviour is data.** A part's behaviour is a list of primitives from a closed vocabulary that sim-core implements once. Failure modes name a need, the way it goes unmet and the effects a child sees. Every Level 1–2 part maps onto it ([parts](docs/parts.md)).
 - **Wiring.** Impossible drops are refused at the socket. Legal-but-wrong wiring is accepted, because its failure is the lesson.
 - **Turning.** Positive speed is right-handed about a drive's axis, and a mirrored mount point flips the sense. So a robot whose two motors are wired alike drives forward, and one with a swapped motor spins.
-- **Control never makes faults.** Needs are judged as wired, with every switch closed and every driver channel at full forward. A switch the child opens is a run input, and a motor the driver stops is just stopped.
+- **A fault is what the controls cannot fix.** Needs are judged on the actual setting of every switch and driver channel. An unmet need that another setting would meet is behaviour, not a fault; a short circuit is a fault while it lasts.
 - **Deterministic maths.** Angles that feed a Run use `cosSin`, which gives the same bits on every engine.
 - **Same build, same bytes.** Canonical form and claimed ids give the same build the same bytes from canvas or list view. Ids are never reused.
 - **Measures.** Run records feed the pass-rate and fault-fixing measures; session start mode and time in the sandbox come from task 6.2's telemetry.

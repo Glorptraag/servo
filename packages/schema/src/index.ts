@@ -61,8 +61,8 @@ export { cosDegrees, cosSin, sinDegrees } from './geometry/trig.ts';
 export { drivePushes, placeParts, robotRoot } from './geometry/robot.ts';
 export type { DrivePush, PartPlacement } from './geometry/robot.ts';
 
-export { wiredNeeds } from './circuit/wired.ts';
-export type { WiredVerdict } from './circuit/wired.ts';
+export { CONTROL_COMBINATION_CAP, controlId, controlsOf, explainByControls, wiredNeeds } from './circuit/wired.ts';
+export type { Control, ControlId, ControlState, Explanation, WiredVerdict } from './circuit/wired.ts';
 
 export { mapSettingValue, validatePartRecord } from './validate/part.ts';
 export { validateArenaPreset } from './validate/arena.ts';

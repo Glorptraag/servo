@@ -43,7 +43,7 @@
       "shows": [
         "drain"
       ],
-      "teachingNote": "A path from plus back to minus with nothing that uses power on it, such as a bare wire or a closed switch, gives the current nothing to slow it, so the pack empties in seconds and grows warm.",
+      "teachingNote": "A path from plus back to minus with nothing that uses power on it, such as a bare wire, a closed switch or a pack of another voltage side by side, gives the current nothing to slow it, so the pack empties in seconds and grows warm.",
       "unmet": "shorted"
     },
     {

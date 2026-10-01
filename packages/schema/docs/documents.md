@@ -89,7 +89,7 @@ A run record holds:
 
 **Consistency rules:**
 
-- A switch the child opens is an input, never a fault: it never appears in `faults` or `fixed`. A motor-driver channel's command is control too, so a motor it stops or reverses has no fault.
+- `faults` holds only faults: unmet needs the controls cannot fix (see [parts.md](parts.md)). A switch the child opens is an input, and what it or a driver channel's command leaves unmet is behaviour, never in `faults` or `fixed`. A short the child makes by closing a switch is a fault while it lasts.
 - `faults` lists each failure mode on a part once (`value.duplicate`).
 - When events are kept, each fault event that starts a fault has its `faults` entry, each entry starts at its first event, and a fault ends only after it has started (`run.unrecorded_fault`).
 - A goal requires a challenge (`run.goal_without_challenge`).
