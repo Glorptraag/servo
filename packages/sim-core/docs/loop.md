@@ -8,7 +8,7 @@ Back to the [README](../README.md). Task 1.5. `src/loop/` is `createSimulation` 
 | `loop/setup.ts` | The checks and the canonical copy; `SimulationSetupError`; the Run's fingerprint |
 | `loop/models.ts` | Every solver's model, built once per Run, and the orders frames keep |
 | `loop/tick.ts` | One tick: the solvers in order and their hand-offs; readouts and flows |
-| `loop/frame.ts` | Readouts → this tick's events; events → `frame.live` |
+| `loop/frame.ts` | Faults debounced (`FAULT_DEBOUNCE_TICKS`); readouts → this tick's events; events → `frame.live` |
 | `loop/warm.ts` | Warming the electrical solver's caches for every switch position |
 | `loop/snapshot.ts` | The whole state as bytes, and back |
 | `loop/simulation.ts` | The `Simulation`: `step`, `input`, `snapshot`, `restore`, `record`, `dispose` |
@@ -47,12 +47,23 @@ Back to the [README](../README.md). Task 1.5. `src/loop/` is `createSimulation` 
 
 ## Readouts, events and live state
 
-- **Readouts** per placed part, in ValuePayload's order: `volts`, `milliamps` and `charge` from the electrical solver; `rpm`, `angle`, `light` and `closed` from the behaviour runtime. The set of fields a part reports is fixed by its primitives, so tick 0 gives them all. Only finite numbers are reported, with −0 as 0. `signal` is not reported (open question 4).
+- **Readouts** per placed part, in ValuePayload's order: `volts`, `milliamps` and `charge` from the electrical solver; `rpm`, `angle`, `light` and `closed` from the behaviour runtime. The set of fields a part reports is fixed by its primitives, so tick 0 gives them all. Only finite numbers are reported, with −0 as 0. `signal` is not reported (open question 2).
 - **Sounds**: the behaviour runtime's (motor, hum, buzz) and the mechanics' (squeal, knock), at most one of each, in RUN_SOUNDS order.
 - **Poses**: the mechanics' bodies: the robot's root part, loose parts (D19) and props.
-- **Events** are the difference between this tick's readouts and the last frame's live state, in the fixed order [runs.md](runs.md) gives.
+- **Events** are the difference between this tick's readouts, with faults debounced (below), and the last frame's live state, in the fixed order [runs.md](runs.md) gives.
 - **Live state** (`liveOf`) is what folding this tick's events into the last frame's live state gives: a subject no event names keeps its object, and any other takes this tick's readouts of each kind it has events for. The events carry every difference, so `frame.live` is exactly the fold of every event from tick 0, and a test folds the whole stream independently at every tick to prove it.
 - Events, live states, the frame and the blueprint are frozen, so a frame's reader cannot change the Run.
+
+## Faults are debounced
+
+The orchestrator's ruling on task 1.5. One-tick glitches had reached run records: a motor driver browning out at tick 0 (`busy-workbench`), a wheel slipping for a tick as the robot meets a prop of 700 g or more, a bumper switch closing for a tick as the robot settles at a wall (review R-1.4). None is a lesson.
+
+- `FAULT_DEBOUNCE_TICKS` (3 ticks, 0.1 s, in `loop/frame.ts`) is the one place the rule lives.
+- A failure mode shows only once it has been active for 3 consecutive ticks: then its fault event fires, it joins `LiveState.faults`, and the run record lists it with that tick as its `firstTick`. So no fault shows before tick 2.
+- It ends only once it has been inactive for 3 consecutive ticks, with its end event at the third.
+- A fault that flickers back before then never moved: its count starts again. The counts (`pending` in the loop's state) are in snapshots, so a restore mid-count replays exactly.
+- Readouts, poses and sounds are never debounced: they show every tick as it really is, so a glitch is still visible in the values (a short's current, a switch closing for a tick).
+- With it, all 19 content fixtures meet their `expect`.
 
 ## Flows
 
@@ -73,7 +84,7 @@ Before tick 0, `warmControls` builds the circuit and the schema's wiring verdict
 
 `snapshot()` writes the loop's whole state, and `restore()` reads it back:
 - a header of five little-endian 32-bit words: the format, the Run's fingerprint, the tick, and the lengths of the next two parts;
-- the state as JSON (ASCII only, one byte a character): the electrical state (charges and kept answers), the behaviour state (arms), each brain's program state (through `canonicalJson`) and the levels it drove, the switches, the channels' commands, each actuator's actual drive and load, the samples, the live state and flows of the frame, and the inputs, events and faults so far;
+- the state as JSON (ASCII only, one byte a character): the electrical state (charges and kept answers), the behaviour state (arms), each brain's program state (through `canonicalJson`) and the levels it drove, the switches, the channels' commands, each actuator's actual drive and load, the samples, the live state and flows of the frame, the faults' debounce counts, and the inputs, events and faults so far;
 - the mechanical solver's bytes: its header and Rapier's snapshot of the world.
 
 Objects keep their keys in the order the code that builds them gives, which JSON keeps both ways. So a restored state is the one that was taken, and a Run resumed from a snapshot records the same bytes as one that never stopped. A test steps, restores and compares snapshots byte for byte.
@@ -111,8 +122,8 @@ Measured on the 25-part `busy-workbench` content fixture, on an M1 Max (8 perfor
 When a switch opens, a DC motor whose circuit it broke reads the volts its own back-EMF leaves across it, at 0 mA, and so shows as turning for a few ticks while the robot coasts. That is the electrical solver's and the behaviour runtime's model; the loop passes it on as it is, and documents it here.
 
 - **Measured** on `switch-in-the-line` and `kit-rolling-start` (content records, the switch opened at full speed): each motor reads 2.24 V falling to 0.98 V over 7 ticks, turning from 73 to 33 rpm with its `motor` sound fading, then idle. The robot coasts 66 mm in 17 ticks (0.57 s) and stops. No fault shows on any Level 1–2 fixture.
-- **The tail.** Once idle, an open-circuit motor still rolling reads its back-EMF less noLoadMilliamps × its winding resistance, which goes negative as it slows: to −0.6 V over the last 7 ticks (0.23 s) before the robot stops, then 0. Its power need is `open`, explained by the switch, so no `reversed` fault shows, but the spec card reads a small negative volts for that moment (open question 5).
-- **Two motors driving each other.** Review R-1.3 found a one-tick `overload` when one of two parallel motors carries a load as the switch opens. No fixture shows it. The loop records every fault while it lasts, with no minimum duration (open question 3).
+- **The tail.** Once idle, an open-circuit motor still rolling reads its back-EMF less noLoadMilliamps × its winding resistance, which goes negative as it slows: to −0.6 V over the last 7 ticks (0.23 s) before the robot stops, then 0. Its power need is `open`, explained by the switch, so no `reversed` fault shows, but the spec card reads a small negative volts for that moment (open question 3).
+- **Two motors driving each other.** Review R-1.3 found a one-tick `overload` when one of two parallel motors carries a load as the switch opens. No fixture shows it, and a fault that short never shows now: faults are debounced (above).
 
 ## Decisions and open questions
 
@@ -125,10 +136,8 @@ Decisions taken here (conservative readings, for review):
 
 Open questions, for the orchestrator to queue:
 
-1. **The busy-workbench fixture** expects no fault but shows `bench-driver: low-voltage` at tick 0 only: three motors at a standstill draw their stall current on the bench pack, the driver's supply sags to its onVolts and it browns out for that tick (D57). Is a start-up brown-out a fault the record should keep (see 3), or should the fixture expect it?
-2. **EditCommands in `fixed`.** If D31 means the commands themselves, `RunRecordContext` needs a field for them (task 0.4's interface), and the recorder would filter what the app passes.
-3. **A minimum fault duration** (review R-1.2, question 1; review R-1.3, finding 6). Every fault is recorded from the tick it starts, however short. A one-tick brown-out or overload reaches the parent view.
-4. **The `signal` readout.** ValuePayload's `signal` is one level, and a microcontroller has two outputs (docs/program.md). No Level 1–2 part drives a signal, so the readout is left out until Level 3 says which output a spec card shows and how "no signal" reads.
-5. **An open-circuit motor's volts** (above) read negative while it rolls to a stop. A note for the electrical solver's owner.
-6. **Run length.** Every powered part reports changed volts most ticks while a pack drains, so a full record keeps about one event per part per tick: 2,820 events for the 3 s of the 25-part `busy-workbench` fixture. Long sandbox Runs may want the `events: 'drop'` summary (tasks 4.4 and 4.9).
-7. **Exports.** `blockRuleRuntime` and the block-rule types stay internal (docs/program.md). The app needs them only at Level 3, so the entry does not export them yet.
+1. **EditCommands in `fixed`.** If D31 means the commands themselves, `RunRecordContext` needs a field for them (task 0.4's interface), and the recorder would filter what the app passes.
+2. **The `signal` readout.** ValuePayload's `signal` is one level, and a microcontroller has two outputs (docs/program.md). No Level 1–2 part drives a signal, so the readout is left out until Level 3 says which output a spec card shows and how "no signal" reads.
+3. **An open-circuit motor's volts** (above) read negative while it rolls to a stop. A note for the electrical solver's owner.
+4. **Run length.** Every powered part reports changed volts most ticks while a pack drains, so a full record keeps about one event per part per tick: 2,820 events for the 3 s of the 25-part `busy-workbench` fixture. Long sandbox Runs may want the `events: 'drop'` summary (tasks 4.4 and 4.9).
+5. **Exports.** `blockRuleRuntime` and the block-rule types stay internal (docs/program.md). The app needs them only at Level 3, so the entry does not export them yet.

@@ -1,7 +1,7 @@
 import type { Blueprint, ControlId, FaultSeen, RunEvent, RunInput, RunRecord } from '@servo/schema';
 import type { ControlInput, RunFrame, RunRecordContext, SimSnapshot, Simulation } from '../interface.ts';
 import { runRecordOf } from '../recorder/index.ts';
-import { eventsOf, frozenEvent, liveOf } from './frame.ts';
+import { debounceFaults, eventsOf, frozenEvent, liveOf } from './frame.ts';
 import type { Models } from './models.ts';
 import type { Setup } from './setup.ts';
 import { decodeSnapshot, encodeSnapshot, snapshotHeader } from './snapshot.ts';
@@ -67,9 +67,10 @@ export class Run implements Simulation {
   #advance(held: Held, tick: number): RunFrame {
     const before = held.state;
     const solved = solveTick(held.models, before, tick);
-    const events = eventsOf(held.models, tick, solved.readouts, before.live).map(frozenEvent);
-    const live = liveOf(held.models, solved.readouts, before.live, events);
-    held.state = { ...solved.state, live };
+    const { readouts, pending } = debounceFaults(held.models, solved.readouts, before.live, before.pending);
+    const events = eventsOf(held.models, tick, readouts, before.live).map(frozenEvent);
+    const live = liveOf(held.models, readouts, before.live, events);
+    held.state = { ...solved.state, live, pending };
     for (const event of events) {
       held.events.push(event);
       if (event.kind !== 'fault' || !event.payload.active) continue;

@@ -58,6 +58,7 @@ const plainOf = (state: LoopState, logs: Logs): unknown => ({
   samples: [...state.samples],
   live: [...state.live],
   flows: [...state.flows],
+  pending: state.pending,
   inputs: logs.inputs,
   events: logs.events,
   faults: logs.faults,
@@ -89,6 +90,7 @@ interface Plain {
   readonly samples: readonly [PlacedPartId, Readonly<Record<PortId, number>>][];
   readonly live: readonly [EventSubject, LiveState][];
   readonly flows: readonly [WireId, WireFlow][];
+  readonly pending: Readonly<Record<string, number>>;
   readonly inputs: readonly RunInput[];
   readonly events: readonly RunEvent[];
   readonly faults: readonly FaultSeen[];
@@ -137,6 +139,7 @@ export const decodeSnapshot = (models: Models, bytes: Uint8Array): { readonly st
     samples: new Map(plain.samples),
     live: new Map(plain.live.map(([subject, live]) => [subject, frozenLive(live)])),
     flows: new Map(plain.flows.map(([wire, flow]) => [wire, Object.freeze(flow)])),
+    pending: plain.pending,
   };
   return {
     state,

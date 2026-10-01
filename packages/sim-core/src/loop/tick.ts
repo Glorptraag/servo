@@ -48,6 +48,11 @@ export interface LoopState {
   readonly live: ReadonlyMap<EventSubject, LiveState>;
   /** `frame.flows` at this tick. */
   readonly flows: ReadonlyMap<WireId, WireFlow>;
+  /**
+   * Faults waiting to show or to end (frame.ts, FAULT_DEBOUNCE_TICKS): for each `<subject> <failure>` whose state this tick
+   * differs from what the frame shows, how many consecutive ticks it has. In subject order, then each record's order.
+   */
+  readonly pending: Readonly<Record<string, number>>;
 }
 
 /** One subject's readouts at a tick, before they are compared with what the last frame showed. */
@@ -56,13 +61,13 @@ export interface Readout {
   readonly motion?: MotionPayload;
   /** At most one of each sound, level above 0, in RUN_SOUNDS order. */
   readonly sounds: readonly SoundPayload[];
-  /** Its own failure modes active now, in its record's order. */
+  /** Its own failure modes active now, in its record's order: what the solvers say this tick, before debouncing. */
   readonly faults: readonly FailureModeId[];
 }
 
-/** One tick solved: the next state (with the frame's live state still to fold in) and each subject's readouts. */
+/** One tick solved: the next state (with the frame's live state and the faults' debouncing still to come) and each subject's readouts. */
 export interface Solved {
-  readonly state: Omit<LoopState, 'live'>;
+  readonly state: Omit<LoopState, 'live' | 'pending'>;
   /** In the order of `models.subjects`. */
   readonly readouts: readonly Readout[];
 }
@@ -84,6 +89,7 @@ export const startState = (models: Models): LoopState => ({
   samples: NOTHING,
   live: NOTHING,
   flows: NOTHING,
+  pending: {},
 });
 
 /** Finite numbers only, with −0 as 0: a run record holds nothing else. */

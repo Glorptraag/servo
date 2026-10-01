@@ -16,7 +16,7 @@ Back to the [README](../README.md). The types are in [src/interface.ts](../src/i
 | `value` | a placed part | its readouts change (only the fields that changed); at tick 0, all of them |
 | `motion` | a body: the robot's root part (`robotRoot`), a loose part, or a prop `arena:<propId>` | its pose changes (the whole pose). Parts fixed to or carried by a body ride with it, placed by `placeParts` |
 | `sound` | a placed part | a machine sound starts, changes or stops (level 0) |
-| `fault` | a placed part | one of its own failure modes starts or ends |
+| `fault` | a placed part | one of its own failure modes starts or ends, debounced: once it has been active, or inactive, for 3 consecutive ticks |
 
 - **Readouts.** `volts`, `milliamps` and `charge` come from the electrical solver; `rpm`, `angle`, `light` and `closed` from the behaviour runtime. A part reports the same fields every tick, so tick 0 gives them all. A part with none (a chassis, a caster) has no value events.
 - **Order within a tick**, fixed: placed parts in id order, then props in id order; for each, its `value` event, its `motion` event, its `sound` events in `RUN_SOUNDS` order (motor, hum, buzz, squeal, knock), then its `fault` events in its record's failure-mode order. It never depends on wire order, insertion order or the platform.
@@ -37,7 +37,8 @@ The rule is the schema's, and this package never restates it: a fault is what th
   - One exception, the orchestrator's ruling D57: a motor driver that browns out reads `low`, and only a short or a feeder explains that, never the controls, so the child sees why its motors stopped. The parts it starves of volts are put down to it, straight after the short step. A supply wired the wrong way round still reads `reversed` ([electrical.md](electrical.md)).
 - **The rest** (signal, mount, drive, torque, floor, balance) comes from the simulation: the behaviour runtime and the mechanical solver.
 - **Merging.** Each solver applies the rule to the needs it owns, so the loop takes the union: a part's active faults are every failure mode any solver makes active, in its record's order.
-- **Events.** A fault event names one of the part's own failure modes. An unmet need with no failure mode for that way changes behaviour and emits no fault. A run record's `faults` holds only faults ([documents.md](../../schema/docs/documents.md)), each once, from the first tick it started. A fault is recorded however briefly it lasts, a one-tick brown-out included (an open question in [loop.md](loop.md#decisions-and-open-questions)).
+- **Events.** A fault event names one of the part's own failure modes. An unmet need with no failure mode for that way changes behaviour and emits no fault. A run record's `faults` holds only faults ([documents.md](../../schema/docs/documents.md)), each once, from the tick it first showed.
+- **Debouncing** (the orchestrator's ruling, [loop.md](loop.md#faults-are-debounced)). A failure mode shows, with its fault event, in `LiveState.faults` and in the record, only once it has been active for 3 consecutive ticks (0.1 s, `FAULT_DEBOUNCE_TICKS`), and ends once it has been inactive for 3. So a glitch of a tick or two never shows, and no fault shows before tick 2. Readouts, poses and sounds are never debounced.
 
 ## Snapshots
 
