@@ -1,9 +1,10 @@
 // Task 4.1's layout tests: the real app page at a 10-inch tablet in landscape, a 13-inch screen and a tablet in
-// portrait. The canvas fills the screen behind the edges; each region sits where brief Section 9 puts it; the
-// header, the tray, the spec card and the Run bar leave at least 70% of the canvas uncovered with everything open,
-// as each edge tucks away and with all of them tucked; the spec card is a readable 300 px or more; the Run bar never
-// tucks; and the tuck states survive a real reload.
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+// portrait. The canvas fills the screen behind the edges; each region sits where brief Section 9 puts it; the chrome
+// leaves at least 70% of the canvas uncovered with everything open, as each edge tucks away and with all of them
+// tucked; the spec card is away at rest, as nothing is selected; the Run bar never tucks; and the tuck states
+// survive a real reload. shell.test.tsx shows the card, which needs a selection the real canvas cannot make yet
+// (task 3.4), and checks that the Run button never moves.
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { cdp } from 'vitest/browser';
 import { EDGES, EDGE_NAMES, RUN_BAR_NAME, TUCKED_KEY } from '../../src/shell/edges.ts';
 import type { Edge } from '../../src/shell/edges.ts';
@@ -32,15 +33,21 @@ afterAll(async () => {
 
 const rectOf = (box: Box): Rect => ({ x: box.left, y: box.top, width: box.width, height: box.height });
 
+/** The edges whose tab shows with nothing selected: the spec card's waits for a part. */
+const TABBED: readonly Edge[] = ['header', 'tray', 'arenaStrip'];
+
 /**
  * The share of the screen's canvas that nothing covers: the canvas less the header, the tray and the spec card where
- * they show, and the Run bar, which always does. The arena strip, the zoom control and the tabs are tools on it.
+ * they show, the Run bar's room and the zoom control, which always show, and the tabs that show. The arena strip is
+ * a layer of the canvas.
  */
 const visibleShare = (app: AppFrame): number => {
   const screen: Rect = { x: 0, y: 0, width: app.screen.width, height: app.screen.height };
   const covering = [
     ...(['header', 'tray', 'specCard'] as const).filter((name) => app.region(name).dataset.shown === 'true').map((name) => app.region(name)),
     app.region('runBar'),
+    app.region('zoom'),
+    ...EDGES.map((edge) => app.tab(edge)).filter((tab) => !tab.hidden),
   ]
     .map((element) => intersect(rectOf(boxOf(element)), screen))
     .filter((rect): rect is Rect => rect !== null);
@@ -84,7 +91,6 @@ describe.each(SCREENS)('$name ($width × $height)', (screen) => {
     const app = await openApp(screen);
     const header = boxOf(app.region('header'));
     const tray = boxOf(app.region('tray'));
-    const card = boxOf(app.region('specCard'));
     const strip = boxOf(app.region('arenaStrip'));
     const runBar = boxOf(app.region('runBar'));
     const pill = boxOf(app.region('runBarPill'));
@@ -109,19 +115,17 @@ describe.each(SCREENS)('$name ($width × $height)', (screen) => {
     }
     const work = workOf(app);
 
-    // Spec card: on the right edge, under the header, a readable 300 px or more, and never covering the canvas fully.
-    expect(Math.abs(card.right - screen.width)).toBeLessThanOrEqual(PX);
-    expect(Math.abs(card.top - header.bottom)).toBeLessThanOrEqual(PX);
-    expect(card.width).toBeGreaterThanOrEqual(300);
-    expect(card.width).toBeLessThanOrEqual(340);
-    expect(card.height).toBeGreaterThanOrEqual(300);
-    expect(card.bottom).toBeLessThan(work.bottom);
+    // Spec card: away at rest, with no tab, since nothing is selected (brief Section 9: it slides in on a tap).
+    expect(app.region('specCard').dataset.shown).toBe('false');
+    expect(isShown(app.region('specCard'))).toBe(false);
+    expect(boxOf(app.region('specCard')).left).toBeGreaterThanOrEqual(screen.width - PX);
+    expect(app.tab('specCard').hidden).toBe(true);
 
-    // Arena strip: along the top of the canvas, clear of the spec card.
+    // Arena strip: along the top of the canvas, clear of where the spec card shows.
     expect(strip.top - work.top).toBeGreaterThanOrEqual(0);
     expect(strip.top - work.top).toBeLessThanOrEqual(12);
     expect(strip.left).toBeGreaterThan(work.left);
-    expect(strip.right).toBeLessThan(card.left);
+    expect(strip.right).toBeLessThan(screen.width - 300);
 
     // Run bar: bottom centre of the canvas, its bar inside the room the layout keeps for it.
     expect(Math.abs((runBar.left + runBar.right) / 2 - (work.left + work.right) / 2)).toBeLessThanOrEqual(1);
@@ -130,10 +134,9 @@ describe.each(SCREENS)('$name ($width × $height)', (screen) => {
     expect(Math.abs((pill.left + pill.right) / 2 - (runBar.left + runBar.right) / 2)).toBeLessThanOrEqual(1);
     expect(overlap(pill, runBar)).toBeCloseTo(pill.width * pill.height, 3);
 
-    // Zoom control: the bottom corner on the spec card's side, below the card.
+    // Zoom control: the bottom corner on the spec card's side.
     expect(work.right - zoom.right).toBeLessThanOrEqual(12);
     expect(work.bottom - zoom.bottom).toBeLessThanOrEqual(16);
-    expect(zoom.top).toBeGreaterThan(card.bottom);
 
     expect(visibleShare(app)).toBeGreaterThanOrEqual(MIN_CANVAS_SHARE);
   });
@@ -148,7 +151,7 @@ describe.each(SCREENS)('$name ($width × $height)', (screen) => {
     for (const edge of EDGES) {
       const tab = app.tab(edge);
       expect(tab.getAttribute('aria-label')).toBe(EDGE_NAMES[edge]);
-      expect(tab.getAttribute('aria-expanded')).toBe('true');
+      expect(tab.getAttribute('aria-expanded')).toBe(edge === 'specCard' ? 'false' : 'true');
       const region = doc.getElementById(tab.getAttribute('aria-controls') ?? '');
       expect(region?.tagName.toLowerCase(), edge).toBe(EDGE_ELEMENT[edge]);
       if (edge !== 'header') expect(region?.getAttribute('aria-label')).toBe(EDGE_NAMES[edge]);
@@ -157,10 +160,13 @@ describe.each(SCREENS)('$name ($width × $height)', (screen) => {
     expect(runBar.getAttribute('aria-label')).toBe(RUN_BAR_NAME);
     expect(doc.querySelectorAll('button.shell-tab')).toHaveLength(EDGES.length);
     expect(doc.querySelector(`[aria-controls="${runBar.id}"]`)).toBeNull();
+    // With nothing selected the spec card has nothing to show, so its tab is out of the way too.
+    const tabs = visibleButtons(app).filter((button) => button.matches('.shell-tab'));
+    expect(tabs.map((button) => button.dataset.edge)).toEqual([...TABBED]);
     const zoom = doc.querySelector('[role="group"][aria-label="Zoom"]');
     expect([...(zoom?.querySelectorAll('button') ?? [])].map((button) => button.getAttribute('aria-label'))).toEqual(['Zoom in', 'Fit', 'Zoom out']);
     const buttons = visibleButtons(app);
-    expect(buttons.length).toBeGreaterThanOrEqual(EDGES.length + 3);
+    expect(buttons.length).toBeGreaterThanOrEqual(TABBED.length + 3);
     for (const button of buttons) {
       const box = boxOf(button);
       const name = button.getAttribute('aria-label') ?? button.textContent;
@@ -174,8 +180,8 @@ describe.each(SCREENS)('$name ($width × $height)', (screen) => {
   it('never puts one thing over another', async () => {
     const app = await openApp(screen);
     const named = [
-      ...(['header', 'tray', 'specCard', 'arenaStrip', 'runBar', 'zoom'] as const).map((name) => [name, app.region(name)] as const),
-      ...EDGES.map((edge) => [`${edge} tab`, app.tab(edge)] as const),
+      ...(['header', 'tray', 'arenaStrip', 'runBar', 'zoom'] as const).map((name) => [name, app.region(name)] as const),
+      ...TABBED.map((edge) => [`${edge} tab`, app.tab(edge)] as const),
     ];
     const boxes = named.map(([name, element]) => ({ name, box: boxOf(element) }));
     for (const [index, a] of boxes.entries()) {
@@ -186,7 +192,7 @@ describe.each(SCREENS)('$name ($width × $height)', (screen) => {
   it('uncovers more canvas as each edge tucks away, and keeps the Run bar', async () => {
     const app = await openApp(screen);
     let share = visibleShare(app);
-    for (const edge of EDGES) {
+    for (const edge of TABBED) {
       await app.press(app.tab(edge));
       const tab = app.tab(edge);
       const region = app.doc.getElementById(tab.getAttribute('aria-controls') ?? '') as HTMLElement;
@@ -199,67 +205,41 @@ describe.each(SCREENS)('$name ($width × $height)', (screen) => {
       expectSameBox(boxOf(app.canvasElement()), whole, `canvas element after tucking ${edge}`);
       share = next;
     }
-    // With everything tucked only the Run bar lies over the canvas, and every tab is on screen to bring its edge back.
+    // With everything tucked only the Run bar, the zoom control and the tabs lie over the canvas, and every tab is
+    // on screen to bring its edge back.
     const runBar = boxOf(app.region('runBar'));
+    const zoom = boxOf(app.region('zoom'));
     expect(isShown(app.region('runBar'))).toBe(true);
-    expect(visibleShare(app)).toBeCloseTo(1 - (runBar.width * runBar.height) / (screen.width * screen.height), 6);
-    for (const edge of EDGES) {
+    const rest = runBar.width * runBar.height + zoom.width * zoom.height + TABBED.length * 44 * 44;
+    expect(visibleShare(app)).toBeCloseTo(1 - rest / (screen.width * screen.height), 6);
+    for (const edge of TABBED) {
       const box = boxOf(app.tab(edge));
       expect(box.left >= 0 && box.top >= 0 && box.right <= screen.width && box.bottom <= screen.height, edge).toBe(true);
     }
-    for (const edge of [...EDGES].reverse()) await app.press(app.tab(edge));
-    expect(EDGES.map((edge) => app.tab(edge).getAttribute('aria-expanded'))).toEqual(EDGES.map(() => 'true'));
+    for (const edge of [...TABBED].reverse()) await app.press(app.tab(edge));
+    expect(TABBED.map((edge) => app.tab(edge).getAttribute('aria-expanded'))).toEqual(TABBED.map(() => 'true'));
     expect(visibleShare(app)).toBeCloseTo(visibleShare(await openApp(screen)), 6);
   });
 
   it('keeps the tuck states across a reload', async () => {
     const app = await openApp(screen);
-    await app.press(app.tab('tray'));
-    await app.press(app.tab('specCard'));
-    await app.press(app.tab('arenaStrip'));
-    expect(JSON.parse(localStorage.getItem(TUCKED_KEY) ?? 'null')).toEqual(['tray', 'specCard', 'arenaStrip']);
+    for (const edge of TABBED) await app.press(app.tab(edge));
+    expect(JSON.parse(localStorage.getItem(TUCKED_KEY) ?? 'null')).toEqual([...TABBED]);
     const share = visibleShare(app);
 
     await app.reload();
-    const expanded = Object.fromEntries(EDGES.map((edge) => [edge, app.tab(edge).getAttribute('aria-expanded')]));
-    expect(expanded).toEqual({ header: 'true', tray: 'false', specCard: 'false', arenaStrip: 'false' });
-    expect(isShown(app.region('tray'))).toBe(false);
-    expect(isShown(app.region('specCard'))).toBe(false);
-    expect(isShown(app.region('arenaStrip'))).toBe(false);
-    expect(isShown(app.region('header'))).toBe(true);
+    expect(TABBED.map((edge) => app.tab(edge).getAttribute('aria-expanded'))).toEqual(TABBED.map(() => 'false'));
+    for (const edge of TABBED) expect(isShown(app.region(edge)), edge).toBe(false);
     expect(visibleShare(app)).toBeCloseTo(share, 6);
     expectSameBox(boxOf(app.canvasElement()), whole, 'canvas element after the reload');
 
-    for (const edge of ['tray', 'specCard', 'arenaStrip']) await app.press(app.tab(edge));
+    for (const edge of TABBED) await app.press(app.tab(edge));
     // A save from before the Run bar stopped tucking leaves it where it is.
     localStorage.setItem(TUCKED_KEY, '["runBar"]');
     await app.reload();
-    expect(EDGES.map((edge) => app.tab(edge).getAttribute('aria-expanded'))).toEqual(EDGES.map(() => 'true'));
+    expect(TABBED.map((edge) => app.tab(edge).getAttribute('aria-expanded'))).toEqual(TABBED.map(() => 'true'));
     expect(isShown(app.region('runBar'))).toBe(true);
     expect(visibleShare(app)).toBeGreaterThanOrEqual(MIN_CANVAS_SHARE);
-  });
-});
-
-describe('the spec card and a drag on the canvas', () => {
-  it('steps aside while the child drags on the canvas, comes back when they lift, and stays for a tap', async () => {
-    const app = await openApp(SCREENS[0] ?? { name: '10-inch landscape', width: 1180, height: 820 });
-    const card = app.region('specCard');
-    // Empty canvas in the middle of the screen: a drag there pans, as a wire drag or a part's move would also count.
-    await app.mouse('mousePressed', { x: 500, y: 500 });
-    await app.mouse('mouseMoved', { x: 520, y: 505 });
-    await app.mouse('mouseMoved', { x: 560, y: 520 });
-    await vi.waitFor(() => expect(card.dataset.shown).toBe('false'));
-    expect(card.inert).toBe(true);
-    expect(boxOf(card).left).toBeGreaterThanOrEqual(1180 - PX);
-    expect(localStorage.getItem(TUCKED_KEY)).toBeNull();
-    await app.mouse('mouseReleased', { x: 560, y: 520 });
-    await vi.waitFor(() => expect(card.dataset.shown).toBe('true'));
-    expect(Math.abs(boxOf(card).right - 1180)).toBeLessThanOrEqual(PX);
-
-    await app.mouse('mousePressed', { x: 500, y: 500 });
-    await app.mouse('mouseReleased', { x: 500, y: 500 });
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(card.dataset.shown).toBe('true');
   });
 });
 
@@ -295,24 +275,24 @@ describe('motion', () => {
     }
   };
 
-  it('slides the edges in 120–200 ms (brief Section 11), and never moves the canvas', async () => {
+  it('slides the edges in 120–200 ms (brief Section 11), and never moves the canvas or the Run bar', async () => {
     await reduceMotion(false);
     try {
       const app = await openApp(screen);
-      for (const region of ['header', 'tray', 'specCard', 'arenaStrip', 'runBar', 'zoom']) {
+      for (const region of ['header', 'tray', 'specCard', 'arenaStrip']) {
         const seconds = durations(app.region(region)).get('transform');
         expect(seconds, region).toBeGreaterThanOrEqual(0.12);
         expect(seconds, region).toBeLessThanOrEqual(0.2);
       }
       for (const edge of EDGES) expect(durations(app.tab(edge)).get('transform'), `${edge} tab`).toBe(0.16);
       expect(getComputedStyle(app.region('stage')).transitionDuration).toBe('0s');
-      // A tap on the tray's tab starts the slide: the tray moves out, and the controls beside it move with its edge.
+      // A tap on the tray's tab starts the slide: the tray moves out, and the tabs beside it move with its edge.
       app.tab('tray').click();
       await new Promise((resolve) => setTimeout(resolve, 0));
       const started = app.doc.getAnimations().map((animation) => ({ animation, target: (animation.effect as KeyframeEffect | null)?.target }));
       const onTray = started.filter(({ target }) => target === app.region('tray')).map(({ animation }) => (animation as CSSTransition).transitionProperty);
       expect(onTray.sort()).toEqual(['transform', 'visibility']);
-      expect(started.some(({ target }) => target === app.region('stage'))).toBe(false);
+      for (const still of ['stage', 'runBar', 'zoom']) expect(started.some(({ target }) => target === app.region(still)), still).toBe(false);
       for (const { animation } of started) {
         const { duration, delay } = animation.effect?.getComputedTiming() ?? {};
         const total = Number(duration) + Number(delay);
@@ -333,7 +313,7 @@ describe('motion', () => {
       // makes the browser draw a frame, laying the page out at that moment.
       const release = app.holdAnimationFrames();
       try {
-        for (const edge of ['tray', 'tray', 'header', 'header', 'specCard', 'specCard'] as const) {
+        for (const edge of ['tray', 'tray', 'header', 'header', 'arenaStrip', 'arenaStrip'] as const) {
           app.tab(edge).click();
           await new Promise((resolve) => setTimeout(resolve, 0));
           // Hold the slide and step through it, so each screenshot lands inside it.

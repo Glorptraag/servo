@@ -13,43 +13,57 @@ The canvas fills the screen behind the edges. Everything else lies over it, as e
 | Canvas | The whole screen, under everything | `<main>`: the canvas's host, which `mountCanvas` fills |
 | Header | Top edge, 52 px | `<header>` (banner): Home, the kit and level name, the goal line and hint button, the blueprint's name, the sound control, Save |
 | Part tray | Left edge, 112 px wide; bottom edge, 112 px tall, in portrait | `<section aria-label="Part tray">` |
-| Spec card | Right edge, under the header, 320 px wide | `<aside aria-label="Spec card">`; its text scrolls |
-| Arena strip | Along the top of the canvas, between the header's tab and its own | `<section aria-label="Arena strip">` |
-| Run bar | Bottom centre of the canvas the header and tray leave; always there | `<section aria-label="Run bar">`: the room kept for it, with the bar centred in it |
-| Zoom control | Bottom corner on the spec card's side, below the card | `role="group"`, "Zoom": Zoom in, Fit, Zoom out |
+| Spec card | Right edge, under the header, 320 px wide, while a part is selected | `<aside aria-label="Spec card">`; its text scrolls |
+| Arena strip | Along the top of the canvas, from beside the header's tab to beside where the spec card shows | `<section aria-label="Arena strip">` |
+| Run bar | Bottom centre of the canvas beside the tray; always there, never moving | `<section aria-label="Run bar">`: the room kept for it, with the bar centred in it |
+| Zoom control | Bottom corner on the spec card's side, below the card; never moving | `role="group"`, "Zoom": Zoom in, Fit, Zoom out |
 
 Portrait means taller than wide. [layout.ts](../src/shell/layout.ts) computes every box from the shell's own size (its host's, followed with a ResizeObserver), so the shell lays out the same in the page and in a test harness. [place.ts](../src/shell/place.ts) puts each box on the page by transform; [shell.css](../src/shell/shell.css) gives the look and the motion.
 
+## The Run/Stop button never moves
+
+The Run bar and the zoom control sit where the Build layout with everything open puts them, in every state: Run and Stop, every tuck, a selection coming or going, the card stepping aside. Pressing Run and then Stop hits the same spot every time, though Run takes the tray away. In portrait that leaves canvas under the Run bar while the tray is away. Only the screen's size and the hand move them.
+
 ## At most 30% of the canvas covered
 
-The edges the brief names (the header, the part tray, the spec card and the Run bar) together never cover more than 30% of the canvas, so at least 70% of the screen is canvas a child can see, in every state. The Run bar is counted at the full room the layout keeps for it, 440 × 64 px, whatever it holds. The arena strip, the zoom control and the tabs are tools on the canvas, as the brief's table places the arena strip, and are not counted.
+The header, the part tray and the spec card where they show, the Run bar, the zoom control and the tabs that show never cover more than 30% of the canvas, so at least 70% of the screen is canvas a child can see, in every state. The Run bar is counted at the full room the layout keeps for it, 440 × 64 px, whatever it holds. The arena strip is a layer of the canvas, as the arena is, and is not counted.
 
-The spec card is a readable 320 px wide (300–340 px asked). Its height is the one size that gives way: as tall as keeps the 30% with everything open, and short enough to leave the zoom control room below it. It is worked out for that state, so it never changes as edges tuck, and tucking only ever uncovers more canvas. The card never covers the canvas fully.
+The spec card is a readable 320 px wide (300–340 px asked). Its height is the one size that gives way: as tall as keeps the 30% with everything open and the card showing, and short enough to leave the zoom control room below it. It is worked out for that state, so it never changes, and every other state uncovers more. The card never covers the canvas fully, and its text scrolls; task 4.3 fits the Level 1–2 cards without scrolling at the 10-inch size where it can.
 
-| Screen (CSS px) | Spec card | Canvas seen, everything open | With every edge tucked |
+| Screen (CSS px) | Spec card | Canvas seen, everything open, a part selected | Every edge tucked, nothing selected |
 | --- | --- | --- | --- |
-| 10-inch landscape, 1180 × 820 | 320 × 358 | 70.0% | 97.1% (the Run bar stays) |
-| 13-inch, 1366 × 1024 | 320 × 661 | 70.0% | 98.0% |
-| Tablet portrait, 820 × 1180 | 320 × 398 | 70.0% | 97.1% |
+| 10-inch landscape, 1180 × 820 | 320 × 315 | 70.0% | 95.9% |
+| 13-inch, 1366 × 1024 | 320 × 617 | 70.0% | 97.1% |
+| Tablet portrait, 820 × 1180 | 320 × 355 | 70.0% | 95.9% |
 
-The unit tests check every combination of tucked edges, Build and Run, both hands and the card stepped aside on these screens, and with everything open every screen whose short side is 744–1440 px and long side 1024–2560 px, either way up.
+The unit tests check every combination of tucked edges, Build and Run, a part selected or not, the card stepped aside or not, and both hands on these screens, and with everything open every screen whose short side is 744–1440 px and long side 1024–2560 px, either way up.
+
+## The spec card
+
+- At rest it is away, and so is its tab. It slides in when a part is selected and out when nothing is, or a wire or a prop is (brief Section 9, and the layout figure's "slides in on tap"). The shell follows the canvas's `select` events; `useShell().selection` tells task 4.3 which part to show. The real canvas selects from task 3.4.
+- Tucked by the child, it stays tucked for the next part, and across a reload, with its tab at the screen edge to bring it back.
+- It never covers a port being wired. While a finger or pointer drags on the canvas (a wire, a part, a pan or a pinch), it steps aside off the screen edge, and it comes back when every finger lifts. A tap does not move it. Drags count once they pass the canvas's own drag threshold (8 px at drag sensitivity 1). The shell only listens, so the canvas's input is unchanged. Tap-then-tap wiring is not a drag: `setSpecCardAside(true)` keeps the card aside until `setSpecCardAside(false)`, for tasks 3.3 and 4.3 to call once the canvas reports a wire in progress.
 
 ## Tucking
 
 - The header, the tray, the spec card and the arena strip each have a tab. The tab's name is the region's, `aria-expanded` says whether the region shows, and `aria-controls` names it.
 - The Run bar has no tab and never tucks: it is the one control a child must always reach (brief Section 9: "always visible").
-- The header's, the tray's and the spec card's tabs are pull tabs on the canvas side of their edge, so they stay on screen when the edge is tucked. The arena strip's tab is at the strip's end.
+- The header's, the tray's and the spec card's tabs are pull tabs on the canvas side of their edge, so they stay on screen when the edge is tucked. The arena strip's tab stays beside where the card shows, so neither it nor the strip moves as the card comes and goes.
 - A tucked region slides out, then stops being drawn and is `inert`, so nothing in it takes focus.
-- Run mode moves the tray out whatever its tuck state, and its tab with it (brief Section 9); Build brings it back as the child left it.
+- Run mode moves the tray out whatever its tuck state, and its tab with it (brief Section 9); Build brings them back as the child left them.
 - Tuck states persist on the device in localStorage under `servo.shell.tucked`, a JSON list of the tucked edges, for example `["tray","specCard"]`. They are written only when the child changes one. A storage that is missing, full or blocked is caught, and the tucks then last for the visit. They are UI state, so they are not in the store (task 4.9), and not per profile. A saved `runBar` from before it stopped tucking is ignored.
 
-## The spec card never covers a port being wired
+## The safe area (task 3.7)
 
-While a finger or pointer drags on the canvas (a wire, a part, a pan or a pinch), the spec card steps aside off the screen edge, and it comes back when every finger lifts. A tap does not move it. Drags count once they pass the canvas's own drag threshold (8 px at drag sensitivity 1). The shell only listens, so the canvas's input is unchanged. Tap-then-tap wiring is not a drag: `setSpecCardAside(true)` keeps the card aside until `setSpecCardAside(false)`, for tasks 3.3 and 4.3 to call once the canvas reports a wire in progress.
+`layout.safeArea` says how far in from each side the canvas a child can see begins: past the header, the tray and the card where they show, the Run bar's room at the bottom, and the zoom control's column on the card's side when the card is away. The shell calls `onSafeArea(safeArea, canvas)` with it once the canvas is up and whenever it changes, so that once task 3.7 lets the canvas take safe-area insets, App.tsx passes them on and load and Fit centre the build in the canvas a child can see. Until then App.tsx passes nothing, and the canvas centres the build on the whole screen.
 
 ## Motion
 
-UI motion is 160 ms (brief Section 11). Panels and the controls beside them slide by transform. The canvas never moves or resizes when an edge tucks. It resizes only when the screen does (a tablet turning, a window resized), and then it draws again in the same frame (packages/canvas, `CanvasSurface.resized`), so it never shows its cleared, black buffer. `prefers-reduced-motion` makes every move instant.
+UI motion is 160 ms (brief Section 11). Panels and their tabs slide by transform. The canvas, the Run bar and the zoom control never move when an edge tucks. The canvas resizes only when the screen does (a tablet turning, a window resized), and then it draws again in the same frame (packages/canvas, `CanvasSurface.resized`), so it never shows its cleared, black buffer. `prefers-reduced-motion` makes every move instant.
+
+## Type
+
+One rounded sans-serif where the device has one: Nunito, Varela Round, then the system's rounded face (`ui-rounded`), then the system face. No bold-only face such as Arial Rounded MT Bold: on Apple devices it would draw every word bold, and bold marks real names. No font ships yet; which one does is task 5.7's.
 
 ## Slots
 
@@ -73,10 +87,11 @@ A component in a slot reads the shell with `useShell()` ([context.ts](../src/she
 - `canvas`: the canvas handle, null for the first render only.
 - `mode` and `setMode(mode)`: switches the canvas and the layout together. The run loop calls this, not `canvas.setMode`.
 - `blueprint` and `load(blueprint)`: the build on the canvas, as `load` and every `edit` leave it. Load through the shell so the header's name follows.
+- `selection`: the canvas's selection; the spec card shows while it is a part.
 - `tucked` and `setTucked(edge, tucked)`.
 - `specCardAside` and `setSpecCardAside(aside)`: see above.
 - `prefs` and `setPrefs(prefs)`: the canvas's prefs, which the shell keeps. `leftHanded` is the hook for task 5.7: it mirrors the tray, the spec card and everything on the canvas, and passes the canvas its prefs. The header reads left to right either way.
-- `layout`: every region's box now.
+- `layout`: every region's box now, and the safe area.
 
 ## The zoom control
 
@@ -92,22 +107,24 @@ From the repository root: `pnpm dev` serves the app with Vite, `pnpm build` writ
 
 - **unit** (Node): the layout maths, the tuck states' storage, the zoom ladder, and the package contracts.
 - **browser** (headless Chromium, Playwright, as packages/canvas):
-  - [layout.test.ts](../test/browser/layout.test.ts) opens the real page, index.html, in a frame the size of each target screen: 1180 × 820, 1366 × 1024 and 820 × 1180. It checks that the canvas fills the screen; where each region sits; the spec card's width; at least 70% of the canvas uncovered with everything open, edge by edge as each tucks, and with everything tucked; that nothing lies over anything else; the landmarks, names and 44 px targets, and no tab for the Run bar; that tuck states survive a real reload of the frame; and, with real mouse input, that the spec card steps aside for a drag and not for a tap. Its motion tests check each move's timing, that the canvas never moves, and that reduced motion moves nothing. One holds the page's animation frames and steps edge slides and a change of screen size, reading the canvas from real screenshots: a canvas that waited for its next frame to draw would read black there.
-  - [shell.test.tsx](../test/browser/shell.test.tsx) mounts the shell with a stand-in canvas: slots, the header following the build, Run mode, the left-handed mirror, the spec card stepping aside, the zoom control, refusing storage, and `mountApp` with the real canvas.
+  - [layout.test.ts](../test/browser/layout.test.ts) opens the real page, index.html, in a frame the size of each target screen: 1180 × 820, 1366 × 1024 and 820 × 1180. It checks that the canvas fills the screen; where each region sits, with the spec card away at rest; at least 70% of the canvas uncovered with everything open, edge by edge as each tucks, and with everything tucked; that nothing lies over anything else; the landmarks, names and 44 px targets, and no tab for the Run bar; and that tuck states survive a real reload of the frame. Its motion tests check each move's timing, that the canvas, the Run bar and the zoom control never move, and that reduced motion moves nothing. One holds the page's animation frames and steps edge slides and a change of screen size, reading the canvas from real screenshots: a canvas that waited for its next frame to draw would read black there.
+  - [shell.test.tsx](../test/browser/shell.test.tsx) mounts the shell with a stand-in canvas that can select a part. At each target screen and for each hand, it records the Run button's centre in Build mode and checks it after Run, Stop and every tuck, in both modes, a selection and the card stepping aside. At each target screen it shows the card and checks its width, place and the 70% floor. It also checks the card following the selection and keeping the child's tuck, slots, the header following the build, Run mode, the left-handed mirror, the card stepping aside for a drag but not a tap, the safe-area hook, the zoom control, refusing storage, and `mountApp` with the real canvas.
 
 Two things about headless Chromium shape the tests. Above about 1180 × 820 it stops drawing frames for the test page, so the frames for bigger screens are scaled down to fit, which leaves the page inside them at full size. It also holds a composited transition until something else draws a frame. So the geometry tests ask for reduced motion and read where regions end up, and the motion tests read what each move is set to do, or step it by hand.
 
 ## Decisions and open questions
 
-Rulings applied (orchestrator, 2026-10-01): the canvas fills the screen behind the edges and at most 30% of it is covered; the spec card is 300–340 px wide; the Run bar never tucks. Taken here within them, conservatively, for Drew:
+Rulings applied (orchestrator, 2026-10-01):
+- The canvas fills the screen behind the edges, and at most 30% of it is covered.
+- The spec card is 300–340 px wide, may scroll, and is away at rest, sliding in while a part is selected; its tuck persists.
+- The Run bar never tucks and never moves.
+- The arena strip is part of the canvas; the zoom control and the tabs count as covering it.
+- The canvas takes safe-area insets from task 3.7; the shell has the hook.
 
-1. Covered means the four edges the brief names, the Run bar at its full 440 × 64 px room. The arena strip, the zoom control and the tabs are tools on the canvas and not counted.
-2. To keep the 30%, the spec card's height gives way: 358 px on the 10-inch landscape screen. Its text scrolls.
-3. `canvas.fit()` frames the build in the whole screen, under the panels too: the canvas has no way to leave room for them. A large build can end up partly under the tray or the card. Fit that keeps clear of the panels needs a canvas interface change.
-4. The spec card steps aside for every drag on the canvas, pans and pinches included: the simple rule that covers every wire drag. Tap-then-tap wiring needs the canvas to report a wire in progress; `setSpecCardAside` is ready for it.
-5. Home has nowhere to go yet, and Save waits for task 4.9: both are disabled placeholders. No task owns what goes in the arena strip.
-6. The header shows a kit's name only when one is passed in; which kit the sandbox's tray holds is for tasks 4.2 and 4.5.
-7. The spec card starts open, as in the brief's picture; task 4.3 decides whether it slides in only when a part is tapped.
-8. The zoom steps (half powers of two).
-9. The child's level is 1 until progress (task 5.2) says otherwise.
-10. Tuck states belong to the device, not to a child's profile.
+Still open, for Drew and the orchestrator:
+1. The spec card steps aside for every drag on the canvas, pans and pinches included: the simple rule that covers every wire drag. Tap-then-tap wiring needs the canvas to report a wire in progress (task 3.3); `setSpecCardAside` is ready for it.
+2. Home has nowhere to go yet, and Save waits for task 4.9: both are disabled placeholders. No task owns what goes in the arena strip.
+3. The header shows a kit's name only when one is passed in; which kit the sandbox's tray holds, and who sets it, is open (D68). A slot's owner edits App.tsx to swap in its part.
+4. The zoom steps (half powers of two).
+5. The child's level is 1 until progress (task 5.2) says otherwise.
+6. Tuck states belong to the device, not to a child's profile.

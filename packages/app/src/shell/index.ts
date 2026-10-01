@@ -19,7 +19,7 @@ export {
   specCardSize,
   unionArea,
 } from './layout.ts';
-export type { Hand, LayoutInput, Orientation, Rect, ShellLayout } from './layout.ts';
+export type { Hand, LayoutInput, Orientation, Rect, SafeArea, ShellLayout } from './layout.ts';
 export { PLACEHOLDER_SLOTS } from './placeholders.tsx';
 export { DEFAULT_PREFS, DRAG_PX, Shell } from './shell.tsx';
 export type { CanvasSetup, ShellProps, ShellSlots } from './shell.tsx';

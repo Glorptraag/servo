@@ -31,7 +31,7 @@ export interface EdgeTabProps {
 }
 
 export const EdgeTab = ({ edge, controls }: EdgeTabProps) => {
-  const { layout, mode, tucked, setTucked } = useShell();
+  const { layout, tucked, setTucked } = useShell();
   const shown = layout.shown[edge];
   const side = tuckSide(edge, layout.orientation, layout.hand);
   // The chevron points the way the region will go: out to its edge, or back in.
@@ -44,8 +44,8 @@ export const EdgeTab = ({ edge, controls }: EdgeTabProps) => {
       aria-label={EDGE_NAMES[edge]}
       aria-expanded={shown}
       aria-controls={controls}
-      // The tray is out of the way in Run mode whatever its tuck state, so its tab goes too (brief Section 9).
-      hidden={edge === 'tray' && mode === 'run'}
+      // The tray's tab goes with the tray in Run mode, and the spec card's while there is no card to show.
+      hidden={!layout.tabShown[edge]}
       style={box(layout.tabs[edge])}
       onClick={() => setTucked(edge, !tucked[edge])}
     >
