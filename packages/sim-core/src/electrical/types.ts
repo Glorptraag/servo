@@ -35,6 +35,8 @@ export interface ExplainedNeed {
   readonly explainedBy?: Explanation;
   /** For an explanation by the controls: the setting that meets the need, so the answer can be checked each tick. */
   readonly alternative?: ControlState;
+  /** For a fault (nothing explains it): the batteries' charge bands it was found in, as a key the solver makes. */
+  readonly band?: string;
 }
 
 /**
@@ -45,9 +47,10 @@ export interface ElectricalState {
   /** Each source's charge left, 0–1, indexed like `graph.sources`. A driver channel's or regulator's output stays at 1. */
   readonly charge: readonly number[];
   /**
-   * The answers already found for needs the voltages leave unmet, under `key`: the control state and the band
-   * (5% wide) each battery's charge is in. A kept explanation is checked again every tick and searched again
-   * when it no longer holds; a new key starts afresh.
+   * The answers already found for needs the voltages leave unmet, under `key`: the control state and which
+   * motor drivers brown out. A kept explanation is checked again every tick and searched again when it no longer
+   * holds; a kept fault is searched again when a battery's charge enters another band, 5% wide, or when a
+   * motor driver or regulator that feeds it loses power; a new key starts afresh.
    */
   readonly explained: { readonly key: string; readonly needs: readonly ExplainedNeed[] };
 }

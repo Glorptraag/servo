@@ -38,8 +38,8 @@ const workbench = (placed: readonly Placed[], wires: readonly (readonly [string,
 
 const opened = (...ids: readonly string[]): ControlState => ({ switches: Object.fromEntries(ids.map((id) => [`${id}/contacts`, false])) });
 
-const solve = (blueprint: Blueprint, controls: ControlState = {}): ElectricalSolution => {
-  const model = electricalModel(buildGraph(blueprint, catalogue));
+const solve = (blueprint: Blueprint, controls: ControlState = {}, records = catalogue): ElectricalSolution => {
+  const model = electricalModel(buildGraph(blueprint, records));
   return solveElectrical(model, initialElectricalState(model), { controls }).solution;
 };
 
@@ -208,6 +208,52 @@ describe('legal-but-wrong builds show exactly the faults the schema’s rule giv
     expect(explained(solve(unpowered))).toEqual(['motor power open: feeder driver']);
   });
 
+  describe('a motor driver with its supply wired the wrong way round reads reversed, whatever its channels do (R-1.2 round 2, finding 1)', () => {
+    const reversedSupply = (command: string): Blueprint =>
+      workbench(
+        [battery, ['driver', 'motor-driver', { 'motor-a': command, 'motor-b': command }], motor],
+        [
+          ['battery.plus', 'driver.minus'],
+          ['driver.plus', 'battery.minus'],
+          ['driver.a-plus', 'motor.plus'],
+          ['driver.a-minus', 'motor.minus'],
+        ],
+      );
+    // The content record's mode for it (packages/content/parts/level-2/motor-driver.json); the schema's example has none.
+    const withReversed = (() => {
+      const driver = parts.find((part) => part.id === 'motor-driver');
+      if (!driver) throw new Error('No motor driver');
+      const mode = {
+        id: 'reversed',
+        need: 'power',
+        unmet: 'reversed',
+        shows: ['off'],
+        teachingNote: 'A motor driver works only with plus to plus at its power in. Wired the other way round it gives its motors nothing.',
+        cardLine: 'Power in swapped: it gives its motors nothing.',
+        hint: 'This motor driver’s plus and minus are swapped',
+      };
+      const record = unwrap(validatePartRecord({ ...driver, failureModes: [...driver.failureModes, mode] }));
+      return makeCatalogue({ parts: parts.map((part) => (part.id === 'motor-driver' ? record : part)), arenas: exampleArenas.map((arena) => unwrap(validateArenaPreset(arena))) });
+    })();
+
+    it.each([
+      ['forward', 'motor power low: feeder driver'],
+      ['stop', 'motor power open: controls driver/channel-a'],
+      ['backward', 'motor power low: feeder driver'],
+    ] as const)('with both channels at %s', (command, motorExplained) => {
+      const plain = solve(reversedSupply(command));
+      expect(plain.parts.get('driver')?.volts).toBeLessThan(-2.5);
+      expect(plain.verdicts.find((verdict) => verdict.partId === 'driver')).toEqual({ partId: 'driver', need: 'power', kind: 'power', unmet: 'reversed' });
+      // The schema's example driver has no reversed mode, so nothing is shown; never its low-voltage.
+      expect(faults(plain)).toEqual([]);
+      expect(explained(plain)).toEqual([motorExplained]);
+      const content = solve(reversedSupply(command), {}, withReversed);
+      expect(faults(content)).toEqual(['driver: reversed']);
+      expect(explained(content)).toEqual([motorExplained]);
+      expect(content.sources.filter((_, index) => index > 0).every((source) => !source.giving && source.milliamps === 0)).toBe(true);
+    });
+  });
+
   it('the motor-off-pin fixture: the 2-cell pack sags below the microcontroller’s 3 V, and the motor on its 3V pin is put down to it', () => {
     const pin = solve(fixture('motor-off-pin'));
     expect(pin.parts.get('brain')?.volts).toBeLessThan(3);
@@ -296,7 +342,7 @@ describe('faults over a Run', () => {
     expect(seen.slice(first).every((entry) => entry.faults.length === 1)).toBe(true);
   });
 
-  it('keeps an answer under the controls and the charge bands, checks a kept explanation every tick, and searches again when it fails (review N14)', () => {
+  it('keeps answers under the controls and the browned-out drivers: explanations checked every tick, faults searched again per charge band (review N14)', () => {
     const blueprint = workbench(
       [battery, ['switch', 'switch'], ['driver', 'motor-driver', { 'motor-a': 'backward' }], motor],
       [
@@ -313,22 +359,77 @@ describe('faults over a Run', () => {
     const [entry] = first.state.explained.needs;
     expect(entry).toMatchObject({ partId: 'motor', need: 'power', unmet: 'reversed', explainedBy: { by: 'controls', controls: ['driver/channel-a'] } });
     expect(entry?.alternative?.channels).toEqual({ 'driver/channel-a': 1, 'driver/channel-b': 1 });
-    expect(first.state.explained.key).toBe('-1,1,closed#20');
-    // Under the same key a kept "nothing explains it" stands without a search: it stays a fault.
-    const kept: ElectricalState = { ...first.state, explained: { ...first.state.explained, needs: [{ partId: 'motor', need: 'power', unmet: 'reversed' }] } };
-    expect(faults(solveElectrical(model, kept).solution)).toEqual(['motor: reversed']);
-    // A kept explanation is checked: opening the switch does not meet the motor's need, so it is searched again.
+    expect(first.state.explained.key).toBe('-1,1,closed#');
+    // A kept explanation still holds in another charge band: it is checked, not searched for again.
+    expect(solveElectrical(model, { ...first.state, charge: [0.9] }).state.explained).toBe(first.state.explained);
+    // A kept explanation that no longer holds is searched again: opening the switch does not meet the motor's need.
     const stale: ElectricalState = {
       ...first.state,
       explained: { ...first.state.explained, needs: [{ partId: 'motor', need: 'power', unmet: 'reversed', explainedBy: { by: 'controls', controls: ['switch/contacts'] }, alternative: opened('switch') }] },
     };
-    const checked = solveElectrical(model, stale);
-    expect(explained(checked.solution)).toEqual(['motor power reversed: controls driver/channel-a']);
-    // Another key, a control or a charge band, starts afresh.
-    expect(solveElectrical(model, kept, { controls: opened('switch') }).state.explained.key).toBe('-1,1,open#20');
-    const drained = solveElectrical(model, { ...kept, charge: [0.9] });
-    expect(drained.state.explained.key).toBe('-1,1,closed#18');
-    expect(faults(drained.solution)).toEqual([]);
+    expect(explained(solveElectrical(model, stale).solution)).toEqual(['motor power reversed: controls driver/channel-a']);
+    // A kept fault (nothing explained it) stands in its own charge band, and is searched again in another.
+    const kept: ElectricalState = { ...first.state, explained: { ...first.state.explained, needs: [{ partId: 'motor', need: 'power', unmet: 'reversed', band: '20' }] } };
+    expect(faults(solveElectrical(model, kept).solution)).toEqual(['motor: reversed']);
+    expect(faults(solveElectrical(model, { ...kept, charge: [0.9] }).solution)).toEqual([]);
+    // A new control state starts afresh.
+    expect(solveElectrical(model, kept, { controls: opened('switch') }).state.explained.key).toBe('-1,1,open#');
+  });
+
+  it('searches again, in the rule’s order, when a motor driver starts browning out (R-1.2 round 2, finding 2)', () => {
+    // A driver with a DC motor on each channel, both held still (against a wall), on a pack that sags as it drains.
+    const blueprint = workbench(
+      [battery, ['driver', 'motor-driver'], ['left', 'dc-motor'], ['right', 'dc-motor']],
+      [
+        ['battery.plus', 'driver.plus'],
+        ['driver.minus', 'battery.minus'],
+        ['driver.a-plus', 'left.plus'],
+        ['driver.a-minus', 'left.minus'],
+        ['driver.b-plus', 'right.plus'],
+        ['driver.b-minus', 'right.minus'],
+      ],
+    );
+    const model = electricalModel(buildGraph(blueprint, catalogue));
+    let state: ElectricalState = { ...initialElectricalState(model), charge: [0.88] };
+    const seen: { readonly faults: string[]; readonly explained: string[]; readonly browned: boolean }[] = [];
+    for (let tick = 0; tick < 400; tick += 1) {
+      const result = stepElectrical(model, state);
+      seen.push({ faults: faults(result.solution), explained: explained(result.solution), browned: result.solution.sources.some((source) => source.duty < 1) });
+      state = result.state;
+    }
+    // Before the brown-out the stalled motors read low, and stopping the other channel would let each one run.
+    const start = seen.findIndex((entry) => entry.browned);
+    expect(start).toBeGreaterThan(0);
+    expect(seen[start - 1]?.explained).toEqual(['left power low: controls driver/channel-b', 'right power low: controls driver/channel-a']);
+    // Once it browns out, the motors are put down to the driver at once, and the driver's own fault shows.
+    expect(seen[start]?.explained).toEqual(['left power low: feeder driver', 'right power low: feeder driver']);
+    expect(seen[start]?.faults).toEqual(['driver: low-voltage']);
+    expect(seen.slice(start).every((entry) => entry.browned && entry.faults.join() === 'driver: low-voltage')).toBe(true);
+  });
+
+  it('searches a kept fault again when the part that feeds it loses power, inside one charge band', () => {
+    // A buzzer on the microcontroller's 3V pin, with a 1-cell and a 2-cell pack in series: as they run down, the
+    // pin falls below the buzzer's 3 V first, and then the microcontroller's own supply below its 3 V.
+    const blueprint = workbench(
+      [['brain', 'microcontroller'], ['buzzer', 'buzzer'], ['cell', 'battery-pack-1-cell'], ['pack', 'battery-pack-2-cell']],
+      [
+        ['cell.plus', 'pack.minus'],
+        ['pack.plus', 'brain.plus'],
+        ['brain.minus', 'cell.minus'],
+        ['brain.pin-3v', 'buzzer.plus'],
+        ['buzzer.minus', 'cell.minus'],
+      ],
+    );
+    const model = electricalModel(buildGraph(blueprint, catalogue));
+    const charged = (charge: number): number[] => model.graph.sources.map((source) => (source.spec.kind === 'source' ? charge : 1));
+    const before = solveElectrical(model, { ...initialElectricalState(model), charge: charged(0.049) });
+    expect(before.solution.parts.get('brain')?.volts).toBeGreaterThan(3);
+    expect(faults(before.solution)).toEqual(['buzzer: low-voltage']);
+    // Both packs stay in their lowest band, but the microcontroller's supply is now too low: the buzzer is put down to it.
+    const after = solveElectrical(model, { ...before.state, charge: charged(0.001) });
+    expect(after.solution.parts.get('brain')?.volts).toBeLessThan(3);
+    expect(faults(after.solution)).toEqual(['brain: low-voltage']);
+    expect(explained(after.solution)).toEqual(['buzzer power low: feeder brain']);
   });
 
   it('shows a motor that the switch explained as a fault of its own once the pack is too weak for any setting', () => {

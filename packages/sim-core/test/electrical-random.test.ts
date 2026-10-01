@@ -102,7 +102,7 @@ describe('the solver on random circuits', () => {
   // A bulk property test: it takes a few seconds, more on a busy machine.
   it('settles, keeps current, and agrees with the schema on the wiring, on 300 circuits at 900 states', { timeout: 60_000 }, () => {
     const next = generator(20261002);
-    const seen = { states: 0, shorts: 0, outputs: 0, limited: 0, reversed: 0, low: 0, browned: 0, controls: 0, short: 0, feeder: 0, solves: 0, most: 0 };
+    const seen = { states: 0, shorts: 0, outputs: 0, limited: 0, reversed: 0, low: 0, browned: 0, reversedDriver: 0, controls: 0, short: 0, feeder: 0, solves: 0, most: 0 };
     for (let circuit = 0; circuit < 300; circuit += 1) {
       const blueprint = randomCircuit(next);
       const graph = buildGraph(blueprint, catalogue);
@@ -151,10 +151,15 @@ describe('the solver on random circuits', () => {
           expect(powerClosed(situation, verdict.partId, port(need.supply.pos), port(need.supply.neg)), where).toBe(true);
           const flow = solution.parts.get(verdict.partId)?.ports;
           const volts = (flow?.get(need.supply.pos)?.volts ?? 0) - (flow?.get(need.supply.neg)?.volts ?? 0);
-          // A motor driver browning out reads low, its supply held at onVolts; any other need reads its volts.
-          const browning = graph.sources.some((source, index) => source.part === verdict.partId && source.spec.kind === 'driver' && (solution.sources[index]?.duty ?? 1) < 1);
-          expect(judged?.unmet, where).toBe(browning ? 'low' : voltageWay(need, volts));
+          // Every need reads its volts, except that a motor driver browning out, its supply held at onVolts, reads
+          // low. A reversed or high supply reads so whatever its channels do (R-1.2 round 2, finding 1).
+          const measured = voltageWay(need, volts);
+          const throttled = graph.sources.some((source, index) => source.part === verdict.partId && source.spec.kind === 'driver' && (solution.sources[index]?.duty ?? 1) < 1);
+          const browning = (measured === undefined || measured === 'low') && throttled;
+          expect(judged?.unmet, where).toBe(browning ? 'low' : measured);
           if (browning) seen.browned += 1;
+          // A driver's reversed supply leaves its channels at duty 0, and must still read reversed.
+          if (measured === 'reversed' && throttled) seen.reversedDriver += 1;
           if (judged?.unmet === 'reversed') seen.reversed += 1;
           if (judged?.unmet === 'low') seen.low += 1;
           if (judged?.explainedBy?.by === 'controls') seen.controls += 1;
@@ -186,6 +191,7 @@ describe('the solver on random circuits', () => {
     expect(seen.low).toBeGreaterThan(50);
     expect(seen.feeder).toBeGreaterThan(0);
     expect(seen.browned).toBeGreaterThan(10);
+    expect(seen.reversedDriver).toBeGreaterThan(0);
     // A handful of solves, or a few dozen while a motor driver browns out and its duty is searched for.
     expect(seen.most).toBeLessThanOrEqual(64);
   });

@@ -20,7 +20,7 @@ state = next.state;
 | In | What |
 | --- | --- |
 | `state.charge` | Each source's charge, 0–1, indexed like `graph.sources` (an output's stays 1) |
-| `state.explained` | Answers found under the current key: the control state and each battery's 5% charge band (below). Plain data in a fixed order: keep it in the snapshot |
+| `state.explained` | Answers found under the current key: the control state and which motor drivers brown out (below). Plain data in a fixed order: keep it in the snapshot |
 | `inputs.controls` | The schema's `ControlState`. A control left out sits at rest; a channel's command is clamped to −1..1, and NaN reads as stop |
 | `inputs.actuators` | Per use, as last tick left it: `rpm` (a drive's shaft speed) and `loadNmm`. The solver order is electrical, program, mechanical, so a motor's back-EMF and load come from last tick |
 
@@ -59,7 +59,7 @@ Everything comes from the record's parameters; nothing branches on a part's id, 
 - Every primitive's curve is non-decreasing, so the operating point minimises a convex, piecewise-quadratic function.
   - Damped Newton finds it: solve with each branch on its current segment, then walk towards that answer only while the function falls.
   - It always ends.
-  - In 27,000 random circuit states of up to 12 parts, every one settled: 98% in 1 to 3 solves, the rest in a handful, and up to 32 while a motor driver browns out and its duty is searched for. (The reviewer once saw 9 without a driver.) The bound is 2,048.
+  - In 27,000 random circuit states of up to 12 parts, every one settled: 98% in 1 to 3 solves, the rest in a handful, and a few dozen while a motor driver browns out and its duty is searched for: 36 is the most seen (review R-1.2, round 2). (The reviewer once saw 9 without a driver.) The bound is 2,048.
 - Where a curve is flat, the solver adds a slope of 1e-9 S (`LEAK_SIEMENS`), measured from 0 V. So no net is left without a voltage, and an off LED or a dangling leg draws nothing.
   - It is never reported.
   - Currents under 0.1 µA (`NOISE_MILLIAMPS`) read 0, so leaks and rounding never show.
@@ -89,6 +89,7 @@ A driver's supply can be above its onVolts at rest and sag below it under load: 
   - Review R-1.2 found that the earlier model left a restarted kit robot dead for good, because it switched a browned-out channel off for the whole tick.
 - **The child sees why.** While a driver browns out, its own power need is `low`, and only a short or a feeder explains that, never the controls. This is the orchestrator's ruling on R-1.2; the record says "the fault is the driver's".
   - A part a browned-out driver starves is `low` and put down to that driver, straight after the short step.
+  - A supply wired the wrong way round reads `reversed`, and one above maxVolts `high`, whatever the channels do. The brown-out makes only an in-range or `low` reading `low` (review R-1.2, round 2, finding 1).
 - **Measured.**
   - With the schema's records, the Level 2 kit robot (pack, switch, driver, two DC motors, LED) reaches 85% after 84 s of driving.
   - Switched off and on again, it browns out for 2 ticks (duty 0.865, then 0.985), with the driver's `low-voltage` showing, then runs.
@@ -119,10 +120,10 @@ The rule is the schema's: a fault is what the child's controls cannot fix ([part
   - **A motor driver or regulator without power** that feeds it: the feeder.
   - If none holds, it is a fault. `faults` lists each part's own failure modes for the unexplained needs, in the record's order.
   - A browned-out driver's own `low` takes the short step and the feeder step only (above).
-- **Kept answers (review N14).** A need's answer goes into `state.explained` under a key: the control state, and each battery's charge band, 5% wide (`CHARGE_BAND`). A new key starts afresh.
+- **Kept answers (review N14).** A need's answer goes into `state.explained` under a key: the control state, and which motor drivers brown out. A new key starts afresh, so when a brown-out starts or ends every need is searched again in the rule's order (review R-1.2, round 2, finding 2).
   - Under one key, a kept explanation is checked again every tick: one solve at the setting the controls step found, one of the healed circuit, or a look at the feeder.
   - When it no longer holds, the need is searched again, so a draining pack cannot hide a fault (review R-1.2, finding 2).
-  - A kept fault (nothing explained it) stands until the key changes, so a need that flickers in and out does not search each time.
+  - A kept fault (nothing explained it) stands while each battery's charge stays in its band, 5% wide (`CHARGE_BAND`), and no motor driver or regulator that feeds it loses power. Then it is searched again. So a need that flickers in and out does not search each time.
   - Because the answers are in the state, a restored snapshot replays exactly.
 - **Start-up.** At tick 0 nothing turns, so a motor draws its stall current. On a weak pack that can read `low` for the few ticks it takes to spin up.
 
@@ -134,10 +135,11 @@ The rule is the schema's: a fault is what the child's controls cannot fix ([part
 - Per situation (control state), the solver keeps its branches, the switch forest and the wiring verdicts. Per model, it keeps the power-line forest and each need's ports.
 - What costs more:
   - A new control state costs one `wiredNeeds` call (580–630 ms on review N14's pathological build).
-  - A voltage-way need costs one search the first time it appears under a key, and one solve a tick while a kept explanation is checked.
-  - A tick in which a driver browns out costs a dozen or two solves.
+  - A voltage-way need costs one search the first time it appears under a key, and one solve a tick while a kept explanation is checked. A kept fault costs a search again when a pack enters another band; kept explanations outlast the bands (review R-1.2, round 2, finding 3).
+  - A tick in which a driver browns out costs up to a few dozen solves.
 - **Not done here (review R-1.2, finding 4):**
   - Searches still run inside the tick on the first visit to a control state. Task 1.5 can warm a kit's 64 or fewer control states at Run start.
+  - They also run inside the tick when a kept explanation stops holding, and for a kept fault in a new band. Ten DC motors, each stalled behind its own switch on a 2-cell pack, are the worst case seen: a search there tries all 1,023 other settings, about 0.2 s, at 12 ticks over a full drain (26 before kept explanations outlasted the bands). Kit builds take a few ms.
   - Level 3 channel commands would grow the caches with every new value.
 
 ## Decisions and open questions

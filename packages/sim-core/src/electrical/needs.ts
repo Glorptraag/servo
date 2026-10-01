@@ -11,7 +11,7 @@ import type { ActuatorState, ElectricalState, ElectricalVerdict, ExplainedNeed, 
 export const REVERSED_VOLTS = 1e-6;
 /** How far outside its range a supply may sit and still meet the need: rounding, never a teaching value. */
 const RANGE_VOLTS = 1e-9;
-/** Kept explanations are searched again whenever a battery's charge crosses into another band this wide. */
+/** A kept fault (a need nothing explained) is searched again whenever a battery's charge crosses into another band this wide. */
 export const CHARGE_BAND = 0.05;
 
 /** How the voltages leave a power need unmet: the wrong way round first, then below or above its range. */
@@ -72,11 +72,18 @@ const needsOf = (model: Model): Needs => {
   return made;
 };
 
-/** The key kept explanations live under: the control state, and the band each battery's charge is in. */
-const keepKey = (model: Model, situation: Situation, charge: readonly number[]): string => {
-  const bands = model.sources.flatMap((source, index) => (source.kind === 'battery' ? [Math.floor(at(charge, index) / CHARGE_BAND)] : []));
-  return `${situation.key}#${bands.join('.')}`;
+/**
+ * The key kept answers live under: the control state, and which motor drivers brown out. So the search runs
+ * again, in the rule's order, when a brown-out starts or ends (review R-1.2, round 2, finding 2).
+ */
+const keepKey = (model: Model, situation: Situation, solved: Solved): string => {
+  const browned = [...new Set(model.sources.flatMap((source, index) => (solved.browned[index] === true ? [source.part] : [])))].sort(compareText);
+  return `${situation.key}#${browned.join(' ')}`;
 };
+
+/** The band each battery's charge is in. A kept fault is searched again when it changes. */
+const bandsOf = (model: Model, charge: readonly number[]): string =>
+  model.sources.flatMap((source, index) => (source.kind === 'battery' ? [Math.floor(at(charge, index) / CHARGE_BAND)] : [])).join('.');
 
 /**
  * Every power, loop and isolation need at this tick, by the schema's rule: a fault is what the child's
@@ -84,15 +91,17 @@ const keepKey = (model: Model, situation: Situation, charge: readonly number[]):
  * - The wiring decides `open` and `shorted` and explains them (`wiredNeeds`, cached per control state).
  * - A power need the wiring meets is judged on the solved volts across its supply: `reversed`, `low`, `high`.
  * - A motor driver that browns out is `low` (its record: "the fault is the driver's"). Only a short or a
- *   feeder can explain that: a child must see why its motors stopped, so the controls never do.
+ *   feeder can explain that: a child must see why its motors stopped, so the controls never do (D57). A supply
+ *   that reads `reversed` or `high` stays so, whatever its channels do.
  * - Any other such need is explained in the schema's order: by a short that starves it (it would be met with
  *   the short's wires and closed switches taken away), by the controls (`explainByControls`, each other
  *   setting solved with this tick's charges), or by a motor driver or regulator without power that feeds it
  *   (review N10). A part a browned-out driver starves of volts is put down to that driver straight after the
  *   short step.
- * - An answer is kept in the state under the control state and the batteries' charge bands, and checked again
- *   every tick: one solve at the setting it names. When it no longer holds, the need is searched again
- *   (review N14). An answer that nothing explains stands while the key does.
+ * - An answer is kept in the state under the control state and which motor drivers brown out. A kept
+ *   explanation is checked again every tick (one solve at the setting it names) and searched again when it no
+ *   longer holds (review N14); a kept fault is searched again when a battery's charge band changes or a motor
+ *   driver or regulator that feeds it loses power.
  */
 export const judgeNeeds = (
   model: Model,
@@ -137,8 +146,11 @@ export const judgeNeeds = (
       verdicts.push(verdict);
       return;
     }
-    const browned = power.channels.some((source) => solved.browned[source] === true);
-    const way = browned ? 'low' : voltageWay(power.need, volts(situation, solved, power.pos, power.neg));
+    // The volts decide `reversed` and `high` whatever the channels do; a brown-out only reads a supply held at
+    // onVolts as `low` (review R-1.2, round 2, finding 1).
+    const measured = voltageWay(power.need, volts(situation, solved, power.pos, power.neg));
+    const browned = (measured === undefined || measured === 'low') && power.channels.some((source) => solved.browned[source] === true);
+    const way = browned ? 'low' : measured;
     if (way === undefined) {
       verdicts.push(verdict);
       return;
@@ -147,7 +159,8 @@ export const judgeNeeds = (
     verdicts.push({ ...verdict, unmet: way });
   });
 
-  const key = keepKey(model, situation, charge);
+  const key = keepKey(model, situation, solved);
+  const band = bandsOf(model, charge);
   const same = prior.key === key;
   const known = new Map<string, ExplainedNeed>(same ? prior.needs.map((entry) => [keyOf(entry.partId, entry.need, entry.unmet), entry]) : []);
   let found = false;
@@ -206,10 +219,12 @@ export const judgeNeeds = (
     for (const task of pending) {
       const name = keyOf(task.part, task.need.id, task.way);
       let entry = known.get(name);
-      if (entry && !holds(entry, task)) entry = undefined;
+      // A kept explanation stands while it still holds; a kept fault while the batteries stay in their bands and
+      // nothing that feeds it loses power.
+      if (entry && (entry.explainedBy ? !holds(entry, task) : entry.band !== band || feederOf(situation, task.part, task.pos, task.neg, unpowered) !== undefined)) entry = undefined;
       if (!entry) {
         const { by, alternative } = explain(task);
-        entry = { partId: task.part, need: task.need.id, unmet: task.way, ...(by ? { explainedBy: by } : {}), ...(alternative ? { alternative } : {}) };
+        entry = { partId: task.part, need: task.need.id, unmet: task.way, ...(by ? { explainedBy: by } : { band }), ...(alternative ? { alternative } : {}) };
         known.set(name, entry);
         found = true;
       }
