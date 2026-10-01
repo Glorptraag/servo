@@ -6,3 +6,4 @@ coverage/
 .claude/plans/status.json.lock
 .claude/plans/dispatch/
 .claude/plans/logs/
+packages/content/art/generated/

@@ -8,6 +8,7 @@
     "node": ">=24"
   },
   "scripts": {
+    "art": "node packages/tools/src/placeholder-art/main.ts",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint --config eslint.config.js --max-warnings 0 .",
