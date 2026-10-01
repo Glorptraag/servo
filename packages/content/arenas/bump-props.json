@@ -1,0 +1,75 @@
+{
+  "friction": 0.8,
+  "id": "bump-props",
+  "lines": [],
+  "name": "Bump props",
+  "props": [
+    {
+      "at": {
+        "heading": 0,
+        "x": 800,
+        "y": 600
+      },
+      "fixed": false,
+      "grams": 50,
+      "id": "box",
+      "shape": "box",
+      "size": {
+        "x": 80,
+        "y": 80,
+        "z": 60
+      }
+    },
+    {
+      "at": {
+        "heading": 0,
+        "x": 1500,
+        "y": 600
+      },
+      "fixed": true,
+      "grams": 700,
+      "id": "post",
+      "shape": "cylinder",
+      "size": {
+        "x": 100,
+        "y": 100,
+        "z": 150
+      }
+    }
+  ],
+  "ramps": [],
+  "size": {
+    "x": 2000,
+    "y": 1200
+  },
+  "start": {
+    "heading": 0,
+    "x": 300,
+    "y": 600
+  },
+  "walls": [],
+  "zones": [
+    {
+      "from": {
+        "x": 600,
+        "y": 450
+      },
+      "id": "box-front",
+      "to": {
+        "x": 760,
+        "y": 750
+      }
+    },
+    {
+      "from": {
+        "x": 1200,
+        "y": 450
+      },
+      "id": "post-front",
+      "to": {
+        "x": 1450,
+        "y": 750
+      }
+    }
+  ]
+}
