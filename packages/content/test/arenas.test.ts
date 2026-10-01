@@ -1,16 +1,20 @@
+/// <reference types="vite/client" />
 import { describe, expect, it } from 'vitest';
-import { cosSin, validateArenaPreset } from '@servo/schema';
-import type { ArenaPreset, Pose, Prop, Ramp, Vec2, Wall, Zone } from '@servo/schema';
+import {
+  cosSin,
+  makeCatalogue,
+  placeParts,
+  robotRoot,
+  validateArenaPreset,
+  validateBlueprint,
+  validatePartRecord,
+} from '@servo/schema';
+import type { ArenaPreset, PartRecord, Placement, Pose, Prop, Ramp, ValidationResult, Vec2, Vec3, Wall, Zone } from '@servo/schema';
+import { exampleParts, validBlueprints } from '@servo/schema/fixtures';
 
-// Vite reads each arena file as text, so the test parses the exact bytes that ship.
-declare global {
-  interface ImportMeta {
-    glob(pattern: string, options: { query: '?raw'; import: 'default'; eager: true }): Record<string, string>;
-  }
-}
-
-// Every preset file in packages/content/arenas/, parsed here as JSON with no content loader in between.
-const files = Object.entries(import.meta.glob('../arenas/*.json', { query: '?raw', import: 'default', eager: true })).map(
+// Every preset file in packages/content/arenas/. Vite reads each as text, and the test parses those exact
+// bytes as JSON, with no content loader in between.
+const files = Object.entries(import.meta.glob<string>('../arenas/*.json', { query: '?raw', import: 'default', eager: true })).map(
   ([path, text]) => ({ file: path.slice(path.lastIndexOf('/') + 1), text }),
 );
 
@@ -43,19 +47,85 @@ const pair = <T>(items: readonly T[]): readonly [T, T] => {
   return [first, second];
 };
 
+const valid = <T>(result: ValidationResult<T>, what: string): T => {
+  if (!result.ok) throw new Error(`${what} does not validate.`);
+  return result.value;
+};
+
+const catalogue = makeCatalogue({ parts: exampleParts.map((part) => valid(validatePartRecord(part), 'An example part')) });
+
+/** A point in a part's frame, in its robot's frame: (x, y, z) + R(yaw) · M · p (packages/schema/docs/geometry.md). */
+const place = (at: Placement, p: Vec3): Vec3 => {
+  const [cos, sin] = cosSin(at.yaw);
+  const y = at.mirrored ? -p.y : p.y;
+  return { x: at.x + cos * p.x - sin * y, y: at.y + sin * p.x + cos * y, z: at.z + p.z };
+};
+
+interface Member {
+  readonly record: PartRecord;
+  readonly at: Placement;
+  /** The corners of its body box, in the robot's frame. */
+  readonly corners: readonly Vec3[];
+}
+
+/** The robot in a schema fixture blueprint: its root part and every part mounted on or carried by it. */
+const robotIn = (name: string): Member[] => {
+  const fixture = validBlueprints.find((candidate) => candidate.name === name);
+  if (!fixture) throw new Error(`No schema fixture blueprint '${name}'.`);
+  const blueprint = valid(validateBlueprint(fixture.data, catalogue), name);
+  const placements = placeParts(blueprint, catalogue);
+  const root = robotRoot(placements);
+  return blueprint.parts.flatMap((part) => {
+    const held = placements.get(part.id);
+    const record = catalogue.parts.get(part.part);
+    if (!held || !record || held.root !== root) return [];
+    const { x, y, z } = record.body.size;
+    const corners = [-x / 2, x / 2].flatMap((cx) =>
+      [-y / 2, y / 2].flatMap((cy) => [0, z].map((cz) => place(held.placement, { x: cx, y: cy, z: cz }))),
+    );
+    return [{ record, at: held.placement, corners }];
+  });
+};
+
+const has = (member: Member, kind: string): boolean => member.record.behaviour.some((primitive) => primitive.kind === kind);
+
+const touchesFloor = (member: Member): boolean => has(member, 'wheel') || has(member, 'support');
+
+const cornersOf = (members: readonly Member[]): Vec3[] => members.flatMap((member) => member.corners);
+
 /**
- * The reference robot: the schema's rolling-start fixture (a 160 × 130 mm chassis on the large wheels) with
- * a bumper switch on its bumper mount. Millimetres from the chassis centre, which the start pose places.
+ * The reference robot, measured with `placeParts` from the schema's fixture blueprints so it cannot drift
+ * from them: rolling-start (Level 1), and bumper-robot (Level 2) for the bumper switch. Millimetres from the
+ * chassis centre, which the start pose places.
  */
-const ROBOT = {
-  front: 80, // the chassis's front edge
-  probe: 90, // the bumper switch's probe
-  rear: 81, // the back of the caster
-  halfWidth: 92, // the outer face of each wheel
-  clearance: 16.5, // the chassis's underside above the floor
-  overhang: 40, // how far the chassis reaches ahead of the wheel axles
-  wheelbase: 110, // from the wheel axles back to the caster
-} as const;
+const measureRobot = () => {
+  const level1 = robotIn('rolling-start');
+  const level2 = robotIn('bumper-robot');
+  const front = Math.max(...cornersOf(level1).map(({ x }) => x));
+  const axle = Math.max(...level1.filter((member) => has(member, 'wheel')).map(({ at }) => at.x));
+  const caster = Math.min(...level1.filter((member) => has(member, 'support')).map(({ at }) => at.x));
+  const floor = Math.min(...cornersOf(level1.filter(touchesFloor)).map(({ z }) => z));
+  const underside = Math.min(...cornersOf(level1.filter((member) => !touchesFloor(member))).map(({ z }) => z));
+  const probes = level2.flatMap(({ record, at }) =>
+    record.behaviour.flatMap((primitive) =>
+      primitive.kind === 'switch' && primitive.actuation.kind === 'contact'
+        ? [primitive.actuation.probe.from, primitive.actuation.probe.to].map((end) => place(at, { ...end, z: 0 }).x)
+        : [],
+    ),
+  );
+  const both = cornersOf([...level1, ...level2]);
+  return {
+    front, // the front edge
+    probe: Math.max(...probes), // how far ahead the bumper switch's probe reaches
+    rear: -Math.min(...both.map(({ x }) => x)), // the back edge
+    halfWidth: Math.max(...both.map(({ y }) => Math.abs(y))), // the outer face of each wheel
+    clearance: underside - floor, // the chassis's underside above the floor
+    overhang: front - axle, // how far the front reaches past the wheel axles
+    wheelbase: axle - caster, // from the wheel axles back to the caster
+  };
+};
+
+const ROBOT = measureRobot();
 
 /** How far points lie ahead of the start pose, along its heading, and to its left: [least, most]. */
 interface Span {
@@ -132,6 +202,13 @@ describe('arena preset files', () => {
   });
 });
 
+describe('the reference robot', () => {
+  it('measures as a whole robot, with the bumper switch probe ahead of its front', () => {
+    expect(Object.entries(ROBOT).filter(([, value]) => !(Number.isFinite(value) && value > 0))).toEqual([]);
+    expect(ROBOT.probe).toBeGreaterThan(ROBOT.front);
+  });
+});
+
 describe.each(files)('$file with the reference robot', ({ text }) => {
   it('starts the robot on the floor, clear of walls, props and ramps', () => {
     const arena = parse(text);
@@ -202,9 +279,10 @@ describe('wall stop', () => {
   });
 });
 
-// The robot climbs a steep slope and comes down a gentler one. By a rough estimate from the example part
-// records, the 1-in-3 climb nearly stalls direct drive on the 2-cell battery pack while gearboxes carry the
-// robot up (the gearbox lesson). The mechanical solver (task 1.4) decides the real numbers.
+// The robot climbs a 1-in-7 slope and comes down a 1-in-14 one, gentle enough that the chassis keeps 10 mm
+// off the floor over the sharp top. A ramp rises only inside its own rectangle, so a flat top cannot be
+// written. By a rough estimate from the example part records, only a robot on the 1-cell battery pack
+// struggles up the climb, so the gearbox lesson is weak here. The mechanical solver (task 1.4) decides.
 describe('ramp', () => {
   const UPHILL: Readonly<Record<Ramp['uphill'], Vec2>> = {
     '+x': { x: 1, y: 0 },
@@ -245,12 +323,13 @@ describe('ramp', () => {
     }
   });
 
-  it('keeps both slopes within what the reference robot’s chassis clears', () => {
+  // Conservative estimates: a side-view trace of the wheels and caster leaves a little more room.
+  it('keeps the reference robot’s chassis at least 10 mm off the floor all the way over', () => {
     const [up, down] = pair(layout().slopes.map(({ ramp }) => grade(ramp)));
-    // Where a slope starts or ends, the chassis front reaches over the next stretch of floor.
-    expect(Math.max(up, down)).toBeLessThanOrEqual(ROBOT.clearance / ROBOT.overhang);
+    // Where a slope starts or ends, the front reaches `overhang` past the wheel axles, over the next stretch.
+    expect(ROBOT.clearance - ROBOT.overhang * Math.max(up, down)).toBeGreaterThanOrEqual(10);
     // Astride the top, the floor rises (wheelbase / 4) × (sum of the grades) above the wheels and caster.
-    expect(up + down).toBeLessThanOrEqual((4 * ROBOT.clearance) / ROBOT.wheelbase);
+    expect(ROBOT.clearance - (ROBOT.wheelbase / 4) * (up + down)).toBeGreaterThanOrEqual(10);
   });
 
   it('puts the top zone over the top, and the far-side zone on flat floor past the slopes', () => {
