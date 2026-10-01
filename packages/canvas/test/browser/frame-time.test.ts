@@ -3,10 +3,11 @@
 //
 // A frame's time is the main-thread work the canvas does for it: handling that frame's input (pointer and wheel
 // events, dispatched once a frame as a hand would) and drawing (Pixi's render call). Every requestAnimationFrame
-// callback is timed, and the callbacks that share a frame's timestamp are summed. The median must be within 16 ms;
-// the median, p95 and worst frame are printed, with the GPU and the frame rate the browser achieved. A software GPU
-// (SwiftShader, as on CI) draws a frame this size far below 60 fps whatever the page does, so there the gestures
-// run fewer frames: the main-thread time is still what is measured.
+// callback is timed, and the callbacks that share a frame's timestamp are summed. The median and the p95 must both be
+// within 16 ms, and on a hardware GPU the browser must deliver frames at 50 fps or better. The median, p95 and worst
+// frame are printed, with the GPU and the frame rate. A software GPU (SwiftShader, as on CI) draws a frame this size
+// far below 60 fps whatever the page does, so there the gestures run fewer frames and the frame rate is only printed:
+// the main-thread time is still what is measured.
 import { afterEach, describe, expect, it } from 'vitest';
 import { cdp } from 'vitest/browser';
 import type { Vec2 } from '@servo/schema';
@@ -18,6 +19,8 @@ afterEach(unmountAll);
 
 const CPU_SLOWDOWN = 4;
 const BUDGET_MS = 16;
+/** Frames delivered on a hardware GPU, allowing for a machine busy with other work. */
+const MIN_FPS = 50;
 
 /** The GPU the browser renders WebGL with. */
 const gpu = (): string => {
@@ -149,6 +152,12 @@ const report = (label: string, stats: Stats): void => {
   );
 };
 
+const expectWithinBudget = (stats: Stats): void => {
+  expect(stats.median, 'median frame').toBeLessThanOrEqual(BUDGET_MS);
+  expect(stats.p95, 'p95 frame').toBeLessThanOrEqual(BUDGET_MS);
+  if (!SOFTWARE_GPU) expect(stats.fps, 'frames delivered per second').toBeGreaterThanOrEqual(MIN_FPS);
+};
+
 const artForEveryPart = artFrom(
   Object.fromEntries(parts.map((part) => [part.identity.art, svgArt(part.identity.colours.main, part.identity.colours.accent)])),
 );
@@ -164,7 +173,7 @@ describe('frame time on the 25-part fixture, iPad profile', () => {
     const stats = await measure(surface, [pan(emptySpot(surface)), wheel, pinch]);
     report('pictures', stats);
     expect(stats.frames).toBe(3 * FRAMES_PER_GESTURE);
-    expect(stats.median).toBeLessThanOrEqual(BUDGET_MS);
+    expectWithinBudget(stats);
   });
 
   it('pans, wheels and pinches within a 16 ms frame budget, with neutral tiles and names', async () => {
@@ -175,6 +184,6 @@ describe('frame time on the 25-part fixture, iPad profile', () => {
     expect(surface.partView('mc')?.shows.name).toBe('microcontroller');
     const stats = await measure(surface, [pan(emptySpot(surface)), wheel, pinch]);
     report('neutral tiles', stats);
-    expect(stats.median).toBeLessThanOrEqual(BUDGET_MS);
+    expectWithinBudget(stats);
   });
 });

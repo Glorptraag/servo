@@ -29,7 +29,8 @@ Back to the [README](../README.md). The contract is [src/interface.ts](../src/in
 ## Tiles
 
 - A part is drawn as a tile: a rounded card in its footprint's proportions (`body.size` x by y), with its picture or its name on it.
-- The tile is the footprint, scaled up evenly until its longer side is at least 96 px. A part whose sockets would overlap grows a little more, 5% at a time, until they do not. Proportions always stay true.
+- The tile is the footprint, scaled up evenly until its longer side is at least 96 px. A part whose sockets would overlap grows a little more, 5% at a time, until they do not. Proportions always stay true. A part bigger than 64 mm is drawn at its true size, so it passes the brief's 160 px: the large wheel is 162.5 px.
+- A tile grown past its part's size can cover a neighbour's on a chassis: on the bumper robot some names show cut short ("ca" for caster). Left for now; pictures, the normal case, cover less of the tile than a name.
 - Frames (parts with a mount point, so far only the chassis) are as big as they really are. They draw in the chassis layer.
 - The tile turns with the part. A part on a mirrored mount point, directly or through its host, is drawn as its mirror image, flipped across its own x axis (`node.scale.y = -1`). Its picture flips with it.
 - Parts draw from low to high on the robot (the height `placeParts` gives), then by depth and id. So a battery pack on the deck covers the caster hanging under the chassis.
@@ -41,6 +42,7 @@ Back to the [README](../README.md). The contract is [src/interface.ts](../src/in
   - The first layout tried spread sockets evenly round the whole outline, so a two-port part had one at each end. Then a wire from the back socket heading forward ran straight through the front socket of its own part and looked connected to it.
 - Sockets are 44 px at default zoom, as drawn and as a target. Power is a round socket, signal a square and mechanical a hexagon whose flat sides are 44 px apart (D20). Each is in its wire colour, hollow (a pale centre in a coloured ring) when empty and filled when a wire ends on it.
 - Power, signal, shaft and hub sockets draw in the ports layer, above the wires. A frame's mount points draw on the frame, in the chassis layer, so a part fixed on one covers it as on a real chassis, and the free ones show where parts can go. A part's own mount is not drawn: it is under the part, and the mount point it is fixed to stands for it.
+- **Known gap, for task 3.3 (review R-3.1, finding 2).** A part's sockets keep clear of each other, but not of a neighbouring part's. Where parts sit close on a chassis they overlap, at every zoom, because sockets scale with the build. On the Level 2 bumper robot: the motor driver's minus is 10 px from the left DC motor's minus, its `in-a` (signal) 10 px from the right DC motor's minus, its plus and `in-b` 26 px from the servo motor's minus, and the bumper switch's two sockets 34 px from the servo motor's arm. The socket underneath is left a sliver, neither a 44 px target nor readable as empty or connected, and `hitTest` returns only the topmost socket. Task 3.3 owns port sockets and must make every legal fixture wireable on both paths, the bumper robot included, so it solves this (options in the review's question 1). Rolling Start and the LED circuit have no overlap.
 
 ## Wires
 
@@ -73,10 +75,12 @@ A Run starts the robot's root at the preset's start pose, and every other part k
 ## Pictures
 
 - Only through the injected `resolveArt(identity.art)`. A key with no entry, or a picture that fails to load, gets the neutral tile with the part's real name, in bold, upright whatever the part's turn. While a picture loads the tile stays plain.
-- A picture is fitted inside the tile, keeping its proportions. SVG placeholders are rasterised at 4× (sharp on a 2× screen to about 200% zoom).
+- A picture is fitted inside the tile, keeping its proportions. SVG placeholders are rasterised at 4× their 160 px (sharp on a 2× screen to about 200% zoom for a part tile). A frame's tile is bigger, so the chassis picture is already soft at 200%, and every picture and name blurs towards 400%. Rasterising by tile size and zoom is left for later (review R-3.1, finding 8).
 - A frame's name sits in its top-left corner, clear of the parts on it.
 
 ## The view
+
+- The canvas element fills its host and follows its size. Resizing the drawing buffer clears it, and the browser does that in the same frame it paints, so the canvas draws straight away after a resize: a tray or spec card sliding in never shows a blank canvas.
 
 - `zoom` 1 is the default. The view starts with the canvas origin in the middle. `load` keeps the view, so Undo moves nothing; the app calls `fit` when it wants the build framed.
 - `fit` centres the build, and in Run mode the arena too, with 48 px to spare, at the zoom that shows it all, never above 1.
@@ -88,7 +92,7 @@ A Run starts the robot's root at the preset's start pose, and every other part k
 - Pointer events, so mouse, touch and pen share one path. The canvas element has `touch-action: none`, no text selection and no long-press callout.
 - Drag on empty canvas to pan. A drag starts after 8 px divided by `prefs.dragSensitivity` (D44), then moves the whole way from the press, so the canvas stays under the finger.
 - Two pointers pinch: the spread zooms about the point between them and that point pans the view. Two fingers always move the view, wherever they land.
-- The wheel zooms about the pointer; a trackpad pinch (ctrl-wheel) zooms faster.
+- The wheel zooms about the pointer; a trackpad pinch (ctrl-wheel) zooms faster. Safari on macOS sends a trackpad pinch as WebKit gesture events instead, which the canvas does not handle yet, so there it may zoom the page (unverified: the tests run in Chromium; task 3.8's harness should add WebKit).
 - No long-press, no double-tap. A drag that starts on a part, wire or socket does nothing yet: it belongs to placement, wiring or selection (tasks 3.2–3.4).
 
 ## The grid
@@ -120,12 +124,13 @@ The canvas draws a frame only when something changed: the view, the build, a pic
 `pnpm --filter @servo/canvas test` runs three Vitest projects (`vitest.config.ts`); `test:unit` and `test:browser` run them apart. The browser projects need Playwright's Chromium once per machine: `pnpm --filter @servo/canvas exec playwright install chromium` (CI adds `--with-deps`).
 
 - **unit** (Node): layout, scene, hit testing, the camera, the arena's place and the 25-part fixture's validity.
-- **browser** (headless Chromium, the iPad profile: 1180 × 820 CSS pixels at device scale factor 2, rendered on SwiftShader so pixels match on every machine): mounting, `load`, modes, prefs, pan, pinch, wheel, `fit`, limits, the grid fade, no frames at rest, and the layer order. Layer order is checked with pixel probes on real screenshots where two layers overlap (a wire over a part, an empty socket on a wire, a linkage under a part, a part over the chassis, a hint over a socket, the grid over the floor and under the chassis), and with three whole-image snapshots in `test/browser/__screenshots__/`, one for every platform.
-- **performance**: the 25-part fixture (`test/fixtures/twenty-five-parts.json`: Rolling Start, the bumper robot, the LED circuit and a microcontroller, 39 wires) panned, wheeled and pinched one input per frame with the CPU slowed 4× through CDP, on the machine's GPU. The median frame's main-thread work must be within 16 ms; median, p95 and worst are printed. On an M1 Max: median 1.6 ms, p95 4.4 ms with pictures, at 60 fps. A software GPU (CI) draws this frame size far below 60 fps whatever the page does, so there the test runs fewer frames and still measures the main thread. It runs after the other projects, alone.
+- **browser** (headless Chromium, the iPad profile: 1180 × 820 CSS pixels at device scale factor 2, rendered on SwiftShader so pixels match on every machine): mounting, following the host's size with no blank frame, `load`, modes and their fades (instant with reduced motion), prefs, pan, pinch, wheel, `fit`, limits, the grid fade, no frames at rest, and the layer order. Layer order is checked with pixel probes on real screenshots where two layers overlap (a wire over a part, an empty socket on a wire, a linkage under a part, a part over the chassis, a hint over a socket, the grid over the floor and under the chassis), and with three whole-image snapshots in `test/browser/__screenshots__/`, one for every platform.
+- **performance**: the 25-part fixture (`test/fixtures/twenty-five-parts.json`: Rolling Start, the bumper robot, the LED circuit and a microcontroller, 39 wires) panned, wheeled and pinched one input per frame with the CPU slowed 4× through CDP, on the machine's GPU. The median and the p95 frame's main-thread work must both be within 16 ms, and on a hardware GPU frames must arrive at 50 fps or better; median, p95, worst and the frame rate are printed. On an M1 Max: median 1.6 ms, p95 4.4 ms with pictures, at 60 fps. A software GPU (CI) draws this frame size far below 60 fps whatever the page does, so there the test runs fewer frames, measures the main thread and only prints the frame rate. It runs after the other projects, alone.
+- The browser tests have not yet run on CI's ubuntu runner. The reference screenshots come from SwiftShader on macOS arm64, and the comparison allows 0.5% of pixels to differ. Failed comparisons write their diffs under `node_modules/.vitest-screenshots`.
 
 ## Decisions and open questions
 
-Taken here, conservatively, and listed for Drew:
+Taken here, conservatively, and listed for Drew (decision D55 should carry all ten):
 
 1. Scale: 2.5 px per mm at zoom 1.
 2. Where power and signal sockets go (the record has no place for them): side by side on the back edge, in port order.
@@ -135,4 +140,5 @@ Taken here, conservatively, and listed for Drew:
 6. Labels: only a neutral tile's name, at every level. Port labels and polarity marks are not drawn.
 7. The trackpad's two-finger scroll zooms, as the brief says the scroll wheel does, rather than panning.
 8. Fonts: rounded and dyslexia-friendly stacks that fall back to the device's fonts; which faces ship is the app's call.
-9. Build mode shows the arena's features faintly; Run mode lays the floor down. The view does not move on Run: the app calls `fit` to show the whole arena.
+9. Build mode shows the arena's features faintly (walls, zones, lines, props and the floor's 6 mm edge at 30%); Run mode lays the floor down. The view does not move on Run: the app calls `fit` to show the whole arena.
+10. A one-finger drag on empty canvas pans on touch too, not only with a mouse. The brief's touch path pans with two fingers, and the orchestrator asked for drag-on-empty panning without naming a path. A near miss when dragging a part then moves the view (review R-3.1, question 2).

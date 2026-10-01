@@ -72,7 +72,8 @@ export default defineConfig({
           sequence: { groupOrder: 0 },
         },
       },
-      browserProject('browser', ['test/browser/**/*.test.ts'], [FRAME_TIME], ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'], 60_000, 0),
+      // Generous: a software GPU on a busy machine (CI, other agents' browsers) can take a minute to mount a canvas.
+      browserProject('browser', ['test/browser/**/*.test.ts'], [FRAME_TIME], ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'], 120_000, 0),
       // Last and alone, so no other test competes for the CPU while frames are timed.
       browserProject('performance', [FRAME_TIME], [], ['--enable-unsafe-swiftshader'], 240_000, 1),
     ],

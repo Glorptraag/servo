@@ -1,5 +1,6 @@
 // The handle's task 3.1 members: mounting and unmounting, load, modes, prefs, level and the stubs of later tasks.
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { cdp } from 'vitest/browser';
 import type { Blueprint } from '@servo/schema';
 import { mountCanvas } from '../../src/index.ts';
 import { CANVAS_NAME } from '../../src/renderer/surface.ts';
@@ -171,6 +172,27 @@ describe('modes', () => {
     await settle(surface);
     expect(surface.modeBlend).toBe(0);
     expect(surface.blueprint).toBe(before);
+  });
+
+  it('fades between Build and Run, and makes every fade instant when the device asks for reduced motion', async () => {
+    surface.load(fixture('rolling-start'));
+    await settle(surface);
+    surface.setMode('run');
+    expect(surface.modeBlend, 'a fade under way').toBeLessThan(1);
+    surface.setMode('build');
+    await settle(surface);
+    const session = cdp();
+    await session.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+    try {
+      surface.setMode('run');
+      expect(surface.modeBlend).toBe(1);
+      surface.setMode('build');
+      expect(surface.modeBlend).toBe(0);
+      surface.wakeGrid();
+      expect(surface.gridOpacity).toBe(1);
+    } finally {
+      await session.send('Emulation.setEmulatedMedia', { features: [] });
+    }
   });
 
   it('refuses a mode it does not know', () => {
