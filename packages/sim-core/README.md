@@ -29,7 +29,10 @@ import type { RunFrame } from '@servo/sim-core/interface'; // the canvas: this f
 - **Faults** are the schema's rule, by reference: `wiredNeeds(blueprint, catalogue, state)` with the controls' state (`controlsOf`), and `explainByControls` for the voltage ways, to which sim-core adds the short step and the feeder step itself (N10). Details: [docs/runs.md](docs/runs.md#faults).
 - **Inputs.** `input()` records a switch flip at the current tick, effective from the next step, so a run record replays exactly.
 - **Stop.** The app snapshots at tick 0 and restores on Stop, keeping the Simulation and its seed while the build is unchanged (D37). Nothing is ever written back to the blueprint (ground rule 4).
-- **The program slot** holds each brain's state as plain JSON, kept in snapshots. The v1 brain drives nothing (D41).
+- **The program slot** (task 1.6). Each tick, between the electrical and the mechanical solver, every brain (a `program` primitive) whose supply is at or above its `onVolts` runs through the Run's `ProgramRuntime`: `start({ partId, primitive })` gives its first state, and `run({ partId, primitive, tick, inputs }, state)` gives `{ outputs, state }`. Details: [docs/program.md](docs/program.md).
+  - `inputs` are the levels (0–1) on its signal ins as sampled at the end of the previous tick. `outputs` are the levels it drives this tick, which reach the signal ins they are wired to in the same tick. A port left out carries no signal.
+  - The state is plain JSON (Level 3's variables, timers and held levels), kept in snapshots, so `start` and `run` stay pure. Below `onVolts` the brain is off: it drives nothing, and starts again from `start` when power returns.
+  - Rules are data: `src/program/` runs Level 3's block rules ("when this input reads above a level, set this output") through one generic runtime, so the loop never changes for them. With no `program`, every brain is the v1 no-op: it drives nothing (D41).
 
 ## Rules every sim-core task keeps
 
