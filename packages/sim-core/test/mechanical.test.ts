@@ -164,6 +164,33 @@ const gearedWithoutBumper = (presetId: string): Blueprint =>
     wires: (wires) => wires.map((wire) => (wire.id === 'w15' ? { ...wire, from: { part: 'battery', port: 'plus' }, to: { part: 'driver', port: 'plus' } } : wire)),
   });
 
+/** The Rolling Start robot with a gearbox between each DC motor and its wheel, the motors moved to the inner mounts. */
+const gearedRollingStart = (props: readonly Prop[] = []): Blueprint =>
+  edited('rolling-start', {
+    props,
+    addParts: [
+      { id: 'gear-left', part: 'gearbox', position: { x: 40, y: -53 }, rotation: 0, settings: {} },
+      { id: 'gear-right', part: 'gearbox', position: { x: 40, y: 53 }, rotation: 0, settings: {} },
+    ],
+    move: { 'motor-left': { x: 30, y: -29 }, 'motor-right': { x: 30, y: 29 } },
+    wires: (wires) => [
+      ...wires.map((wire) => {
+        if (wire.id === 'w1') return { ...wire, to: { part: 'chassis', port: 'motor-left-inner' } };
+        if (wire.id === 'w2') return { ...wire, to: { part: 'chassis', port: 'motor-right-inner' } };
+        if (wire.id === 'w6') return { ...wire, to: { part: 'gear-left', port: 'input' } };
+        if (wire.id === 'w7') return { ...wire, to: { part: 'gear-right', port: 'input' } };
+        return wire;
+      }),
+      { id: 'w13', from: { part: 'gear-left', port: 'output' }, to: { part: 'wheel-left', port: 'hub' } },
+      { id: 'w14', from: { part: 'gear-right', port: 'output' }, to: { part: 'wheel-right', port: 'hub' } },
+      { id: 'w15', from: { part: 'gear-left', port: 'mount' }, to: { part: 'chassis', port: 'gear-left' } },
+      { id: 'w16', from: { part: 'gear-right', port: 'mount' }, to: { part: 'chassis', port: 'gear-right' } },
+    ],
+  });
+
+/** A box on the open floor 200 mm ahead of the robot's start, of the given mass. */
+const boxAhead = (grams: number): Prop => ({ id: 'box', shape: 'box', size: { x: 60, y: 60, z: 40 }, grams, at: { x: 500, y: 600, heading: 0 }, fixed: false });
+
 // ---------------------------------------------------------------------------------------------
 // The tick loop in miniature: an ideal battery, the behaviour runtime, then the mechanical solver.
 
@@ -480,6 +507,50 @@ describe('at a wall', () => {
     expect(post.last.mechanics.bodies.get('arena:post')).toEqual({ x: 700, y: 600, heading: 0 });
     expect(robotOf(post.last).pose.x).toBeCloseTo(700 - 30 - 80, 0);
     expect(post.last.mechanics.actuators.get('motor-left')?.motor?.held).toBe(true);
+  });
+
+  it('meets a heavy prop’s floor friction as it pushes: a 2 kg box stalls direct drive and slips geared drive, and neither moves it (review R-1.4)', { timeout: 30_000 }, () => {
+    // μ m g = 0.8 × 2 kg × 9.81 = 15.7 N, against the bare motors' 2 × 39 N·mm × 2.8 / 6 ÷ 32.5 mm = 1.12 N at a stall.
+    const direct = run(edited('rolling-start', { props: [boxAhead(2000)] }), 'open-floor', 90);
+    expect(direct.last.mechanics.bodies.get('arena:box')).toEqual({ x: 500, y: 600, heading: 0 });
+    expect(robotOf(direct.last).pose.x + 80).toBeCloseTo(500 - 30, 1);
+    expect(direct.last.mechanics.contacts).toEqual([{ kind: 'prop', id: 'box' }]);
+    for (const motor of ['motor-left', 'motor-right']) {
+      expect(direct.last.mechanics.actuators.get(motor)?.motor).toEqual({ held: true, rpm: 0, torqueNmm: 39 * (PACK_VOLTS / 6) });
+      expect(speedOutput(direct.last, motor).state).toBe('stalled');
+    }
+    expect(direct.frames.every((frame) => !wheelOf(frame, 'wheel-left').slipping)).toBe(true);
+    expect(faultsOf(direct)).toEqual(['motor-left: overload', 'motor-right: overload']);
+    // Geared, the push at the tyres (1.3 N each) is past their grip, so they spin against the box instead.
+    const geared = run(gearedRollingStart([boxAhead(2000)]), 'open-floor', 90);
+    expect(geared.last.mechanics.bodies.get('arena:box')).toEqual({ x: 500, y: 600, heading: 0 });
+    expect(wheelOf(geared.last, 'wheel-left').slipping).toBe(true);
+    expect(Math.abs(wheelOf(geared.last, 'wheel-left').groundMmPerSecond)).toBeLessThan(0.5);
+    expect(geared.last.mechanics.actuators.get('motor-left')?.motor?.held).toBe(false);
+    expect(faultsOf(geared)).toEqual(['wheel-left: slipping', 'wheel-right: slipping']);
+  });
+
+  it('teaches the gearbox (D52): a box its bare motors stall against, the same robot pushes once geared', { timeout: 30_000 }, () => {
+    // 160 g: μ m g = 1.26 N, past the bare motors' 1.12 N at a stall but inside what the geared tyres can grip.
+    const friction = arena('open-floor').friction * 0.16 * 9.81;
+    expect(friction).toBeGreaterThan((2 * 39 * (PACK_VOLTS / 6)) / 32.5);
+    const direct = run(edited('rolling-start', { props: [boxAhead(160)] }), 'open-floor', 150);
+    // It knocks the box a little way as it hits, then the box's friction holds it: it stops dead, its motors stalled.
+    const nudged = direct.last.mechanics.bodies.get('arena:box')?.x ?? 0;
+    expect(nudged).toBeGreaterThan(500);
+    expect(nudged).toBeLessThan(530);
+    for (const frame of direct.frames.slice(-60)) expect(frame.mechanics.bodies.get('arena:box')?.x).toBe(nudged);
+    expect(direct.last.mechanics.actuators.get('motor-left')?.motor?.held).toBe(true);
+    expect(faultsOf(direct)).toEqual(['motor-left: overload', 'motor-right: overload']);
+    const geared = run(gearedRollingStart([boxAhead(160)]), 'open-floor', 150);
+    const box = (frame: Frame): number => frame.mechanics.bodies.get('arena:box')?.x ?? 0;
+    // It pushes the box along at its own speed, its tyres gripping, slower than it drives alone.
+    const speed = (box(geared.last) - box(geared.frames[geared.frames.length - 31] as Frame)) / 1;
+    expect(speed).toBeGreaterThan(40);
+    expect(speed).toBeCloseTo(robotOf(geared.last).forwardMmPerSecond, 0);
+    expect(robotOf(geared.last).forwardMmPerSecond).toBeLessThan(0.6 * robotOf(run(gearedRollingStart(), 'open-floor', 60).last).forwardMmPerSecond);
+    expect(geared.frames.every((frame) => !wheelOf(frame, 'wheel-left').slipping && !wheelOf(frame, 'wheel-right').slipping)).toBe(true);
+    expect(faultsOf(geared)).toEqual([]);
   });
 });
 

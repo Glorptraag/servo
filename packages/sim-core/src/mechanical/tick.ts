@@ -4,7 +4,7 @@ import type { BehaviourModel, BehaviourTick, SpeedOutput, WheelOutput } from '..
 import type { World } from '@dimforge/rapier2d-deterministic-compat';
 import { arenaModel } from './arena.ts';
 import { coast, driveStep, motorDrive } from './drive.ts';
-import type { MotorDrive, Velocity } from './drive.ts';
+import type { DriveStep, MotorDrive, PropPush, Velocity } from './drive.ts';
 import { DEGREES_PER_RADIAN, atanDegrees, clamp, clean, finite, length, magnitude, wrapRadians } from './maths.ts';
 import { robotParts } from './robot.ts';
 import { decodeState, encodeState } from './snapshot.ts';
@@ -25,7 +25,8 @@ import type {
   WheelMotion,
   WorldLayout,
 } from './types.ts';
-import { bodyOf, buildWorld, markProps, obstacleBoxes, openWorld, probeTouches, robotTouching, slowProps } from './world.ts';
+import { bodyOf, brakeProps, buildWorld, obstacleBoxes, openWorld, probeTouches, propTouches, robotTouching, settleProps } from './world.ts';
+import type { PropPushes, PropTouch } from './world.ts';
 
 /** Substeps per tick: a quarter of a tick each (1/120 s), so the robot moves under 3 mm between collision checks. */
 export const SUBSTEPS = 4;
@@ -112,16 +113,41 @@ const sortedSounds = (sounds: readonly SoundPayload[]): readonly SoundPayload[] 
 
 const sortedEffects = (effects: ReadonlySet<Effect>): readonly Effect[] => EFFECTS.filter((effect) => effects.has(effect));
 
+const NO_PUSHES: PropPushes = { held: new Set(), pushed: new Map() };
+
+/** A prop the robot reaches, for its drive: the normal turned into the robot's frame. */
+const pushOf = (touch: PropTouch, at: Placing): PropPush => ({
+  normal: { x: touch.normal.x * at.cos + touch.normal.y * at.sin, y: -touch.normal.x * at.sin + touch.normal.y * at.cos },
+  gap: touch.gap,
+  limit: touch.limit,
+  kilograms: touch.kilograms,
+  speed: touch.speed,
+  sliding: touch.sliding,
+});
+
+/** What the drive decided for the props it reached, for the physics engine: which it holds still and which it pushes along. */
+const propPushes = (touches: readonly PropTouch[], drive: DriveStep): PropPushes => {
+  if (touches.length === 0) return NO_PUSHES;
+  const held = new Set<number>();
+  const pushed = new Map<number, Vec2>();
+  touches.forEach((touch, index) => {
+    const outcome = drive.pushes[index];
+    if (outcome?.state === 'held') held.add(touch.index);
+    else if (outcome?.state === 'pushed') pushed.set(touch.index, { x: outcome.speed * touch.normal.x, y: outcome.speed * touch.normal.y });
+  });
+  return { held, pushed };
+};
+
 /** How the robot stands where it is, given the floor's last push. */
 const stanceAt = (robot: RobotModel, points: readonly StancePoint[], at: Placing, model: MechanicalModel, floorForce: Vec2): Stance =>
   stanceOf(robot, points, loadingOf(robot, points, at, model.arena.ramps, floorForce));
 
 /**
- * One tick of the mechanical solver. In four substeps the robot's drive pushes it (drive.ts), the physics engine stops
- * it at walls and lets it push props, the floor slows the props, and each contact switch's probe is swept along its
- * travel. Then it gives the poses, each wheel's actual speed and slip, what the robot touches, each actuator's load for
- * the next tick, the contact switches' states, and the floor and balance verdicts with their faults, effects and
- * sounds. Pure and deterministic: the state is bytes and numbers, and nothing reads a clock.
+ * One tick of the mechanical solver. In four substeps the robot's drive pushes it against the props it reaches and their
+ * floor friction (drive.ts), the physics engine stops it at walls and moves the props, and each contact switch's probe is
+ * swept along its travel. Then it gives the poses, each wheel's actual speed and slip, what the robot touches, each
+ * actuator's load for the next tick, the contact switches' states, and the floor and balance verdicts with their faults,
+ * effects and sounds. Pure and deterministic: the state is bytes and numbers, and nothing reads a clock.
  */
 export const mechanicalTick = (model: MechanicalModel, state: MechanicalState, inputs: MechanicalInputs): MechanicalTick => {
   const given = finite(inputs.seconds);
@@ -149,6 +175,7 @@ export const mechanicalTick = (model: MechanicalModel, state: MechanicalState, i
       const before = poseOf(world, layout);
       const at = before ? placingOf(before) : undefined;
       let wanted: Velocity | undefined;
+      let pushes = NO_PUSHES;
       if (robot && before && at && layout.robot) {
         if (fallen) {
           wanted = coast(robot, friction, velocity, substep);
@@ -158,18 +185,20 @@ export const mechanicalTick = (model: MechanicalModel, state: MechanicalState, i
             fallen = fallOf(stance.fall ?? { x: 1, y: 0 });
             wanted = coast(robot, friction, velocity, substep);
           } else {
-            const drive = driveStep(robot, stance, motors, friction, velocity, substep);
+            const touches = propTouches(world, model, layout, velocity, substep);
+            const drive = driveStep(robot, stance, motors, friction, velocity, substep, touches.map((touch) => pushOf(touch, at)));
             wanted = drive.velocity;
             floorForce = drive.floorForce;
+            pushes = propPushes(touches, drive);
           }
         }
         const body = bodyOf(world, layout.robot.body);
         body.setLinvel({ x: clean(wanted.forward * at.cos - wanted.left * at.sin), y: clean(wanted.forward * at.sin + wanted.left * at.cos) }, true);
         body.setAngvel(wanted.turn, true);
       }
-      const marks = markProps(world, model, layout);
+      const marks = brakeProps(world, model, layout, substep, pushes);
       world.step();
-      slowProps(world, model, layout, marks, substep);
+      settleProps(world, model, layout, marks, substep, pushes);
       const after = poseOf(world, layout);
       if (wanted && before && after && at) {
         // How it actually moved, from where it went: the engine's own velocity record is not physical in a contact stack.

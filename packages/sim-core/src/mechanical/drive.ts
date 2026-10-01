@@ -86,12 +86,41 @@ export interface WheelForce {
   readonly limit: number;
 }
 
+/**
+ * A free prop the robot touches, or reaches within the substep. Pushing it means overcoming its floor friction, μ × its
+ * weight (review R-1.4 finding 2): it is solved with the robot's own drive, so the push and the friction meet in one
+ * solve rather than one after the other.
+ */
+export interface PropPush {
+  /** Unit normal from the robot into the prop, in the robot's frame. */
+  readonly normal: Vec2;
+  /** How far apart they are, mm: the robot closes that before it touches. */
+  readonly gap: number;
+  /** μ × the prop's weight, N. */
+  readonly limit: number;
+  readonly kilograms: number;
+  /** The prop's own speed along the normal, mm/s, and whether it slides (false: at rest, held by its friction). */
+  readonly speed: number;
+  readonly sliding: boolean;
+}
+
+/**
+ * How a prop ends the solve: `held` still by its friction (the robot pushes less than μN), `pushed` along with the robot
+ * at `speed` mm/s along the normal, or `free` of the robot (it does not reach the prop, or draws away from it).
+ */
+export interface PushOutcome {
+  readonly state: 'held' | 'pushed' | 'free';
+  readonly speed: number;
+}
+
 export interface DriveStep {
   readonly velocity: Velocity;
   /** Per wheel of the robot, in its order; undefined for a wheel off the floor. */
   readonly wheels: readonly (WheelForce | undefined)[];
-  /** The floor's whole push on the robot, its frame, N. */
+  /** The floor's whole push on the robot, its frame, N. A prop's resistance is not the floor's: it pushes at the bumper. */
   readonly floorForce: Vec2;
+  /** Each prop given, in that order. */
+  readonly pushes: readonly PushOutcome[];
 }
 
 /** A row of the system: how a velocity maps to one point's speed along one direction (forward, left, turn). */
@@ -109,6 +138,7 @@ export const driveStep = (
   friction: number,
   velocity: Velocity,
   seconds: number,
+  pushes: readonly PropPush[] = [],
 ): DriveStep => {
   const com = robot.centreOfMass;
   // Mass and inertia in the units of the system: N per mm/s², N·mm per rad/s².
@@ -142,10 +172,19 @@ export const driveStep = (
     return { damping: limit / Math.max(length(ux, uy), CREEP_MM_S), limit, x: rowAlong({ x: 1, y: 0 }, frame.offset), y: rowAlong({ x: 0, y: 1 }, frame.offset) };
   });
 
+  // A prop resists the robot's centre of mass moving into it (turning the robot about the contact is left to the engine's
+  // contact). Held at rest, it is a stiff drag on the robot's speed beyond closing the gap: the robot moves into it only
+  // at a creep, so a push under μN stalls the robot or slips its wheels. A push past that slides it: it moves with the
+  // robot, its mass riding on the robot's and its friction, μN, slowing both. If that stops them within the substep it is
+  // held again (it never slides backwards), and if the robot falls behind it, or does not reach it, it is free.
+  const pushRows = pushes.map((push): Row => [push.normal.x, push.normal.y, 0]);
+  const pushStates: PushOutcome['state'][] = pushes.map((push) => (push.sliding ? 'pushed' : 'held'));
+  const stopped = new Set<number>();
+
   const slipping = new Map<number, { readonly roll: number; readonly across: number }>();
   const sliding = new Map<number, Vec2>();
   let solved: Velocity = velocity;
-  for (let round = 0; round <= robot.wheels.length + frameTerms.length; round += 1) {
+  for (let round = 0; round <= robot.wheels.length + frameTerms.length + 3 * pushes.length; round += 1) {
     const k = [0, 0, 0, 0, 0, 0, 0, 0, 0];
     const force = [robot.kilograms * stance.along.x, robot.kilograms * stance.along.y, 0];
     const addDamping = (row: Row, c: number): void => {
@@ -181,6 +220,19 @@ export const driveStep = (
       addDamping(term.x, term.damping);
       addDamping(term.y, term.damping);
     });
+    pushes.forEach((push, index) => {
+      const row = pushRows[index] as Row;
+      const state = pushStates[index];
+      if (state === 'held') {
+        const drag = push.limit / CREEP_MM_S;
+        addDamping(row, drag);
+        addForce(row, (drag * push.gap) / seconds);
+      } else if (state === 'pushed') {
+        const rate = push.kilograms / 1000 / seconds;
+        addDamping(row, rate);
+        addForce(row, rate * push.speed - push.limit);
+      }
+    });
     const inertiaRate = [mass / seconds, mass / seconds, inertia / seconds];
     const a = k.map((value, at) => (at % 4 === 0 ? value + (inertiaRate[at / 4] ?? 0) : value));
     const b = [
@@ -212,6 +264,29 @@ export const driveStep = (
         more = true;
       }
     });
+    pushes.forEach((push, index) => {
+      const state = pushStates[index];
+      if (state === 'free') return;
+      const into = dot(pushRows[index] as Row, solved);
+      if (state === 'held') {
+        // Beyond closing the gap, faster than a creep: it pushed harder than μN. Not even closing it: it does not touch.
+        const beyond = into - push.gap / seconds;
+        if (beyond <= 0) pushStates[index] = 'free';
+        else if (beyond > CREEP_MM_S * (1 + 1e-9) && !stopped.has(index)) pushStates[index] = 'pushed';
+        else return;
+        more = true;
+        return;
+      }
+      // Pushed: the robot's push on it is what takes it from its own speed to the robot's against its friction. Below 0
+      // the robot falls behind it; a common speed below 0 means they stopped within the substep.
+      const pressing = (push.kilograms / 1000 / seconds) * (into - push.speed) + push.limit;
+      if (pressing < 0) pushStates[index] = 'free';
+      else if (into < 0 && !stopped.has(index)) {
+        stopped.add(index);
+        pushStates[index] = 'held';
+      } else return;
+      more = true;
+    });
     if (!more) break;
   }
 
@@ -241,6 +316,7 @@ export const driveStep = (
     velocity: { forward: clean(solved.forward), left: clean(solved.left), turn: clean(solved.turn) },
     wheels: outcome,
     floorForce: { x: clean(fx), y: clean(fy) },
+    pushes: pushStates.map((state, index) => ({ state, speed: clean(dot(pushRows[index] as Row, solved)) })),
   };
 };
 

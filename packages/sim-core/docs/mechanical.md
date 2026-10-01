@@ -81,6 +81,7 @@ The robot's own drive is worked by hand, deterministically. Rapier only stops it
 - **Grip.** A wheel holds across its axle. Its push is limited to grip × the floor's friction × the weight on it. Past that it slips: it pushes that much, spins faster than the ground and squeals.
 - **Supports and frame.** A caster rolls any way, dragging rollingFriction × its weight. A frame on the floor slides with the floor's friction × its weight, and never more (review R-1.4 finding 1).
 - **Slope.** Gravity along the floor pulls the robot.
+- **Props it pushes.** A free prop the robot touches, or reaches within the substep, resists through its floor friction in the same solve. See Props below.
 - **Solving.** The new velocity of the centre of mass (forward, sideways, turning) is solved implicitly from these, so stiff gearing never overshoots.
   - Each drag is solved as a viscous one, frozen at the substep's starting speed, so it slows its point but never past a stop.
   - A wheel past its grip is fixed at its limit, and the rest solved again.
@@ -103,11 +104,22 @@ Whether a wall stalls the motor or makes the wheel slip is down to the numbers:
 - A direct-drive DC motor at 2.8 V pushes 0.56 N, under its tyre's grip of about 0.69 N. It stalls and hums.
 - Through a 3:1 gearbox it pushes 1.2 N, over its grip of about 0.86 N. Its wheels slip and squeal.
 
-**Props.** Props are Rapier bodies:
-- free ones have their gram mass;
-- fixed ones never move.
+**Props.** Props are Rapier bodies. A fixed prop never moves. A free prop has its gram mass and the floor's friction, μ × its weight, which it meets in the same solve as whatever pushes it (review R-1.4 finding 2):
+- **At rest it is a fixed body**, held by its friction (static friction is μ too). Rapier stops whatever meets it.
+- **The robot pushing it** solves the prop with its own drive, each substep (drive.ts `PropPush`):
+  - *Held:* while the robot pushes less than μN, the prop is a stiff drag on the robot's speed into it beyond closing any gap. The robot meets it at a creep, so its motors stall, or its wheels slip if their push is past their grip.
+  - *Pushed:* a push past μN slides it. It moves with the robot: its mass rides on the robot's, and its friction slows both. If that stops them within the substep it is held again, and it never slides back.
+  - *Free:* a robot that does not reach it, or falls behind it, does not push it.
+- **Anything else pushing it**, such as another prop, breaks it free when the contact's push, read from Rapier's contact impulses, passes μN. A sliding prop then has its friction as a force and a torque in Rapier's step, never more than stops it in the substep, and is held again once slower than 0.5 mm/s.
+- Its velocity, too, is read from how far it moved.
 
-The floor slows each free prop by μ g per second. Its velocity, too, is read from how far it moved. A robot pushes a light box along at a little under its own speed, and stops at a fixed one as at a wall.
+So a robot pushes a light box along at a little under its own speed, and stops at a fixed one as at a wall. A heavy box it cannot push stops it like a wall. With the example parts at 2.8 V, a direct-drive robot pushes at most 1.12 N at a stall, so it stalls against any box over about 143 g. The same robot with 3:1 gearboxes is limited by its tyres' grip instead, about 1.5 N while pushing, so it pushes up to about 180 g (at 49 mm/s) and slips against anything heavier. A 2 kg box (15.7 N) stalls the one and slips the other, and neither moves it. D52's gearbox lesson needs a box between those two. The content records give the same window, 143–178 g.
+
+Simplifications:
+- The weight shift counts the floor's push at the centre of mass's height, as if the prop's push acted there too. A bumper lower than that shifts a little less weight off the drive wheels, so a pushing robot grips slightly less here than it would.
+- A prop pushed by another prop (a chain) meets its friction as a force capped to stop it within the substep. So a slow chain resists a little less than the sum of its friction.
+- An impact is spread over its substep. A robot that hits a heavy box at speed moves it only if that averaged force beats static friction: it moves a 2 kg box not at all, where an instant impact would slide it about 0.1 mm.
+- A pushed prop moves with the robot along the push. An off-centre push does not turn it.
 
 ## Balance (stance.ts)
 
@@ -193,6 +205,7 @@ It covers:
 - rule 1, with a renamed wheel;
 - a wall: the direct-drive stall and the geared slip, per the numbers;
 - pushing and fixed props;
+- a 2 kg box that stalls direct drive and slips geared drive, unmoved, and D52's lesson with a 160 g box;
 - the loose caster: grounded, explained, exactly one fault;
 - with no caster or a loose one (geared, or on small wheels): exactly that one fault, no slip on any tick, and the frame's drag held to μN in the solve;
 - a caster fixed out of reach of the floor: grounded, explained by its own `lifted` fault, the only one;
@@ -223,3 +236,4 @@ It covers:
 11. **Sound levels.** Squeal (300 mm/s of slip is full) and knock (400 mm/s is full, 0.1 at least) are this solver's choices.
 12. **Servo arms** are read but move nothing in v1. Nothing can ride an upright arm.
 13. **No `./mechanical` export.** The optional tools test over the content robot needs a `./mechanical` entry in sim-core's package.json, which is outside this task's files. The README's public surface does not mention this file either. Task 1.5, or the orchestrator, should link it.
+14. **D52's box.** The gearbox lesson works only for a box the bare motors cannot push but the geared tyres can grip: 143–178 g with the content records at 2.8 V. A 2 kg box stops both robots. A content box for the lesson needs a mass in that window, and the lesson is sensitive to the pack's voltage.

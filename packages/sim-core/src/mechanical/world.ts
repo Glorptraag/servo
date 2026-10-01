@@ -1,9 +1,10 @@
-import { ColliderDesc, ConvexPolygon, RigidBodyDesc, Segment, World, init } from '@dimforge/rapier2d-deterministic-compat';
+import { ColliderDesc, ConvexPolygon, RigidBodyDesc, RigidBodyType, Segment, World, init } from '@dimforge/rapier2d-deterministic-compat';
 import type { Collider, RigidBody, Shape } from '@dimforge/rapier2d-deterministic-compat';
 import type { Vec2 } from '@servo/schema';
 import { RADIANS_PER_DEGREE, clean, length, magnitude, wrapRadians } from './maths.ts';
 import { GRAVITY, hullOf } from './stance.ts';
-import type { MechanicalModel, WorldLayout } from './types.ts';
+import type { Velocity } from './drive.ts';
+import type { MechanicalModel, RobotModel, WorldLayout } from './types.ts';
 
 /**
  * The physics engine's side of the solver: Rapier 2D's deterministic build (docs/stack.md). It holds the robot as one
@@ -74,8 +75,10 @@ export const buildWorld = (model: MechanicalModel, substep: number): { readonly 
       body.recomputeMassPropertiesFromColliders();
       robotLayout = { body: body.handle, colliders };
     }
+    // Every prop starts at rest, so every prop starts fixed. A free one keeps its mass (from its collider's density) for
+    // when a push beats its floor friction and it slides (`settleProps`).
     const props = model.arena.props.map((prop) => {
-      const desc = (prop.fixed ? RigidBodyDesc.fixed() : RigidBodyDesc.dynamic().setCanSleep(false)).setTranslation(prop.at.x, prop.at.y).setRotation(prop.at.heading * RADIANS_PER_DEGREE);
+      const desc = RigidBodyDesc.fixed().setCanSleep(false).setTranslation(prop.at.x, prop.at.y).setRotation(prop.at.heading * RADIANS_PER_DEGREE);
       const body = world.createRigidBody(desc);
       const area = prop.shape === 'cylinder' ? Math.PI * prop.hx * prop.hx : 4 * prop.hx * prop.hy;
       const shape = prop.shape === 'cylinder' ? ColliderDesc.ball(prop.hx) : ColliderDesc.cuboid(prop.hx, prop.hy);
@@ -117,44 +120,200 @@ const colliderOf = (world: World, handle: number): Collider => {
   return collider;
 };
 
-/** A dynamic prop's pose before a substep, so its friction can follow how it actually moved. */
+/**
+ * A sliding prop moving slower than this, mm/s (its turning counted at its radius of gyration), has come to rest and is
+ * held by its floor friction again.
+ */
+const PROP_REST_MM_S = 0.5;
+
+/** A free prop's floor friction, μ m g, in the engine's units (kg·mm/s²). */
+const floorGrip = (model: MechanicalModel, kilograms: number): number => LENGTH_UNIT * model.arena.friction * GRAVITY * kilograms;
+
+/** A free prop's pose before a substep, so its velocity can be read from how far it moved. */
 export interface PropMark {
   readonly x: number;
   readonly y: number;
   readonly angle: number;
 }
 
-export const markProps = (world: World, model: MechanicalModel, layout: WorldLayout): readonly (PropMark | undefined)[] =>
+/** A free prop the robot touches or can reach within a substep, by its index, in the arena frame. */
+export interface PropTouch {
+  readonly index: number;
+  /** Unit normal from the robot into it. */
+  readonly normal: Vec2;
+  /** How far apart they are, mm: 0 when touching. */
+  readonly gap: number;
+  /** Its own speed along the normal, mm/s, and whether it slides (false: at rest, held by its friction). */
+  readonly speed: number;
+  readonly sliding: boolean;
+  /** μ × its weight, N. */
+  readonly limit: number;
+  readonly kilograms: number;
+}
+
+/** How far the robot reaches from its centre of mass, mm. */
+const reachOf = (robot: RobotModel): number =>
+  robot.footprints.reduce(
+    (most, print) => Math.max(most, length(magnitude(print.x - robot.centreOfMass.x) + print.hx, magnitude(print.y - robot.centreOfMass.y) + print.hy)),
+    0,
+  );
+
+/**
+ * The free props the robot touches as a substep begins, or can reach in it at the speeds they both have: within TOUCH_MM
+ * plus that travel. The nearest of the robot's colliders gives each its gap and normal. In prop order.
+ */
+export const propTouches = (world: World, model: MechanicalModel, layout: WorldLayout, velocity: Velocity, seconds: number): readonly PropTouch[] => {
+  const robot = model.robot;
+  const entry = layout.robot;
+  if (!robot || !entry) return [];
+  const com = bodyOf(world, entry.body).worldCom();
+  const reach = reachOf(robot);
+  const robotSpeed = length(velocity.forward, velocity.left) + magnitude(velocity.turn) * reach;
+  const touches: PropTouch[] = [];
+  model.arena.props.forEach((prop, index) => {
+    const handles = layout.props[index];
+    if (prop.fixed || !handles) return;
+    const body = bodyOf(world, handles.body);
+    const sliding = body.isDynamic();
+    const own = sliding ? body.linvel() : { x: 0, y: 0 };
+    const margin = TOUCH_MM + (robotSpeed + length(own.x, own.y)) * seconds;
+    const at = body.translation();
+    if (length(at.x - com.x, at.y - com.y) > reach + prop.reach + margin) return;
+    const other = colliderOf(world, handles.collider);
+    let gap = Number.POSITIVE_INFINITY;
+    let normal: Vec2 = { x: 0, y: 0 };
+    for (const handle of entry.colliders) {
+      const contact = colliderOf(world, handle).contactCollider(other, margin);
+      if (contact && contact.distance <= margin && contact.distance < gap) {
+        gap = contact.distance;
+        normal = { x: contact.normal1.x, y: contact.normal1.y };
+      }
+    }
+    if (gap === Number.POSITIVE_INFINITY) return;
+    touches.push({
+      index,
+      normal,
+      gap: Math.max(0, gap),
+      speed: clean(own.x * normal.x + own.y * normal.y),
+      sliding,
+      limit: floorGrip(model, prop.kilograms) / LENGTH_UNIT,
+      kilograms: prop.kilograms,
+    });
+  });
+  return touches;
+};
+
+/** What the robot's drive decided for the props it reaches this substep, by index (drive.ts `PushOutcome`). */
+export interface PropPushes {
+  /** Held still by their friction against its push. */
+  readonly held: ReadonlySet<number>;
+  /** Pushed along with it: each one's velocity, mm/s, arena frame. */
+  readonly pushed: ReadonlyMap<number, Vec2>;
+}
+
+/**
+ * Before a substep, each free prop's kind for the step (review R-1.4 finding 2):
+ * - held by its floor friction against the robot's push: fixed, so the robot cannot move it;
+ * - pushed along by the robot: sliding at the speed the robot's solve gave them both, its friction already in that solve;
+ * - otherwise a sliding prop has the floor's friction as a force and a torque the step's solver sees: μ m g against its
+ *   motion, and that at its radius of gyration against its turning, never more than stops it within the substep;
+ * - a prop at rest stays fixed.
+ * Gives each free prop's pose, to read its velocity from after the step.
+ */
+export const brakeProps = (world: World, model: MechanicalModel, layout: WorldLayout, seconds: number, pushes: PropPushes): readonly (PropMark | undefined)[] =>
   model.arena.props.map((prop, index) => {
     const entry = layout.props[index];
     if (prop.fixed || !entry) return undefined;
     const body = bodyOf(world, entry.body);
     const at = body.translation();
-    return { x: at.x, y: at.y, angle: body.rotation() };
+    const mark = { x: at.x, y: at.y, angle: body.rotation() };
+    body.resetForces(true);
+    body.resetTorques(true);
+    if (pushes.held.has(index)) {
+      if (body.isDynamic()) body.setBodyType(RigidBodyType.Fixed, true);
+      return mark;
+    }
+    const pushed = pushes.pushed.get(index);
+    if (pushed) {
+      if (!body.isDynamic()) {
+        body.setBodyType(RigidBodyType.Dynamic, true);
+        body.setAngvel(0, true);
+      }
+      body.setLinvel({ x: clean(pushed.x), y: clean(pushed.y) }, true);
+    }
+    if (!body.isDynamic()) return mark;
+    const grip = floorGrip(model, prop.kilograms);
+    const velocity = body.linvel();
+    const speed = length(velocity.x, velocity.y);
+    if (speed > 0 && !pushed) {
+      const force = Math.min(grip, (prop.kilograms * speed) / seconds);
+      body.addForce({ x: clean((-force * velocity.x) / speed), y: clean((-force * velocity.y) / speed) }, true);
+    }
+    const spin = body.angvel();
+    if (spin !== 0) {
+      const torque = Math.min(grip * prop.gyration, (prop.kilograms * prop.gyration * prop.gyration * magnitude(spin)) / seconds);
+      body.addTorque(clean(-Math.sign(spin) * torque), true);
+    }
+    return mark;
   });
 
+/** The force the bodies touching a collider pushed it with in the last step, from the solver's contact impulses. */
+const pushOn = (world: World, handle: number, seconds: number): Vec2 => {
+  const collider = colliderOf(world, handle);
+  const near: Collider[] = [];
+  world.contactPairsWith(collider, (other) => {
+    near.push(other);
+  });
+  let x = 0;
+  let y = 0;
+  for (const other of near) {
+    world.contactPair(collider, other, (manifold, flipped) => {
+      // The normal points from the pair's first collider to its second: away from the prop unless the pair is flipped.
+      const normal = manifold.normal();
+      const sign = flipped ? 1 : -1;
+      for (let i = 0; i < manifold.numContacts(); i += 1) {
+        const impulse = manifold.contactImpulse(i);
+        x += sign * normal.x * impulse;
+        y += sign * normal.y * impulse;
+      }
+    });
+  }
+  return { x: x / seconds, y: y / seconds };
+};
+
 /**
- * The floor's friction on each prop that moved this substep: it slows by μ g, never past a stop, and turns slower by that
- * over its footprint's radius of gyration. Its velocity is read from how far it moved, not from the engine's own record,
- * which a stack of contacts can leave unphysical.
+ * After a substep: a free prop at rest is a fixed body, held by its floor friction (static friction is μ too). If another
+ * prop pushed it harder than μ m g, it breaks away and slides from the next substep; the robot's own push was settled in
+ * its solve. A sliding prop takes the velocity it actually moved at (the engine's own record is not physical in a stack
+ * of contacts), and once slower than PROP_REST_MM_S, with the robot not pushing it, it is at rest and fixed again. The
+ * engine keeps each prop's kind in its snapshot.
  */
-export const slowProps = (world: World, model: MechanicalModel, layout: WorldLayout, marks: readonly (PropMark | undefined)[], seconds: number): void => {
-  const drop = LENGTH_UNIT * model.arena.friction * GRAVITY * seconds;
+export const settleProps = (world: World, model: MechanicalModel, layout: WorldLayout, marks: readonly (PropMark | undefined)[], seconds: number, pushes: PropPushes): void => {
   model.arena.props.forEach((prop, index) => {
     const mark = marks[index];
     const entry = layout.props[index];
     if (!mark || !entry) return;
     const body = bodyOf(world, entry.body);
+    if (!body.isDynamic()) {
+      if (pushes.held.has(index)) return;
+      const push = pushOn(world, entry.collider, seconds);
+      if (length(push.x, push.y) > floorGrip(model, prop.kilograms)) {
+        body.setBodyType(RigidBodyType.Dynamic, true);
+        body.setLinvel({ x: 0, y: 0 }, true);
+        body.setAngvel(0, true);
+      }
+      return;
+    }
     const at = body.translation();
     const vx = (at.x - mark.x) / seconds;
     const vy = (at.y - mark.y) / seconds;
     const turn = wrapRadians(body.rotation() - mark.angle) / seconds;
-    const speed = length(vx, vy);
-    const keep = speed > drop ? (speed - drop) / speed : 0;
-    const turnDrop = prop.gyration > 0 ? drop / prop.gyration : Number.POSITIVE_INFINITY;
-    const spin = magnitude(turn) > turnDrop ? turn - Math.sign(turn) * turnDrop : 0;
-    body.setLinvel({ x: clean(vx * keep), y: clean(vy * keep) }, true);
-    body.setAngvel(clean(spin), true);
+    if (!pushes.pushed.has(index) && length(vx, vy) + magnitude(turn) * prop.gyration < PROP_REST_MM_S) {
+      body.setBodyType(RigidBodyType.Fixed, true);
+      return;
+    }
+    body.setLinvel({ x: clean(vx), y: clean(vy) }, true);
+    body.setAngvel(clean(turn), true);
   });
 };
 
