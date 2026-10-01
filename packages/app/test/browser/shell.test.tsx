@@ -216,7 +216,9 @@ describe('the shell', () => {
     expect(app.tab('tray').hidden).toBe(true);
     expect(app.shell.tucked.tray).toBe(false);
     expect(app.region('specCard').dataset.shown).toBe('true');
-    expect(app.region('runBar').dataset.shown).toBe('true');
+    // The Run bar is always there, with no tab to tuck it.
+    expect(getComputedStyle(app.region('runBar')).visibility).toBe('visible');
+    expect(app.host.querySelector('button.shell-tab[data-edge="runBar"]')).toBeNull();
     flushSync(() => app.shell.setMode('build'));
     expect(app.region('tray').dataset.shown).toBe('true');
     expect(app.tab('tray').hidden).toBe(false);
@@ -231,22 +233,52 @@ describe('the shell', () => {
 
   it('mirrors the tray, the spec card and the controls on the canvas for the left hand', async () => {
     const app = await mountShell({}, { width: 1180, height: 820 });
-    const rightHanded = { tray: boxOf(app.region('tray')), card: boxOf(app.region('specCard')) };
-    expect(rightHanded.tray.left).toBe(0);
-    expect(rightHanded.card.right).toBe(1180);
+    expect(boxOf(app.region('tray')).left).toBe(0);
+    expect(boxOf(app.region('specCard')).right).toBe(1180);
     flushSync(() => app.shell.setPrefs({ ...DEFAULT_PREFS, leftHanded: true }));
     await settled();
     expect(boxOf(app.region('tray')).right).toBe(1180);
     expect(boxOf(app.region('specCard')).left).toBe(0);
     await vi.waitFor(() => expect(app.canvas.calls).toContain('setPrefs leftHanded=true'));
-    const seen = boxOf(app.region('canvas'));
-    const zoom = boxOf(app.host.querySelector('.shell-zoom') ?? app.host);
-    expect(zoom.left - seen.left).toBeLessThan(seen.right - zoom.right);
-    const cardTab = boxOf(app.tab('specCard'));
-    expect(cardTab.left - seen.left).toBeLessThan(seen.right - cardTab.right);
-    const trayTab = boxOf(app.tab('tray'));
-    expect(seen.right - trayTab.right).toBeLessThan(trayTab.left - seen.left);
+    // The card's tab sits on its right, the tray's on its left, and the zoom control in the bottom left corner.
+    expect(boxOf(app.tab('specCard')).left).toBe(boxOf(app.region('specCard')).right);
+    expect(boxOf(app.tab('tray')).right).toBe(boxOf(app.region('tray')).left);
+    expect(boxOf(app.region('zoom')).left).toBe(8);
     expect(boxOf(app.region('header')).left).toBe(0);
+    expect(boxOf(app.region('header')).right).toBe(1180);
+  });
+
+  it('steps the spec card aside while a pointer drags on the canvas, not for a tap, and while asked to', async () => {
+    const app = await mountShell();
+    const host = app.host.querySelector<HTMLElement>('.shell-canvas-host');
+    if (!host) throw new Error('no canvas host');
+    const send = (type: string, x: number, y: number, buttons: number): void => {
+      host.dispatchEvent(new PointerEvent(type, { pointerId: 7, pointerType: 'touch', clientX: x, clientY: y, buttons, bubbles: true, cancelable: true }));
+    };
+    const card = app.region('specCard');
+    send('pointerdown', 500, 500, 1);
+    send('pointermove', 503, 502, 1);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    // Under the drag threshold: still a tap.
+    expect(card.dataset.shown).toBe('true');
+    send('pointermove', 530, 510, 1);
+    await vi.waitFor(() => expect(card.dataset.shown).toBe('false'));
+    expect(app.shell.specCardAside).toBe(true);
+    expect(app.shell.tucked.specCard).toBe(false);
+    send('pointerup', 530, 510, 0);
+    await vi.waitFor(() => expect(card.dataset.shown).toBe('true'));
+
+    // A press that never moves is a tap: the card stays.
+    send('pointerdown', 500, 500, 1);
+    send('pointerup', 500, 500, 0);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(card.dataset.shown).toBe('true');
+
+    // Asked to, as tap-then-tap wiring will: aside until asked back.
+    flushSync(() => app.shell.setSpecCardAside(true));
+    expect(card.dataset.shown).toBe('false');
+    flushSync(() => app.shell.setSpecCardAside(false));
+    expect(card.dataset.shown).toBe('true');
   });
 
   it('zooms along its ladder and re-centres with Fit', async () => {

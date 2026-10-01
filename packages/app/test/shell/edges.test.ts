@@ -1,7 +1,7 @@
 // Where the tuck states persist (src/shell/edges.ts): localStorage, guarded, so a storage that is missing, full or
 // blocked never stops the shell. The browser tests reload a real page to show they survive.
 import { describe, expect, it } from 'vitest';
-import { ALL_OPEN, EDGES, EDGE_NAMES, TUCKED_KEY, readTucked, writeTucked } from '../../src/shell/edges.ts';
+import { ALL_OPEN, EDGES, EDGE_NAMES, RUN_BAR_NAME, TUCKED_KEY, readTucked, writeTucked } from '../../src/shell/edges.ts';
 
 /** An in-memory Storage, as a browser gives one. */
 class MemoryStorage implements Storage {
@@ -37,8 +37,10 @@ class RefusingStorage extends MemoryStorage {
 }
 
 describe('tuck states', () => {
-  it('names every edge as the brief does', () => {
-    expect(EDGES.map((edge) => EDGE_NAMES[edge])).toEqual(['Header', 'Part tray', 'Spec card', 'Arena strip', 'Run bar']);
+  it('names every edge as the brief does; the Run bar is not one a child can tuck', () => {
+    expect(EDGES.map((edge) => EDGE_NAMES[edge])).toEqual(['Header', 'Part tray', 'Spec card', 'Arena strip']);
+    expect(RUN_BAR_NAME).toBe('Run bar');
+    expect(EDGES).not.toContain('runBar');
   });
 
   it('start with every edge open', () => {
@@ -48,9 +50,9 @@ describe('tuck states', () => {
 
   it('round-trip through storage as a list of the tucked edges', () => {
     const storage = new MemoryStorage();
-    writeTucked(storage, { ...ALL_OPEN, tray: true, runBar: true });
-    expect(storage.getItem(TUCKED_KEY)).toBe('["tray","runBar"]');
-    expect(readTucked(storage)).toEqual({ ...ALL_OPEN, tray: true, runBar: true });
+    writeTucked(storage, { ...ALL_OPEN, tray: true, arenaStrip: true });
+    expect(storage.getItem(TUCKED_KEY)).toBe('["tray","arenaStrip"]');
+    expect(readTucked(storage)).toEqual({ ...ALL_OPEN, tray: true, arenaStrip: true });
     writeTucked(storage, ALL_OPEN);
     expect(readTucked(storage)).toEqual(ALL_OPEN);
   });
@@ -63,6 +65,9 @@ describe('tuck states', () => {
     }
     storage.setItem(TUCKED_KEY, '["tray","dashboard",3,null,"specCard","tray"]');
     expect(readTucked(storage)).toEqual({ ...ALL_OPEN, tray: true, specCard: true });
+    // An older save that tucked the Run bar: it is always shown now.
+    storage.setItem(TUCKED_KEY, '["runBar","header"]');
+    expect(readTucked(storage)).toEqual({ ...ALL_OPEN, header: true });
   });
 
   it('never throw when the storage refuses', () => {

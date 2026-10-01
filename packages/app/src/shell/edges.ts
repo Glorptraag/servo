@@ -2,8 +2,11 @@
 // states persist. They are UI state on this device, so they live in localStorage, not in the store: the store
 // (task 4.9) holds builds. See docs/shell.md.
 
-/** Every region a child can tuck away, in the order the tabs are read. */
-export const EDGES = ['header', 'tray', 'specCard', 'arenaStrip', 'runBar'] as const;
+/**
+ * Every region a child can tuck away, in the order the tabs are read. The Run bar is not one of them: it is the one
+ * control a child must always reach (brief Section 9, "always visible").
+ */
+export const EDGES = ['header', 'tray', 'specCard', 'arenaStrip'] as const;
 
 export type Edge = (typeof EDGES)[number];
 
@@ -13,13 +16,15 @@ export const EDGE_NAMES: Readonly<Record<Edge, string>> = {
   tray: 'Part tray',
   specCard: 'Spec card',
   arenaStrip: 'Arena strip',
-  runBar: 'Run bar',
 };
+
+/** The Run bar's landmark name. */
+export const RUN_BAR_NAME = 'Run bar';
 
 /** Which edges are tucked away. Every edge starts open, as in the brief's layout. */
 export type Tucked = Readonly<Record<Edge, boolean>>;
 
-export const ALL_OPEN: Tucked = { header: false, tray: false, specCard: false, arenaStrip: false, runBar: false };
+export const ALL_OPEN: Tucked = { header: false, tray: false, specCard: false, arenaStrip: false };
 
 /** The localStorage key: a JSON list of the tucked edges' names. */
 export const TUCKED_KEY = 'servo.shell.tucked';

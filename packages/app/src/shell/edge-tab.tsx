@@ -4,6 +4,7 @@ import { useShell } from './context.ts';
 import { EDGE_NAMES } from './edges.ts';
 import type { Edge } from './edges.ts';
 import type { Hand, Orientation } from './layout.ts';
+import { box } from './place.ts';
 
 export type Side = 'top' | 'right' | 'bottom' | 'left';
 
@@ -16,8 +17,6 @@ export const tuckSide = (edge: Edge, orientation: Orientation, hand: Hand): Side
     case 'header':
     case 'arenaStrip':
       return 'top';
-    case 'runBar':
-      return 'bottom';
     case 'specCard':
       return cardSide;
     case 'tray':
@@ -32,7 +31,7 @@ export interface EdgeTabProps {
 }
 
 export const EdgeTab = ({ edge, controls }: EdgeTabProps) => {
-  const { layout, mode, setTucked } = useShell();
+  const { layout, mode, tucked, setTucked } = useShell();
   const shown = layout.shown[edge];
   const side = tuckSide(edge, layout.orientation, layout.hand);
   // The chevron points the way the region will go: out to its edge, or back in.
@@ -40,14 +39,15 @@ export const EdgeTab = ({ edge, controls }: EdgeTabProps) => {
   return (
     <button
       type="button"
-      className="shell-tab"
+      className="shell-tab shell-moves"
       data-edge={edge}
       aria-label={EDGE_NAMES[edge]}
       aria-expanded={shown}
       aria-controls={controls}
       // The tray is out of the way in Run mode whatever its tuck state, so its tab goes too (brief Section 9).
       hidden={edge === 'tray' && mode === 'run'}
-      onClick={() => setTucked(edge, shown)}
+      style={box(layout.tabs[edge])}
+      onClick={() => setTucked(edge, !tucked[edge])}
     >
       <svg className="shell-chevron" data-points={points} viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
         <path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />

@@ -2,6 +2,7 @@
 // wheel on the canvas itself. Fit re-centres the build (brief Section 10); the canvas holds every zoom inside its
 // limits, up to 400% (brief Section 13).
 import { useShell } from './context.ts';
+import { box } from './place.ts';
 import { zoomInFrom, zoomOutFrom } from './zoom.ts';
 
 const Icon = ({ d }: { readonly d: string }) => (
@@ -11,9 +12,9 @@ const Icon = ({ d }: { readonly d: string }) => (
 );
 
 export const ZoomControl = () => {
-  const { canvas } = useShell();
+  const { canvas, layout } = useShell();
   return (
-    <div className="shell-zoom" role="group" aria-label="Zoom">
+    <div className="shell-zoom shell-moves" data-region="zoom" role="group" aria-label="Zoom" style={box(layout.zoom)}>
       <button type="button" className="shell-zoom-button" aria-label="Zoom in" disabled={!canvas} onClick={() => canvas?.setZoom(zoomInFrom(canvas.zoom))}>
         <Icon d="M12 5v14M5 12h14" />
       </button>

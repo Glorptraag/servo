@@ -1,7 +1,7 @@
 /*
- * The app shell (task 4.1, docs/shell.md). layout.ts places the regions with inline styles; this sheet gives the
- * look and the motion. Chrome is flat and neutral, with soft shadows only where a panel lies over the canvas, and
- * UI motion runs 160 ms (brief Section 11: 120-200 ms).
+ * The app shell (task 4.1, docs/shell.md). layout.ts places every region by transform from the shell's top left;
+ * this sheet gives the look and the motion. The canvas fills the shell, and the chrome lies over it: flat, neutral
+ * panels with soft shadows where they overlap the canvas (brief Section 11), moving in 160 ms (120-200 ms).
  */
 
 .servo-shell {
@@ -47,45 +47,10 @@
   outline-offset: 2px;
 }
 
-/* Regions that slide away: the move takes the motion time, then the region stops being drawn. */
-.shell-panel,
-.shell-slides {
-  transition-property: transform, width, height, visibility;
-  transition-duration: var(--shell-motion), var(--shell-motion), var(--shell-motion), 0s;
-  transition-timing-function: var(--shell-ease);
-  transition-delay: 0s, 0s, 0s, var(--shell-motion);
-}
-
-.shell-panel[data-shown='true'],
-.shell-slides[data-shown='true'] {
-  transition-delay: 0s;
-}
-
-.shell-panel[data-shown='false'],
-.shell-slides[data-shown='false'] {
-  visibility: hidden;
-}
-
-.shell-panel {
-  position: absolute;
-  left: 0;
-  top: 0;
-  background: var(--shell-panel);
-}
-
-/*
- * The canvas's box and the layer floating on it grow and shrink with the sliding panels. The canvas follows its host
- * and draws again in the same frame as each resize, so the slide never shows a blank canvas.
- */
-.shell-stage,
-.shell-float {
-  position: absolute;
-  transition-property: left, top, width, height;
-  transition-duration: var(--shell-motion);
-  transition-timing-function: var(--shell-ease);
-}
-
+/* The canvas fills the shell, under everything, and never resizes when an edge tucks. */
 .shell-stage {
+  position: absolute;
+  inset: 0;
   z-index: 0;
   overflow: hidden;
 }
@@ -95,15 +60,34 @@
   inset: 0;
 }
 
-.shell-float {
-  z-index: 1;
-  overflow: hidden;
-  pointer-events: none;
+/* Everything else is placed by transform. Panels slide away, then stop being drawn; controls move with them. */
+.shell-panel,
+.shell-moves {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transition-property: transform, width, height, visibility;
+  transition-duration: var(--shell-motion), var(--shell-motion), var(--shell-motion), 0s;
+  transition-timing-function: var(--shell-ease);
+  transition-delay: 0s, 0s, 0s, var(--shell-motion);
+}
+
+.shell-panel[data-shown='true'] {
+  transition-delay: 0s;
+}
+
+.shell-panel[data-shown='false'] {
+  visibility: hidden;
+}
+
+.shell-panel {
+  background: var(--shell-panel);
+  box-shadow: var(--shell-shadow);
 }
 
 /* Header: a thin top edge. */
 .shell-header {
-  z-index: 3;
+  z-index: 4;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -162,7 +146,7 @@
 
 /* Part tray: left edge, or the bottom in portrait; the other side in the left-handed mirror. */
 .shell-tray {
-  z-index: 2;
+  z-index: 3;
   padding: 8px;
   overflow: auto;
   overscroll-behavior: contain;
@@ -180,66 +164,54 @@
   border-top: 1px solid var(--shell-line);
 }
 
-/* Spec card: slides over the canvas's side, so it carries the shadow. */
+/* Spec card: on the right edge under the header, as tall as the canvas's share allows; its text scrolls. */
 .shell-spec-card {
-  z-index: 2;
+  z-index: 3;
   padding: 12px;
   overflow: auto;
   overscroll-behavior: contain;
-  box-shadow: var(--shell-shadow);
+  border-bottom: 1px solid var(--shell-line);
+  border-left: 1px solid var(--shell-line);
+  border-radius: 0 0 0 12px;
 }
 
-/* Arena strip: along the top of the canvas, between the two top tabs. */
+.servo-shell[data-hand='left'] .shell-spec-card {
+  border-right: 1px solid var(--shell-line);
+  border-left: 0;
+  border-radius: 0 0 12px;
+}
+
+/* Arena strip: along the top of the canvas, between the header's tab and its own. */
 .shell-arena-strip {
-  position: absolute;
-  top: 6px;
-  right: 64px;
-  left: 64px;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 52px;
   padding: 4px 12px;
   border-radius: 12px;
-  background: var(--shell-panel);
-  box-shadow: var(--shell-shadow);
-  pointer-events: auto;
 }
 
-.shell-arena-strip[data-shown='false'] {
-  transform: translateY(calc(-100% - 6px));
-}
-
-/* Run bar: bottom centre of the canvas, with its tab beside it and room kept for the corner controls. */
-.shell-run-row {
-  position: absolute;
-  right: 0;
-  bottom: 12px;
-  left: 0;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: end;
-  column-gap: 8px;
-  padding: 0 60px;
+/* Run bar: bottom centre of the canvas, always there. Its content stays inside the room the layout keeps for it. */
+.shell-run-bar {
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
   pointer-events: none;
 }
 
-.shell-run-bar {
+.shell-run-pill {
   display: flex;
-  grid-row: 1;
-  grid-column: 2;
   align-items: center;
   gap: 8px;
+  max-width: 100%;
+  max-height: 100%;
   min-height: 56px;
   padding: 6px;
   border-radius: 16px;
   background: var(--shell-panel);
   box-shadow: var(--shell-shadow);
   pointer-events: auto;
-}
-
-.shell-run-bar[data-shown='false'] {
-  transform: translateY(calc(100% + 12px));
 }
 
 /* Square controls on the canvas: the tabs and the zoom control. */
@@ -256,11 +228,21 @@
   color: var(--shell-ink);
   box-shadow: var(--shell-shadow);
   cursor: pointer;
-  pointer-events: auto;
+}
+
+.shell-tab {
+  z-index: 2;
 }
 
 .shell-tab[hidden] {
   display: none;
+}
+
+.shell-zoom {
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .shell-zoom-button:disabled {
@@ -268,107 +250,40 @@
   opacity: 0.5;
 }
 
-.shell-tab {
-  position: absolute;
-}
-
 /*
  * The header's, the tray's and the spec card's tabs are pull tabs: flush with the edge they tuck, rounded on the
- * canvas side, so each reads as part of its edge. The arena strip's tab sits at the strip's end, the Run bar's
- * beside the bar.
+ * canvas side, so each reads as part of its edge. The arena strip's tab sits at the strip's end.
  */
 .shell-tab[data-edge='header'] {
-  top: 0;
-  left: 12px;
   border-top: 0;
   border-radius: 0 0 12px 12px;
 }
 
-.shell-tab[data-edge='tray'] {
-  top: calc(50% - var(--shell-target) / 2);
-  left: 0;
+.servo-shell[data-orientation='landscape'] .shell-tab[data-edge='tray'] {
   border-left: 0;
   border-radius: 0 12px 12px 0;
 }
 
 .servo-shell[data-orientation='portrait'] .shell-tab[data-edge='tray'] {
-  top: auto;
-  bottom: 0;
-  left: 12px;
   border-bottom: 0;
-  border-left: 1px solid var(--shell-line);
   border-radius: 12px 12px 0 0;
 }
 
 .shell-tab[data-edge='specCard'] {
-  top: calc(50% - var(--shell-target) / 2);
-  right: 0;
   border-right: 0;
   border-radius: 12px 0 0 12px;
 }
 
-.shell-tab[data-edge='arenaStrip'] {
-  top: 10px;
-  right: 12px;
-}
-
-.shell-run-row > .shell-tab {
-  position: static;
-  grid-row: 1;
-  grid-column: 3;
-  justify-self: start;
-}
-
-.shell-zoom {
-  position: absolute;
-  right: 8px;
-  bottom: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  pointer-events: auto;
-}
-
-/* The left-handed mirror (task 5.7): everything on the canvas swaps sides with the tray and the spec card. */
-.servo-shell[data-hand='left'] .shell-tab[data-edge='header'] {
-  right: 12px;
-  left: auto;
-}
-
-.servo-shell[data-hand='left'] .shell-tab[data-edge='arenaStrip'] {
-  right: auto;
-  left: 12px;
-}
-
 .servo-shell[data-hand='left'][data-orientation='landscape'] .shell-tab[data-edge='tray'] {
-  right: 0;
-  left: auto;
   border-right: 0;
   border-left: 1px solid var(--shell-line);
   border-radius: 12px 0 0 12px;
 }
 
-.servo-shell[data-hand='left'][data-orientation='portrait'] .shell-tab[data-edge='tray'] {
-  right: 12px;
-  left: auto;
-}
-
 .servo-shell[data-hand='left'] .shell-tab[data-edge='specCard'] {
-  right: auto;
-  left: 0;
   border-right: 1px solid var(--shell-line);
   border-left: 0;
   border-radius: 0 12px 12px 0;
-}
-
-.servo-shell[data-hand='left'] .shell-run-row > .shell-tab {
-  grid-column: 1;
-  justify-self: end;
-}
-
-.servo-shell[data-hand='left'] .shell-zoom {
-  right: auto;
-  left: 8px;
 }
 
 .shell-chevron {

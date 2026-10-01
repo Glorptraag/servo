@@ -62,6 +62,8 @@ export interface AppFrame {
   settle(): Promise<void>;
   /** Takes a screenshot of the frame, which also makes the browser draw a frame. */
   shoot(): Promise<Shot>;
+  /** Real mouse input, as a hand on a mouse sends it, at a point in the page's CSS pixels. */
+  mouse(type: 'mousePressed' | 'mouseMoved' | 'mouseReleased', at: { readonly x: number; readonly y: number }): Promise<void>;
   /**
    * Holds back the page's animation-frame callbacks until the returned function releases them, so whatever the page
    * draws meanwhile it draws at once: the canvas, for one, then draws only as it resizes.
@@ -151,6 +153,19 @@ export const openApp = async (screen: Screen): Promise<AppFrame> => {
       await settleFrame(frame);
     },
     settle: () => settleFrame(frame),
+    mouse: async (type, at) => {
+      const outer = window.frameElement?.getBoundingClientRect();
+      const box = frame.getBoundingClientRect();
+      const scale = box.width / frame.clientWidth;
+      await cdp().send('Input.dispatchMouseEvent', {
+        type,
+        x: (outer?.left ?? 0) + box.left + at.x * scale,
+        y: (outer?.top ?? 0) + box.top + at.y * scale,
+        button: 'left',
+        buttons: type === 'mouseReleased' ? 0 : 1,
+        clickCount: type === 'mouseMoved' ? 0 : 1,
+      });
+    },
     holdAnimationFrames: () => {
       const view = frame.contentWindow;
       if (!view) throw new Error('the frame has no window');
@@ -183,7 +198,7 @@ export const openApp = async (screen: Screen): Promise<AppFrame> => {
       context.drawImage(bitmap, 0, 0);
       const data = context.getImageData(0, 0, bitmap.width, bitmap.height).data;
       // Screenshot pixels per CSS pixel of the page inside the frame: the frame's scale and the device's ratio together.
-      const ratio = bitmap.width / screen.width;
+      const ratio = bitmap.width / frame.clientWidth;
       return {
         at: ({ x, y }) => {
           const px = Math.min(bitmap.width - 1, Math.max(0, Math.floor(x * ratio)));

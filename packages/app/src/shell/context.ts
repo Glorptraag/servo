@@ -29,6 +29,13 @@ export interface ShellApi {
   /** Which edges the child has tucked away. They persist on this device. */
   readonly tucked: Tucked;
   setTucked(edge: Edge, tucked: boolean): void;
+  /**
+   * True while the spec card steps aside so that it never covers a port the child is wiring. The shell steps it aside
+   * while a finger or pointer drags on the canvas, wire drags included; `setSpecCardAside(true)` keeps it aside as
+   * well, for wiring by tap-then-tap once the canvas reports it (tasks 3.3 and 4.3), until `setSpecCardAside(false)`.
+   */
+  readonly specCardAside: boolean;
+  setSpecCardAside(aside: boolean): void;
   /** Where every region is now. */
   readonly layout: ShellLayout;
   /** The canvas's prefs, which the shell keeps; `leftHanded` also mirrors the tray and the spec card. */
