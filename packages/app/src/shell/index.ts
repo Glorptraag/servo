@@ -23,7 +23,7 @@ export {
 export type { Hand, LayoutInput, Orientation, Rect, SafeArea, ShellLayout } from './layout.ts';
 export { tidyName } from './name.tsx';
 export { PLACEHOLDER_SLOTS } from './placeholders.tsx';
-export { SAVE_LINES, SaveControl } from './save.tsx';
+export { AUTOSAVE_MS, SAVE_LINES, SaveControl } from './save.tsx';
 export { DEFAULT_PREFS, DRAG_PX, Shell } from './shell.tsx';
 export type { CanvasSetup, ShellProps, ShellSlots } from './shell.tsx';
 export { zoomInFrom, zoomOutFrom } from './zoom.ts';

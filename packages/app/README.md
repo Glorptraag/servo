@@ -35,7 +35,7 @@ From the repository root, `pnpm dev` serves the app and `pnpm build` writes it t
 
 ## The store
 
-Local-first on Dexie and profile-scoped: blueprints keyed by `meta.id`, run records and card-game results. Loading migrates and validates, and a document that fails stays stored. A content defect never stops the store opening. Sync goes through a pluggable `SyncRemote`, off until one is configured (D10, D13); two devices' copies of one blueprint are both kept. The app opens for the one profile on the device, with its newest build; Save in the header stores the build, and a tap on the build's name renames it. Details: [docs/store.md](docs/store.md).
+Local-first on Dexie and profile-scoped: blueprints keyed by `meta.id`, run records and card-game results. Loading migrates and validates, and a document that fails stays stored. A content defect never stops the store opening. Sync goes through a pluggable `SyncRemote`, off until one is configured (D10, D13); two devices' copies of one blueprint are both kept. On first run the app makes a profile, "Builder 1", and an empty "Build 1"; after that it opens the one profile's newest build. The build saves itself a second after each edit and when Run is pressed; Save in the header stores it at once, and a tap on the build's name renames it. Details: [docs/store.md](docs/store.md).
 
 ## Areas and owners
 

@@ -87,7 +87,7 @@ A component in a slot reads the shell with `useShell()` ([context.ts](../src/she
 - `canvas`: the canvas handle, null for the first render only.
 - `mode` and `setMode(mode)`: switches the canvas and the layout together. The run loop calls this, not `canvas.setMode`.
 - `blueprint` and `load(blueprint)`: the build on the canvas, as `load` and every `edit` leave it. Load through the shell so the header's name follows.
-- `child`: the child's records in the store (task 4.9), where Save keeps the build and later tasks keep Runs and find builds. Null when there is no store or no one profile in use.
+- `child`: the child's records in the store (task 4.9), where Save and autosave keep the build and later tasks keep Runs and find builds. Null when there is no store or no one profile in use.
 - `selection`: the canvas's selection; the spec card shows while it is a part.
 - `tucked` and `setTucked(edge, tucked)`.
 - `specCardAside` and `setSpecCardAside(aside)`: see above.
@@ -100,7 +100,7 @@ Zoom in and out step along a ladder of zooms a half power of two apart (0.5, 0.7
 
 ## Running it
 
-From the repository root: `pnpm dev` serves the app with Vite, `pnpm build` writes it to `packages/app/dist`, and `pnpm --filter @servo/app preview` serves that build. Dev and build run `pnpm art` first, so the parts have their placeholder pictures; without it every part draws as a neutral tile. The build targets D14's browsers. The app opens the store (task 4.9): with one profile on the device it opens that child's newest build, and otherwise the canvas starts empty and nothing is saved ([store.md](store.md), "In the app").
+From the repository root: `pnpm dev` serves the app with Vite, `pnpm build` writes it to `packages/app/dist`, and `pnpm --filter @servo/app preview` serves that build. Dev and build run `pnpm art` first, so the parts have their placeholder pictures; without it every part draws as a neutral tile. The build targets D14's browsers. The app opens the store (task 4.9): on first run it makes a profile, "Builder 1", with an empty "Build 1", and after that it opens the one profile's newest build ([store.md](store.md), "In the app").
 
 ## Tests
 

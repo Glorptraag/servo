@@ -1,9 +1,10 @@
-// The store in a real browser (task 4.9), on Chromium's own IndexedDB. Save and the blueprint's name in the header,
-// with a stand-in canvas and a real store; then the real app page keeping a build across a real reload. The store's
-// own rules are tested in Node on fake-indexeddb (test/store/).
+// The store in a real browser (task 4.9), on Chromium's own IndexedDB. Save, autosave and the blueprint's name in the
+// header, with a stand-in canvas and a real store; then the real app page: its first run, and a build kept across a
+// real reload. The store's own rules are tested in Node on fake-indexeddb (test/store/).
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cdp, userEvent } from 'vitest/browser';
 import { Dexie } from 'dexie';
+import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 import type { CanvasEventMap, CanvasHandle, CanvasMode, EditCommand, EditResult, ListView, Selection } from '@servo/canvas';
@@ -11,7 +12,10 @@ import { loadContent } from '@servo/content';
 import { loadFixtures } from '@servo/content/fixtures';
 import { serializeBlueprint } from '@servo/schema';
 import type { Blueprint, ValidationResult } from '@servo/schema';
-import { SAVE_LINES, SaveControl, Shell } from '../../src/shell/index.ts';
+import { invalidBlueprints } from '@servo/schema/fixtures';
+import { AUTOSAVE_MS, SAVE_LINES, SaveControl, Shell, useShell } from '../../src/shell/index.ts';
+import type { ShellApi } from '../../src/shell/index.ts';
+import { openDatabase } from '../../src/store/database.ts';
 import { openStore } from '../../src/store/index.ts';
 import type { ProfileStore, ServoStore } from '../../src/store/index.ts';
 
@@ -118,6 +122,10 @@ const childWithBuild = async (): Promise<Kept> => {
 interface Mounted {
   readonly header: HTMLElement;
   readonly canvas: StandInCanvas;
+  /** The shell, as a slot sees it. */
+  shell(): ShellApi;
+  /** An edit, as the canvas makes one: renames the build on it. */
+  rename(name: string): void;
   saveButton(): HTMLButtonElement;
   status(): string;
   nameButton(): HTMLButtonElement | null;
@@ -136,14 +144,29 @@ const mountShell = async (child: ProfileStore | null, start?: Blueprint): Promis
     host.remove();
   });
   const canvas = new StandInCanvas();
-  root.render(<Shell content={content} level={1} storage={null} slots={{ save: <SaveControl /> }} mountCanvas={() => canvas} child={child} start={start} />);
+  let latest: ShellApi | null = null;
+  const Probe = () => {
+    latest = useShell();
+    return null;
+  };
+  root.render(
+    <Shell content={content} level={1} storage={null} slots={{ save: <SaveControl />, sound: <Probe /> }} mountCanvas={() => canvas} child={child} start={start} />,
+  );
   await vi.waitFor(() => {
-    if (!host.querySelector('[data-region="header"]')) throw new Error('the shell has not mounted yet');
+    if (!host.querySelector('[data-region="header"]') || !latest?.canvas) throw new Error('the shell has not mounted yet');
   }, SOON);
   const header = host.querySelector<HTMLElement>('[data-region="header"]') as HTMLElement;
   return {
     header,
     canvas,
+    shell: () => {
+      if (!latest) throw new Error('no shell');
+      return latest;
+    },
+    rename: (name) => {
+      const done = canvas.apply({ kind: 'rename', name });
+      if (!done.ok) throw new Error(done.refusal.message);
+    },
     saveButton: () => [...header.querySelectorAll('button')].find((button) => button.textContent === 'Save') as HTMLButtonElement,
     status: () => header.querySelector('[role="status"]')?.textContent ?? '',
     nameButton: () => header.querySelector<HTMLButtonElement>('button.shell-blueprint-name'),
@@ -236,7 +259,119 @@ describe('the blueprint’s name in the header', () => {
   });
 });
 
+/** Every call of the child's `save`, and when it was made; each still saves as the store does. */
+const watchSaves = (child: ProfileStore): { readonly at: number; readonly build: Blueprint }[] => {
+  const save = child.blueprints.save;
+  const calls: { readonly at: number; readonly build: Blueprint }[] = [];
+  const spy = vi.spyOn(child.blueprints, 'save').mockImplementation((build) => {
+    calls.push({ at: performance.now(), build });
+    return save(build);
+  });
+  cleanups.push(() => spy.mockRestore());
+  return calls;
+};
+
+const pause = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+describe('autosave', () => {
+  it('saves the build about a second after the last edit, with every edit in it, and then rests', async () => {
+    const { child, build } = await childWithBuild();
+    const app = await mountShell(child, build);
+    const saves = watchSaves(child);
+    const edits: number[] = [];
+    for (const name of ['Fast', 'Faster', 'Fastest']) {
+      if (edits.length > 0) await pause(300);
+      app.rename(name);
+      edits.push(performance.now());
+    }
+    await vi.waitFor(() => expect(saves.length).toBeGreaterThan(0), SOON);
+    await pause(AUTOSAVE_MS + 300);
+    // Each save waited a quiet second after the edit before it, so edits close together save once, and the last
+    // save holds the last edit. Nothing more is saved while nothing changes.
+    for (const { at } of saves) expect(at - Math.max(...edits.filter((edit) => edit < at))).toBeGreaterThanOrEqual(AUTOSAVE_MS - 20);
+    expect(saves.at(-1)?.build.meta.name).toBe('Fastest');
+    expect(saves.length).toBeLessThan(edits.length);
+    await vi.waitFor(() => expect(app.status()).toBe(SAVE_LINES.saved), SOON);
+    expect((await child.blueprints.list()).map((summary) => summary.name)).toEqual(['Fastest']);
+  });
+
+  it('saves at once when Run is pressed, and not again after', async () => {
+    const { child, build } = await childWithBuild();
+    const app = await mountShell(child, build);
+    const saves = watchSaves(child);
+    app.rename('Racer');
+    const run = performance.now();
+    flushSync(() => app.shell().setMode('run'));
+    await vi.waitFor(() => expect(saves).toHaveLength(1), SOON);
+    expect((saves[0]?.at ?? Number.POSITIVE_INFINITY) - run).toBeLessThan(AUTOSAVE_MS / 2);
+    expect(saves[0]?.build.meta.name).toBe('Racer');
+    await pause(AUTOSAVE_MS + 300);
+    flushSync(() => app.shell().setMode('build'));
+    flushSync(() => app.shell().setMode('run'));
+    await pause(100);
+    expect(saves).toHaveLength(1);
+    expect((await child.blueprints.list()).map((summary) => summary.name)).toEqual(['Racer']);
+  });
+
+  it('saves the waiting build at once when the next edit is to another build', async () => {
+    const { child, build } = await childWithBuild();
+    const other = await child.blueprints.duplicate(build.meta.id, 'Other robot');
+    const app = await mountShell(child, build);
+    const saves = watchSaves(child);
+    app.rename('First, changed');
+    flushSync(() => app.shell().load(other));
+    const switched = performance.now();
+    app.rename('Other, changed');
+    await vi.waitFor(() => expect(saves).toHaveLength(2), SOON);
+    expect(saves.map((save) => [save.build.meta.id, save.build.meta.name])).toEqual([
+      [build.meta.id, 'First, changed'],
+      [other.meta.id, 'Other, changed'],
+    ]);
+    expect((saves[0]?.at ?? Number.POSITIVE_INFINITY) - switched).toBeLessThan(AUTOSAVE_MS / 2);
+    expect((await child.blueprints.list()).map((summary) => summary.name).sort()).toEqual(['First, changed', 'Other, changed']);
+  });
+
+  it('leaves nothing waiting once Save is pressed', async () => {
+    const { child, build } = await childWithBuild();
+    const app = await mountShell(child, build);
+    const saves = watchSaves(child);
+    app.rename('Quick');
+    app.saveButton().click();
+    await vi.waitFor(() => expect(saves).toHaveLength(1), SOON);
+    await pause(AUTOSAVE_MS + 300);
+    expect(saves).toHaveLength(1);
+  });
+
+  it('shows a failed autosave as the same plain line, never a dialog', async () => {
+    const { store, child, build } = await childWithBuild();
+    const app = await mountShell(child, build);
+    const alert = vi.spyOn(window, 'alert');
+    cleanups.push(() => alert.mockRestore());
+    await store.profiles.remove(child.profile);
+    app.rename('Lost');
+    await vi.waitFor(() => expect(app.status()).toBe(SAVE_LINES.notSaved), SOON);
+    expect(alert).not.toHaveBeenCalled();
+    expect(document.querySelector('dialog, [role="dialog"], [role="alertdialog"]')).toBeNull();
+  });
+
+  it('never overwrites a stored build that does not load', async () => {
+    const { name, child, build } = await childWithBuild();
+    const app = await mountShell(child, build);
+    // Sync has brought a newer version of the same build from another device.
+    const newer = JSON.stringify({ ...(invalidBlueprints.find((fixture) => fixture.name === 'version-2')?.data as object), meta: { ...build.meta } });
+    const db = await openDatabase(name);
+    await db.blueprints.put({ id: build.meta.id, profile: child.profile, document: newer });
+    app.rename('Mine');
+    await vi.waitFor(() => expect(app.status()).toBe(SAVE_LINES.notSaved), SOON);
+    expect((await db.blueprints.get(build.meta.id))?.document).toBe(newer);
+    db.close();
+  });
+});
+
 describe('the app page', () => {
+  /** How long an app page may take to start: it loads every module and starts WebGL, which a busy machine slows a lot. */
+  const BOOT = { timeout: 90_000, interval: 50 };
+
   /** The real app in a frame, on the database `name`. A reload starts the page and every module again. */
   const openPage = async (name: string) => {
     const frame = document.createElement('iframe');
@@ -251,13 +386,10 @@ describe('the app page', () => {
       return found;
     };
     const ready = () =>
-      vi.waitFor(
-        () => {
-          if (!frame.contentDocument?.querySelector('[data-region="stage"] canvas')) throw new Error('the app has not mounted yet');
-          header();
-        },
-        { timeout: 30_000, interval: 50 },
-      );
+      vi.waitFor(() => {
+        if (!frame.contentDocument?.querySelector('[data-region="stage"] canvas')) throw new Error('the app has not mounted yet');
+        header();
+      }, BOOT);
     await ready();
     return {
       name: () => header().querySelector('button.shell-blueprint-name')?.textContent ?? null,
@@ -269,36 +401,53 @@ describe('the app page', () => {
         await loaded;
         await ready();
       },
+      close: () => frame.remove(),
     };
   };
 
-  it('keeps a build in IndexedDB across a real reload of the page', async () => {
-    const { store, name, build } = await childWithBuild();
-    store.close();
-    const page = await openPage(name);
-    await vi.waitFor(() => expect(page.name()).toBe('Rolling robot'), SOON);
+  /** What the database holds, read from outside the page: the profiles, the one profile's builds, and its first build. */
+  const stored = async (name: string) => {
+    const reader = await openStore({ name });
+    try {
+      const profiles = await reader.profiles.list();
+      const kid = reader.forProfile(profiles[0]?.id ?? '');
+      const builds = await kid.blueprints.list();
+      const loaded = await kid.blueprints.load(builds[0]?.id ?? '');
+      if (!loaded.ok) throw new Error('not loaded');
+      return { profiles, builds, build: loaded.blueprint };
+    } finally {
+      reader.close();
+    }
+  };
+
+  it('makes one "Builder 1" with an empty "Build 1" on its first run, and keeps what it saved across a real reload', async () => {
+    const name = databaseName();
+    cleanups.push(() => Dexie.delete(name));
+    // Two tabs opening at once on the first run still make one profile and one build.
+    const [page, other] = await Promise.all([openPage(name), openPage(name)]);
+    await vi.waitFor(() => expect(page.name()).toBe('Build 1'), SOON);
+    await vi.waitFor(() => expect(other.name()).toBe('Build 1'), SOON);
+    other.close();
 
     page.save();
     await vi.waitFor(() => expect(page.status()).toBe(SAVE_LINES.saved), SOON);
-    const reader = await openStore({ name });
-    const [summary] = await reader.forProfile((await reader.profiles.list())[0]?.id ?? '').blueprints.list();
-    reader.close();
-    expect(summary?.id).toBe(build.meta.id);
-    const savedAt = summary?.updatedAt ?? '';
-    expect(savedAt > PAST).toBe(true);
+    const before = await stored(name);
+    expect(before.profiles.map((profile) => profile.name)).toEqual(['Builder 1']);
+    expect(before.profiles[0]?.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(before.builds.map(({ name: built, level }) => ({ built, level }))).toEqual([{ built: 'Build 1', level: 1 }]);
+    expect(before.build).toMatchObject({ parts: [], wires: [], arena: { preset: 'open-floor', props: [] } });
 
     await page.reload();
-    // The page and its memory started again: the build, and the save made before the reload, come back from IndexedDB.
-    await vi.waitFor(() => expect(page.name()).toBe('Rolling robot'), SOON);
+    // The page and its memory started again: what the app wrote before the reload comes back from IndexedDB, and
+    // nothing is made a second time.
+    await vi.waitFor(() => expect(page.name()).toBe('Build 1'), SOON);
     expect(page.status()).toBe('');
     page.save();
     await vi.waitFor(() => expect(page.status()).toBe(SAVE_LINES.saved), SOON);
-    const after = await openStore({ name });
-    const kid = after.forProfile((await after.profiles.list())[0]?.id ?? '');
-    const loaded = await kid.blueprints.load(build.meta.id);
-    after.close();
-    if (!loaded.ok) throw new Error('not loaded');
-    expect(loaded.blueprint.meta.updatedAt >= savedAt).toBe(true);
-    expect(serializeBlueprint(loaded.blueprint)).toBe(serializeBlueprint({ ...build, meta: { ...build.meta, updatedAt: loaded.blueprint.meta.updatedAt } }));
-  });
+    const after = await stored(name);
+    expect(after.profiles).toEqual(before.profiles);
+    expect(after.builds.map((summary) => summary.id)).toEqual(before.builds.map((summary) => summary.id));
+    expect(after.build.meta.updatedAt >= before.build.meta.updatedAt).toBe(true);
+    expect(serializeBlueprint(after.build)).toBe(serializeBlueprint({ ...before.build, meta: { ...before.build.meta, updatedAt: after.build.meta.updatedAt } }));
+  }, 300_000);
 });
