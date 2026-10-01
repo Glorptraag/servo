@@ -12,9 +12,9 @@ export const BEHAVIOUR_EFFECTS = ['still', 'slow', 'reverse', 'stall', 'hold', '
 
 export type BehaviourEffect = (typeof BEHAVIOUR_EFFECTS)[number];
 
-/** Whether a turning output is at rest because nothing drives it: an idle actuator, or a gearbox output or wheel that does not turn. */
+/** Whether a turning output is at rest because nothing drives it: an idle actuator whose drive does not turn, or a gearbox output or wheel that does not turn. */
 const still = (output: PrimitiveOutput): boolean | undefined => {
-  if (output.kind === 'actuator') return output.state === 'idle';
+  if (output.kind === 'actuator') return output.state === 'idle' && output.rpm === 0;
   if (output.kind === 'ratio' || output.kind === 'wheel') return output.rpm === 0;
   return undefined;
 };
@@ -31,10 +31,11 @@ const brightest = (outputs: readonly PrimitiveOutput[], emits: 'light' | 'sound'
  * What a part shows now, in the schema's words, from its primitives' outputs and its sounds (EFFECTS order):
  * - `still`: every turning output is at rest because nothing drives it;
  * - `slow`: an actuator turns or sweeps, but less than at its rated volts with the same load and settings;
- * - `reverse`: a speed actuator turns the other way from the way its settings turn it;
+ * - `reverse`: a speed actuator's shaft turns the other way from the way its settings turn it;
  * - `stall`: an actuator is driven but its load is more than it can turn; `hold`: a position actuator holds where
  *   it is, with power and no signal; `hum`: it hums;
- * - `dark` and `silent`: it gives no light, or no sound; `dim` and `quiet`: less than at its rated volts;
+ * - `dark`: it gives no light; `silent`: it makes no sound at all, though it has a sounder or an actuator, which
+ *   whirs or hums with power, and here it is idle; `dim` and `quiet`: less light or sound than at its rated volts;
  * - `off`: nothing in it that gives, carries or takes power is working.
  * `slow`, `dim` and `quiet` compare with the rated volts (the schema's definition), so a part run below its
  * rated volts shows them whether or not a failure mode is active.
@@ -48,7 +49,7 @@ export const effectsOf = (outputs: readonly PrimitiveOutput[], sounds: readonly 
     if (output.state === 'stalled') shown.add('stall');
     if (output.mode === 'speed' && output.state === 'turning') {
       if (magnitude(output.rpm) < magnitude(output.ratedRpm)) shown.add('slow');
-      if (output.reversed) shown.add('reverse');
+      if (output.rpm * output.direction < 0) shown.add('reverse');
     }
     if (output.mode === 'position') {
       if (output.state === 'sweeping' && output.sweep < output.ratedSweep) shown.add('slow');
@@ -60,7 +61,8 @@ export const effectsOf = (outputs: readonly PrimitiveOutput[], sounds: readonly 
   if (light === 0) shown.add('dark');
   if (light !== undefined && light > 0 && light < 1) shown.add('dim');
   const sound = brightest(outputs, 'sound');
-  if (sound === 0) shown.add('silent');
+  const idle = outputs.some((output) => output.kind === 'actuator' && output.state === 'idle');
+  if (sounds.length === 0 && (sound !== undefined || idle)) shown.add('silent');
   if (sound !== undefined && sound > 0 && sound < 1) shown.add('quiet');
   const powered = outputs.map(working).filter((each): each is boolean => each !== undefined);
   if (powered.length > 0 && !powered.some(Boolean)) shown.add('off');

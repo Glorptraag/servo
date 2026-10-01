@@ -24,10 +24,7 @@ export const signalLevel = (value: number | undefined): number | undefined => {
 export interface SpeedRule {
   readonly state: 'idle' | 'turning' | 'stalled';
   readonly rpm: number;
-  readonly reversed: boolean;
   readonly capacityNmm: number;
-  /** The volts that drive it: throttle × supply volts, as a size. 0 when idle. */
-  readonly drive: number;
 }
 
 /**
@@ -40,14 +37,16 @@ export interface SpeedRule {
 export const speedRule = (spec: SpeedActuator, volts: number, loadNmm: number): SpeedRule => {
   const drive = spec.whenReversed === 'blocks' && volts < 0 ? 0 : spec.throttle * volts;
   const size = magnitude(drive);
-  if (size === 0 || size < spec.startVolts) return { state: 'idle', rpm: 0, reversed: false, capacityNmm: 0, drive: 0 };
+  if (size === 0 || size < spec.startVolts) return { state: 'idle', rpm: 0, capacityNmm: 0 };
   const capacityNmm = (spec.stallTorqueNmm * size) / spec.ratedVolts;
   const share = size / spec.ratedVolts - loadNmm / spec.stallTorqueNmm;
-  if (share <= 0) return { state: 'stalled', rpm: 0, reversed: false, capacityNmm, drive: size };
+  if (share <= 0) return { state: 'stalled', rpm: 0, capacityNmm };
   const rpm = spec.noLoadRpm * share;
-  const reversed = drive < 0;
-  return { state: 'turning', rpm: reversed !== spec.reverse ? -rpm : rpm, reversed, capacityNmm, drive: size };
+  return { state: 'turning', rpm: (drive < 0) !== spec.reverse ? -rpm : rpm, capacityNmm };
 };
+
+/** The way a speed actuator's settings turn it: 1, or −1 when `reverse` is set. */
+export const directionOf = (spec: SpeedActuator): 1 | -1 => (spec.reverse ? -1 : 1);
 
 export interface PositionRule {
   readonly state: 'idle' | 'sweeping' | 'settled' | 'holding' | 'stalled';
