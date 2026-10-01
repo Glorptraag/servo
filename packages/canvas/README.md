@@ -1,6 +1,6 @@
 # @servo/canvas
 
-The build surface: renderer, placement, wiring, selection, list view and Run animation. It depends on `@servo/schema` and reaches sim-core only through `@servo/sim-core/interface` (ground rule 6). It never imports content: the app passes the catalogue and the art resolver in. Task 0.4 owns this interface, typed in [src/interface.ts](src/interface.ts); `@servo/canvas` exports those types, `mountCanvas` (task 3.1, [docs/renderer.md](docs/renderer.md)), and a stub of `applyEdit` that throws until tasks 3.2 and 3.3 land. Handle members of later tasks throw an error naming the task.
+The build surface: renderer, placement, wiring, selection, list view and Run animation. It depends on `@servo/schema` and reaches sim-core only through `@servo/sim-core/interface` (ground rule 6). It never imports content: the app passes the catalogue and the art resolver in. Task 0.4 owns this interface, typed in [src/interface.ts](src/interface.ts); `@servo/canvas` exports those types, `mountCanvas` (task 3.1, [docs/renderer.md](docs/renderer.md)), and `applyEdit` for every command but wiring (task 3.2, [docs/placement.md](docs/placement.md)), whose `connect` and `disconnect` come with task 3.3. Handle members of later tasks throw an error naming the task.
 
 ```ts
 import { applyEdit, mountCanvas } from '@servo/canvas';

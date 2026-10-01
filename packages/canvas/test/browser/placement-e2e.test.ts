@@ -1,8 +1,9 @@
 // Done-when for task 3.2: the touch path and the pointer path each place every part of every schema valid-blueprint
 // fixture, and give the same blueprint, byte for byte. Touch: tap-then-tap and a drag from the tray. Pointer:
 // click-click and a mouse drag from the tray. Each part goes where the fixture has it: its mount on its mount point,
-// its hub on its shaft, or loose at its place. Real input through CDP (trusted touch and mouse events), in the iPad
-// profile (vitest.config.ts).
+// its hub on its shaft, or loose at its place. Moving a placed, wired part by tap-then-tap (the Move handle) keeps its
+// wires, by touch and by pointer. Real input through CDP (trusted touch and mouse events), in the iPad profile
+// (vitest.config.ts).
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { cdp } from 'vitest/browser';
 import { serializeBlueprint } from '@servo/schema';
@@ -10,7 +11,7 @@ import type { Blueprint, Vec2 } from '@servo/schema';
 import { applyEdit } from '../../src/index.ts';
 import type { PlacementEvent } from '../../src/interface.ts';
 import { partToCanvas } from '../../src/scene/geometry.ts';
-import { catalogue } from '../helpers/catalogue.ts';
+import { catalogue, fixture } from '../helpers/catalogue.ts';
 import { fixtureNames, placeCommands, planFor, startOf } from '../helpers/plans.ts';
 import type { Plan, PlacementStep } from '../helpers/plans.ts';
 import { listen, unmountAll } from './helpers.ts';
@@ -114,6 +115,55 @@ describe.each(PATHS)('$name', (path) => {
       built.set(name, byPath);
     });
   }
+});
+
+describe('moving a placed, wired part by tap-then-tap: the Move handle (rule 8, D34)', () => {
+  const moved = new Map<string, string>();
+
+  for (const hand of ['touch', 'mouse'] as const) {
+    it(`${hand}: tap the part, tap Move, tap where it goes; it keeps its wires`, async () => {
+      const { surface } = bench;
+      const tapAt = (world: Vec2): Promise<void> => tap(hand, clientOf(surface, world));
+      const tapMove = (): Promise<void> => {
+        const place = surface.placement.handlePlaces.places.get('move');
+        if (!place) throw new Error('no Move handle');
+        return tapAt(place);
+      };
+      const edits = listen(surface, 'edit');
+
+      // A loose LED with two power lines goes to an empty spot of the workbench.
+      expect(surface.load(fixture('led-circuit')).ok).toBe(true);
+      Object.assign(surface.camera, { centreX: 0, centreY: 0, zoom: ZOOM });
+      const wires = surface.blueprint?.wires;
+      await tapAt({ x: 80, y: 0 });
+      await tapMove();
+      expect(surface.placement.moving).toBe('led');
+      await tapAt({ x: 60, y: 70 });
+      expect(surface.placement.moving).toBeUndefined();
+      expect(surface.blueprint?.parts.find((part) => part.id === 'led')?.position).toEqual({ x: 60, y: 70 });
+      expect(surface.blueprint?.wires).toEqual(wires);
+
+      // The switch on Rolling Start, mounted and wired, re-snaps onto the free deck mount in the middle (D34).
+      expect(surface.load(fixture('rolling-start')).ok).toBe(true);
+      const power = surface.blueprint?.wires.filter((wire) => wire.from.part === 'switch' || wire.to.part === 'switch').filter((wire) => wire.from.port !== 'mount');
+      await tapAt({ x: 55, y: 0 });
+      await tapMove();
+      await tapAt({ x: 0, y: 0 });
+      expect(surface.blueprint?.parts.find((part) => part.id === 'switch')?.position).toEqual({ x: 0, y: 0 });
+      expect(surface.blueprint?.wires.filter((wire) => wire.from.part === 'switch' || wire.to.part === 'switch').filter((wire) => wire.from.port !== 'mount')).toEqual(power);
+
+      expect(edits.map((edit) => edit.command)).toEqual([
+        { kind: 'move-part', partId: 'led', position: { x: 60, y: 70 } },
+        { kind: 'mount', partId: 'switch', port: 'mount', onto: { part: 'chassis', port: 'deck-middle' } },
+      ]);
+      moved.set(hand, serializeBlueprint(surface.blueprint as Blueprint));
+    });
+  }
+
+  it('gives the same blueprint by touch and by pointer', () => {
+    expect(moved.size).toBe(2);
+    expect(moved.get('touch')).toBe(moved.get('mouse'));
+  });
 });
 
 describe('the touch path and the pointer path', () => {
