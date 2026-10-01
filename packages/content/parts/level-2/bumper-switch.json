@@ -1,0 +1,130 @@
+{
+  "behaviour": [
+    {
+      "actuation": {
+        "kind": "contact",
+        "normally": "closed",
+        "probe": {
+          "from": {
+            "x": 10,
+            "y": -20
+          },
+          "to": {
+            "x": 10,
+            "y": 20
+          }
+        }
+      },
+      "id": "contacts",
+      "kind": "switch",
+      "terminals": [
+        "a",
+        "b"
+      ]
+    }
+  ],
+  "body": {
+    "centreOfMass": {
+      "x": -2,
+      "y": 0,
+      "z": 6
+    },
+    "grams": 8,
+    "size": {
+      "x": 20,
+      "y": 40,
+      "z": 14
+    }
+  },
+  "card": {
+    "does": "Lets power through, and cuts it off while its front bar presses against something.",
+    "gives": "Gives: a stop when your robot bumps into a wall or a box.",
+    "needs": "Needs: a place in the power line (red), at the front of the chassis (frame).",
+    "popularMechanics": "A robot vacuum cleaner feels its way round a room with a bumper switch like this.",
+    "safetyNote": "Real bumper switches are small parts, so build with an adult nearby."
+  },
+  "failureModes": [
+    {
+      "cardLine": "Across the battery pack: it drains the pack fast until its bar is pressed.",
+      "hint": "This bumper switch closes a loop with nothing in it that uses power",
+      "id": "across-the-pack",
+      "need": "no-short",
+      "shows": [
+        "drain"
+      ],
+      "teachingNote": "A bumper switch stays closed until its bar is pressed. Wired straight across the battery pack, it joins plus to minus the whole time nothing touches it, so it makes a short circuit instead of stopping a part.",
+      "unmet": "shorted"
+    },
+    {
+      "cardLine": "Not in the loop: a bump changes nothing.",
+      "hint": "This bumper switch is not in a loop with the battery pack",
+      "id": "outside-loop",
+      "need": "in-loop",
+      "shows": [
+        "off"
+      ],
+      "teachingNote": "A bumper switch stops only the loop it sits in. Wired off to one side, with no loop running through it, a bump changes nothing.",
+      "unmet": "open"
+    }
+  ],
+  "id": "bumper-switch",
+  "identity": {
+    "art": "part/bumper-switch",
+    "colours": {
+      "accent": "#ffb300",
+      "main": "#455a64"
+    },
+    "domains": [
+      "electronics-and-power",
+      "sensing-and-feedback-loops"
+    ],
+    "family": "sense",
+    "level": 2,
+    "name": "bumper switch"
+  },
+  "needs": [
+    {
+      "id": "no-short",
+      "kind": "isolation",
+      "ports": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "id": "in-loop",
+      "kind": "loop",
+      "ports": [
+        "a",
+        "b"
+      ]
+    }
+  ],
+  "ports": [
+    {
+      "id": "a",
+      "label": "side A",
+      "polarity": "none",
+      "type": "power"
+    },
+    {
+      "id": "b",
+      "label": "side B",
+      "polarity": "none",
+      "type": "power"
+    },
+    {
+      "at": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "id": "mount",
+      "label": "mount",
+      "role": "mount",
+      "type": "mechanical",
+      "yaw": 0
+    }
+  ],
+  "settings": []
+}

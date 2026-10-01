@@ -1,0 +1,242 @@
+{
+  "behaviour": [
+    {
+      "command": 1,
+      "dropVolts": 0.3,
+      "id": "channel-a",
+      "idleMilliamps": 1,
+      "kind": "driver",
+      "maxMilliamps": 1200,
+      "onVolts": 2.5,
+      "output": {
+        "neg": "a-minus",
+        "pos": "a-plus"
+      },
+      "signal": "in-a",
+      "supply": {
+        "neg": "minus",
+        "pos": "plus"
+      }
+    },
+    {
+      "command": 1,
+      "dropVolts": 0.3,
+      "id": "channel-b",
+      "idleMilliamps": 1,
+      "kind": "driver",
+      "maxMilliamps": 1200,
+      "onVolts": 2.5,
+      "output": {
+        "neg": "b-minus",
+        "pos": "b-plus"
+      },
+      "signal": "in-b",
+      "supply": {
+        "neg": "minus",
+        "pos": "plus"
+      }
+    }
+  ],
+  "body": {
+    "centreOfMass": {
+      "x": 0,
+      "y": 0,
+      "z": 4
+    },
+    "grams": 6,
+    "size": {
+      "x": 30,
+      "y": 22,
+      "z": 12
+    }
+  },
+  "card": {
+    "does": "Passes power from the battery pack to two motors, and sets each one forward, backward or stopped.",
+    "gives": "Gives: power (red) out to two motors.",
+    "needs": "Needs: power (red) in, and a setting or a signal (yellow) for each motor.",
+    "popularMechanics": "A remote-control car has a motor driver inside, which runs its motor forward or backward.",
+    "safetyNote": "Real motor drivers are small boards with sharp pins, so build with an adult nearby."
+  },
+  "failureModes": [
+    {
+      "cardLine": "No power in: its motors stay still.",
+      "hint": "This motor driver has no power in",
+      "id": "no-power",
+      "need": "power",
+      "shows": [
+        "off"
+      ],
+      "teachingNote": "A motor driver passes power on to its motors, so it needs its own loop to the battery pack. With none, both outputs give nothing, and the motors wired to it stay still with no fault of their own: the fault is the driver's.",
+      "unmet": "open"
+    },
+    {
+      "cardLine": "Too little power: it gives its motors nothing.",
+      "hint": "This motor driver is not getting enough power",
+      "id": "low-voltage",
+      "need": "power",
+      "shows": [
+        "off"
+      ],
+      "teachingNote": "A motor driver needs at least 2.5 volts to switch its outputs. On less, such as a 1-cell battery pack, it gives its motors nothing, and they stay still with no fault of their own: the fault is the driver's.",
+      "unmet": "low"
+    },
+    {
+      "cardLine": "Power in swapped: it gives its motors nothing.",
+      "hint": "This motor driver's plus and minus are swapped",
+      "id": "reversed",
+      "need": "power",
+      "shows": [
+        "off"
+      ],
+      "teachingNote": "A motor driver works only with plus to plus at its power in. Wired the other way round it gives its motors nothing, and they stay still with no fault of their own: the fault is the driver's. A real one can be damaged this way.",
+      "unmet": "reversed"
+    }
+  ],
+  "id": "motor-driver",
+  "identity": {
+    "art": "part/motor-driver",
+    "colours": {
+      "accent": "#212121",
+      "main": "#2e7d32"
+    },
+    "domains": [
+      "electronics-and-power",
+      "robotic-system-components"
+    ],
+    "family": "power",
+    "level": 2,
+    "name": "motor driver"
+  },
+  "needs": [
+    {
+      "id": "power",
+      "kind": "power",
+      "maxVolts": 10,
+      "minVolts": 2.5,
+      "supply": {
+        "neg": "minus",
+        "pos": "plus"
+      }
+    }
+  ],
+  "ports": [
+    {
+      "id": "plus",
+      "label": "power in (+)",
+      "polarity": "positive",
+      "type": "power"
+    },
+    {
+      "id": "minus",
+      "label": "power in (−)",
+      "polarity": "negative",
+      "type": "power"
+    },
+    {
+      "id": "a-plus",
+      "label": "motor A (+)",
+      "polarity": "positive",
+      "type": "power"
+    },
+    {
+      "id": "a-minus",
+      "label": "motor A (−)",
+      "polarity": "negative",
+      "type": "power"
+    },
+    {
+      "id": "b-plus",
+      "label": "motor B (+)",
+      "polarity": "positive",
+      "type": "power"
+    },
+    {
+      "id": "b-minus",
+      "label": "motor B (−)",
+      "polarity": "negative",
+      "type": "power"
+    },
+    {
+      "direction": "in",
+      "id": "in-a",
+      "label": "signal in A",
+      "type": "signal"
+    },
+    {
+      "direction": "in",
+      "id": "in-b",
+      "label": "signal in B",
+      "type": "signal"
+    },
+    {
+      "at": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "id": "mount",
+      "label": "mount",
+      "role": "mount",
+      "type": "mechanical",
+      "yaw": 0
+    }
+  ],
+  "settings": [
+    {
+      "binds": {
+        "param": "command",
+        "primitive": "channel-a"
+      },
+      "default": "forward",
+      "id": "motor-a",
+      "kind": "choice",
+      "label": "Motor A",
+      "options": [
+        {
+          "id": "forward",
+          "label": "Forward",
+          "value": 1
+        },
+        {
+          "id": "stop",
+          "label": "Stop",
+          "value": 0
+        },
+        {
+          "id": "backward",
+          "label": "Backward",
+          "value": -1
+        }
+      ],
+      "unlockLevel": 2
+    },
+    {
+      "binds": {
+        "param": "command",
+        "primitive": "channel-b"
+      },
+      "default": "forward",
+      "id": "motor-b",
+      "kind": "choice",
+      "label": "Motor B",
+      "options": [
+        {
+          "id": "forward",
+          "label": "Forward",
+          "value": 1
+        },
+        {
+          "id": "stop",
+          "label": "Stop",
+          "value": 0
+        },
+        {
+          "id": "backward",
+          "label": "Backward",
+          "value": -1
+        }
+      ],
+      "unlockLevel": 2
+    }
+  ]
+}
