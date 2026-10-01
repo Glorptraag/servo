@@ -1,0 +1,43 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "meta": {
+    "createdAt": "2026-10-01T09:00:00.000Z",
+    "highWater": {
+      "parts": 0,
+      "wires": 1
+    },
+    "id": "3e4f5a6b-7c8d-4e9f-a0b1-c2d3e4f5a6b7",
+    "level": 2,
+    "name": "Short circuit",
+    "updatedAt": "2026-10-01T09:20:00.000Z"
+  },
+  "parts": [
+    {
+      "id": "battery",
+      "part": "battery-pack-1-cell",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    }
+  ],
+  "version": 1,
+  "wires": [
+    {
+      "from": {
+        "part": "battery",
+        "port": "minus"
+      },
+      "id": "w1",
+      "to": {
+        "part": "battery",
+        "port": "plus"
+      }
+    }
+  ]
+}

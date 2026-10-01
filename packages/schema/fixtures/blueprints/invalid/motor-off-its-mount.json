@@ -1,0 +1,235 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "meta": {
+    "author": "a3f1c2d4-5b6e-4f70-8a91-b2c3d4e5f607",
+    "createdAt": "2026-10-01T09:00:00.000Z",
+    "highWater": {
+      "parts": 0,
+      "wires": 12
+    },
+    "id": "0f8e7d6c-5b4a-4c3d-9e2f-1a0b9c8d7e6f",
+    "level": 1,
+    "name": "Rolling robot",
+    "updatedAt": "2026-10-01T09:20:00.000Z"
+  },
+  "parts": [
+    {
+      "id": "battery",
+      "part": "battery-pack-2-cell",
+      "position": {
+        "x": -45,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "caster",
+      "part": "caster",
+      "position": {
+        "x": -70,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "chassis",
+      "part": "chassis",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "motor-left",
+      "part": "dc-motor",
+      "position": {
+        "x": 50,
+        "y": -53
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "motor-right",
+      "part": "dc-motor",
+      "position": {
+        "x": 30,
+        "y": 53
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "switch",
+      "part": "switch",
+      "position": {
+        "x": 55,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "wheel-left",
+      "part": "wheel-large",
+      "position": {
+        "x": 40,
+        "y": -79
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "wheel-right",
+      "part": "wheel-large",
+      "position": {
+        "x": 40,
+        "y": 79
+      },
+      "rotation": 0,
+      "settings": {}
+    }
+  ],
+  "version": 1,
+  "wires": [
+    {
+      "from": {
+        "part": "motor-left",
+        "port": "mount"
+      },
+      "id": "w1",
+      "to": {
+        "part": "chassis",
+        "port": "motor-left"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-right",
+        "port": "mount"
+      },
+      "id": "w2",
+      "to": {
+        "part": "chassis",
+        "port": "motor-right"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "mount"
+      },
+      "id": "w3",
+      "to": {
+        "part": "chassis",
+        "port": "deck-rear"
+      }
+    },
+    {
+      "from": {
+        "part": "switch",
+        "port": "mount"
+      },
+      "id": "w4",
+      "to": {
+        "part": "chassis",
+        "port": "deck-front"
+      }
+    },
+    {
+      "from": {
+        "part": "caster",
+        "port": "mount"
+      },
+      "id": "w5",
+      "to": {
+        "part": "chassis",
+        "port": "caster"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-left",
+        "port": "shaft"
+      },
+      "id": "w6",
+      "to": {
+        "part": "wheel-left",
+        "port": "hub"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-right",
+        "port": "shaft"
+      },
+      "id": "w7",
+      "to": {
+        "part": "wheel-right",
+        "port": "hub"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "plus"
+      },
+      "id": "w8",
+      "to": {
+        "part": "switch",
+        "port": "a"
+      }
+    },
+    {
+      "from": {
+        "part": "switch",
+        "port": "b"
+      },
+      "id": "w9",
+      "to": {
+        "part": "motor-left",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "switch",
+        "port": "b"
+      },
+      "id": "w10",
+      "to": {
+        "part": "motor-right",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-left",
+        "port": "minus"
+      },
+      "id": "w11",
+      "to": {
+        "part": "battery",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-right",
+        "port": "minus"
+      },
+      "id": "w12",
+      "to": {
+        "part": "battery",
+        "port": "minus"
+      }
+    }
+  ]
+}
