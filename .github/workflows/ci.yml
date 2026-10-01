@@ -29,3 +29,37 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm -r test
       - run: pnpm validate-content packages/content --terminology packages/content/terminology
+
+  e2e:
+    # The canvas e2e harness (packages/tools/src/e2e/README.md): input-path parity, screenshots, gestures and frame time
+    # in Playwright's Chromium. Its budget is ten minutes.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0, version from packageManager
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Chromium is cached by Playwright's version; the system libraries it needs are installed either way.
+      - id: playwright
+        run: echo "version=$(pnpm --filter @servo/tools exec playwright --version | cut -d' ' -f2)" >> "$GITHUB_OUTPUT"
+      - id: browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      - if: steps.browsers.outputs.cache-hit != 'true'
+        run: pnpm --filter @servo/tools exec playwright install --with-deps chromium
+      - if: steps.browsers.outputs.cache-hit == 'true'
+        run: pnpm --filter @servo/tools exec playwright install-deps chromium
+      # Runs pnpm art, then the harness; prints the per-fixture parity report at the end.
+      - run: pnpm e2e
+      - if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: e2e-screenshot-diffs
+          path: packages/tools/node_modules/.vitest-screenshots/
+          if-no-files-found: ignore
