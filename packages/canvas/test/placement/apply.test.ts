@@ -454,6 +454,13 @@ describe('what applyEdit refuses outright', () => {
     expect(refused(fixture('led-circuit'), null as never).code).toBe('value.wrong_type');
   });
 
+  it('refuses to build on a build the schema does not accept, and never throws for one', () => {
+    const rename: EditCommand = { kind: 'rename', name: 'Mine' };
+    expect(refused({ ...fixture('led-circuit'), version: 2 } as never, rename).code).toBe('blueprint.newer_version');
+    expect(refused({} as Blueprint, rename).code).toBe('value.missing');
+    expect(refused(fixture('led-circuit'), rename, {} as Catalogue).code).toBe('value.unreadable');
+  });
+
   it('leaves connect and disconnect to task 3.3, naming it', () => {
     const build = fixture('led-circuit');
     expect(() => applyEdit(build, { kind: 'connect', from: { part: 'led', port: 'plus' }, to: { part: 'battery', port: 'plus' } }, catalogue)).toThrow(/task 3\.3/);

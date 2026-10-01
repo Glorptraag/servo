@@ -26,7 +26,7 @@ Back to the [README](../README.md). The contract is [src/interface.ts](../src/in
 - **`mount`** replaces a mount already on that port in one step; on the same mount point it changes nothing. `unmount` takes the mount on the part's mount port.
 - **A place without a spot** (the list view, the hint ladder's do-it) is the free spot nearest the middle of the build's tiles, or the canvas origin when nothing is placed. It depends on the build alone, never the view.
 - A hub attached to a shaft it cannot line up with (a wheel on a servo arm, which turns about +z) is joined but not carried: it lands where it was dropped, or at the free spot.
-- A malformed command (no position, a port that is not `{ part, port }`, an unknown kind) comes back as a refusal (`value.wrong_type`, `value.not_allowed`), never a throw.
+- A malformed command (no position, a port that is not `{ part, port }`, an unknown kind) comes back as a refusal (`value.wrong_type`, `value.not_allowed`), never a throw. So does a build `validateBlueprint` does not accept (its first issue), so nothing is built on one.
 
 ## Where a part may land
 

@@ -18,13 +18,17 @@ const refusal = (code: 'value.wrong_type' | 'value.not_allowed', message: string
 
 const isObject = (value: unknown): value is Readonly<Record<string, unknown>> => typeof value === 'object' && value !== null;
 
-/** Checks a draft as `validateBlueprint` does and puts it in canonical form; the first issue is the refusal. */
-const finish = (draft: Blueprint, catalogue: Catalogue): EditResult => {
-  const checked = validateBlueprint(draft, catalogue);
-  if (checked.ok) return { ok: true, blueprint: canonicalizeBlueprint(checked.value, catalogue) };
+/** The first issue `validateBlueprint` finds, as a refusal; undefined when it finds none. */
+const issueOf = (blueprint: Blueprint, catalogue: Catalogue): EditResult | undefined => {
+  const checked = validateBlueprint(blueprint, catalogue);
+  if (checked.ok) return undefined;
   const [issue] = checked.issues;
-  return { ok: false, refusal: { code: issue?.code ?? 'value.unreadable', message: issue?.message ?? 'The changed build could not be read.' } };
+  return { ok: false, refusal: { code: issue?.code ?? 'value.unreadable', message: issue?.message ?? 'The build could not be read.' } };
 };
+
+/** Checks a draft as `validateBlueprint` does and puts it in canonical form; the first issue is the refusal. */
+const finish = (draft: Blueprint, catalogue: Catalogue): EditResult =>
+  issueOf(draft, catalogue) ?? { ok: true, blueprint: canonicalizeBlueprint(draft, catalogue) };
 
 const applySingle = (blueprint: Blueprint, command: SingleEdit, catalogue: Catalogue): EditResult => {
   if (!isObject(command)) return refusal('value.wrong_type', 'An edit command is an object with a kind.');
@@ -57,9 +61,12 @@ const applyBatch = (blueprint: Blueprint, batch: EditBatch, catalogue: Catalogue
 
 /**
  * Applies one command, or a batch all or nothing. For a blueprint `validateBlueprint` accepts, a success is one it
- * accepts too, in canonical form, with every new id claimed through the schema (`claimPartId`, `claimWireId`).
+ * accepts too, in canonical form, with every new id claimed through the schema (`claimPartId`, `claimWireId`). A
+ * build it does not accept is refused with its first issue, so nothing is ever built on one.
  */
 export const applyEdit: ApplyEdit = (blueprint, command, catalogue) => {
+  const unreadable = issueOf(blueprint, catalogue);
+  if (unreadable) return unreadable;
   const kind: unknown = isObject(command) ? command.kind : undefined;
   return kind === 'batch' ? applyBatch(blueprint, command as EditBatch, catalogue) : applySingle(blueprint, command as SingleEdit, catalogue);
 };
