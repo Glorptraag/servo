@@ -21,7 +21,8 @@ Back to the [README](../README.md). `src/geometry/` holds the pure helpers that 
 
 - **The mount transform.** A mounted part's frame is its `mount` laid on the host's `mount-point` (`mountPlacement`).
 - **Mirrored mount points.** A mirrored mount point fixes a part as its mirror image, with its y flipped. A mirror turns a right-handed turn into a left-handed one, so the part's turning sense flips (`spin`).
-- **The chassis's right motor mount is mirrored (D23).** Two DC motors wired red-to-red on the left and right motor mounts therefore both push the robot forward. Level 1 never hinges on polarity, which the brief introduces at Level 2.
+- **The chassis's right-hand motor and gearbox mounts are mirrored (D23).** Two DC motors wired red-to-red on the left and right motor mounts therefore both push the robot forward. Level 1 never hinges on polarity, which the brief introduces at Level 2.
+- **Drive layouts.** Direct drive uses the outer motor mounts (`motor-left`, `motor-right`). With gearboxes, the motors sit on the inner motor mounts and the gearboxes on the gearbox mounts. Either way the axles are coaxial at x = 40, z = 16, and the wheels clear the chassis plate.
 - **Polarity is still taught.** A motor with swapped wires turns backwards, so a robot with one swapped motor spins on the spot. That is the Level 2 breakdown.
 - **Exported wiring.** The parts list and wiring diagram for a real kit (the hardware bridge) must cross one real motor's leads to match.
 
@@ -44,7 +45,8 @@ Mount links come first, then carried links, each in id order. A link that would 
 - **Units and axes.** The canvas (workbench) plane is in millimetres (`CANVAS_SCALE` is 1 canvas unit per mm). x is to the right and y down, and rotations are clockwise. A part at rotation 0 faces the canvas's right, with its left towards the top.
 - **The mount is authoritative.** A mounted part's place comes from its mount: its position and rotation must match `canvasPoseOf(host's canvas pose, mount placement)` to within `PLACEMENT_TOLERANCE` (0.01 mm, 0.01°). `validateBlueprint` refuses a disagreement as `mount.misplaced`, and the canvas and list view place parts with the same helper.
 - **Carried parts.** A carried part's physical place comes from its shaft. The canvas may draw it there with `canvasPoseOf`.
-- **Determinism.** Quarter-turn canvas rotations are exact. Other angles use `Math.cos` and `Math.sin`, which can differ in the last bit between engines. That is fine for drawing and for the tolerance check, but sim-core uses its own deterministic maths for anything that feeds a run.
+- **Mirror images.** `canvasPoseOf` also returns `mirrored`, and takes it on the parent's pose. The canvas draws a part on a mirrored mount point (directly, or through its host) as its mirror image, flipped across its own x axis.
+- **Determinism.** `canvasPoseOf` and `arenaPoseOf` use the deterministic trigonometry below, so a pose is the same on every device.
 
 ## From the canvas to the arena
 
@@ -55,3 +57,12 @@ When a Run starts:
 - every other part keeps its place relative to the root as it lies on the canvas (D19: unmounted parts stay where they were placed).
 
 `arenaPoseOf(start, rootCanvasPose, partCanvasPose)` maps a canvas pose into the arena. The canvas offset from the root becomes forward and left in the root's frame, then turns by the start heading. With no root, the canvas origin stands in for it.
+
+## Deterministic trigonometry
+
+`cosSin(degrees)`, `sinDegrees` and `cosDegrees` reduce the angle exactly to 0–45°, then evaluate fixed polynomials (the Taylor series to x^15 and x^16) in plain arithmetic:
+
+- Every step is an IEEE 754 double +, −, ×, ÷ or %, which every JavaScript engine rounds the same way, so the results are bit-identical on every device.
+- Quarter turns are exact, and elsewhere the error is below 1e-15.
+
+This is the maths sim-core must use for every angle on a path that feeds a Run. No `Math.sin`, `Math.cos`, `Math.tan`, `Math.atan2`, `Math.exp`, `Math.log` or `Math.pow` may sit on such a path, because engines approximate them differently in the last bit. Plain arithmetic, `Math.sqrt` (correctly rounded) and the exact helpers (`abs`, `min`, `max`, `floor`, `ceil`, `round`, `trunc`, `sign`) are safe. A test keeps every other `Math` function out of the schema's `src/`.

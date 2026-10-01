@@ -68,7 +68,7 @@
     {
       "at": {
         "x": 30,
-        "y": 40,
+        "y": 53,
         "z": 6
       },
       "id": "motor-left",
@@ -81,7 +81,7 @@
     {
       "at": {
         "x": 30,
-        "y": -40,
+        "y": -53,
         "z": 6
       },
       "id": "motor-right",
@@ -93,8 +93,34 @@
     },
     {
       "at": {
+        "x": 30,
+        "y": 29,
+        "z": 6
+      },
+      "id": "motor-left-inner",
+      "label": "left inner motor mount",
+      "mirrored": false,
+      "role": "mount-point",
+      "type": "mechanical",
+      "yaw": 0
+    },
+    {
+      "at": {
+        "x": 30,
+        "y": -29,
+        "z": 6
+      },
+      "id": "motor-right-inner",
+      "label": "right inner motor mount",
+      "mirrored": true,
+      "role": "mount-point",
+      "type": "mechanical",
+      "yaw": 0
+    },
+    {
+      "at": {
         "x": 40,
-        "y": 62,
+        "y": 53,
         "z": 6
       },
       "id": "gear-left",
@@ -107,7 +133,7 @@
     {
       "at": {
         "x": 40,
-        "y": -62,
+        "y": -53,
         "z": 6
       },
       "id": "gear-right",

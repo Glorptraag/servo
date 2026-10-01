@@ -21,7 +21,8 @@ import { exampleParts, validBlueprints } from '@servo/schema/fixtures'; // test 
 | Vocabulary | `PART_FAMILIES`, `DOMAINS`, `LEVELS`, `PRIMITIVE_KINDS`, `UNMET`, `EFFECTS`, `SPEC_CARD_LAYERS`, `PORT_TYPE_STYLE` | [parts](docs/parts.md) |
 | Validators | `validatePartRecord`, `validateArenaPreset`, `validateKit`, `validateBlueprint`, `validateBlueprintShape`, `validateChallenge`, `validateRunRecord`, `makeCatalogue` | [validation](docs/validation.md) |
 | Wiring (ground rule 3) | `checkPortPair`, `planWire`, `judgeWire`, `SOCKET_CAPACITY` | [wiring](docs/wiring.md) |
-| Geometry | `placeParts`, `drivePushes`, `robotRoot`, `mountPlacement`, `canvasPoseOf`, `arenaPoseOf` | [geometry](docs/geometry.md) |
+| Geometry | `placeParts`, `drivePushes`, `robotRoot`, `mountPlacement`, `canvasPoseOf`, `arenaPoseOf`, `cosSin` | [geometry](docs/geometry.md) |
+| Needs judged as wired | `wiredNeeds` | [parts](docs/parts.md) |
 | Canonical form and ids | `serializeBlueprint`, `canonicalizeBlueprint`, `canonicalJson`, `claimPartId`, `claimWireId` | [documents](docs/documents.md) |
 
 ## In brief
@@ -30,7 +31,8 @@ import { exampleParts, validBlueprints } from '@servo/schema/fixtures'; // test 
 - **Behaviour is data.** A part's behaviour is a list of primitives from a closed vocabulary that sim-core implements once. Failure modes name a need, the way it goes unmet and the effects a child sees. Every Level 1–2 part maps onto it ([parts](docs/parts.md)).
 - **Wiring.** Impossible drops are refused at the socket. Legal-but-wrong wiring is accepted, because its failure is the lesson.
 - **Turning.** Positive speed is right-handed about a drive's axis, and a mirrored mount point flips the sense. So a robot whose two motors are wired alike drives forward, and one with a swapped motor spins.
-- **Switches never make faults.** A switch the child opens is a run input.
+- **Control never makes faults.** Needs are judged as wired, with every switch closed and every driver channel at full forward. A switch the child opens is a run input, and a motor the driver stops is just stopped.
+- **Deterministic maths.** Angles that feed a Run use `cosSin`, which gives the same bits on every engine.
 - **Same build, same bytes.** Canonical form and claimed ids give the same build the same bytes from canvas or list view. Ids are never reused.
 - **Measures.** Run records feed the pass-rate and fault-fixing measures; session start mode and time in the sandbox come from task 6.2's telemetry.
 
@@ -39,7 +41,7 @@ import { exampleParts, validBlueprints } from '@servo/schema/fixtures'; // test 
 `fixtures/` holds the JSON and `src/fixtures.ts` the manifest:
 
 - 14 example part records, 3 arenas, 2 valid kits and 1 invalid kit;
-- 6 valid blueprints in canonical form, each labelled with the motion its geometry gives;
+- 7 valid blueprints in canonical form, each labelled with the motion its geometry gives;
 - 23 invalid blueprints, each refused for exactly one recorded reason;
 - 4 challenges and 1 run record.
 

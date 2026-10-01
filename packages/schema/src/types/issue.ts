@@ -69,7 +69,8 @@ export const ISSUE_CODES = {
   'hint.bad_order': 'Ladder steps are out of order, repeat a rung, or do not end with do-it.',
   'run.event_order': 'Events or inputs are not in tick order.',
   'run.tick_out_of_range': 'A tick falls after the last tick of the run.',
-  'run.unrecorded_fault': 'Fault events and faults disagree: an event with no entry, or an entry with no starting event or another start tick.',
+  'run.unrecorded_fault':
+    'Fault events and faults disagree: an event with no entry, an entry with no starting event or another start tick, or an end with no start.',
   'run.goal_without_challenge': 'A run record has a goal but no challenge.',
 } as const;
 

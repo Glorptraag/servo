@@ -41,17 +41,21 @@ Settings may drive `actuator.throttle`, `actuator.reverse`, `actuator.target`, `
 
 ## Needs, unmet ways and effects
 
-Switches never make a fault: wherever a need speaks of a loop or a complete circuit, every switch counts as closed. A switch the child opens is state, a run input.
+**Judged as wired.** Power, loop and isolation needs are judged on the circuit the child built, with every switch counted closed and every motor-driver channel at full forward command.
+
+- A switch's state and a driver's command are control, never faults. When one of them cuts or reverses a part's supply, the part shows that behaviour (it stops, or turns the other way) with no fault.
+- A part fed through a motor-driver channel or a regulator whose own power need is unmet, or starved by a short circuit elsewhere in its circuit, shows no power fault of its own: that part's fault, or the short's, stands for it. A motor beside a switch wired across the pack runs while the switch is open, so only the switch and the pack show faults.
+- `wiredNeeds(blueprint, catalogue)` gives the verdicts the wiring alone decides: power `open`, loop `open` and isolation `shorted`, plus `explainedBy` for a part behind a driver or regulator without power. sim-core judges `low`, `high` and `reversed` on the voltages of the same as-wired circuit.
 
 | Need | True when | Unmet as |
 | --- | --- | --- |
-| `power` (`supply`, `minVolts`, `maxVolts`) | a complete circuit, the right way round, within the range | `open` (no loop through the supply, switches counted closed), `low`, `high`, `reversed` |
-| `loop` (`ports`) | a loop runs between the two ports outside the part, through a part that uses power and, unless this part is the source, through a source; switches counted closed | `open` |
+| `power` (`supply`, `minVolts`, `maxVolts`) | a complete circuit, the right way round, within the range | `open` (no closed path through a source joins the supply's ports outside the part), `low`, `high`, `reversed` |
+| `loop` (`ports`) | a closed path joins the two ports outside the part, through a source unless this part is the source | `open`, only when there is no closed path at all. A closed path with nothing that uses power is isolation's `shorted`, never `open` |
 | `signal` (`port`) | a signal source drives the signal in | `absent` |
 | `mount` (`port`) | the mount is fixed to a mount point | `absent` |
 | `drive` (`port`) | the drive-in is linked to a drive-out | `absent` |
 | `torque` (`port`, an actuator's drive) | the load stays below what the actuator can turn | `exceeded` |
-| `isolation` (`ports`) | no short-circuit loop runs through these ports | `shorted` |
+| `isolation` (`ports`) | no closed path of wires, closed switches and sources with power (nothing that uses power) joins the two ports through a source | `shorted` |
 | `floor` (a part with a `wheel` or `support`) | it rests on the floor | `lifted`, and for a wheel `slipping` (pushing past its grip) |
 | `balance` | the robot rides upright on its wheels and supports | `lost` (it falls over), `grounded` (its frame rests on the floor and drags) |
 
@@ -66,6 +70,14 @@ Switches never make a fault: wherever a need speaks of a loop or a complete circ
 
 `slow`, `quiet` and `dim` mean less than at the rated voltage.
 
+**One fault for each wiring mistake** (test/circuit.test.ts):
+
+- The short-circuit fixture: the battery pack's loop is closed by the wire, so it shows `short-circuit` only.
+- `switch-across-pack`: the switch shows `across-the-pack` and the pack `short-circuit`, one each.
+- A switch wired off to one side of the loop, or bypassed by a wire, shows `outside-loop`.
+- A motor-driver channel set to stop or backward: no fault. The motor stops or turns backward.
+- A motor driver with no power shows `no-power`, and its motors show nothing of their own.
+
 ## The Level 1–2 roster and the Level 3 slot
 
 Every Level 1–2 example part has at least two failure modes (a test checks it).
@@ -78,10 +90,10 @@ Every Level 1–2 example part has at least two failure modes (a test checks it)
 | DC motor | Actuators | `actuator` speed, `reverses` | power 2.2–6 V, torque | no circuit: power · open → still; low voltage: power · low → slow, drain; overload: torque · exceeded → stall, hum; reversed: power · reversed → reverse |
 | wheel (large; the second size is another radius) | Drivetrain | `wheel` | drive, floor | not driven: drive · absent → still; slipping: floor · slipping → slip |
 | caster | Structure & Ride | `support` | mount, floor | loose: mount · absent → drag; off the floor: floor · lifted → drag |
-| chassis (frame) | Structure & Ride | body + nine mount points (the right-hand ones mirrored) | balance | top-heavy: balance · lost → tip; frame on the floor: balance · grounded → drag |
+| chassis (frame) | Structure & Ride | body + eleven mount points (the right-hand ones mirrored) | balance | top-heavy: balance · lost → tip; frame on the floor: balance · grounded → drag |
 | LED | Output | `load` blocks, light | power 2–6 V | reversed → dark; no circuit → dark; low → dim |
 | buzzer | Output | `load` blocks, sound | power 3–6 V | reversed → silent; low → quiet |
-| motor driver | Power | `driver` × 2 (channel settings) | power 2.5–10 V | no power → off; low → off |
+| motor driver | Power | `driver` × 2 (channel settings) | power 2.5–10 V | no power → off; low → off (its motors show no fault of their own) |
 | gearbox | Drivetrain | `ratio` | drive, mount | not driven → still; loose: mount · absent → still |
 | servo motor (preview) | Actuators | `actuator` position | power 4.8–6 V, signal, torque | no signal: signal · absent → hold, hum; no circuit → still; low → slow; overload → stall, hum |
 | microcontroller (Level 3 slot) | Brain | `program` (no-op), `regulator` (3V pin) | power 3–6 V | no power → off; low → off |
@@ -92,7 +104,7 @@ The DC motor's range starts at 2.2 V, so a fresh 2-cell pack under normal load (
 
 | Failure | Recorded as | Produced by |
 | --- | --- | --- |
-| No complete circuit: the part stays still | DC motor power · open | No loop from the source's + through the actuator to −, even with every switch closed, so it gets 0 V. |
+| No complete circuit: the part stays still | DC motor power · open | No closed path through a source joins the motor's supply, judged as wired (every switch closed, every driver channel at full forward), so it gets 0 V. |
 | Low voltage: slow, battery drains faster | DC motor power · low | Speed ∝ voltage, while the current for the same load does not fall, so the pack drains more for each turn. |
 | Overload: stall and hum | DC motor torque · exceeded | Load torque reaches stall torque: speed 0, stall current, hum. |
 | Reversed polarity: motor backwards, LED dark | DC motor or LED power · reversed | `whenReversed: 'reverses'` gives negative speed; `'blocks'` gives no current, so no light. |

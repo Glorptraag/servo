@@ -18,7 +18,7 @@ Back to the [README](../README.md).
   - `author`: the child's profile as a UUID v4 the app generates. Sharing (task 5.6) omits it.
   - `highWater`: the highest numbers ever given to `p<n>` part ids and `w<n>` wire ids.
 
-**Ids are never reused.** `claimPartId` and `claimWireId` give one more than the high-water mark and return the raised mark, even after the highest id is deleted. So a fault's `partId` always means one part across Runs. An id above the mark is refused as `id.above_high_water`. Every input path claims through these, so the same steps give the same ids.
+**Ids are never reused.** `claimPartId` and `claimWireId` give one more than the high-water mark and return the raised mark, even after the highest id is deleted. So a fault's `partId` always means one part across Runs. An id above the mark is refused as `id.above_high_water`. Every input path claims through these, so the same steps give the same ids. The mark is a whole number up to `Number.MAX_SAFE_INTEGER`, so every id is exact; claiming past that limit throws a `RangeError`.
 
 **Canonical form.** `serializeBlueprint(canonicalizeBlueprint(bp, catalogue))` gives the same bytes whichever input path made the build:
 
@@ -66,9 +66,11 @@ Each challenge holds:
 - `near-wall` measures from the nearest point of the target's footprint to the wall's face.
 - `forward-speed` is signed along the target's own heading, so "drive forward with the LED lit" needs no zone, and reversing does not count.
 
-**Goal and hint targets** are `{ placed }` (a part of the starting blueprint) or `{ part }` (any part of that type). A condition on a type holds when it holds for any part of that type, so `not` of a fault on a type means no part of that type shows it.
+**Goal and hint targets** are `{ placed }` (a part of the starting blueprint) or `{ part }` (any part of that type). A condition on a type holds when it holds for any part of that type, so `not` of a fault or a state on a type means no part of that type shows it.
 
-**Cross-and-stop** is Level 2 (D26). Its goal excludes a stall: near the wall, at most 5 mm/s, and no DC motor overloaded.
+**Part states** (`PART_STATES`) come in pairs: `powered` / `unpowered` (a voltage across its supply, either way round, or none), `turning` / `still`, `lit` / `dark`, `sounding` / `silent`, `closed` / `open` (a switch), and `upright` / `tipped` (the robot it is on).
+
+**Cross-and-stop** is Level 2 (D26). Its goal is near the wall, at most 5 mm/s, with no DC motor powered. A robot grinding against the wall with its motors running does not pass: its wheels slip before the motors stall, so "no motor overloaded" would not catch it.
 
 ## Run record
 
@@ -87,8 +89,9 @@ A run record holds:
 
 **Consistency rules:**
 
-- A switch the child opens is an input, never a fault: it never appears in `faults` or `fixed`.
-- When events are kept, each fault event that starts a fault has its `faults` entry, and each entry starts at its first event (`run.unrecorded_fault`).
+- A switch the child opens is an input, never a fault: it never appears in `faults` or `fixed`. A motor-driver channel's command is control too, so a motor it stops or reverses has no fault.
+- `faults` lists each failure mode on a part once (`value.duplicate`).
+- When events are kept, each fault event that starts a fault has its `faults` entry, each entry starts at its first event, and a fault ends only after it has started (`run.unrecorded_fault`).
 - A goal requires a challenge (`run.goal_without_challenge`).
 
 **RunEvent** is `{ tick, partId, kind: 'value' | 'motion' | 'sound' | 'fault', payload }`. An arena prop's events use `partId` `arena:<propId>`.

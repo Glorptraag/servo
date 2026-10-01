@@ -1,6 +1,7 @@
 import { QUARTER_TURNS } from '../types/common.ts';
 import type { Pose, QuarterTurn, Vec3 } from '../types/common.ts';
 import type { Axis, DrivePort, MountPointPort, MountPort } from '../types/port.ts';
+import { cosSin } from './trig.ts';
 
 /**
  * Frames, pure and exact. Part frames: +x forward, +y left, +z up, millimetres. Every turn between part
@@ -118,11 +119,15 @@ export const carriedPlacement = (shaft: DrivePort, hub: DrivePort): Placement | 
  */
 export const CANVAS_SCALE = 1;
 
-/** A part's place on the canvas: its frame origin (mm) and its rotation (degrees clockwise). */
+/**
+ * A part's place on the canvas: its frame origin (mm), its rotation (degrees clockwise), and whether it
+ * is drawn as its mirror image (a part fixed on a mirrored mount point, directly or through its host).
+ */
 export interface CanvasPose {
   readonly x: number;
   readonly y: number;
   readonly rotation: number;
+  readonly mirrored?: boolean;
 }
 
 /** Degrees brought into [0, 360), with no −0. */
@@ -132,45 +137,38 @@ export const normalizeDegrees = (degrees: number): number => {
 };
 
 /**
- * cos and sin of an angle in degrees. Quarter turns are exact. Other angles use Math.cos and Math.sin,
- * which may differ in the last bit between engines: fine for the canvas and for comparisons with a
- * tolerance, so sim-core uses its own deterministic maths for anything that feeds a run.
- */
-const trig = (degrees: number): readonly [number, number] => {
-  const d = normalizeDegrees(degrees);
-  if (d === 0 || d === 90 || d === 180 || d === 270) return [COS[d], SIN[d]];
-  const radians = (d * Math.PI) / 180;
-  return [Math.cos(radians), Math.sin(radians)];
-};
-
-/**
  * Where a part sits on the canvas, given its parent's canvas pose and its frame in the parent's frame.
- * A mounted part must sit here (`mount.misplaced` otherwise); the canvas and list view place it with this.
+ * A mounted part must sit here (`mount.misplaced` otherwise); the canvas and list view place it with
+ * this, and draw it as its mirror image when `mirrored` is true. The trigonometry is deterministic.
  */
-export const canvasPoseOf = (parent: CanvasPose, placement: Placement): CanvasPose => {
-  const [c, s] = trig(parent.rotation);
+export const canvasPoseOf = (parent: CanvasPose, placement: Placement): CanvasPose & { readonly mirrored: boolean } => {
+  const [c, s] = cosSin(parent.rotation);
+  // A mirrored parent's left points the other way on the canvas.
+  const flip = parent.mirrored ? -1 : 1;
   const x = placement.x * CANVAS_SCALE;
-  const y = placement.y * CANVAS_SCALE;
+  const y = flip * placement.y * CANVAS_SCALE;
   return {
     x: clean(parent.x + c * x + s * y),
     y: clean(parent.y + s * x - c * y),
-    rotation: normalizeDegrees(parent.rotation - placement.yaw),
+    rotation: normalizeDegrees(parent.rotation - flip * placement.yaw),
+    mirrored: (parent.mirrored ?? false) !== placement.mirrored,
   };
 };
 
 /**
  * Where a part on the canvas starts in the arena. The robot's root part (see robotRoot) starts at the
  * preset's `start` pose, and every other part keeps its place relative to the root, as it lies on the
- * canvas. With no root, the canvas origin stands in for it.
+ * canvas. With no root, the canvas origin stands in for it. The trigonometry is deterministic, so a Run
+ * starts the same on every device.
  */
 export const arenaPoseOf = (start: Pose, root: CanvasPose, part: CanvasPose): Pose => {
-  const [c, s] = trig(root.rotation);
+  const [c, s] = cosSin(root.rotation);
   const dx = (part.x - root.x) / CANVAS_SCALE;
   const dy = (part.y - root.y) / CANVAS_SCALE;
   // Canvas offset into the root's frame; this mapping is its own inverse.
   const forward = c * dx + s * dy;
   const left = s * dx - c * dy;
-  const [ch, sh] = trig(start.heading);
+  const [ch, sh] = cosSin(start.heading);
   return {
     x: clean(start.x + ch * forward - sh * left),
     y: clean(start.y + sh * forward + ch * left),

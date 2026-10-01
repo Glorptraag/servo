@@ -83,6 +83,8 @@ const claim = <K extends keyof HighWater>(
 ): { readonly id: string; readonly meta: BlueprintMeta } => {
   // Normally the mark is already the highest; reading the ids too keeps a hand-made blueprint safe.
   const highest = ids.reduce((top, id) => Math.max(top, idNumber(prefix, id) ?? 0), blueprint.meta.highWater[list]);
+  // Past this, one more would not be exact and an id could repeat.
+  if (!(highest < Number.MAX_SAFE_INTEGER)) throw new RangeError(`No ${prefix}<n> ids are left: the high-water mark is at its limit.`);
   const next = highest + 1;
   return { id: `${prefix}${next}`, meta: { ...blueprint.meta, highWater: { ...blueprint.meta.highWater, [list]: next } } };
 };
@@ -90,11 +92,12 @@ const claim = <K extends keyof HighWater>(
 /**
  * Claims the id for a new placed part: `p` and one more than the high-water mark, with the mark raised in
  * the returned meta. Ids are never reused, even after the highest is deleted, and every input path
- * claims through this, so the same steps give the same ids.
+ * claims through this, so the same steps give the same ids. Throws a RangeError only once the mark has
+ * reached Number.MAX_SAFE_INTEGER, the most a valid blueprint allows.
  */
 export const claimPartId = (blueprint: Blueprint): { readonly id: PlacedPartId; readonly meta: BlueprintMeta } =>
   claim(blueprint, 'parts', 'p', blueprint.parts.map((part) => part.id));
 
-/** Claims the id for a new wire: `w` and one more than the high-water mark, with the mark raised. */
+/** Claims the id for a new wire: `w` and one more than the high-water mark, with the mark raised. Throws as claimPartId does. */
 export const claimWireId = (blueprint: Blueprint): { readonly id: WireId; readonly meta: BlueprintMeta } =>
   claim(blueprint, 'wires', 'w', blueprint.wires.map((wire) => wire.id));

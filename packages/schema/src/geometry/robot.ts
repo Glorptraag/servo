@@ -80,15 +80,14 @@ const byPortOrder = <T>(record: PartRecord, items: readonly T[], port: (item: T)
   return [...items].sort((a, b) => order(a) - order(b) || compareText(other(a), other(b)));
 };
 
-const reaches = (links: ReadonlyMap<string, Link>, from: string, target: string): boolean => {
-  const seen = new Set<string>();
-  let current: string | undefined = from;
-  while (current !== undefined && !seen.has(current)) {
-    if (current === target) return true;
-    seen.add(current);
-    current = links.get(current)?.parent;
+const grouped = <T>(items: readonly T[], key: (item: T) => string): Map<string, T[]> => {
+  const groups = new Map<string, T[]>();
+  for (const item of items) {
+    const list = groups.get(key(item));
+    if (list) list.push(item);
+    else groups.set(key(item), [item]);
   }
-  return false;
+  return groups;
 };
 
 /**
@@ -101,46 +100,71 @@ export const placeParts = (blueprint: Blueprint, catalogue: Catalogue): Readonly
   const board = readBoard(blueprint, catalogue);
   const ids = [...board.records.keys()].sort(compareText);
   const links = new Map<string, Link>();
+  // Each part's tree, by union-find: a part still unlinked heads its own tree, so a new parent closes a
+  // loop exactly when the parent's tree is headed by the part itself.
+  const tree = new Map<string, string>();
+  const head = (id: string): string => {
+    let top = id;
+    let up = tree.get(top);
+    while (up !== undefined) {
+      top = up;
+      up = tree.get(top);
+    }
+    let step = id;
+    up = tree.get(step);
+    while (up !== undefined) {
+      tree.set(step, top);
+      step = up;
+      up = tree.get(step);
+    }
+    return top;
+  };
+  const link = (id: string, value: Link): void => {
+    links.set(id, value);
+    tree.set(id, value.parent);
+  };
+  const mountsOf = grouped(board.mounts, (fixing) => fixing.child);
   for (const id of ids) {
     const record = board.records.get(id) as PartRecord;
-    const candidates = board.mounts.filter((fixing) => fixing.child === id);
-    for (const fixing of byPortOrder(record, candidates, (f) => f.mount.id, (f) => f.host)) {
-      if (!board.records.has(fixing.host) || reaches(links, fixing.host, id)) continue;
-      links.set(id, { parent: fixing.host, local: mountPlacement(fixing.point, fixing.mount), by: 'mount' });
+    for (const fixing of byPortOrder(record, mountsOf.get(id) ?? [], (f) => f.mount.id, (f) => f.host)) {
+      if (!board.records.has(fixing.host) || head(fixing.host) === id) continue;
+      link(id, { parent: fixing.host, local: mountPlacement(fixing.point, fixing.mount), by: 'mount' });
       break;
     }
   }
+  const linkagesInto = grouped(board.linkages, (linkage) => linkage.to.part);
   for (const id of ids) {
     if (links.has(id)) continue;
     const record = board.records.get(id) as PartRecord;
-    const candidates = board.linkages.filter((linkage) => linkage.to.part === id);
-    for (const linkage of byPortOrder(record, candidates, (l) => l.to.port, (l) => `${l.from.part}.${l.from.port}`)) {
-      if (!board.records.has(linkage.from.part) || reaches(links, linkage.from.part, id)) continue;
+    for (const linkage of byPortOrder(record, linkagesInto.get(id) ?? [], (l) => l.to.port, (l) => `${l.from.part}.${l.from.port}`)) {
+      if (!board.records.has(linkage.from.part) || head(linkage.from.part) === id) continue;
       const local = carriedPlacement(linkage.out, linkage.into);
       if (!local) continue;
-      links.set(id, { parent: linkage.from.part, local, by: 'carried' });
+      link(id, { parent: linkage.from.part, local, by: 'carried' });
       break;
     }
   }
   const placed = new Map<PlacedPartId, PartPlacement>();
-  const place = (id: string): PartPlacement => {
-    const known = placed.get(id);
-    if (known) return known;
-    const link = links.get(id);
-    const result: PartPlacement = link
-      ? (() => {
-          const parent = place(link.parent);
-          return {
-            root: parent.root,
-            placement: composePlacements(parent.placement, link.local),
-            by: link.by,
-            parent: link.parent,
-            local: link.local,
-          };
-        })()
-      : { root: id, placement: IDENTITY_PLACEMENT, by: 'root', local: IDENTITY_PLACEMENT };
-    placed.set(id, result);
-    return result;
+  // Walks up to a placed part or a root, then places the chain top down, so a long chain cannot overflow the stack.
+  const place = (id: string): void => {
+    const chain: string[] = [];
+    let top = id;
+    for (let link = links.get(top); !placed.has(top) && link; link = links.get(top)) {
+      chain.push(top);
+      top = link.parent;
+    }
+    if (!placed.has(top)) placed.set(top, { root: top, placement: IDENTITY_PLACEMENT, by: 'root', local: IDENTITY_PLACEMENT });
+    for (const child of chain.reverse()) {
+      const link = links.get(child) as Link;
+      const parent = placed.get(link.parent) as PartPlacement;
+      placed.set(child, {
+        root: parent.root,
+        placement: composePlacements(parent.placement, link.local),
+        by: link.by,
+        parent: link.parent,
+        local: link.local,
+      });
+    }
   };
   for (const id of ids) place(id);
   return placed;

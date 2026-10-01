@@ -64,7 +64,7 @@
       "shows": [
         "off"
       ],
-      "teachingNote": "A motor driver passes power on to its motors, so it needs its own loop to the battery pack. Without it, both motor outputs stay off.",
+      "teachingNote": "A motor driver passes power on to its motors, so it needs its own loop to the battery pack. Without it, both motor outputs stay off, and the motors stay still with no fault of their own: the fault is the driver's.",
       "unmet": "open"
     },
     {
@@ -74,7 +74,7 @@
       "shows": [
         "off"
       ],
-      "teachingNote": "Below 2.5 volts the motor driver cannot switch, so it gives its motors nothing.",
+      "teachingNote": "Below 2.5 volts the motor driver cannot switch, so it gives its motors nothing. They stay still with no fault of their own: the fault is the driver's.",
       "unmet": "low"
     }
   ],

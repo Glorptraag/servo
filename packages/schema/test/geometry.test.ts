@@ -77,6 +77,23 @@ describe('placing the fixture robots', () => {
     expect(left?.axle.y).toBe(-(right?.axle.y ?? 0));
   });
 
+  it.each(['rolling-start', 'bumper-robot'])('%s: the drive wheels clear the chassis plate, and the drive parts sit on it', (name) => {
+    const blueprint = fixture(name);
+    const placements = placeParts(blueprint, catalogue);
+    const edge = chassis.body.size.y / 2;
+    // How far the part's body box reaches from the chassis's centre line: nearest and furthest.
+    const reach = (id: string): [number, number] => {
+      const where = placements.get(id);
+      const record = catalogue.parts.get(blueprint.parts.find((placed) => placed.id === id)?.part ?? '');
+      if (!where || !record) throw new Error(`No placement for ${id}`);
+      const ys = [-1, 1].map((side) => Math.abs(placePoint(where.placement, { x: 0, y: (side * record.body.size.y) / 2, z: 0 }).y));
+      return [Math.min(...ys), Math.max(...ys)];
+    };
+    for (const wheel of ['wheel-left', 'wheel-right']) expect(reach(wheel)[0]).toBeGreaterThan(edge);
+    const onPlate = name === 'bumper-robot' ? ['motor-left', 'motor-right', 'gear-left', 'gear-right'] : ['motor-left', 'motor-right'];
+    for (const id of onPlate) expect(reach(id)[1]).toBeLessThanOrEqual(edge);
+  });
+
   it.each(['rolling-start', 'bumper-robot'])('%s: the caster reaches the same floor as the wheels', (name) => {
     const placements = placeParts(fixture(name), catalogue);
     const floors = drives(name).map((drive) => drive.floor);
@@ -230,7 +247,30 @@ describe('the canvas and the arena', () => {
     const host = { x: 100, y: 50, rotation: 90 };
     const placement = mountPlacement(portOf<MountPointPort>(chassis, 'motor-left'), motorMount);
     // Turned a quarter clockwise, the chassis's left (+y) points to the canvas's right (+x).
-    expect(canvasPoseOf(host, placement)).toEqual({ x: 140, y: 80, rotation: 90 });
+    expect(canvasPoseOf(host, placement)).toEqual({ x: 153, y: 80, rotation: 90, mirrored: false });
+  });
+
+  it('draws a part on a mirrored mount point as its mirror image', () => {
+    const host = { x: 100, y: 50, rotation: 90 };
+    const placement = mountPlacement(portOf<MountPointPort>(chassis, 'motor-right'), motorMount);
+    expect(canvasPoseOf(host, placement)).toEqual({ x: 47, y: 80, rotation: 90, mirrored: true });
+    // Under a mirrored parent the child's left points the other way and its turns run the other way;
+    // a second mirror cancels the first.
+    const mirroredHost = { x: 0, y: 0, rotation: 0, mirrored: true };
+    expect(canvasPoseOf(mirroredHost, { x: 10, y: 5, z: 0, yaw: 90, mirrored: false })).toEqual({ x: 10, y: 5, rotation: 90, mirrored: true });
+    expect(canvasPoseOf(mirroredHost, { x: 10, y: 5, z: 0, yaw: 0, mirrored: true })).toMatchObject({ mirrored: false });
+  });
+
+  it('places a part the same in one step or through its mirrored host', () => {
+    const root = { x: 12, y: -7, rotation: 30 };
+    const outer: Placement = { x: 30, y: -53, z: 6, yaw: 90, mirrored: true };
+    const inner: Placement = { x: 10, y: 26, z: -22.5, yaw: 270, mirrored: false };
+    const direct = canvasPoseOf(root, composePlacements(outer, inner));
+    const stepwise = canvasPoseOf(canvasPoseOf(root, outer), inner);
+    expect(stepwise.rotation).toBe(direct.rotation);
+    expect(stepwise.mirrored).toBe(direct.mirrored);
+    expect(Math.abs(stepwise.x - direct.x)).toBeLessThan(1e-9);
+    expect(Math.abs(stepwise.y - direct.y)).toBeLessThan(1e-9);
   });
 
   it('starts the root part at the arena start, and loose parts where they lie relative to it', () => {

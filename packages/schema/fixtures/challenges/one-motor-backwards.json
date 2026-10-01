@@ -173,7 +173,7 @@
         "part": "dc-motor",
         "position": {
           "x": 30,
-          "y": -40
+          "y": -53
         },
         "rotation": 0,
         "settings": {}
@@ -183,7 +183,7 @@
         "part": "dc-motor",
         "position": {
           "x": 30,
-          "y": 40
+          "y": 53
         },
         "rotation": 0,
         "settings": {}
@@ -203,7 +203,7 @@
         "part": "wheel-large",
         "position": {
           "x": 40,
-          "y": -64
+          "y": -79
         },
         "rotation": 0,
         "settings": {}
@@ -213,7 +213,7 @@
         "part": "wheel-large",
         "position": {
           "x": 40,
-          "y": 64
+          "y": 79
         },
         "rotation": 0,
         "settings": {}

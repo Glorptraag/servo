@@ -27,8 +27,8 @@
         {
           "kind": "not",
           "of": {
-            "failure": "overload",
-            "kind": "fault",
+            "kind": "state",
+            "state": "powered",
             "target": {
               "part": "dc-motor"
             }

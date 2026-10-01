@@ -112,6 +112,17 @@ describe('ids are claimed the same way on every input path, and never reused', (
     expect(claimPartId(busy).id).toBe('p8');
   });
 
+  it('keeps the high-water mark a whole number that ids can count up to exactly', () => {
+    const marked = (parts: number, wires = 0): Blueprint => ({ ...empty, meta: { ...empty.meta, highWater: { parts, wires } } });
+    expect(reasons(validateBlueprint(marked(2.5), catalogue))).toEqual(['value.not_integer at $.meta.highWater.parts']);
+    expect(reasons(validateBlueprint(marked(Number.MAX_SAFE_INTEGER + 2), catalogue))).toEqual(['value.out_of_range at $.meta.highWater.parts']);
+    expect(reasons(validateBlueprint(marked(0, 1e308), catalogue))).toEqual(['value.out_of_range at $.meta.highWater.wires']);
+    const last = claimPartId(marked(Number.MAX_SAFE_INTEGER - 1));
+    expect(last.id).toBe('p9007199254740991');
+    expect(reasons(validateBlueprint({ ...empty, meta: last.meta, parts: [part(last.id)] }, catalogue))).toEqual([]);
+    expect(() => claimPartId({ ...empty, meta: last.meta })).toThrow(RangeError);
+  });
+
   it('gives byte-identical blueprints when the same build is wired from opposite ends', () => {
     const place = (blueprint: Blueprint, type: PartTypeId): Blueprint => {
       const { id, meta } = claimPartId(blueprint);

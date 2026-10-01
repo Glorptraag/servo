@@ -37,13 +37,13 @@
   "failureModes": [
     {
       "cardLine": "Short circuit: the battery pack drains fast.",
-      "hint": "This wire joins plus straight to minus",
+      "hint": "Plus is joined straight to minus",
       "id": "short-circuit",
       "need": "no-short",
       "shows": [
         "drain"
       ],
-      "teachingNote": "A wire straight from plus to minus gives the current a path with nothing to slow it, so the pack empties in seconds and grows warm.",
+      "teachingNote": "A path from plus back to minus with nothing that uses power on it, such as a bare wire or a closed switch, gives the current nothing to slow it, so the pack empties in seconds and grows warm.",
       "unmet": "shorted"
     },
     {
@@ -54,7 +54,7 @@
       "shows": [
         "off"
       ],
-      "teachingNote": "A battery pack gives power only round a loop: out of plus, through a part that uses it, and back to minus. With no loop nothing flows, so nothing on it works.",
+      "teachingNote": "A battery pack gives power only round a closed loop from plus back to minus. With no loop at all nothing flows, so nothing on it works.",
       "unmet": "open"
     }
   ],

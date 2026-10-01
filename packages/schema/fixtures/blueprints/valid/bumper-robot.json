@@ -98,7 +98,7 @@
       "part": "gearbox",
       "position": {
         "x": 40,
-        "y": -62
+        "y": -53
       },
       "rotation": 0,
       "settings": {}
@@ -108,7 +108,7 @@
       "part": "gearbox",
       "position": {
         "x": 40,
-        "y": 62
+        "y": 53
       },
       "rotation": 0,
       "settings": {}
@@ -118,7 +118,7 @@
       "part": "dc-motor",
       "position": {
         "x": 30,
-        "y": -40
+        "y": -29
       },
       "rotation": 0,
       "settings": {}
@@ -128,7 +128,7 @@
       "part": "dc-motor",
       "position": {
         "x": 30,
-        "y": 40
+        "y": 29
       },
       "rotation": 0,
       "settings": {}
@@ -148,7 +148,7 @@
       "part": "wheel-large",
       "position": {
         "x": 40,
-        "y": -86
+        "y": -79
       },
       "rotation": 0,
       "settings": {}
@@ -158,7 +158,7 @@
       "part": "wheel-large",
       "position": {
         "x": 40,
-        "y": 86
+        "y": 79
       },
       "rotation": 0,
       "settings": {}
@@ -174,7 +174,7 @@
       "id": "w1",
       "to": {
         "part": "chassis",
-        "port": "motor-left"
+        "port": "motor-left-inner"
       }
     },
     {
@@ -295,7 +295,7 @@
       "id": "w2",
       "to": {
         "part": "chassis",
-        "port": "motor-right"
+        "port": "motor-right-inner"
       }
     },
     {

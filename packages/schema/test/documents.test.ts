@@ -128,7 +128,7 @@ describe('challenges', () => {
     expect(challenge('cross-and-stop', set(['goal', 'when', 'of', 1, 'atMost'], -5))).toEqual(['value.out_of_range at $.goal.when.of[1].atMost']);
   });
 
-  it('stops cross-and-stop at the wall without a stall, at Level 2 (D26)', () => {
+  it('stops cross-and-stop at the wall with every DC motor off, at Level 2 (D26)', () => {
     const data = byName(exampleChallenges, 'cross-and-stop') as {
       level: number;
       kit: string;
@@ -136,7 +136,8 @@ describe('challenges', () => {
     };
     expect(data.level).toBe(2);
     expect(data.kit).toBe('circuit-crew');
-    expect(data.goal.when.of).toContainEqual({ kind: 'not', of: { kind: 'fault', target: { part: 'dc-motor' }, failure: 'overload' } });
+    // Grinding against the wall, the wheels slip before the motors stall, so only "no motor powered" catches it.
+    expect(data.goal.when.of).toContainEqual({ kind: 'not', of: { kind: 'state', target: { part: 'dc-motor' }, state: 'powered' } });
   });
 
   it('refuses goals nested too deep', () => {
@@ -170,8 +171,14 @@ describe('run records', () => {
     expect(run(set(['faults'], []))).toEqual(['run.unrecorded_fault at $.events[6]']);
     expect(run(set(['faults', 0, 'firstTick'], 53))).toEqual(['run.unrecorded_fault at $.faults[0].firstTick']);
     expect(run(set(['events', 6, 'kind'], 'value'), set(['events', 6, 'payload'], { volts: 2.8 }))).toEqual([
+      'run.unrecorded_fault at $.events[8]',
       'run.unrecorded_fault at $.faults[0].firstTick',
     ]);
+  });
+
+  it('refuses a fault listed twice, and a fault that ends without having started', () => {
+    expect(run(push(['faults'], { partId: 'wheel-left', failure: 'slipping', firstTick: 52 }))).toEqual(['value.duplicate at $.faults[1]']);
+    expect(run(set(['events', 8, 'payload', 'failure'], 'not-driven'))).toEqual(['run.unrecorded_fault at $.events[8]']);
   });
 
   it('gives a goal only to a run inside a challenge', () => {

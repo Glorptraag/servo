@@ -1,4 +1,5 @@
 import { canvasPoseOf, mountPlacement, normalizeDegrees } from '../geometry/frames.ts';
+import { placeParts } from '../geometry/robot.ts';
 import type { Blueprint, BlueprintMeta, PlacedPart, SettingValue, Wire } from '../types/blueprint.ts';
 import type { ValidationResult } from '../types/issue.ts';
 import type { Setting } from '../types/part.ts';
@@ -81,7 +82,8 @@ const readWire = (ctx: Ctx, value: unknown, path: string): Wire | undefined => {
   return ctx.issues.length === mark ? (record as unknown as Wire) : undefined;
 };
 
-const COUNT = { min: 0, integer: true } as const;
+/** A high-water mark: a whole number up to Number.MAX_SAFE_INTEGER, so every id below it is exact. */
+const COUNT = { min: 0, max: Number.MAX_SAFE_INTEGER, integer: true } as const;
 
 const readMeta = (ctx: Ctx, value: unknown, path: string): BlueprintMeta | undefined => {
   const mark = ctx.issues.length;
@@ -183,12 +185,11 @@ const checkMountedPlace = (
   ctx: Ctx,
   blueprint: Blueprint,
   partsPath: string,
-  child: PlacedPart,
-  host: PlacedPart,
-  mount: MountPort,
-  point: MountPointPort,
+  fixing: { readonly child: PlacedPart; readonly host: PlacedPart; readonly mount: MountPort; readonly point: MountPointPort },
+  hostMirrored: boolean,
 ): void => {
-  const expected = canvasPoseOf({ ...host.position, rotation: host.rotation }, mountPlacement(point, mount));
+  const { child, host, mount, point } = fixing;
+  const expected = canvasPoseOf({ ...host.position, rotation: host.rotation, mirrored: hostMirrored }, mountPlacement(point, mount));
   const index = blueprint.parts.indexOf(child);
   const where = `On '${host.id}' at '${point.id}', '${child.id}' sits at (${expected.x}, ${expected.y}) turned ${expected.rotation}°.`;
   const offX = Math.abs(child.position.x - expected.x) > PLACEMENT_TOLERANCE.mm;
@@ -250,7 +251,13 @@ export const checkBlueprint = (ctx: Ctx, blueprint: Blueprint, path: string, cat
       if (child && host) mounts.push({ child, host, mount: mountEnd.spec as MountPort, point: pointEnd.spec as MountPointPort });
     }
   });
-  for (const { child, host, mount, point } of mounts) checkMountedPlace(ctx, blueprint, partsPath, child, host, mount, point);
+  if (mounts.length > 0) {
+    // A host that is itself mirrored on the canvas mirrors where its own mounts put their parts.
+    const placements = placeParts(blueprint, catalogue);
+    for (const fixing of mounts) {
+      checkMountedPlace(ctx, blueprint, partsPath, fixing, placements.get(fixing.host.id)?.placement.mirrored ?? false);
+    }
+  }
   checkArenaRef(ctx, blueprint.arena, at(path, 'arena'), catalogue);
 };
 

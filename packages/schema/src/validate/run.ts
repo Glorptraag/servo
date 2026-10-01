@@ -280,19 +280,29 @@ export const readRunRecord = (ctx: Ctx, value: unknown, path: string, catalogue:
       partRecord(event.partId, at(eventPath, 'partId'));
     }
   });
+  const listed = new Set<string>();
   run.faults.forEach((fault, index) => {
     const faultPath = at(at(path, 'faults'), index);
     checkFailure(fault.partId, fault.failure, at(faultPath, 'partId'), at(faultPath, 'failure'));
+    const key = `${fault.partId} ${fault.failure}`;
+    if (listed.has(key)) report(ctx, 'value.duplicate', faultPath, `'${fault.failure}' on '${fault.partId}' is already listed.`);
+    listed.add(key);
   });
-  // The fault summary and the event stream agree: each fault that starts has its entry, from that tick.
+  // The fault summary and the event stream agree: each fault that starts has its entry, from that tick,
+  // and a fault ends only after it has started.
   if (run.events) {
     const firstStart = new Map<string, number>();
+    const active = new Set<string>();
     run.events.forEach((event, index) => {
-      if (event.kind !== 'fault' || !event.payload.active || event.partId.startsWith(PROP_PREFIX)) return;
+      if (event.kind !== 'fault' || event.partId.startsWith(PROP_PREFIX)) return;
       const key = `${event.partId} ${event.payload.failure}`;
-      if (!run.faults.some((fault) => fault.partId === event.partId && fault.failure === event.payload.failure)) {
-        report(ctx, 'run.unrecorded_fault', at(at(path, 'events'), index), `No entry in faults for '${event.payload.failure}' on '${event.partId}'.`);
+      const eventPath = at(at(path, 'events'), index);
+      if (!event.payload.active) {
+        if (!active.delete(key)) report(ctx, 'run.unrecorded_fault', eventPath, `'${event.payload.failure}' on '${event.partId}' ends without having started.`);
+        return;
       }
+      active.add(key);
+      if (!listed.has(key)) report(ctx, 'run.unrecorded_fault', eventPath, `No entry in faults for '${event.payload.failure}' on '${event.partId}'.`);
       if (!firstStart.has(key)) firstStart.set(key, event.tick);
     });
     run.faults.forEach((fault, index) => {

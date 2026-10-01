@@ -57,8 +57,12 @@ export {
   turnVector,
 } from './geometry/frames.ts';
 export type { CanvasPose, Placement } from './geometry/frames.ts';
+export { cosDegrees, cosSin, sinDegrees } from './geometry/trig.ts';
 export { drivePushes, placeParts, robotRoot } from './geometry/robot.ts';
 export type { DrivePush, PartPlacement } from './geometry/robot.ts';
+
+export { wiredNeeds } from './circuit/wired.ts';
+export type { WiredVerdict } from './circuit/wired.ts';
 
 export { mapSettingValue, validatePartRecord } from './validate/part.ts';
 export { validateArenaPreset } from './validate/arena.ts';

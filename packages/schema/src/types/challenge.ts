@@ -26,7 +26,14 @@ export type PartTarget = { readonly placed: PlacedPartId } | { readonly part: Pa
 /** A port on a part target, for example `{ "part": "dc-motor", "port": "plus" }`. */
 export type PortTarget = PartTarget & { readonly port: PortId };
 
-/** What a part can be observed doing at a tick. */
+/**
+ * What a part can be observed doing at a tick, in pairs:
+ * - `powered` / `unpowered`: there is a voltage across its supply (a battery pack's: its terminals), either way round, or none;
+ * - `turning` / `still`: its drive turns, or does not;
+ * - `lit` / `dark` and `sounding` / `silent`: it gives light or sound, or none;
+ * - `closed` / `open`: a switch's state;
+ * - `upright` / `tipped`: the robot it is on rides upright, or has fallen over.
+ */
 export const PART_STATES = [
   'powered',
   'unpowered',

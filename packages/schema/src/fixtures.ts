@@ -26,6 +26,7 @@ import blueprintRollingStart from '../fixtures/blueprints/valid/rolling-start.js
 import blueprintLedCircuit from '../fixtures/blueprints/valid/led-circuit.json' with { type: 'json' };
 import blueprintReversedMotor from '../fixtures/blueprints/valid/reversed-motor.json' with { type: 'json' };
 import blueprintShortCircuit from '../fixtures/blueprints/valid/short-circuit.json' with { type: 'json' };
+import blueprintSwitchAcrossPack from '../fixtures/blueprints/valid/switch-across-pack.json' with { type: 'json' };
 import blueprintBumperRobot from '../fixtures/blueprints/valid/bumper-robot.json' with { type: 'json' };
 import blueprintMotorOffPin from '../fixtures/blueprints/valid/motor-off-pin.json' with { type: 'json' };
 import invalidBlueprintVersion2 from '../fixtures/blueprints/invalid/version-2.json' with { type: 'json' };
@@ -117,7 +118,8 @@ export const validBlueprints: readonly BlueprintFixture[] = [
   { name: 'led-circuit', description: 'An LED and a switch on a battery pack, with no chassis: a circuit on the workbench.', motion: 'none', data: blueprintLedCircuit },
   { name: 'reversed-motor', description: 'Legal but wrong: the right motor is wired the other way round, so on Run the robot spins on the spot.', motion: 'spin', data: blueprintReversedMotor },
   { name: 'short-circuit', description: "Legal but wrong: a wire joins the 1-cell pack's plus straight to its minus, so on Run it drains fast.", motion: 'none', data: blueprintShortCircuit },
-  { name: 'bumper-robot', description: 'A Level 2 robot: motor driver with both channels forward, gearboxes, bumper switch, buzzer, and a servo motor with power but no signal. It drives forward.', motion: 'forward', data: blueprintBumperRobot },
+  { name: 'switch-across-pack', description: 'Legal but wrong: a switch wired straight across the 2-cell pack, so closing it makes a short circuit. The switch shows across-the-pack and the pack its short circuit, one fault each.', motion: 'none', data: blueprintSwitchAcrossPack },
+  { name: 'bumper-robot', description: 'A Level 2 robot: motor driver with both channels forward, gearboxes (the motors on the inner motor mounts), bumper switch, buzzer, and a servo motor with power but no signal. It drives forward.', motion: 'forward', data: blueprintBumperRobot },
   { name: 'motor-off-pin', description: "Legal but wrong (Level 3 slot): a DC motor on the microcontroller's 3V pin, and a servo motor on a no-op brain's output.", motion: 'none', data: blueprintMotorOffPin },
 ];
 
@@ -149,7 +151,7 @@ export const invalidBlueprints: readonly InvalidFixture[] = [
 ];
 
 export const exampleChallenges: readonly Fixture[] = [
-  { name: 'cross-and-stop', description: 'Unscripted build (Level 2, D26): cross the arena and stop at the wall, without stalling against it. No steps, no hints.', data: challengeCrossAndStop },
+  { name: 'cross-and-stop', description: 'Unscripted build (Level 2, D26): cross the arena and stop at the wall with every DC motor off, so grinding against the wall does not pass. No steps, no hints.', data: challengeCrossAndStop },
   { name: 'drive-and-light', description: 'Guided (Level 2): drive forward with the LED lit, judged by speed along the heading, so reversing does not count.', data: challengeDriveAndLight },
   { name: 'one-motor-backwards', description: 'Breakdown (Level 2): the right motor is reversed, so the robot spins; the ladder walks from the motor to swapping its wires.', data: challengeOneMotorBackwards },
   { name: 'meet-the-switch', description: 'Part introduction (Level 1): wire the switch into the power line, then press it: the motor turns, then stands still with the switch open. Judged by state, never by a fault.', data: challengeMeetTheSwitch },
