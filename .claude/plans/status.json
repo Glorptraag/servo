@@ -244,7 +244,7 @@
       "dispatched_at": "2026-10-01T05:23:27+00:00"
     },
     "1.4": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -258,8 +258,8 @@
       ],
       "done_when": "A two-motor robot drives straight, turns on the spot when one motor reverses, stops at a wall, and tips with the top-heavy fixture; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T11:41:56+00:00",
+      "completed_by": "W-1.4",
       "dispatched_at": "2026-10-01T06:12:30+00:00"
     },
     "1.5": {
@@ -1080,7 +1080,7 @@
       "completed_by": null
     },
     "6.3": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1097,7 +1097,8 @@
       "done_when": "A tagged commit produces a tester URL with the content version shown in Settings.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T11:34:37+00:00"
     },
     "6.4": {
       "status": "pending",
