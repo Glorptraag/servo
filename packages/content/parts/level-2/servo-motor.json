@@ -68,7 +68,7 @@
       "unmet": "open"
     },
     {
-      "cardLine": "Too little power: the arm turns slowly and weakly.",
+      "cardLine": "Too little power: the arm turns slowly and weakly, or not at all.",
       "hint": "This servo motor is not getting enough power",
       "id": "low-voltage",
       "need": "power",
