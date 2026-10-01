@@ -152,7 +152,7 @@ describe('placing from the tray', () => {
     expect(edits).toEqual([]);
   });
 
-  it('ends a placement it cannot take at once, not placed: Run mode, read-only, nothing loaded, another tile', async () => {
+  it('ends a placement it cannot take at once, not placed, and apply refuses: Run mode, read-only, nothing loaded', async () => {
     load(fixture('led-circuit'));
     const placements = listen(bench.surface, 'placement');
     bench.surface.setMode('run');
@@ -179,6 +179,9 @@ describe('placing from the tray', () => {
       { kind: 'part', part: 'led', placed: false },
       { kind: 'part', part: 'led', placed: false },
     ]);
+    // `apply` refuses there too: locked on a read-only canvas, and nothing to build on before a load.
+    expect(readOnly.surface.apply({ kind: 'rename', name: 'Mine' })).toEqual({ ok: false, refusal: expect.objectContaining({ code: 'edit.locked' }) });
+    expect(elsewhere.surface.apply({ kind: 'rename', name: 'Mine' })).toEqual({ ok: false, refusal: expect.objectContaining({ code: 'edit.no_build' }) });
     readOnly.unmount();
     elsewhere.unmount();
   });
@@ -528,7 +531,7 @@ describe('props from the arena strip (D36)', () => {
 });
 
 describe('apply', () => {
-  it('fires edit only when the build changes, and refuses in Run mode, on a read-only canvas and before a load', async () => {
+  it('fires edit only when the build changes, and refuses in Run mode (read-only and unloaded canvases: above)', () => {
     load(fixture('led-circuit'));
     const edits = listen(bench.surface, 'edit');
     expect(bench.surface.apply({ kind: 'rename', name: 'Lamp' }).ok).toBe(true);
@@ -538,12 +541,6 @@ describe('apply', () => {
     bench.surface.setMode('run');
     expect(bench.surface.apply({ kind: 'rename', name: 'Run' })).toEqual({ ok: false, refusal: expect.objectContaining({ code: 'edit.locked' }) });
     bench.surface.setMode('build');
-    const readOnly = await mount({ readOnly: true }, { width: 200, height: 200 });
-    readOnly.surface.load(fixture('led-circuit'));
-    expect(readOnly.surface.apply({ kind: 'rename', name: 'Mine' })).toEqual({ ok: false, refusal: expect.objectContaining({ code: 'edit.locked' }) });
-    readOnly.unmount();
-    const empty = await mount({}, { width: 200, height: 200 });
-    expect(empty.surface.apply({ kind: 'rename', name: 'Mine' })).toEqual({ ok: false, refusal: expect.objectContaining({ code: 'edit.no_build' }) });
-    empty.unmount();
+    expect(bench.surface.apply({ kind: 'rename', name: 'Built' }).ok).toBe(true);
   });
 });
