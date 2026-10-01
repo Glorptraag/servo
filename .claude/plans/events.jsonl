@@ -63,3 +63,6 @@
 {"ts": "2026-10-01T05:03:36+00:00", "event": "decision_add", "id": "D49", "blocks": []}
 {"ts": "2026-10-01T05:10:10+00:00", "event": "done", "tasks": ["0.4"], "by": "W-0.4"}
 {"ts": "2026-10-01T05:11:24+00:00", "event": "done", "tasks": ["G0"], "by": "orchestrator"}
+{"ts": "2026-10-01T05:12:50+00:00", "event": "dispatch", "tasks": ["2.2"]}
+{"ts": "2026-10-01T05:22:15+00:00", "event": "done", "tasks": ["2.1"], "by": "W-2.1"}
+{"ts": "2026-10-01T05:22:15+00:00", "event": "decision_resolve", "id": "D45"}

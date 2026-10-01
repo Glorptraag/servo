@@ -344,7 +344,7 @@
       "completed_by": null
     },
     "2.1": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -358,12 +358,12 @@
       ],
       "done_when": "`pnpm validate-content packages/content/parts/level-1` passes; every part has \u22652 failure modes with teaching notes and spec-card layers 1 and 2.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T05:22:15+00:00",
+      "completed_by": "W-2.1",
       "dispatched_at": "2026-10-01T04:01:20+00:00"
     },
     "2.2": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -378,7 +378,8 @@
       "done_when": "Validator passes; spec-card layers 1\u20132 plus a popular-mechanics line on every Level 2 part.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-01T05:12:50+00:00"
     },
     "2.3": {
       "status": "pending",
@@ -1548,7 +1549,8 @@
       "recommendation": "Keep 0.12 kg\u00b7cm at 6 V: it is a real small-motor figure and it makes the gearbox lesson work; the Level 4 spec line shows the real value. Switch to 0.4 only if Drew wants the brief's number literally.",
       "confidence": "medium",
       "blocks": [],
-      "resolved": false
+      "resolved": true,
+      "answer": "Superseded by D46 (orchestrator housekeeping): the 0.12 kg\u00b7cm default was withdrawn after review R-2.1; D46 (0.4 kg\u00b7cm, the brief's figure) stays open for Drew."
     },
     {
       "id": "D46",
