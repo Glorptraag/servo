@@ -24,6 +24,7 @@ import { exampleParts, validBlueprints } from '@servo/schema/fixtures'; // test 
 | Geometry | `placeParts`, `drivePushes`, `robotRoot`, `mountPlacement`, `canvasPoseOf`, `arenaPoseOf`, `cosSin` | [geometry](docs/geometry.md) |
 | Faults and controls | `wiredNeeds`, `controlsOf`, `explainByControls` | [parts](docs/parts.md) |
 | Canonical form and ids | `serializeBlueprint`, `canonicalizeBlueprint`, `canonicalJson`, `claimPartId`, `claimWireId` | [documents](docs/documents.md) |
+| Versions and migrations | `migrateBlueprint`, `MigrationResult` | [migrations](docs/migrations.md) |
 
 ## In brief
 
@@ -43,7 +44,8 @@ import { exampleParts, validBlueprints } from '@servo/schema/fixtures'; // test 
 - 14 example part records, 3 arenas, 2 valid kits and 1 invalid kit;
 - 7 valid blueprints in canonical form, each labelled with the motion its geometry gives;
 - 23 invalid blueprints, each refused for exactly one recorded reason;
-- 4 challenges and 1 run record.
+- 4 challenges and 1 run record;
+- 2 version 0 blueprints, each with its migrated form (`v0Blueprints`, [migrations](docs/migrations.md)).
 
 `pnpm --filter schema test` runs them.
 

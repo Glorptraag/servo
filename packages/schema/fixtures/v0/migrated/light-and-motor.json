@@ -1,0 +1,121 @@
+{
+  "arena": {
+    "preset": "wall-stop",
+    "props": []
+  },
+  "meta": {
+    "createdAt": "2026-09-14T15:42:07.315Z",
+    "highWater": {
+      "parts": 5,
+      "wires": 7
+    },
+    "id": "47334c53-bab5-49c3-86dc-7d278770b388",
+    "level": 1,
+    "name": "Light and motor",
+    "updatedAt": "2026-09-20T08:03:59.004Z"
+  },
+  "parts": [
+    {
+      "id": "p1",
+      "part": "battery-pack-2-cell",
+      "position": {
+        "x": -80,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "p2",
+      "part": "switch",
+      "position": {
+        "x": 0,
+        "y": -60
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "p4",
+      "part": "led",
+      "position": {
+        "x": 80,
+        "y": 0
+      },
+      "rotation": 90,
+      "settings": {
+        "colour": "green"
+      }
+    },
+    {
+      "id": "p5",
+      "part": "dc-motor",
+      "position": {
+        "x": 0,
+        "y": 60
+      },
+      "rotation": 270,
+      "settings": {
+        "direction": "backward"
+      }
+    }
+  ],
+  "version": 1,
+  "wires": [
+    {
+      "from": {
+        "part": "p1",
+        "port": "plus"
+      },
+      "id": "w1",
+      "to": {
+        "part": "p2",
+        "port": "a"
+      }
+    },
+    {
+      "from": {
+        "part": "p2",
+        "port": "b"
+      },
+      "id": "w2",
+      "to": {
+        "part": "p4",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "p1",
+        "port": "minus"
+      },
+      "id": "w4",
+      "to": {
+        "part": "p4",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "p2",
+        "port": "b"
+      },
+      "id": "w6",
+      "to": {
+        "part": "p5",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "p1",
+        "port": "minus"
+      },
+      "id": "w7",
+      "to": {
+        "part": "p5",
+        "port": "minus"
+      }
+    }
+  ]
+}
