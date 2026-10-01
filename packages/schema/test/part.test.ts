@@ -101,7 +101,31 @@ describe('part records: needs and failure modes', () => {
   });
 
   it('ties a torque need to an actuator drive', () => {
-    expect(refusal('gearbox', push(['needs'], { id: 'load', kind: 'torque', port: 'output' }))).toEqual(['port.wrong_kind at $.needs[1].port']);
+    expect(refusal('gearbox', push(['needs'], { id: 'load', kind: 'torque', port: 'output' }))).toEqual(['port.wrong_kind at $.needs[2].port']);
+  });
+});
+
+describe('part records: mounts, loops and the floor', () => {
+  it('gives every mount point a handedness and every mount a quarter turn', () => {
+    expect(refusal('chassis', remove(['ports', 0, 'mirrored']))).toEqual(['value.missing at $.ports[0].mirrored']);
+    expect(refusal('chassis', set(['ports', 0, 'yaw'], 45))).toEqual(['value.not_allowed at $.ports[0].yaw']);
+    expect(refusal('dc-motor', set(['ports', 3, 'mirrored'], true))).toEqual(['value.unknown_key at $.ports[3].mirrored']);
+  });
+
+  it('runs a loop between two different power ports', () => {
+    expect(refusal('battery-pack-2-cell', set(['needs', 1, 'ports'], ['plus', 'mount']))).toEqual(['port.wrong_kind at $.needs[1].ports[1]']);
+    expect(refusal('battery-pack-2-cell', set(['needs', 1, 'ports'], ['plus', 'plus']))).toEqual(['value.duplicate at $.needs[1].ports[1]']);
+    expect(refusal('switch', set(['needs', 1, 'ports'], ['a']))).toEqual(['value.wrong_count at $.needs[1].ports']);
+  });
+
+  it('gives a floor need only to a part with a wheel or support, and lets only a wheel slip', () => {
+    expect(refusal('dc-motor', push(['needs'], { id: 'on-floor', kind: 'floor' }))).toEqual(['need.wrong_part at $.needs[2]']);
+    expect(refusal('caster', set(['failureModes', 1, 'unmet'], 'slipping'))).toEqual(['failure.bad_unmet at $.failureModes[1].unmet']);
+  });
+
+  it('binds a gearbox to the mount that holds its housing', () => {
+    expect(refusal('gearbox', remove(['behaviour', 0, 'mount']))).toEqual(['value.missing at $.behaviour[0].mount']);
+    expect(refusal('gearbox', set(['behaviour', 0, 'mount'], 'input'))).toEqual(['port.wrong_kind at $.behaviour[0].mount']);
   });
 });
 
@@ -162,8 +186,28 @@ describe('the vocabulary covers the Level 1–2 roster and the Level 3 slot', ()
     ['servo with power but no signal: holds and hums', 'servo-motor', 'no-signal', { need: 'signal', unmet: 'absent', shows: ['hold', 'hum'] }],
     ['top-heavy chassis: tips over', 'chassis', 'top-heavy', { need: 'balance', unmet: 'lost', shows: ['tip'] }],
     ['loose caster: drags', 'caster', 'loose', { need: 'mount', unmet: 'absent', shows: ['drag'] }],
+    ['battery pack with no loop: nothing works', 'battery-pack-2-cell', 'no-loop', { need: 'loop', unmet: 'open', shows: ['off'] }],
+    ['switch outside the loop: pressing it changes nothing', 'switch', 'outside-loop', { need: 'loop', unmet: 'open', shows: ['off'] }],
+    ['wheel slipping: it spins in place', 'wheel-large', 'slipping', { need: 'floor', unmet: 'slipping', shows: ['slip'] }],
+    ['caster off the floor: the frame drags', 'caster', 'lifted', { need: 'floor', unmet: 'lifted', shows: ['drag'] }],
+    ['frame on the floor: the robot drags', 'chassis', 'scraping', { need: 'balance', unmet: 'grounded', shows: ['drag'] }],
+    ['loose gearbox: its output stays still', 'gearbox', 'loose', { need: 'mount', unmet: 'absent', shows: ['still'] }],
   ])('%s', (_name, id, failure, expected) => {
     expect(failureOf(id, failure)).toEqual(expected);
+  });
+
+  it.each(parts.filter((record) => record.identity.level <= 2).map((record) => [record.id, record.failureModes.length] as const))(
+    '%s has at least two failure modes',
+    (_id, count) => expect(count).toBeGreaterThanOrEqual(2),
+  );
+
+  it('keeps a loaded 2-cell robot inside the DC motor’s range, and a 1-cell pack below it', () => {
+    const power = part('dc-motor').needs.find((need) => need.kind === 'power');
+    const oneCell = part('battery-pack-1-cell').behaviour.find((primitive) => primitive.kind === 'source');
+    if (power?.kind !== 'power' || oneCell?.kind !== 'source') throw new Error('The example records lost their power need or source.');
+    // The run-record fixture reads 2.8 V across a motor on a fresh 2-cell pack under load.
+    expect(power.minVolts).toBeLessThanOrEqual(2.8);
+    expect(oneCell.volts).toBeLessThan(power.minVolts);
   });
 
   it('gives the microcontroller a no-op brain and a weak 3V pin', () => {

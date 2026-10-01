@@ -8,7 +8,7 @@ import {
   invalidKits,
   validBlueprints,
   validKits,
-} from '../fixtures/index.ts';
+} from '../src/fixtures.ts';
 import {
   canonicalJson,
   canonicalizeBlueprint,

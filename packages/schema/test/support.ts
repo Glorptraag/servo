@@ -1,4 +1,4 @@
-import { exampleArenas, exampleParts, validKits } from '../fixtures/index.ts';
+import { exampleArenas, exampleParts, validKits } from '../src/fixtures.ts';
 import { makeCatalogue, validateArenaPreset, validateKit, validatePartRecord } from '../src/index.ts';
 import type { Issue, PartRecord, ValidationResult } from '../src/index.ts';
 

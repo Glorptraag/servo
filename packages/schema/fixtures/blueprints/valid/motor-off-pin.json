@@ -5,6 +5,11 @@
   },
   "meta": {
     "createdAt": "2026-10-01T09:00:00.000Z",
+    "highWater": {
+      "parts": 0,
+      "wires": 7
+    },
+    "id": "5a6b7c8d-9e0f-4a1b-82c3-d4e5f6a7b8c9",
     "level": 3,
     "name": "Motor on a pin",
     "updatedAt": "2026-10-01T09:20:00.000Z"

@@ -9,7 +9,7 @@
     "grams": 90,
     "size": {
       "x": 160,
-      "y": 110,
+      "y": 130,
       "z": 6
     }
   },
@@ -30,6 +30,17 @@
       ],
       "teachingNote": "A robot stays upright while its centre of mass sits over the space between its wheels and caster. Heavy parts mounted high or far out move that point, and a fast start or a slope tips the robot over.",
       "unmet": "lost"
+    },
+    {
+      "cardLine": "Frame on the floor: the robot drags.",
+      "hint": "Something needs to hold up this end of the frame",
+      "id": "scraping",
+      "need": "upright",
+      "shows": [
+        "drag"
+      ],
+      "teachingNote": "The frame rides clear of the floor only while wheels and a caster hold it up at both ends. With nothing under one end, it rests on the floor and scrapes, so the robot drags.",
+      "unmet": "grounded"
     }
   ],
   "id": "chassis",
@@ -62,6 +73,7 @@
       },
       "id": "motor-left",
       "label": "left motor mount",
+      "mirrored": false,
       "role": "mount-point",
       "type": "mechanical",
       "yaw": 0
@@ -74,33 +86,36 @@
       },
       "id": "motor-right",
       "label": "right motor mount",
-      "role": "mount-point",
-      "type": "mechanical",
-      "yaw": 180
-    },
-    {
-      "at": {
-        "x": 30,
-        "y": 52,
-        "z": 6
-      },
-      "id": "gear-left",
-      "label": "left gearbox mount",
+      "mirrored": true,
       "role": "mount-point",
       "type": "mechanical",
       "yaw": 0
     },
     {
       "at": {
-        "x": 30,
-        "y": -52,
+        "x": 40,
+        "y": 62,
+        "z": 6
+      },
+      "id": "gear-left",
+      "label": "left gearbox mount",
+      "mirrored": false,
+      "role": "mount-point",
+      "type": "mechanical",
+      "yaw": 0
+    },
+    {
+      "at": {
+        "x": 40,
+        "y": -62,
         "z": 6
       },
       "id": "gear-right",
       "label": "right gearbox mount",
+      "mirrored": true,
       "role": "mount-point",
       "type": "mechanical",
-      "yaw": 180
+      "yaw": 0
     },
     {
       "at": {
@@ -110,6 +125,7 @@
       },
       "id": "deck-front",
       "label": "front deck",
+      "mirrored": false,
       "role": "mount-point",
       "type": "mechanical",
       "yaw": 0
@@ -122,6 +138,7 @@
       },
       "id": "deck-middle",
       "label": "middle deck",
+      "mirrored": false,
       "role": "mount-point",
       "type": "mechanical",
       "yaw": 0
@@ -134,6 +151,7 @@
       },
       "id": "deck-rear",
       "label": "rear deck",
+      "mirrored": false,
       "role": "mount-point",
       "type": "mechanical",
       "yaw": 0
@@ -146,6 +164,7 @@
       },
       "id": "bumper",
       "label": "bumper mount",
+      "mirrored": false,
       "role": "mount-point",
       "type": "mechanical",
       "yaw": 0
@@ -158,6 +177,7 @@
       },
       "id": "caster",
       "label": "caster mount",
+      "mirrored": false,
       "role": "mount-point",
       "type": "mechanical",
       "yaw": 0

@@ -23,6 +23,16 @@
           "target": {
             "part": "chassis"
           }
+        },
+        {
+          "kind": "not",
+          "of": {
+            "failure": "overload",
+            "kind": "fault",
+            "target": {
+              "part": "dc-motor"
+            }
+          }
         }
       ]
     }
@@ -31,7 +41,7 @@
   "hints": [],
   "id": "cross-and-stop",
   "kind": "unscripted-build",
-  "kit": "rolling-start",
-  "level": 1,
+  "kit": "circuit-crew",
+  "level": 2,
   "title": "Cross and stop"
 }

@@ -5,6 +5,11 @@
   },
   "meta": {
     "createdAt": "2026-10-01T09:00:00.000Z",
+    "highWater": {
+      "parts": 0,
+      "wires": 1
+    },
+    "id": "7c8d9e0f-1a2b-4c3d-a4e5-f6a7b8c9d0e1",
     "level": 2,
     "name": "Test build",
     "updatedAt": "2026-10-01T09:20:00.000Z"

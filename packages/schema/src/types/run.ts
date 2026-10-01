@@ -1,6 +1,7 @@
 import type { Blueprint, SettingValue } from './blueprint.ts';
 import type { HintStepKind } from './challenge.ts';
 import type {
+  BlueprintId,
   ChallengeId,
   FailureModeId,
   PartTypeId,
@@ -117,34 +118,41 @@ export interface HintUse {
 }
 
 /**
- * One Run of one blueprint. It feeds the parent view and the brief's Section 14 measures: parts used
- * (from `blueprint`), the number of Runs (`runNumber`), faults and how they were fixed, whether the goal
- * was met, and hint use. A full record keeps `events`; a stored summary may leave them out.
+ * One Run of one blueprint. It feeds the parent view and these brief Section 14 measures: the
+ * unscripted-build pass rate (`challenge`, `runNumber`, `goal`) and fault fixing (`faults`, `fixed` and
+ * the timestamps), with parts used read from `blueprint`. Session start mode (sandbox return) and time
+ * in the sandbox come from task 6.2's telemetry, not from run records. A full record keeps `events`; a
+ * stored summary may leave them out.
+ *
+ * A switch the child opens is an `inputs` entry, never a fault: it never appears in `faults` or `fixed`.
  */
 export interface RunRecord {
   readonly version: 1;
+  /** Opaque UUID v4. */
   readonly id: RunId;
+  /** The blueprint's `meta.id`. Runs of one build share it, in the sandbox as in a challenge. */
+  readonly blueprintId: BlueprintId;
   /** The snapshot that ran (ground rule 4). */
   readonly blueprint: Blueprint;
   readonly challenge?: ChallengeId;
-  /** Omitted when shared. */
+  /** The child's profile, an opaque UUID v4. Omitted when shared. */
   readonly profile?: ProfileId;
   /** Unsigned 32-bit. Same blueprint, arena and seed give the same run (ground rule 2). */
   readonly seed: number;
   readonly tickRate: typeof TICK_RATE;
   readonly startedAt: Timestamp;
   readonly endedAt: Timestamp;
-  /** This Run's place, from 1, among the child's Runs of this challenge or blueprint. */
+  /** This Run's place, from 1, among the child's Runs of this challenge, or of this blueprint in the sandbox. */
   readonly runNumber: number;
   /** Ticks simulated. */
   readonly ticks: number;
   /** In tick order. */
   readonly inputs: readonly RunInput[];
-  /** In tick order. */
+  /** In tick order. Every fault event that starts a fault has its entry in `faults`. */
   readonly events?: readonly RunEvent[];
   readonly faults: readonly FaultSeen[];
   readonly fixed: readonly FixedFault[];
-  /** Present when run inside a challenge; `tick` is present exactly when `met`. */
+  /** Only inside a challenge; `tick` is present exactly when `met`. */
   readonly goal?: { readonly met: boolean; readonly tick?: number };
   readonly hints: readonly HintUse[];
 }

@@ -4,8 +4,13 @@
     "props": []
   },
   "meta": {
-    "author": "Mia Jones",
+    "author": "EmilyRoseJohnson",
     "createdAt": "2026-10-01T09:00:00.000Z",
+    "highWater": {
+      "parts": 0,
+      "wires": 3
+    },
+    "id": "1c2d3e4f-5a6b-4c7d-8e9f-0a1b2c3d4e5f",
     "level": 1,
     "name": "LED with a switch",
     "updatedAt": "2026-10-01T09:20:00.000Z"

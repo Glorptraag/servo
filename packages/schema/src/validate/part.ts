@@ -7,7 +7,6 @@ import { AXES } from '../types/port.ts';
 import type { MechanicalRole, PortSpec } from '../types/port.ts';
 import { DOMAINS, PART_FAMILIES } from '../types/taxonomy.ts';
 import {
-  DEGREES,
   FRACTION,
   NON_NEGATIVE,
   POSITIVE,
@@ -25,6 +24,7 @@ import {
   readList,
   readNumber,
   readObject,
+  readQuarterTurn,
   readSlug,
   readString,
   readText,
@@ -97,9 +97,13 @@ const readPort = (ctx: Ctx, value: unknown, path: string): PortSpec | undefined 
     if (role === 'drive-out' || role === 'drive-in') {
       readObject(ctx, value, path, ['id', 'type', 'label', 'role', 'at', 'axis']);
       readEnum(ctx, field(value, 'axis'), at(path, 'axis'), AXES);
-    } else if (role === 'mount' || role === 'mount-point') {
+    } else if (role === 'mount') {
       readObject(ctx, value, path, ['id', 'type', 'label', 'role', 'at', 'yaw']);
-      readNumber(ctx, field(value, 'yaw'), at(path, 'yaw'), DEGREES);
+      readQuarterTurn(ctx, field(value, 'yaw'), at(path, 'yaw'));
+    } else if (role === 'mount-point') {
+      readObject(ctx, value, path, ['id', 'type', 'label', 'role', 'at', 'yaw', 'mirrored']);
+      readQuarterTurn(ctx, field(value, 'yaw'), at(path, 'yaw'));
+      readBoolean(ctx, field(value, 'mirrored'), at(path, 'mirrored'));
     }
     readVec3(ctx, field(value, 'at'), at(path, 'at'));
   } else if (field(value, 'type') === undefined) {
@@ -149,6 +153,7 @@ const readNeed = (ctx: Ctx, value: unknown, path: string): Need | undefined => {
       readObject(ctx, value, path, ['id', 'kind', 'port']);
       readSlug(ctx, field(value, 'port'), at(path, 'port'));
       break;
+    case 'loop':
     case 'isolation': {
       readObject(ctx, value, path, ['id', 'kind', 'ports']);
       const ports = readArray(ctx, field(value, 'ports'), at(path, 'ports'));
@@ -156,6 +161,7 @@ const readNeed = (ctx: Ctx, value: unknown, path: string): Need | undefined => {
       readSlugList(ctx, ports, at(path, 'ports'));
       break;
     }
+    case 'floor':
     case 'balance':
       readObject(ctx, value, path, ['id', 'kind']);
       break;
@@ -297,6 +303,7 @@ const PRIMITIVE_FIELDS: Record<string, Readonly<Record<string, FieldReader>>> = 
   ratio: {
     input: readSlug,
     output: readSlug,
+    mount: readSlug,
     ratio: num(POSITIVE),
     efficiency: num({ min: 0, above: true, max: 1 }),
   },
@@ -575,6 +582,7 @@ const checkPrimitivePorts = (
     case 'ratio':
       own(primitive.input, at(path, 'input'), { type: 'mechanical', role: 'drive-in' });
       own(primitive.output, at(path, 'output'), { type: 'mechanical', role: 'drive-out' });
+      own(primitive.mount, at(path, 'mount'), { type: 'mechanical', role: 'mount' });
       break;
     case 'wheel':
       own(primitive.hub, at(path, 'hub'), { type: 'mechanical', role: 'drive-in' });
@@ -614,9 +622,15 @@ const checkNeedPorts = (
         report(ctx, 'port.wrong_kind', at(path, 'port'), `A torque need names an actuator's drive port; no actuator drives '${need.port}'.`);
       }
       break;
+    case 'loop':
     case 'isolation':
       need.ports.forEach((id, index) => checkPortUse(ctx, ports, id, at(at(path, 'ports'), index), { type: 'power', as: 'terminal' }));
       if (need.ports[0] === need.ports[1]) inconsistent(ctx, at(path, 'ports'), 'The two ports must be different ports.');
+      break;
+    case 'floor':
+      if (behaviour && !behaviour.some((primitive) => primitive.kind === 'wheel' || primitive.kind === 'support')) {
+        report(ctx, 'need.wrong_part', path, 'A floor need belongs to a part with a wheel or support primitive.');
+      }
       break;
     case 'balance':
       break;
@@ -781,6 +795,10 @@ export const readPartRecord = (ctx: Ctx, value: unknown, path: string): PartReco
       const ways: readonly string[] = UNMET[need.kind];
       if (!ways.includes(mode.unmet)) {
         report(ctx, 'failure.bad_unmet', at(modePath, 'unmet'), `A ${need.kind} need goes unmet as ${ways.map((w) => `'${w}'`).join(', ')}.`);
+        return;
+      }
+      if (need.kind === 'floor' && mode.unmet === 'slipping' && behaviour && !behaviour.some((primitive) => primitive.kind === 'wheel')) {
+        report(ctx, 'failure.bad_unmet', at(modePath, 'unmet'), 'Only a part with a wheel primitive slips.');
         return;
       }
       const key = `${mode.need}.${mode.unmet}`;

@@ -44,15 +44,23 @@ export const PART_STATES = [
 
 export type PartState = (typeof PART_STATES)[number];
 
-/** Something true or false at one tick of a run. */
+/**
+ * Something true or false at one tick of a run. Measuring points:
+ * - `in-zone`, `speed`, `forward-speed` and `turn-rate` measure the target's frame origin (the centre of
+ *   its footprint) on the floor;
+ * - `near-wall` measures from the nearest point of the target's footprint (its body box seen from above)
+ *   to the wall's face.
+ */
 export type Condition =
   | { readonly kind: 'and'; readonly of: readonly Condition[] }
   | { readonly kind: 'or'; readonly of: readonly Condition[] }
   | { readonly kind: 'not'; readonly of: Condition }
   | { readonly kind: 'in-zone'; readonly target: PartTarget; readonly zone: ArenaFeatureId }
   | { readonly kind: 'near-wall'; readonly target: PartTarget; readonly wall: ArenaFeatureId; readonly withinMm: number }
-  /** Speed across the floor in mm/s. At least one bound. */
+  /** Speed across the floor in mm/s, whichever way. At least one bound. */
   | { readonly kind: 'speed'; readonly target: PartTarget; readonly atLeast?: number; readonly atMost?: number }
+  /** Speed along the target's own heading in mm/s: positive forward, negative backward. At least one bound. */
+  | { readonly kind: 'forward-speed'; readonly target: PartTarget; readonly atLeast?: number; readonly atMost?: number }
   /** Turning rate in degrees per second, either way. At least one bound. */
   | { readonly kind: 'turn-rate'; readonly target: PartTarget; readonly atLeast?: number; readonly atMost?: number }
   | { readonly kind: 'state'; readonly target: PartTarget; readonly state: PartState }

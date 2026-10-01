@@ -18,7 +18,7 @@ import {
   readList,
   readNumber,
   readObject,
-  readOpaqueId,
+  readUuid,
   readSlug,
   readTimestamp,
   report,
@@ -145,16 +145,35 @@ export const readRunRecord = (ctx: Ctx, value: unknown, path: string, catalogue:
     ctx,
     value,
     path,
-    ['version', 'id', 'blueprint', 'seed', 'tickRate', 'startedAt', 'endedAt', 'runNumber', 'ticks', 'inputs', 'faults', 'fixed', 'hints'],
+    [
+      'version',
+      'id',
+      'blueprintId',
+      'blueprint',
+      'seed',
+      'tickRate',
+      'startedAt',
+      'endedAt',
+      'runNumber',
+      'ticks',
+      'inputs',
+      'faults',
+      'fixed',
+      'hints',
+    ],
     ['challenge', 'profile', 'events', 'goal'],
   );
   if (!record) return undefined;
   const version = field(record, 'version');
   if (version !== undefined && version !== 1) report(ctx, 'value.not_allowed', at(path, 'version'), 'This schema reads version 1 run records.');
-  readOpaqueId(ctx, field(record, 'id'), at(path, 'id'));
+  readUuid(ctx, field(record, 'id'), at(path, 'id'));
+  const blueprintId = readUuid(ctx, field(record, 'blueprintId'), at(path, 'blueprintId'));
   const blueprint = readBlueprint(ctx, field(record, 'blueprint'), at(path, 'blueprint'), catalogue);
+  if (blueprintId !== undefined && blueprint && blueprint.meta.id !== blueprintId) {
+    report(ctx, 'value.inconsistent', at(path, 'blueprintId'), "blueprintId must be the id of the blueprint that ran (its meta.id).");
+  }
   readSlug(ctx, field(record, 'challenge'), at(path, 'challenge'));
-  readOpaqueId(ctx, field(record, 'profile'), at(path, 'profile'));
+  readUuid(ctx, field(record, 'profile'), at(path, 'profile'));
   readNumber(ctx, field(record, 'seed'), at(path, 'seed'), { min: 0, max: 0xffffffff, integer: true });
   const tickRate = field(record, 'tickRate');
   if (tickRate !== undefined && tickRate !== TICK_RATE) {
@@ -202,7 +221,9 @@ export const readRunRecord = (ctx: Ctx, value: unknown, path: string, catalogue:
     return c.issues.length === m ? fix : undefined;
   });
   const goal = readObject(ctx, field(record, 'goal'), at(path, 'goal'), ['met'], ['tick']);
-  if (goal) {
+  if (goal && field(record, 'challenge') === undefined) {
+    report(ctx, 'run.goal_without_challenge', at(path, 'goal'), 'Only a run inside a challenge has a goal.');
+  } else if (goal) {
     const met = readBoolean(ctx, field(goal, 'met'), at(at(path, 'goal'), 'met'));
     const tick = readNumber(ctx, field(goal, 'tick'), at(at(path, 'goal'), 'tick'), TICK);
     if (met !== undefined && met !== (field(goal, 'tick') !== undefined)) {
@@ -263,6 +284,24 @@ export const readRunRecord = (ctx: Ctx, value: unknown, path: string, catalogue:
     const faultPath = at(at(path, 'faults'), index);
     checkFailure(fault.partId, fault.failure, at(faultPath, 'partId'), at(faultPath, 'failure'));
   });
+  // The fault summary and the event stream agree: each fault that starts has its entry, from that tick.
+  if (run.events) {
+    const firstStart = new Map<string, number>();
+    run.events.forEach((event, index) => {
+      if (event.kind !== 'fault' || !event.payload.active || event.partId.startsWith(PROP_PREFIX)) return;
+      const key = `${event.partId} ${event.payload.failure}`;
+      if (!run.faults.some((fault) => fault.partId === event.partId && fault.failure === event.payload.failure)) {
+        report(ctx, 'run.unrecorded_fault', at(at(path, 'events'), index), `No entry in faults for '${event.payload.failure}' on '${event.partId}'.`);
+      }
+      if (!firstStart.has(key)) firstStart.set(key, event.tick);
+    });
+    run.faults.forEach((fault, index) => {
+      const first = firstStart.get(`${fault.partId} ${fault.failure}`);
+      const tickPath = at(at(at(path, 'faults'), index), 'firstTick');
+      if (first === undefined) report(ctx, 'run.unrecorded_fault', tickPath, 'No fault event starts this fault.');
+      else if (first !== fault.firstTick) report(ctx, 'run.unrecorded_fault', tickPath, `The first fault event for it is at tick ${first}.`);
+    });
+  }
   run.hints.forEach((hint, index) => {
     if (hint.partId !== undefined) partRecord(hint.partId, at(at(at(path, 'hints'), index), 'partId'));
   });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validBlueprints } from '../fixtures/index.ts';
+import { validBlueprints } from '../src/fixtures.ts';
 import {
   SOCKET_CAPACITY,
   checkPortPair,
@@ -19,7 +19,7 @@ const SPECS: Record<Socket, PortSpec> = {
   'drive-in': { id: 'di', type: 'mechanical', label: 'di', role: 'drive-in', at: { x: 0, y: 0, z: 0 }, axis: '+y' },
   'drive-out': { id: 'do', type: 'mechanical', label: 'do', role: 'drive-out', at: { x: 0, y: 0, z: 0 }, axis: '+y' },
   mount: { id: 'm', type: 'mechanical', label: 'm', role: 'mount', at: { x: 0, y: 0, z: 0 }, yaw: 0 },
-  'mount-point': { id: 'mp', type: 'mechanical', label: 'mp', role: 'mount-point', at: { x: 0, y: 0, z: 0 }, yaw: 0 },
+  'mount-point': { id: 'mp', type: 'mechanical', label: 'mp', role: 'mount-point', at: { x: 0, y: 0, z: 0 }, yaw: 0, mirrored: false },
 };
 
 const SOCKETS = Object.keys(SPECS) as Socket[];
@@ -196,7 +196,7 @@ describe('mount loops', () => {
       id: 'bracket',
       ports: [
         { id: 'mount', type: 'mechanical', label: 'mount', role: 'mount', at: { x: 0, y: 0, z: 0 }, yaw: 0 },
-        { id: 'point', type: 'mechanical', label: 'mount point', role: 'mount-point', at: { x: 0, y: 0, z: 14 }, yaw: 0 },
+        { id: 'point', type: 'mechanical', label: 'mount point', role: 'mount-point', at: { x: 0, y: 0, z: 14 }, yaw: 0, mirrored: false },
       ],
     }),
   );

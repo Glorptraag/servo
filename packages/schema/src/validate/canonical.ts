@@ -1,5 +1,6 @@
-import type { Blueprint, PlacedPart, SettingValue, Wire } from '../types/blueprint.ts';
+import type { Blueprint, BlueprintMeta, HighWater, PlacedPart, SettingValue, Wire } from '../types/blueprint.ts';
 import type { PlacedPartId, WireId } from '../types/common.ts';
+import { idNumber } from './blueprint.ts';
 import type { Catalogue } from './catalogue.ts';
 import { compareText, isRecord, sameValue } from './reader.ts';
 import { checkPortPair, comparePortRefs, indexPlacedParts, resolvePort } from './wiring.ts';
@@ -74,23 +75,26 @@ export const canonicalizeBlueprint = (blueprint: Blueprint, catalogue: Catalogue
   };
 };
 
-const nextId = (prefix: string, ids: readonly string[]): string => {
-  let highest = 0;
-  for (const id of ids) {
-    if (!id.startsWith(prefix)) continue;
-    const digits = id.slice(prefix.length);
-    if (!/^\d+$/.test(digits)) continue;
-    const n = Number(digits);
-    if (Number.isSafeInteger(n) && n > highest) highest = n;
-  }
-  return `${prefix}${highest + 1}`;
+const claim = <K extends keyof HighWater>(
+  blueprint: Blueprint,
+  list: K,
+  prefix: 'p' | 'w',
+  ids: readonly string[],
+): { readonly id: string; readonly meta: BlueprintMeta } => {
+  // Normally the mark is already the highest; reading the ids too keeps a hand-made blueprint safe.
+  const highest = ids.reduce((top, id) => Math.max(top, idNumber(prefix, id) ?? 0), blueprint.meta.highWater[list]);
+  const next = highest + 1;
+  return { id: `${prefix}${next}`, meta: { ...blueprint.meta, highWater: { ...blueprint.meta.highWater, [list]: next } } };
 };
 
 /**
- * The id for the next placed part: `p` and one more than the highest `p<number>` id in use. Every input
- * path allocates through this, so the same steps give the same ids.
+ * Claims the id for a new placed part: `p` and one more than the high-water mark, with the mark raised in
+ * the returned meta. Ids are never reused, even after the highest is deleted, and every input path
+ * claims through this, so the same steps give the same ids.
  */
-export const nextPlacedPartId = (blueprint: Blueprint): PlacedPartId => nextId('p', blueprint.parts.map((part) => part.id));
+export const claimPartId = (blueprint: Blueprint): { readonly id: PlacedPartId; readonly meta: BlueprintMeta } =>
+  claim(blueprint, 'parts', 'p', blueprint.parts.map((part) => part.id));
 
-/** The id for the next wire: `w` and one more than the highest `w<number>` id in use. */
-export const nextWireId = (blueprint: Blueprint): WireId => nextId('w', blueprint.wires.map((wire) => wire.id));
+/** Claims the id for a new wire: `w` and one more than the high-water mark, with the mark raised. */
+export const claimWireId = (blueprint: Blueprint): { readonly id: WireId; readonly meta: BlueprintMeta } =>
+  claim(blueprint, 'wires', 'w', blueprint.wires.map((wire) => wire.id));

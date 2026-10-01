@@ -43,6 +43,17 @@
       ],
       "teachingNote": "A switch wired straight across the battery pack joins plus to minus when it closes, so closing it makes a short circuit instead of turning a part on.",
       "unmet": "shorted"
+    },
+    {
+      "cardLine": "Not in the loop: pressing it changes nothing.",
+      "hint": "This switch is not in the power line",
+      "id": "outside-loop",
+      "need": "in-loop",
+      "shows": [
+        "off"
+      ],
+      "teachingNote": "A switch stops and starts only the loop it sits in. Wired off to one side of the loop, pressing it changes nothing.",
+      "unmet": "open"
     }
   ],
   "id": "switch",
@@ -63,6 +74,14 @@
     {
       "id": "no-short",
       "kind": "isolation",
+      "ports": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "id": "in-loop",
+      "kind": "loop",
       "ports": [
         "a",
         "b"

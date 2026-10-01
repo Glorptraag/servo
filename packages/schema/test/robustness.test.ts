@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { exampleChallenges, validBlueprints } from '../fixtures/index.ts';
+import { exampleChallenges, validBlueprints } from '../src/fixtures.ts';
 import {
   ISSUE_CODES,
   validateArenaPreset,

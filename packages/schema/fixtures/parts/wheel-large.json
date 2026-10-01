@@ -40,6 +40,17 @@
       ],
       "teachingNote": "A wheel only drives when a shaft turns it. Without a drive linkage it just rolls along, pushed by the frame.",
       "unmet": "absent"
+    },
+    {
+      "cardLine": "Slipping: the wheel spins but the robot stays put.",
+      "hint": "This wheel is spinning in place",
+      "id": "slipping",
+      "need": "on-floor",
+      "shows": [
+        "slip"
+      ],
+      "teachingNote": "A wheel pushes only as hard as its tyre grips the floor. Asked for more, up a steep ramp or against a heavy box, it spins in place.",
+      "unmet": "slipping"
     }
   ],
   "id": "wheel-large",
@@ -61,13 +72,17 @@
       "id": "driven",
       "kind": "drive",
       "port": "hub"
+    },
+    {
+      "id": "on-floor",
+      "kind": "floor"
     }
   ],
   "ports": [
     {
       "at": {
         "x": 0,
-        "y": 0,
+        "y": -13,
         "z": 32.5
       },
       "axis": "+y",

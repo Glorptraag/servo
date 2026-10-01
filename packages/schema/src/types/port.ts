@@ -1,4 +1,4 @@
-import type { PlacedPartId, PortId, Text, Vec3 } from './common.ts';
+import type { PlacedPartId, PortId, QuarterTurn, Text, Vec3 } from './common.ts';
 
 /** The three connection types. A wire joins two ports of the same type (ground rule 3). */
 export type PortType = 'power' | 'signal' | 'mechanical';
@@ -46,28 +46,46 @@ export interface SignalPort extends PortBase {
   readonly direction: 'in' | 'out';
 }
 
+/**
+ * A shaft or hub. The turning rule: a drive port turning at positive speed turns right-handed about its
+ * `axis` (thumb along the axis, fingers curling the way it turns), in the part's frame. A drive linkage
+ * turns the drive-in exactly as the drive-out turns.
+ */
 export interface DrivePort extends PortBase {
   readonly type: 'mechanical';
   readonly role: 'drive-out' | 'drive-in';
   /** Where the axle meets the part, in the part's frame (mm). */
   readonly at: Vec3;
-  /** The way the axle points out of the part. */
+  /** A drive-out's shaft points out of the part this way; a shaft enters a drive-in this way. Mated, the two agree. */
   readonly axis: Axis;
 }
 
+/** Where a part is fixed: the part side of a mount. */
 export interface MountPort extends PortBase {
   readonly type: 'mechanical';
-  readonly role: 'mount' | 'mount-point';
+  readonly role: 'mount';
   /** Where the mount sits, in the part's frame (mm). */
   readonly at: Vec3;
-  /**
-   * Degrees counter-clockwise about +z, in [0, 360). On a mount point: the heading a part fixed there
-   * takes relative to this part. On a mount: the part's heading relative to the mount (usually 0).
-   */
-  readonly yaw: number;
+  /** The part's heading relative to the mount point it is fixed to (usually 0). */
+  readonly yaw: QuarterTurn;
 }
 
-export type MechanicalPort = DrivePort | MountPort;
+/** Where another part is fixed: the frame side of a mount. */
+export interface MountPointPort extends PortBase {
+  readonly type: 'mechanical';
+  readonly role: 'mount-point';
+  /** Where the mount point sits, in this part's frame (mm). */
+  readonly at: Vec3;
+  /** The heading a part fixed here takes, counter-clockwise about +z. */
+  readonly yaw: QuarterTurn;
+  /**
+   * A mirrored mount point fixes a part as its mirror image (its y axis flipped), so its turning sense
+   * flips. A chassis's right motor mount is mirrored: two DC motors wired alike both drive forward.
+   */
+  readonly mirrored: boolean;
+}
+
+export type MechanicalPort = DrivePort | MountPort | MountPointPort;
 
 /** One named, typed socket on a part record. */
 export type PortSpec = PowerPort | SignalPort | MechanicalPort;

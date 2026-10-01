@@ -41,13 +41,32 @@ export interface PartBody {
   readonly centreOfMass: Vec3;
 }
 
-/** A complete circuit, the right way round, with the voltage across `supply` within [minVolts, maxVolts]. */
+/**
+ * Switches never make a fault. Wherever a need speaks of a loop or a complete circuit, every switch is
+ * counted closed: a switch the child opens is state (a run input), never a failure mode.
+ */
+
+/**
+ * A complete circuit, the right way round, with the voltage across `supply` within [minVolts, maxVolts].
+ * Unmet as `open` when there is no loop through the supply even with every switch counted closed, `low`
+ * or `high` outside the range, and `reversed` when the loop runs the wrong way round.
+ */
 export interface PowerNeed {
   readonly id: NeedId;
   readonly kind: 'power';
   readonly supply: PowerPair;
   readonly minVolts: number;
   readonly maxVolts: number;
+}
+
+/**
+ * A loop runs between these two power ports outside the part: through at least one part that uses power
+ * and, unless this part is a source, through a source. Every switch counts as closed. Unmet as `open`.
+ */
+export interface LoopNeed {
+  readonly id: NeedId;
+  readonly kind: 'loop';
+  readonly ports: readonly [PortId, PortId];
 }
 
 /** A signal source drives this signal-in port. */
@@ -85,35 +104,60 @@ export interface IsolationNeed {
   readonly ports: readonly [PortId, PortId];
 }
 
-/** The robot this part carries stays upright: its centre of mass stays over its wheels and supports. */
+/**
+ * The part's wheel or support rests on the floor, for a part with a `wheel` or `support` primitive.
+ * Unmet as `lifted` when it does not reach the floor, and, for a wheel, `slipping` when it pushes harder
+ * than its grip allows.
+ */
+export interface FloorNeed {
+  readonly id: NeedId;
+  readonly kind: 'floor';
+}
+
+/**
+ * The robot this part carries rides upright on its wheels and supports. Unmet as `lost` when it falls
+ * over, and `grounded` when it settles with its frame on the floor (nothing holds one end up) and drags.
+ */
 export interface BalanceNeed {
   readonly id: NeedId;
   readonly kind: 'balance';
 }
 
 /** What must be true for the part to work. Failure modes name a need and the way it is not met. */
-export type Need = PowerNeed | SignalNeed | MountNeed | DriveNeed | TorqueNeed | IsolationNeed | BalanceNeed;
+export type Need =
+  | PowerNeed
+  | LoopNeed
+  | SignalNeed
+  | MountNeed
+  | DriveNeed
+  | TorqueNeed
+  | IsolationNeed
+  | FloorNeed
+  | BalanceNeed;
 
 export type NeedKind = Need['kind'];
 
 /** The ways each kind of need can go unmet. */
 export const UNMET = {
   power: ['open', 'low', 'high', 'reversed'],
+  loop: ['open'],
   signal: ['absent'],
   mount: ['absent'],
   drive: ['absent'],
   torque: ['exceeded'],
   isolation: ['shorted'],
-  balance: ['lost'],
+  floor: ['lifted', 'slipping'],
+  balance: ['lost', 'grounded'],
 } as const satisfies Record<NeedKind, readonly string[]>;
 
 export type Unmet = (typeof UNMET)[NeedKind][number];
 
 /**
  * What the child sees or hears when a failure mode happens: a claim the behaviour fixtures test.
- * Subjects: still, slow, reverse, stall and hold are this part's output; hum, silent and quiet its sound;
- * dark and dim its light; off the part as a whole; drain the battery pack feeding it; tip and drag the
- * robot it is on.
+ * Subjects: still, slow, reverse, stall, hold and slip are this part's output (slip: it turns but does not
+ * move the robot); hum, silent and quiet its sound; dark and dim its light; off the part as a whole; drain
+ * the battery pack feeding it; tip and drag the robot it is on. Slow, quiet and dim mean less than at the
+ * rated voltage.
  */
 export const EFFECTS = [
   'still',
@@ -121,6 +165,7 @@ export const EFFECTS = [
   'reverse',
   'stall',
   'hold',
+  'slip',
   'hum',
   'silent',
   'quiet',
@@ -222,14 +267,21 @@ export type SpecCardLayer =
   | 'spec-line'
   | 'failure-notes';
 
-/** The level from which each layer shows. Failure notes show when the failure happens, at any level. */
-export const SPEC_CARD_LAYERS: readonly { readonly layer: SpecCardLayer; readonly from: Level | 'when-it-happens' }[] = [
+/**
+ * When each layer shows. The settings layer has no level of its own: each setting shows from its own
+ * `unlockLevel` (a DC motor's direction from Level 2, its speed from Level 3). Failure notes show when the
+ * failure happens, at any level.
+ */
+export const SPEC_CARD_LAYERS: readonly {
+  readonly layer: SpecCardLayer;
+  readonly from: Level | 'each-setting-unlock' | 'when-it-happens';
+}[] = [
   { layer: 'name', from: 1 },
   { layer: 'picture', from: 1 },
   { layer: 'does', from: 1 },
   { layer: 'needs-gives', from: 2 },
   { layer: 'popular-mechanics', from: 2 },
-  { layer: 'settings', from: 3 },
+  { layer: 'settings', from: 'each-setting-unlock' },
   { layer: 'spec-line', from: 4 },
   { layer: 'failure-notes', from: 'when-it-happens' },
 ];

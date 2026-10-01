@@ -5,8 +5,13 @@
       "props": []
     },
     "meta": {
-      "author": "prof_7Hq2LwX9aP4sZ1",
+      "author": "a3f1c2d4-5b6e-4f70-8a91-b2c3d4e5f607",
       "createdAt": "2026-10-01T09:00:00.000Z",
+      "highWater": {
+        "parts": 0,
+        "wires": 12
+      },
+      "id": "0f8e7d6c-5b4a-4c3d-9e2f-1a0b9c8d7e6f",
       "level": 1,
       "name": "Rolling robot",
       "updatedAt": "2026-10-01T09:20:00.000Z"
@@ -59,7 +64,7 @@
           "x": 30,
           "y": 40
         },
-        "rotation": 180,
+        "rotation": 0,
         "settings": {}
       },
       {
@@ -76,8 +81,8 @@
         "id": "wheel-left",
         "part": "wheel-large",
         "position": {
-          "x": 30,
-          "y": -80
+          "x": 40,
+          "y": -64
         },
         "rotation": 0,
         "settings": {}
@@ -86,8 +91,8 @@
         "id": "wheel-right",
         "part": "wheel-large",
         "position": {
-          "x": 30,
-          "y": 80
+          "x": 40,
+          "y": 64
         },
         "rotation": 0,
         "settings": {}
@@ -229,6 +234,7 @@
       }
     ]
   },
+  "blueprintId": "0f8e7d6c-5b4a-4c3d-9e2f-1a0b9c8d7e6f",
   "challenge": "cross-and-stop",
   "endedAt": "2026-10-01T09:21:12.000Z",
   "events": [
@@ -291,6 +297,33 @@
       "tick": 52
     },
     {
+      "kind": "fault",
+      "partId": "wheel-left",
+      "payload": {
+        "active": true,
+        "failure": "slipping"
+      },
+      "tick": 52
+    },
+    {
+      "kind": "sound",
+      "partId": "wheel-left",
+      "payload": {
+        "level": 0.5,
+        "sound": "squeal"
+      },
+      "tick": 52
+    },
+    {
+      "kind": "fault",
+      "partId": "wheel-left",
+      "payload": {
+        "active": false,
+        "failure": "slipping"
+      },
+      "tick": 58
+    },
+    {
       "kind": "value",
       "partId": "switch",
       "payload": {
@@ -299,34 +332,21 @@
       "tick": 60
     },
     {
-      "kind": "fault",
+      "kind": "value",
       "partId": "motor-left",
       "payload": {
-        "active": true,
-        "failure": "no-circuit"
-      },
-      "tick": 61
-    },
-    {
-      "kind": "fault",
-      "partId": "motor-right",
-      "payload": {
-        "active": true,
-        "failure": "no-circuit"
+        "milliamps": 0,
+        "rpm": 0,
+        "volts": 0
       },
       "tick": 61
     }
   ],
   "faults": [
     {
-      "failure": "no-circuit",
-      "firstTick": 61,
-      "partId": "motor-left"
-    },
-    {
-      "failure": "no-circuit",
-      "firstTick": 61,
-      "partId": "motor-right"
+      "failure": "slipping",
+      "firstTick": 52,
+      "partId": "wheel-left"
     }
   ],
   "fixed": [
@@ -359,7 +379,7 @@
       "trigger": "asked"
     }
   ],
-  "id": "run_2026_10_01_0002_k3v9",
+  "id": "8d9e0f1a-2b3c-4d4e-b5f6-a7b8c9d0e1f2",
   "inputs": [
     {
       "closed": false,
@@ -368,7 +388,7 @@
       "tick": 60
     }
   ],
-  "profile": "prof_7Hq2LwX9aP4sZ1",
+  "profile": "a3f1c2d4-5b6e-4f70-8a91-b2c3d4e5f607",
   "runNumber": 2,
   "seed": 12345,
   "startedAt": "2026-10-01T09:21:00.000Z",

@@ -1,0 +1,83 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "goal": {
+    "forTicks": 15,
+    "kind": "holds",
+    "when": {
+      "kind": "and",
+      "of": [
+        {
+          "kind": "state",
+          "state": "lit",
+          "target": {
+            "part": "led"
+          }
+        },
+        {
+          "atLeast": 20,
+          "kind": "forward-speed",
+          "target": {
+            "part": "chassis"
+          }
+        }
+      ]
+    }
+  },
+  "goalLine": "Make the robot drive forward and light the LED at the same time",
+  "hints": [
+    {
+      "steps": [
+        {
+          "line": "The LED's long leg needs power",
+          "step": "pulse-port",
+          "target": {
+            "part": "led",
+            "port": "plus"
+          }
+        },
+        {
+          "from": {
+            "part": "led",
+            "port": "plus"
+          },
+          "line": "Long leg to the switch",
+          "step": "ghost-wire",
+          "to": {
+            "part": "switch",
+            "port": "b"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "part": "led",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "part": "switch",
+                "port": "b"
+              }
+            }
+          ],
+          "line": "Wired the LED's long leg to the switch",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "part": "led",
+        "port": "plus"
+      }
+    }
+  ],
+  "id": "drive-and-light",
+  "kind": "guided",
+  "kit": "circuit-crew",
+  "level": 2,
+  "title": "Drive and light"
+}

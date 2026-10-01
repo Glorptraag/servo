@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { validBlueprints } from '../fixtures/index.ts';
+import { validBlueprints } from '../src/fixtures.ts';
 import {
   canonicalJson,
   canonicalizeBlueprint,
-  nextPlacedPartId,
-  nextWireId,
+  claimPartId,
+  claimWireId,
   planWire,
   serializeBlueprint,
   validateBlueprint,
@@ -68,7 +68,7 @@ describe('canonicalizeBlueprint', () => {
     const noisy = {
       ...blueprint,
       parts: blueprint.parts.map((part) =>
-        part.id === 'driver' ? { ...part, settings: { ...part.settings, 'motor-a': 'forward' } } : part,
+        part.id === 'driver' ? { ...part, settings: { 'motor-a': 'forward', 'motor-b': 'backward' } } : part,
       ),
     };
     const driver = canonicalizeBlueprint(noisy, catalogue).parts.find((part) => part.id === 'driver');
@@ -85,28 +85,43 @@ describe('canonicalizeBlueprint', () => {
   });
 });
 
-describe('ids are allocated the same way on every input path', () => {
-  const empty: Blueprint = { ...fixture('led-circuit'), parts: [], wires: [] };
+describe('ids are claimed the same way on every input path, and never reused', () => {
+  const base = fixture('led-circuit');
+  const empty: Blueprint = { ...base, parts: [], wires: [], meta: { ...base.meta, highWater: { parts: 0, wires: 0 } } };
+  const part = (id: string) => ({ id, part: 'led', position: { x: 0, y: 0 }, rotation: 0, settings: {} });
 
-  it('counts up from the highest p<number> and w<number>', () => {
-    expect(nextPlacedPartId(empty)).toBe('p1');
-    expect(nextWireId(empty)).toBe('w1');
-    const busy = {
-      ...empty,
-      parts: ['p1', 'p3', 'motor', 'p2x', 'p007'].map((id) => ({ id, part: 'led', position: { x: 0, y: 0 }, rotation: 0, settings: {} })),
-    };
-    expect(nextPlacedPartId(busy)).toBe('p8');
+  it('claims one more than the high-water mark and raises it', () => {
+    const first = claimPartId(empty);
+    expect(first.id).toBe('p1');
+    expect(first.meta.highWater).toEqual({ parts: 1, wires: 0 });
+    expect(claimWireId(empty)).toMatchObject({ id: 'w1', meta: { highWater: { parts: 0, wires: 1 } } });
+  });
+
+  it('does not give a deleted id out again', () => {
+    const { id, meta } = claimPartId(empty);
+    const withPart: Blueprint = { ...empty, meta, parts: [part(id)] };
+    const deleted: Blueprint = { ...withPart, parts: [] };
+    expect(claimPartId(deleted).id).toBe('p2');
+    expect(reasons(validateBlueprint({ ...deleted, parts: [part('p1')], meta: empty.meta }, catalogue))).toEqual([
+      'id.above_high_water at $.parts[0].id',
+    ]);
+  });
+
+  it('stays above any p<number> already in use in a hand-made blueprint', () => {
+    const busy = { ...empty, parts: ['p1', 'p3', 'motor', 'p2x', 'p007'].map(part) };
+    expect(claimPartId(busy).id).toBe('p8');
   });
 
   it('gives byte-identical blueprints when the same build is wired from opposite ends', () => {
-    const place = (blueprint: Blueprint, part: PartTypeId): Blueprint => ({
-      ...blueprint,
-      parts: [...blueprint.parts, { id: nextPlacedPartId(blueprint), part, position: { x: 0, y: 0 }, rotation: 0, settings: {} }],
-    });
+    const place = (blueprint: Blueprint, type: PartTypeId): Blueprint => {
+      const { id, meta } = claimPartId(blueprint);
+      return { ...blueprint, meta, parts: [...blueprint.parts, { ...part(id), part: type }] };
+    };
     const wire = (blueprint: Blueprint, a: PortRef, b: PortRef): Blueprint => {
       const plan = planWire(blueprint, catalogue, a, b);
       if (!plan.legal) throw new Error(plan.message);
-      return { ...blueprint, wires: [...blueprint.wires, { id: nextWireId(blueprint), from: plan.from, to: plan.to }] };
+      const { id, meta } = claimWireId(blueprint);
+      return { ...blueprint, meta, wires: [...blueprint.wires, { id, from: plan.from, to: plan.to }] };
     };
     const ref = (part: string, port: string): PortRef => ({ part, port });
     const placed = ['battery-pack-2-cell', 'switch', 'led'].reduce(place, empty);

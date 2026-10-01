@@ -52,6 +52,17 @@
       ],
       "teachingNote": "Wired straight across the battery pack, the bumper switch makes a short circuit whenever it is closed.",
       "unmet": "shorted"
+    },
+    {
+      "cardLine": "Not in the loop: a bump changes nothing.",
+      "hint": "This bumper switch is not in the power line",
+      "id": "outside-loop",
+      "need": "in-loop",
+      "shows": [
+        "off"
+      ],
+      "teachingNote": "A bumper switch stops only the loop it sits in. Wired off to one side of the loop, a bump changes nothing.",
+      "unmet": "open"
     }
   ],
   "id": "bumper-switch",
@@ -73,6 +84,14 @@
     {
       "id": "no-short",
       "kind": "isolation",
+      "ports": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "id": "in-loop",
+      "kind": "loop",
       "ports": [
         "a",
         "b"

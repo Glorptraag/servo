@@ -11,13 +11,13 @@
     "centreOfMass": {
       "x": 0,
       "y": 0,
-      "z": 5
+      "z": 6
     },
     "grams": 12,
     "size": {
       "x": 22,
       "y": 22,
-      "z": 14
+      "z": 16.5
     }
   },
   "card": {
@@ -37,6 +37,17 @@
       ],
       "teachingNote": "The caster holds the back of the frame off the floor and swivels to follow the wheels. Left loose, the frame scrapes the floor, so the robot drags and pulls to one side.",
       "unmet": "absent"
+    },
+    {
+      "cardLine": "Off the floor: the frame drags.",
+      "hint": "The caster does not reach the floor",
+      "id": "lifted",
+      "need": "on-floor",
+      "shows": [
+        "drag"
+      ],
+      "teachingNote": "A caster holds the frame up only where it reaches the floor. Fixed where it hangs in the air, it carries nothing, so the frame scrapes.",
+      "unmet": "lifted"
     }
   ],
   "id": "caster",
@@ -58,6 +69,10 @@
       "id": "fixed",
       "kind": "mount",
       "port": "mount"
+    },
+    {
+      "id": "on-floor",
+      "kind": "floor"
     }
   ],
   "ports": [
@@ -65,7 +80,7 @@
       "at": {
         "x": 0,
         "y": 0,
-        "z": 14
+        "z": 16.5
       },
       "id": "mount",
       "label": "mount",

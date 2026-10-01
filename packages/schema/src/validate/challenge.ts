@@ -79,7 +79,7 @@ const readPortTarget = (ctx: Ctx, value: unknown, path: string): PortTarget | un
   return ctx.issues.length === mark ? (record as unknown as PortTarget) : undefined;
 };
 
-const CONDITION_KINDS = ['and', 'or', 'not', 'in-zone', 'near-wall', 'speed', 'turn-rate', 'state', 'fault'] as const;
+const CONDITION_KINDS = ['and', 'or', 'not', 'in-zone', 'near-wall', 'speed', 'forward-speed', 'turn-rate', 'state', 'fault'] as const;
 
 const readCondition = (ctx: Ctx, value: unknown, path: string, depth: number): Condition | undefined => {
   if (tooDeep(ctx, path, depth)) return undefined;
@@ -116,11 +116,14 @@ const readCondition = (ctx: Ctx, value: unknown, path: string, depth: number): C
       readNumber(ctx, field(value, 'withinMm'), at(path, 'withinMm'), POSITIVE);
       break;
     case 'speed':
+    case 'forward-speed':
     case 'turn-rate': {
       readObject(ctx, value, path, ['kind', 'target'], ['atLeast', 'atMost']);
       target();
-      const low = readNumber(ctx, field(value, 'atLeast'), at(path, 'atLeast'), NON_NEGATIVE);
-      const high = readNumber(ctx, field(value, 'atMost'), at(path, 'atMost'), NON_NEGATIVE);
+      // Only forward-speed is signed: negative means backward.
+      const range = kind === 'forward-speed' ? {} : NON_NEGATIVE;
+      const low = readNumber(ctx, field(value, 'atLeast'), at(path, 'atLeast'), range);
+      const high = readNumber(ctx, field(value, 'atMost'), at(path, 'atMost'), range);
       if (field(value, 'atLeast') === undefined && field(value, 'atMost') === undefined) {
         report(ctx, 'value.missing', at(path, 'atLeast'), "Give 'atLeast', 'atMost' or both.");
       } else if (low !== undefined && high !== undefined && low > high) {

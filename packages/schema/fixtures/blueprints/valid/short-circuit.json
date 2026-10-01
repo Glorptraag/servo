@@ -5,6 +5,11 @@
   },
   "meta": {
     "createdAt": "2026-10-01T09:00:00.000Z",
+    "highWater": {
+      "parts": 0,
+      "wires": 1
+    },
+    "id": "3e4f5a6b-7c8d-4e9f-a0b1-c2d3e4f5a6b7",
     "level": 2,
     "name": "Short circuit",
     "updatedAt": "2026-10-01T09:20:00.000Z"

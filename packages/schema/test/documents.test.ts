@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { exampleArenas, exampleChallenges, exampleRunRecords, validKits } from '../fixtures/index.ts';
+import { exampleArenas, exampleChallenges, exampleRunRecords, validKits } from '../src/fixtures.ts';
 import { validateArenaPreset, validateChallenge, validateKit, validateRunRecord } from '../src/index.ts';
 import { catalogue, edited, push, reasons, remove, set } from './support.ts';
 import type { Change } from './support.ts';
@@ -123,6 +123,22 @@ describe('challenges', () => {
     expect(challenge('cross-and-stop', set(['goalLine'], 'Cross the arena!'))).toEqual(['text.exclamation at $.goalLine']);
   });
 
+  it('signs forward-speed along the heading, and only forward-speed', () => {
+    expect(challenge('drive-and-light', set(['goal', 'when', 'of', 1, 'atLeast'], -20))).toEqual([]);
+    expect(challenge('cross-and-stop', set(['goal', 'when', 'of', 1, 'atMost'], -5))).toEqual(['value.out_of_range at $.goal.when.of[1].atMost']);
+  });
+
+  it('stops cross-and-stop at the wall without a stall, at Level 2 (D26)', () => {
+    const data = byName(exampleChallenges, 'cross-and-stop') as {
+      level: number;
+      kit: string;
+      goal: { when: { of: unknown[] } };
+    };
+    expect(data.level).toBe(2);
+    expect(data.kit).toBe('circuit-crew');
+    expect(data.goal.when.of).toContainEqual({ kind: 'not', of: { kind: 'fault', target: { part: 'dc-motor' }, failure: 'overload' } });
+  });
+
   it('refuses goals nested too deep', () => {
     let goal: unknown = { kind: 'uses', part: 'switch', count: 1 };
     for (let depth = 0; depth < 10; depth += 1) goal = { kind: 'all', of: [goal] };
@@ -133,23 +149,48 @@ describe('challenges', () => {
 describe('run records', () => {
   it('keeps events and inputs in tick order, within the run', () => {
     expect(run(set(['events', 1, 'tick'], 0), set(['events', 0, 'tick'], 5))).toEqual(['run.event_order at $.events[1].tick']);
-    expect(run(set(['events', 8, 'tick'], 91))).toEqual(['run.tick_out_of_range at $.events[8].tick']);
+    expect(run(set(['events', 10, 'tick'], 91))).toEqual(['run.tick_out_of_range at $.events[10].tick']);
     expect(run(set(['faults', 0, 'firstTick'], 120))).toEqual(['run.tick_out_of_range at $.faults[0].firstTick']);
   });
 
   it('names parts, props and failure modes that exist in the blueprint that ran', () => {
     expect(run(set(['events', 4, 'partId'], 'arena:ball'))).toEqual(['ref.unknown_arena_feature at $.events[4].partId']);
     expect(run(set(['events', 7, 'partId'], 'motor-middle'))).toEqual(['ref.unknown_placed_part at $.events[7].partId']);
-    expect(run(set(['faults', 0, 'failure'], 'jammed'))).toEqual(['ref.unknown_failure_mode at $.faults[0].failure']);
+    expect(
+      run(set(['faults', 0, 'failure'], 'jammed'), set(['events', 6, 'payload', 'failure'], 'jammed'), set(['events', 8, 'payload', 'failure'], 'jammed')),
+    ).toEqual([
+      'ref.unknown_failure_mode at $.events[6].payload.failure',
+      'ref.unknown_failure_mode at $.events[8].payload.failure',
+      'ref.unknown_failure_mode at $.faults[0].failure',
+    ]);
     expect(run(set(['inputs', 0, 'partId'], 'battery'))).toEqual(['value.inconsistent at $.inputs[0].partId']);
   });
 
-  it('checks the goal, times, tick rate, seed and profile', () => {
+  it('keeps the fault summary and the fault events in step', () => {
+    expect(run(set(['faults'], []))).toEqual(['run.unrecorded_fault at $.events[6]']);
+    expect(run(set(['faults', 0, 'firstTick'], 53))).toEqual(['run.unrecorded_fault at $.faults[0].firstTick']);
+    expect(run(set(['events', 6, 'kind'], 'value'), set(['events', 6, 'payload'], { volts: 2.8 }))).toEqual([
+      'run.unrecorded_fault at $.faults[0].firstTick',
+    ]);
+  });
+
+  it('gives a goal only to a run inside a challenge', () => {
+    expect(run(remove(['challenge']))).toEqual(['run.goal_without_challenge at $.goal']);
+    expect(run(remove(['challenge']), remove(['goal']))).toEqual([]);
+  });
+
+  it('names the blueprint that ran by its id', () => {
+    expect(run(set(['blueprintId'], '2d3e4f5a-6b7c-4d8e-9f0a-1b2c3d4e5f60'))).toEqual(['value.inconsistent at $.blueprintId']);
+    expect(run(set(['blueprintId'], 'rolling-start'))).toEqual(['value.bad_format at $.blueprintId']);
+  });
+
+  it('checks the goal, times, tick rate, seed and ids', () => {
     expect(run(set(['goal'], { met: true }))).toEqual(['value.inconsistent at $.goal']);
     expect(run(set(['endedAt'], '2026-10-01T09:20:00.000Z'))).toEqual(['value.inconsistent at $.endedAt']);
     expect(run(set(['tickRate'], 60))).toEqual(['value.not_allowed at $.tickRate']);
     expect(run(set(['seed'], -1))).toEqual(['value.out_of_range at $.seed']);
-    expect(run(set(['profile'], 'Mia'))).toEqual(['value.bad_format at $.profile']);
+    expect(run(set(['profile'], 'emily-johnson-age-7'))).toEqual(['value.bad_format at $.profile']);
+    expect(run(set(['id'], 'A3F1C2D4-5B6E-4F70-8A91-B2C3D4E5F607'))).toEqual(['value.bad_format at $.id']);
   });
 
   it('checks event payloads', () => {

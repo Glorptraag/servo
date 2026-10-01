@@ -139,6 +139,11 @@
     },
     "meta": {
       "createdAt": "2026-10-01T09:00:00.000Z",
+      "highWater": {
+        "parts": 0,
+        "wires": 1
+      },
+      "id": "6b7c8d9e-0f1a-4b2c-93d4-e5f6a7b8c9d0",
       "level": 1,
       "name": "Meet the switch",
       "updatedAt": "2026-10-01T09:20:00.000Z"

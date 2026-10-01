@@ -1,5 +1,15 @@
 import type { ArenaRef } from './arena.ts';
-import type { Level, PartTypeId, PlacedPartId, ProfileId, SettingId, Timestamp, Vec2, WireId } from './common.ts';
+import type {
+  BlueprintId,
+  Level,
+  PartTypeId,
+  PlacedPartId,
+  ProfileId,
+  SettingId,
+  Timestamp,
+  Vec2,
+  WireId,
+} from './common.ts';
 import type { PortRef } from './port.ts';
 
 /** The blueprint format version this schema reads and writes. */
@@ -8,14 +18,18 @@ export const BLUEPRINT_VERSION = 1;
 /** A number setting's value, or a choice setting's option id. */
 export type SettingValue = number | string;
 
-/** One part on the canvas. */
+/**
+ * One part on the canvas. The canvas (workbench) plane is in millimetres, x to the right, y down, with
+ * its origin at the canvas centre (see docs/geometry.md). A mounted part's place comes from its mount:
+ * its position and rotation must match where the mount puts it (`mount.misplaced` otherwise).
+ */
 export interface PlacedPart {
   readonly id: PlacedPartId;
   /** The part record's id. */
   readonly part: PartTypeId;
-  /** Canvas units (1 unit = 1 px at default zoom), origin at the canvas centre, y down. */
+  /** Where the part's frame origin (the centre of its footprint) sits on the canvas, in mm. */
   readonly position: Vec2;
-  /** Degrees clockwise on the canvas, in [0, 360). */
+  /** Degrees clockwise on the canvas, in [0, 360). At 0 the part's front points to the canvas's right. */
   readonly rotation: number;
   /** Only values that differ from the record's default; canonical form drops the rest. */
   readonly settings: Readonly<Record<SettingId, SettingValue>>;
@@ -39,15 +53,27 @@ export interface Wire {
  */
 export type Mount = Wire;
 
+/**
+ * The highest numbers ever given to `p<n>` part ids and `w<n>` wire ids in this blueprint. Ids are never
+ * reused: claimPartId and claimWireId give one more and raise the mark, even after the highest is deleted.
+ */
+export interface HighWater {
+  readonly parts: number;
+  readonly wires: number;
+}
+
 export interface BlueprintMeta {
+  /** Opaque UUID v4, kept across edits and syncs. A duplicate gets a new one. Sync's "both kept" keys on it. */
+  readonly id: BlueprintId;
   /** The build's name as the child or app gave it: one line, 1–60 characters. Child text, so voice rules do not apply. */
   readonly name: string;
   /** The level the build was made at. */
   readonly level: Level;
   readonly createdAt: Timestamp;
   readonly updatedAt: Timestamp;
-  /** Opaque profile id, never a name. Omitted when a blueprint is shared (task 5.6 strips it). */
+  /** The child's profile, as an opaque UUID v4 the app generates. Omitted when a blueprint is shared (task 5.6). */
   readonly author?: ProfileId;
+  readonly highWater: HighWater;
 }
 
 /**

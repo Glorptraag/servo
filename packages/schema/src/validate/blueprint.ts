@@ -1,7 +1,8 @@
+import { canvasPoseOf, mountPlacement, normalizeDegrees } from '../geometry/frames.ts';
 import type { Blueprint, BlueprintMeta, PlacedPart, SettingValue, Wire } from '../types/blueprint.ts';
 import type { ValidationResult } from '../types/issue.ts';
 import type { Setting } from '../types/part.ts';
-import type { PortRef } from '../types/port.ts';
+import type { MountPointPort, MountPort, PortRef } from '../types/port.ts';
 import { checkArenaRef, readArenaRef } from './arena.ts';
 import type { Catalogue } from './catalogue.ts';
 import {
@@ -17,9 +18,9 @@ import {
   readName,
   readNumber,
   readObject,
-  readOpaqueId,
   readSlug,
   readTimestamp,
+  readUuid,
   readVec2,
   report,
   reportDuplicateIds,
@@ -29,6 +30,9 @@ import {
 import type { Ctx } from './reader.ts';
 import { addWire, emptyWiring, indexPlacedParts, judgeWire, resolvePort } from './wiring.ts';
 import type { PortEnd } from './wiring.ts';
+
+/** How far, in mm and degrees, a mounted part may sit from where its mount puts it. */
+export const PLACEMENT_TOLERANCE = { mm: 0.01, degrees: 0.01 } as const;
 
 const readSettingValues = (ctx: Ctx, value: unknown, path: string): void => {
   if (value === undefined) return;
@@ -77,19 +81,49 @@ const readWire = (ctx: Ctx, value: unknown, path: string): Wire | undefined => {
   return ctx.issues.length === mark ? (record as unknown as Wire) : undefined;
 };
 
+const COUNT = { min: 0, integer: true } as const;
+
 const readMeta = (ctx: Ctx, value: unknown, path: string): BlueprintMeta | undefined => {
   const mark = ctx.issues.length;
-  const record = readObject(ctx, value, path, ['name', 'level', 'createdAt', 'updatedAt'], ['author']);
+  const record = readObject(ctx, value, path, ['id', 'name', 'level', 'createdAt', 'updatedAt', 'highWater'], ['author']);
   if (!record) return undefined;
+  readUuid(ctx, field(record, 'id'), at(path, 'id'));
   readName(ctx, field(record, 'name'), at(path, 'name'));
   readLevel(ctx, field(record, 'level'), at(path, 'level'));
   readTimestamp(ctx, field(record, 'createdAt'), at(path, 'createdAt'));
   readTimestamp(ctx, field(record, 'updatedAt'), at(path, 'updatedAt'));
-  readOpaqueId(ctx, field(record, 'author'), at(path, 'author'));
+  readUuid(ctx, field(record, 'author'), at(path, 'author'));
+  const highWater = readObject(ctx, field(record, 'highWater'), at(path, 'highWater'), ['parts', 'wires']);
+  if (highWater) {
+    readNumber(ctx, field(highWater, 'parts'), at(at(path, 'highWater'), 'parts'), COUNT);
+    readNumber(ctx, field(highWater, 'wires'), at(at(path, 'highWater'), 'wires'), COUNT);
+  }
   return ctx.issues.length === mark ? (record as unknown as BlueprintMeta) : undefined;
 };
 
-/** Structure only: fields, formats, ids unique. Needs no catalogue. */
+/** The number in a `p<n>` or `w<n>` id, or undefined for any other id. */
+export const idNumber = (prefix: 'p' | 'w', id: string): number | undefined => {
+  if (!id.startsWith(prefix) || !/^\d+$/.test(id.slice(1))) return undefined;
+  const n = Number(id.slice(1));
+  return Number.isSafeInteger(n) ? n : undefined;
+};
+
+const checkHighWater = (ctx: Ctx, blueprint: Blueprint, path: string): void => {
+  const lists = [
+    ['parts', 'p', blueprint.parts, blueprint.meta.highWater.parts],
+    ['wires', 'w', blueprint.wires, blueprint.meta.highWater.wires],
+  ] as const;
+  for (const [list, prefix, items, mark] of lists) {
+    items.forEach((item, index) => {
+      const n = idNumber(prefix, item.id);
+      if (n !== undefined && n > mark) {
+        report(ctx, 'id.above_high_water', at(at(at(path, list), index), 'id'), `'${item.id}' is above meta.highWater.${list} (${mark}).`);
+      }
+    });
+  }
+};
+
+/** Structure only: fields, formats, ids unique and under the high-water mark. Needs no catalogue. */
 export const readBlueprintShape = (ctx: Ctx, value: unknown, path: string): Blueprint | undefined => {
   const mark = ctx.issues.length;
   if (isRecord(value)) {
@@ -116,7 +150,10 @@ export const readBlueprintShape = (ctx: Ctx, value: unknown, path: string): Blue
   reportDuplicateIds(ctx, Array.isArray(wires) ? wires : undefined, at(path, 'wires'));
   readArenaRef(ctx, field(record, 'arena'), at(path, 'arena'));
   readMeta(ctx, field(record, 'meta'), at(path, 'meta'));
-  return ctx.issues.length === mark ? (record as unknown as Blueprint) : undefined;
+  if (ctx.issues.length !== mark) return undefined;
+  const blueprint = record as unknown as Blueprint;
+  checkHighWater(ctx, blueprint, path);
+  return ctx.issues.length === mark ? blueprint : undefined;
 };
 
 /** Checks one blueprint setting value against its setting. */
@@ -136,7 +173,33 @@ export const checkSettingValue = (ctx: Ctx, setting: Setting, value: SettingValu
   }
 };
 
-/** Checks part types, settings, wire ends and wiring legality against the catalogue. */
+const angleGap = (a: number, b: number): number => {
+  const gap = normalizeDegrees(a - b);
+  return Math.min(gap, 360 - gap);
+};
+
+/** A mounted part must sit where its mount puts it: the mount is authoritative for its place. */
+const checkMountedPlace = (
+  ctx: Ctx,
+  blueprint: Blueprint,
+  partsPath: string,
+  child: PlacedPart,
+  host: PlacedPart,
+  mount: MountPort,
+  point: MountPointPort,
+): void => {
+  const expected = canvasPoseOf({ ...host.position, rotation: host.rotation }, mountPlacement(point, mount));
+  const index = blueprint.parts.indexOf(child);
+  const where = `On '${host.id}' at '${point.id}', '${child.id}' sits at (${expected.x}, ${expected.y}) turned ${expected.rotation}°.`;
+  const offX = Math.abs(child.position.x - expected.x) > PLACEMENT_TOLERANCE.mm;
+  const offY = Math.abs(child.position.y - expected.y) > PLACEMENT_TOLERANCE.mm;
+  if (offX || offY) report(ctx, 'mount.misplaced', at(at(partsPath, index), 'position'), where);
+  else if (angleGap(child.rotation, expected.rotation) > PLACEMENT_TOLERANCE.degrees) {
+    report(ctx, 'mount.misplaced', at(at(partsPath, index), 'rotation'), where);
+  }
+};
+
+/** Checks part types, settings, wire ends, wiring legality and mounted places against the catalogue. */
 export const checkBlueprint = (ctx: Ctx, blueprint: Blueprint, path: string, catalogue: Catalogue): void => {
   const partsPath = at(path, 'parts');
   blueprint.parts.forEach((part, index) => {
@@ -165,6 +228,7 @@ export const checkBlueprint = (ctx: Ctx, blueprint: Blueprint, path: string, cat
     return undefined;
   };
   const state = emptyWiring();
+  const mounts: { child: PlacedPart; host: PlacedPart; mount: MountPort; point: MountPointPort }[] = [];
   blueprint.wires.forEach((wire, index) => {
     const wirePath = at(wiresPath, index);
     const from = end(wire.from, at(wirePath, 'from'));
@@ -179,7 +243,14 @@ export const checkBlueprint = (ctx: Ctx, blueprint: Blueprint, path: string, cat
       report(ctx, 'wire.reversed', wirePath, `This ${judgement.kind} wire is written from its in end; swap 'from' and 'to'.`);
     }
     addWire(state, judgement);
+    if (judgement.kind === 'mount') {
+      const [mountEnd, pointEnd] = judgement.from === from.ref ? [from, to] : [to, from];
+      const child = placed.get(mountEnd.ref.part);
+      const host = placed.get(pointEnd.ref.part);
+      if (child && host) mounts.push({ child, host, mount: mountEnd.spec as MountPort, point: pointEnd.spec as MountPointPort });
+    }
   });
+  for (const { child, host, mount, point } of mounts) checkMountedPlace(ctx, blueprint, partsPath, child, host, mount, point);
   checkArenaRef(ctx, blueprint.arena, at(path, 'arena'), catalogue);
 };
 
@@ -195,8 +266,9 @@ export const validateBlueprintShape = (value: unknown): ValidationResult<Bluepri
   runValidator(value, (ctx, root) => readBlueprintShape(ctx, root, '$'));
 
 /**
- * The full check: structure, part types, settings, wire ends, wiring legality (impossible drops,
- * full ports, duplicates, stored orientation, mount loops) and the arena. Legal-but-wrong wiring passes.
+ * The full check: structure, part types, settings, wire ends, wiring legality (impossible drops, full
+ * ports, duplicates, stored orientation, mount loops), mounted places and the arena. Legal-but-wrong
+ * wiring passes.
  */
 export const validateBlueprint = (value: unknown, catalogue: Catalogue): ValidationResult<Blueprint> =>
   runValidator(value, (ctx, root) => readBlueprint(ctx, root, '$', catalogue));

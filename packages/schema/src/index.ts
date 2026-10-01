@@ -1,4 +1,4 @@
-// @servo/schema: the v1 types, validators, wiring rules and canonical form every package builds on.
+// @servo/schema: the v1 types, validators, wiring rules, geometry and canonical form every package builds on.
 // See packages/schema/README.md.
 
 export * from './types/common.ts';
@@ -41,16 +41,29 @@ export type {
   WiringState,
 } from './validate/wiring.ts';
 
+export {
+  CANVAS_SCALE,
+  IDENTITY_PLACEMENT,
+  arenaPoseOf,
+  axisVector,
+  canvasPoseOf,
+  carriedPlacement,
+  composePlacements,
+  mountPlacement,
+  normalizeDegrees,
+  placeAxis,
+  placePoint,
+  spin,
+  turnVector,
+} from './geometry/frames.ts';
+export type { CanvasPose, Placement } from './geometry/frames.ts';
+export { drivePushes, placeParts, robotRoot } from './geometry/robot.ts';
+export type { DrivePush, PartPlacement } from './geometry/robot.ts';
+
 export { mapSettingValue, validatePartRecord } from './validate/part.ts';
 export { validateArenaPreset } from './validate/arena.ts';
-export { validateBlueprint, validateBlueprintShape } from './validate/blueprint.ts';
+export { PLACEMENT_TOLERANCE, validateBlueprint, validateBlueprintShape } from './validate/blueprint.ts';
 export { validateKit } from './validate/kit.ts';
 export { MAX_GOAL_DEPTH, validateChallenge } from './validate/challenge.ts';
 export { validateRunRecord } from './validate/run.ts';
-export {
-  canonicalJson,
-  canonicalizeBlueprint,
-  nextPlacedPartId,
-  nextWireId,
-  serializeBlueprint,
-} from './validate/canonical.ts';
+export { canonicalJson, canonicalizeBlueprint, claimPartId, claimWireId, serializeBlueprint } from './validate/canonical.ts';

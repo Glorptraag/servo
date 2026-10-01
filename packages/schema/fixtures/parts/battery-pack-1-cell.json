@@ -45,6 +45,17 @@
       ],
       "teachingNote": "A wire straight from plus to minus gives the current a path with nothing to slow it, so the pack empties in seconds and grows warm.",
       "unmet": "shorted"
+    },
+    {
+      "cardLine": "No loop: nothing on the battery pack works.",
+      "hint": "This battery pack has no loop back to minus",
+      "id": "no-loop",
+      "need": "loop",
+      "shows": [
+        "off"
+      ],
+      "teachingNote": "A battery pack gives power only round a loop: out of plus, through a part that uses it, and back to minus. With no loop nothing flows, so nothing on it works.",
+      "unmet": "open"
     }
   ],
   "id": "battery-pack-1-cell",
@@ -66,6 +77,14 @@
     {
       "id": "no-short",
       "kind": "isolation",
+      "ports": [
+        "plus",
+        "minus"
+      ]
+    },
+    {
+      "id": "loop",
+      "kind": "loop",
       "ports": [
         "plus",
         "minus"

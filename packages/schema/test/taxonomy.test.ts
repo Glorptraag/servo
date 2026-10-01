@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import validationDoc from '../docs/validation.md?raw';
 import {
   DOMAINS,
   ISSUE_CODES,
@@ -51,14 +52,14 @@ describe('families, domains and levels come from brief Sections 2 and 3', () => 
 });
 
 describe('spec card layers and wire styles follow brief Sections 11–13', () => {
-  it('shows each layer from the level the brief gives', () => {
+  it('shows each layer from the level the brief gives, and each setting from its own unlock level', () => {
     expect(Object.fromEntries(SPEC_CARD_LAYERS.map(({ layer, from }) => [layer, from]))).toEqual({
       name: 1,
       picture: 1,
       does: 1,
       'needs-gives': 2,
       'popular-mechanics': 2,
-      settings: 3,
+      settings: 'each-setting-unlock',
       'spec-line': 4,
       'failure-notes': 'when-it-happens',
     });
@@ -76,5 +77,14 @@ describe('issue codes', () => {
     expect(code).toMatch(/^[a-z]+\.[a-z_]+$/);
     expect(meaning).toMatch(/^[A-Z].*\.$/);
     expect(meaning).not.toContain('!');
+  });
+
+  it('lists exactly these codes and meanings in docs/validation.md', () => {
+    const rows = validationDoc
+      .split('\n')
+      .map((line) => /^\| `([a-z]+\.[a-z_]+)` \| (.*) \|$/.exec(line))
+      .filter((match): match is RegExpExecArray => match !== null)
+      .map(([, code, meaning]) => [code, meaning]);
+    expect(Object.fromEntries(rows)).toEqual(ISSUE_CODES);
   });
 });

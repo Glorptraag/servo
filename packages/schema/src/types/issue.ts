@@ -20,6 +20,7 @@ export const ISSUE_CODES = {
   'text.format': 'System text is empty, has a line break, or starts or ends with a space.',
   'text.exclamation': 'System text contains an exclamation mark (ground rule 7).',
   'id.duplicate': 'Two items in one collection share an id.',
+  'id.above_high_water': "A p<n> or w<n> id is above the blueprint's high-water mark, so it could be given out again.",
   'ref.unknown_part_type': 'No part record has this id.',
   'ref.unknown_placed_part': 'No placed part has this id.',
   'ref.unknown_port': 'The part has no port with this id.',
@@ -34,6 +35,7 @@ export const ISSUE_CODES = {
   'port.wrong_kind': 'A primitive, need or hint uses a port of the wrong type, direction or role.',
   'port.wrong_polarity': 'A + binding uses a port marked negative, or a − binding one marked positive.',
   'port.bound_twice': 'Two primitives use the same signal or mechanical port.',
+  'need.wrong_part': 'A floor need belongs only to a part with a wheel or support primitive.',
   'setting.bad_binding': 'A setting drives a parameter its primitive does not have, or maps outside its range.',
   'setting.bad_option': "A choice option's value does not suit the parameter it drives.",
   'setting.default_mismatch': "A setting's default differs from the value in its primitive.",
@@ -55,6 +57,7 @@ export const ISSUE_CODES = {
   'wire.duplicate': 'The same two ports are already joined.',
   'wire.reversed': 'A directional wire is written from its in end; the stored form runs source first.',
   'mount.cycle': 'Mounts form a loop.',
+  'mount.misplaced': "A mounted part's canvas position or rotation differs from where its mount puts it.",
   'arena.outside': 'A feature, prop or start lies outside the floor.',
   'kit.tray_mismatch': 'Kit entries and tray parts differ.',
   'kit.wrong_family': 'A tray group holds a part of another family.',
@@ -66,6 +69,8 @@ export const ISSUE_CODES = {
   'hint.bad_order': 'Ladder steps are out of order, repeat a rung, or do not end with do-it.',
   'run.event_order': 'Events or inputs are not in tick order.',
   'run.tick_out_of_range': 'A tick falls after the last tick of the run.',
+  'run.unrecorded_fault': 'Fault events and faults disagree: an event with no entry, or an entry with no starting event or another start tick.',
+  'run.goal_without_challenge': 'A run record has a goal but no challenge.',
 } as const;
 
 export type IssueCode = keyof typeof ISSUE_CODES;

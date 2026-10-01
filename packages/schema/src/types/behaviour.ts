@@ -95,8 +95,9 @@ export interface LoadPrimitive extends PrimitiveBase {
 /**
  * Turns power into turning at a drive-out port. Speed ∝ voltage, reduced by load; above the stall
  * limit it stops turning, draws `stallMilliamps` and hums (brief Section 6). Below `startVolts` it
- * does not turn. `whenReversed: 'reverses'` turns it the other way (a DC motor).
- * `throttle` (0–1) and `reverse` are the values a setting can drive.
+ * does not turn. Its speed is positive (right-handed about the drive's axis) when `supply.pos` is
+ * above `supply.neg` and `reverse` is false. `whenReversed: 'reverses'` turns it the other way when
+ * the supply is reversed (a DC motor). `throttle` (0–1) and `reverse` are the values a setting can drive.
  */
 export interface SpeedActuator extends PrimitiveBase {
   readonly kind: 'actuator';
@@ -118,7 +119,8 @@ export interface SpeedActuator extends PrimitiveBase {
  * Turns an arm at a drive-out port to an angle and holds it (a servo motor). The angle arrives as a
  * signal on `command`. With power and no signal it holds where it is and hums. It sweeps at
  * `degPerSecond` (at `ratedVolts`), pushes up to `holdingTorqueNmm`, and only works the right way round.
- * `target` is the angle a setting can drive; how a Level 3 program uses it is for the program runtime.
+ * Angles grow right-handed about the drive's axis. `target` is the angle a setting can drive; how a
+ * Level 3 program uses it is for the program runtime.
  */
 export interface PositionActuator extends PrimitiveBase {
   readonly kind: 'actuator';
@@ -188,18 +190,24 @@ export interface ProgramPrimitive extends PrimitiveBase {
 }
 
 /**
- * A gearbox: the output turns 1/ratio as fast as the input, with ratio × efficiency of its torque.
- * `ratio` is the value a setting can drive.
+ * A gearbox: the output turns 1/ratio as fast as the input, with ratio × efficiency of its torque, and
+ * the same way about its own axis as the input turns about its axis. It drives only while its `mount`
+ * is fixed to a mount point; loose, the housing turns instead of the output. `ratio` is the value a
+ * setting can drive.
  */
 export interface RatioPrimitive extends PrimitiveBase {
   readonly kind: 'ratio';
   readonly input: PortId;
   readonly output: PortId;
+  readonly mount: PortId;
   readonly ratio: number;
   readonly efficiency: number;
 }
 
-/** A wheel turned through its hub (a drive-in). Rolls the robot by radius × turning, up to its grip. */
+/**
+ * A wheel turned through its hub (a drive-in). Rolls the robot by radius × turning, up to its grip; past
+ * its grip it slips. Turning right-handed about an axle pointing to the robot's left rolls it forward.
+ */
 export interface WheelPrimitive extends PrimitiveBase {
   readonly kind: 'wheel';
   readonly hub: PortId;

@@ -61,7 +61,7 @@
         "slow",
         "drain"
       ],
-      "teachingNote": "Speed rises with voltage. Below 3 volts the motor turns slowly, and because it works hard for little speed it drains the battery pack faster.",
+      "teachingNote": "Speed rises with voltage. Below about 2 volts the motor turns slowly, and because it works hard for little speed it drains the battery pack faster.",
       "unmet": "low"
     },
     {
@@ -106,7 +106,7 @@
       "id": "power",
       "kind": "power",
       "maxVolts": 6,
-      "minVolts": 3,
+      "minVolts": 2.2,
       "supply": {
         "neg": "minus",
         "pos": "plus"
