@@ -60,7 +60,8 @@ describe('the contracts the app builds against', () => {
     expect(mountCanvas).toBeTypeOf('function');
     // Task 3.2 has landed: applyEdit applies every command but wiring, and refuses a build the schema does not accept.
     expect(applyEdit({} as Blueprint, doIt, {} as Catalogue).ok).toBe(false);
-    await expect(createSimulation({ blueprint: {} as Blueprint, catalogue: {} as Catalogue, arena: {} as never, seed: 1 })).rejects.toThrow(/task 1\.5/);
+    // Task 1.5 has landed: createSimulation refuses invalid input with a SimulationSetupError.
+    await expect(createSimulation({ blueprint: {} as Blueprint, catalogue: {} as Catalogue, arena: {} as never, seed: 1 })).rejects.toMatchObject({ name: 'SimulationSetupError' });
     await expect(openStore()).rejects.toThrow(/task 4\.9/);
     // Task 4.1 has landed: mountApp draws the shell in a browser, and test/browser tests it there.
     expect(mountApp).toBeTypeOf('function');
