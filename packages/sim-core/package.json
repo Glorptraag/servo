@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./interface": "./src/interface.ts"
+    "./interface": "./src/interface.ts",
+    "./behaviour": "./src/behaviour/index.ts"
   },
   "scripts": {
     "test": "vitest run",
