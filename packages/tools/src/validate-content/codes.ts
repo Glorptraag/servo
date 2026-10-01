@@ -11,9 +11,10 @@ export const CONTENT_ISSUE_CODES = {
   'content.duplicate_id': 'Another record of the same kind already uses this id.',
   'terminology.banned': 'System text uses a word or phrase on the banned list.',
   'terminology.gloss_alone': 'System text uses a plain-language gloss without its real name in the same field.',
-  'terminology.not_real_name': "A part's name contains no real component name from the components list.",
-  'terminology.name_form': "A part's name writes a real component name differently from the list: another case, spacing or hyphen.",
-  'terminology.proper_name': "A part's name has a capitalised word outside its real name, which reads as a character's name.",
+  'terminology.not_real_name': "A part's name has no letters, or contains no real component name from the components list.",
+  'terminology.name_form': "A part's name writes a real component name, a qualifier or a gloss differently from the list: another case, spacing or hyphen.",
+  'terminology.not_qualifier': "A part's name holds a word or symbol beside its real name that is not a listed qualifier or gloss.",
+  'terminology.proper_name': "A part's name holds a capitalised word beside its real name that is not a listed qualifier or gloss, which reads as a character's name.",
   'terminology.bad_file': 'A terminology file is not valid JSON or does not follow the terminology format.',
 } as const;
 

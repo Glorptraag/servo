@@ -4,8 +4,8 @@ import type { ContentIssue, Finding } from './codes.ts';
 import { field, isRecord, readJson } from './records.ts';
 
 /**
- * The terminology lists (README "Terminology format"). Task 2.5 authors the real data in
- * packages/content/terminology/; a missing file is an empty list.
+ * The terminology lists (README "Terminology format"). The real data is in packages/content/terminology/
+ * (task 2.5); a missing file is an empty list.
  */
 
 /** A real component name as it reads mid-sentence, and the plain-language glosses that may sit beside it. */
@@ -22,6 +22,8 @@ export interface BannedPhrase {
 
 export interface Terminology {
   readonly components: readonly ComponentTerm[];
+  /** Words that may stand beside a real name in a part's name, such as `large` or `2-cell`. */
+  readonly qualifiers: readonly string[];
   readonly banned: readonly BannedPhrase[];
   /** Real terms that hold a banned word, such as `mount points`: the banned word is not refused inside them. */
   readonly allowed: readonly string[];
@@ -98,6 +100,7 @@ const sameKeys = (a: Phrase, b: Phrase): boolean => a.keys.join(' ') === b.keys.
 /** The lists ready for matching. */
 export interface TermMatcher {
   readonly components: readonly { readonly component: ComponentTerm; readonly name: Phrase; readonly glosses: readonly Phrase[] }[];
+  readonly qualifiers: readonly Phrase[];
   readonly banned: readonly { readonly entry: BannedPhrase; readonly phrase: Phrase }[];
   /** The allow-list. */
   readonly allowed: readonly Phrase[];
@@ -121,6 +124,7 @@ export const compileTerminology = (terminology: Terminology): TermMatcher => {
   }
   return {
     components,
+    qualifiers: terminology.qualifiers.map(phraseOf),
     banned: terminology.banned.map((entry) => ({ entry, phrase: phraseOf(entry.phrase) })),
     allowed: terminology.allowed.map(phraseOf),
     glosses,
@@ -186,22 +190,51 @@ export const glossFindings = (text: string, matcher: TermMatcher): Finding[] => 
   return findings;
 };
 
+const LETTER = /\p{L}/u;
 const PROPER_NAME = /^\p{Lu}\p{Ll}/u;
+/** What may sit between the listed terms of a part's name: spaces, and brackets as in `chassis (frame)`. */
+const BETWEEN_TERMS = /[\s()]+/u;
+
+/** A listed term found in a part's name, as a word span. */
+interface Term {
+  readonly what: 'real name' | 'qualifier' | 'gloss';
+  readonly listed: Phrase;
+  readonly from: number;
+  readonly to: number;
+}
+
+const termsIn = (words: readonly Word[], what: Term['what'], phrases: readonly Phrase[]): Term[] =>
+  phrases.flatMap((listed) => findKeys(words, listed.keys).map((from) => ({ what, listed, from, to: from + listed.keys.length })));
+
+/** Leaves out each term that a longer one holds, as `switch` inside `bumper switch`. */
+const outermost = (terms: readonly Term[]): Term[] =>
+  terms.filter((a) => !terms.some((b) => b.from <= a.from && a.to <= b.to && b.to - b.from > a.to - a.from));
+
+const overlaps = (a: Term, b: Term): boolean => a.from < b.to && b.from < a.to;
+
+const NAME_TAIL = "A part's name is a real component name with nothing beside it but listed qualifiers, such as sizes.";
 
 /**
  * Checks a part's name (`identity.name`, the real name as it reads mid-sentence) against the components
- * list: it must contain a listed real name, written exactly as listed, and no capitalised word outside it.
- * Qualifiers such as `large` or `2-cell` may stand beside the real name. A gloss used in place of the real
- * name is also reported by glossFindings, as for any system text. With no components listed, nothing is
- * checked.
+ * list. The name must hold a letter and a listed real name, and beside the real name only listed
+ * qualifiers (`large`, `2-cell`) and glosses (`chassis (frame)`), with spaces and brackets between them.
+ * Each of these is written exactly as listed. Anything else is refused: `sparky the DC motor`, `DC motor 🤖`.
+ * A gloss beside the wrong real name is reported by glossFindings, as for any system text. With no
+ * components listed, nothing is checked.
  */
 export const partNameFindings = (name: string, matcher: TermMatcher): Finding[] => {
+  if (matcher.components.length === 0 || name.trim() === '') return [];
+  if (!LETTER.test(name)) {
+    return [
+      {
+        code: 'terminology.not_real_name',
+        message: `${quoted(name)} has no letters, so it contains no real component name. A part's name is built on a real name from the components list.`,
+      },
+    ];
+  }
   const words = wordsOf(name);
-  if (matcher.components.length === 0 || words.length === 0) return [];
-  const found = matcher.components.flatMap(({ component, name: real }) =>
-    findKeys(words, real.keys).map((from) => ({ component, real, from, to: from + real.keys.length })),
-  );
-  if (found.length === 0) {
+  const realNames = outermost(termsIn(words, 'real name', matcher.components.map(({ name: real }) => real)));
+  if (realNames.length === 0) {
     return [
       {
         code: 'terminology.not_real_name',
@@ -209,28 +242,39 @@ export const partNameFindings = (name: string, matcher: TermMatcher): Finding[] 
       },
     ];
   }
+  const beside = outermost(
+    [...termsIn(words, 'qualifier', matcher.qualifiers), ...termsIn(words, 'gloss', matcher.glosses.map(({ gloss }) => gloss))].filter(
+      (term) => !realNames.some((real) => overlaps(term, real)),
+    ),
+  );
+  const terms = [...realNames, ...beside].toSorted((a, b) => a.from - b.from || a.to - b.to);
   const findings: Finding[] = [];
-  const outermost = found.filter((a) => !found.some((b) => b.from <= a.from && a.to <= b.to && b.to - b.from > a.to - a.from));
-  for (const { component, real, from, to } of outermost) {
-    // Word span against word span, so punctuation around a listed name never counts.
+  for (const { what, listed, from, to } of terms) {
+    // Word span against word span, so punctuation around a listed term never counts.
     const asWritten = written(name, words, from, to);
-    const asListed = written(real.text, real.words, 0, real.words.length);
+    const asListed = written(listed.text, listed.words, 0, listed.words.length);
     if (asWritten.normalize('NFC') !== asListed.normalize('NFC')) {
-      findings.push({
-        code: 'terminology.name_form',
-        message: `Write the real name as ${quoted(component.name)}, not ${quoted(asWritten)}.`,
-      });
+      findings.push({ code: 'terminology.name_form', message: `Write the ${what} as ${quoted(listed.text)}, not ${quoted(asWritten)}.` });
     }
   }
-  words.forEach((word, index) => {
-    const insideRealName = found.some(({ from, to }) => from <= index && index < to);
-    if (!insideRealName && PROPER_NAME.test(word.raw)) {
-      findings.push({
-        code: 'terminology.proper_name',
-        message: `${quoted(word.raw)} is capitalised outside the real name, so it reads as a character's name. A part's name reads mid-sentence: lower case apart from the real name's own capitals.`,
-      });
-    }
-  });
+  const rest: string[] = [];
+  let cursor = 0;
+  for (const { from, to } of terms) {
+    const start = words[from]?.start ?? cursor;
+    rest.push(name.slice(cursor, Math.max(cursor, start)));
+    cursor = Math.max(cursor, words[to - 1]?.end ?? start);
+  }
+  rest.push(name.slice(cursor));
+  for (const piece of rest.flatMap((text) => text.split(BETWEEN_TERMS)).filter((text) => text !== '')) {
+    findings.push(
+      wordsOf(piece).some((word) => PROPER_NAME.test(word.raw))
+        ? {
+            code: 'terminology.proper_name',
+            message: `${quoted(piece)} is capitalised and is not part of a real name, a listed qualifier or a gloss, so it reads as a character's name. ${NAME_TAIL}`,
+          }
+        : { code: 'terminology.not_qualifier', message: `${quoted(piece)} is not part of a real name, a listed qualifier or a gloss. ${NAME_TAIL}` },
+    );
+  }
   return findings.filter((finding, index) => findings.findIndex((other) => other.message === finding.message) === index);
 };
 
@@ -321,9 +365,14 @@ const reportRepeats = (texts: readonly Placed<string>[], report: Report): void =
   }
 };
 
-const readComponents = (root: unknown, report: Report): ComponentTerm[] => {
-  const record = readFields(root, '$', report, ['components']);
-  if (!record) return [];
+interface ComponentsFile {
+  readonly components: readonly ComponentTerm[];
+  readonly qualifiers: readonly string[];
+}
+
+const readComponents = (root: unknown, report: Report): ComponentsFile => {
+  const record = readFields(root, '$', report, ['components'], ['qualifiers']);
+  if (!record) return { components: [], qualifiers: [] };
   const listed = readList(field(record, 'components'), '$.components', report, (item, where): Placed<ComponentTerm> | undefined => {
     const entry = readFields(item, where, report, ['name'], ['glosses']);
     if (!entry) return undefined;
@@ -339,7 +388,12 @@ const readComponents = (root: unknown, report: Report): ComponentTerm[] => {
     listed.map(({ value, where }) => ({ value: value.name, where })),
     report,
   );
-  return listed.map(({ value }) => value);
+  const qualifiers = readList(field(record, 'qualifiers'), '$.qualifiers', report, (item, where): Placed<string> | undefined => {
+    const text = readPhrase(item, where, report, 'a qualifier');
+    return text === undefined ? undefined : { value: text, where };
+  });
+  reportRepeats(qualifiers, report);
+  return { components: listed.map(({ value }) => value), qualifiers: qualifiers.map(({ value }) => value) };
 };
 
 interface BannedFile {
@@ -411,12 +465,15 @@ export const loadTerminology = (folder: string): LoadedTerminology => {
   const bannedFile = path.join(folder, TERMINOLOGY_FILES.banned);
   const componentsJson = load(componentsFile);
   const bannedJson = load(bannedFile);
-  const components = componentsJson ? readComponents(componentsJson.value, reporter(componentsFile)) : [];
+  const { components, qualifiers } = componentsJson
+    ? readComponents(componentsJson.value, reporter(componentsFile))
+    : { components: [], qualifiers: [] };
   const banned = bannedJson ? readBanned(bannedJson.value, reporter(bannedFile)) : { banned: [], allowed: [] };
   reportContradictions(banned, components, reporter(bannedFile));
   return {
     terminology: {
       components,
+      qualifiers,
       banned: banned.banned.map(({ value }) => value),
       allowed: banned.allowed.map(({ value }) => value),
     },

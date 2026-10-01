@@ -68,8 +68,7 @@ Needs Node 24 or newer and pnpm 12 (the exact version is pinned in `package.json
 | `pnpm typecheck` | `tsc --noEmit` in every package |
 | `pnpm lint` | ESLint over the repo with the root config, failing on any warning. Includes the package-map, `.ts`-import and sim-core purity rules |
 | `pnpm check` | Lint, typecheck, then test: the same steps CI runs on every push (`.github/workflows/ci.yml`) |
-
-`pnpm validate-content <path>` does not exist yet; it arrives with the content validator in `packages/tools`.
+| `pnpm validate-content <path>…` | Checks content records against the schema and the terminology lists; `--catalogue <dir>`, `--terminology <dir>` |
 
 Lint and tsc catch every ordinary way of breaking these:
 - Relative imports name the source file (`./part.ts`, never `.js` or extensionless) and stay inside their package.
