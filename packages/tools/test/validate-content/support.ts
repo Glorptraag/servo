@@ -9,8 +9,10 @@ import { exampleArenas, exampleChallenges, exampleParts, exampleRunRecords, vali
 import { runValidateContent } from '../../src/validate-content/cli.ts';
 
 export const REPO_ROOT = fileURLToPath(new URL('../../../../', import.meta.url));
-/** Test lists in the terminology format, modelled on CLAUDE.md's terminology. Task 2.5 authors the real ones. */
+/** Test lists in the terminology format, modelled on CLAUDE.md's terminology. They stay fixed while the real ones grow. */
 export const TERMINOLOGY = fileURLToPath(new URL('./terminology/', import.meta.url));
+/** The real lists (task 2.5), which content and later the app read. */
+export const CONTENT_TERMINOLOGY = path.join(REPO_ROOT, 'packages', 'content', 'terminology');
 export const MAIN = fileURLToPath(new URL('../../src/validate-content/main.ts', import.meta.url));
 
 const made: string[] = [];
