@@ -17,6 +17,7 @@ import type { RunFrame } from '@servo/sim-core/interface'; // the canvas: this f
 | `LiveState`, `WireFlow` | One subject's state now (`values`, `motion`, `sounds`, `faults`); what flows along one wire |
 | `ControlInput`, `SimSnapshot`, `RunRecordContext` | A switch flip; the opaque whole state; what only the app knows about a Run |
 | `ProgramRuntime`, `ProgramState`, `BrainTick`, `BrainStep` | The brain's program slot (task 1.6, Level 3) |
+| `@servo/sim-core/behaviour` | Tools only: the behaviour runtime for packages/tools' fixtures, which lint refuses in every other package's src ([docs/behaviour.md](docs/behaviour.md)) |
 
 `@servo/sim-core` re-exports every type. The catalogue is the schema's `makeCatalogue` result, passed in: sim-core never imports content. `arena` is the preset record that `blueprint.arena.preset` names, and the child's props come from `blueprint.arena.props`.
 
