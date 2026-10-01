@@ -29,6 +29,7 @@ import { hitTest } from '../scene/hit.ts';
 import type { Hit } from '../scene/hit.ts';
 import { buildScene } from '../scene/scene.ts';
 import type { Scene } from '../scene/scene.ts';
+import { WiringController } from '../wiring/controller.ts';
 import { ArenaView } from './arena-view.ts';
 import { ArtStore } from './art.ts';
 import { Camera, limitsFor } from './camera.ts';
@@ -79,6 +80,8 @@ export class CanvasSurface implements CanvasHandle {
   readonly overlays = new Container();
   /** Placing, moving, turning and removing parts by touch and pointer (task 3.2, src/placement/). */
   readonly placement: PlacementController;
+  /** Drawing and removing wires by touch and pointer, sockets' glows and crowded sockets fanning out (task 3.3, src/wiring/). */
+  readonly wiring: WiringController;
 
   private readonly options: CanvasOptions;
   private readonly emitter = new Emitter<CanvasEventMap>();
@@ -147,6 +150,13 @@ export class CanvasSurface implements CanvasHandle {
       art: (key) => this.art.get(key),
       placed: (event) => this.emitter.emit('placement', event),
     });
+    // After placement, so its pointer handler comes first: sockets and wires sit above the parts they belong to.
+    this.wiring = new WiringController({
+      surface: this,
+      catalogue: options.catalogue,
+      readOnly: options.readOnly === true,
+      prefs: () => this.prefs,
+    });
     this.resizeObserver =
       typeof ResizeObserver === 'function' ? new ResizeObserver(() => this.resized()) : undefined;
     this.resizeObserver?.observe(this.canvas);
@@ -186,6 +196,7 @@ export class CanvasSurface implements CanvasHandle {
     if (mode === this.currentMode) return;
     this.currentMode = mode;
     this.placement.modeChanged();
+    this.wiring.modeChanged();
     this.modeFade.toward(mode === 'run' ? 1 : 0, this.motion(MODE_FADE_MS), performance.now());
     this.loop.request();
   }
@@ -233,6 +244,7 @@ export class CanvasSurface implements CanvasHandle {
     this.destroyed = true;
     live.delete(this);
     this.placement.destroy();
+    this.wiring.destroy();
     this.loop.stop();
     if (this.restTimer !== undefined) clearTimeout(this.restTimer);
     this.resizeObserver?.disconnect();
@@ -284,6 +296,7 @@ export class CanvasSurface implements CanvasHandle {
   setRemoveTargets(elements: readonly HTMLElement[]): void {
     this.alive('setRemoveTargets');
     this.placement.setRemoveTargets(elements);
+    this.wiring.setRemoveTargets(elements);
   }
 
   // ---------------------------------------------------------------------------------------------------------
@@ -490,6 +503,7 @@ export class CanvasSurface implements CanvasHandle {
     const renderer = this.renderer;
     if (!layers || !renderer) {
       this.placement.refresh();
+      this.wiring.refresh();
       return;
     }
     const context = this.drawContext;
@@ -540,6 +554,7 @@ export class CanvasSurface implements CanvasHandle {
     this.applyEmphasis();
     this.grid.invalidate();
     this.placement.refresh();
+    this.wiring.refresh();
     this.loop.request();
   }
 

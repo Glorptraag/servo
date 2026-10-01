@@ -53,8 +53,8 @@ type Incoming =
   | { readonly kind: 'part'; readonly part: PartTypeId; readonly record: PartRecord; targets: readonly SnapTarget[]; build: Blueprint }
   | { readonly kind: 'prop'; readonly prop: PropTemplate };
 
-/** What a pressed pointer does: a tap until it travels the drag threshold, then a drag. */
-interface Gesture {
+/** What a pressed pointer does: a tap until it travels the drag threshold, then a drag. Wiring (task 3.3) shares it. */
+export interface Gesture {
   tap(event: PointerEvent): void;
   start?(event: PointerEvent): void;
   drag?(event: PointerEvent): void;
@@ -64,7 +64,7 @@ interface Gesture {
 }
 
 /** A pointer the canvas claimed: a tap or a drag, with no long-press and no timing in it. */
-class Press implements PointerClaim {
+export class Press implements PointerClaim {
   dragging = false;
   done = false;
   readonly build: Blueprint | undefined;
@@ -186,6 +186,16 @@ export class PlacementController {
   /** The part whose rotate and bin handles show. Task 3.4 joins this to the handle's selection. */
   get selectedPart(): PlacedPartId | undefined {
     return this.selected;
+  }
+
+  /** Hides the handles: wiring (task 3.3) calls it when a socket or a wire is tapped instead. */
+  deselect(): void {
+    this.select(undefined);
+  }
+
+  /** The handle drawn under a canvas point, if any: handles take a press before the sockets beneath them. */
+  handleAt(world: Vec2): 'rotate' | 'bin' | undefined {
+    return this.selected !== undefined ? this.handles.hit(world) : undefined;
   }
 
   /** Whether a part or prop from the tray or the arena strip is on its way in. */
