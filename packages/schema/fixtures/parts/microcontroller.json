@@ -1,0 +1,163 @@
+{
+  "behaviour": [
+    {
+      "id": "brain",
+      "inputs": [
+        "in-1",
+        "in-2"
+      ],
+      "kind": "program",
+      "milliamps": 30,
+      "onVolts": 3,
+      "outputs": [
+        "out-1",
+        "out-2"
+      ],
+      "supply": {
+        "neg": "minus",
+        "pos": "plus"
+      }
+    },
+    {
+      "dropoutVolts": 0.2,
+      "id": "rail",
+      "kind": "regulator",
+      "maxMilliamps": 90,
+      "output": {
+        "neg": "minus",
+        "pos": "pin-3v"
+      },
+      "supply": {
+        "neg": "minus",
+        "pos": "plus"
+      },
+      "volts": 3.3
+    }
+  ],
+  "body": {
+    "centreOfMass": {
+      "x": 0,
+      "y": 0,
+      "z": 3
+    },
+    "grams": 9,
+    "size": {
+      "x": 52,
+      "y": 42,
+      "z": 10
+    }
+  },
+  "card": {
+    "does": "Runs a program that reads its inputs and sets its outputs.",
+    "gives": "Gives: signals (yellow) on its out pins, and a little power (red) on its 3V pin.",
+    "needs": "Needs: power (red) in.",
+    "popularMechanics": "A washing machine has a microcontroller that decides when to fill, spin and stop.",
+    "specLine": "3–6 V · 2 inputs · 2 outputs · 3V pin gives up to 90 mA"
+  },
+  "failureModes": [
+    {
+      "cardLine": "No power: it does nothing.",
+      "id": "no-power",
+      "need": "power",
+      "shows": [
+        "off"
+      ],
+      "teachingNote": "A microcontroller runs its program only while power flows through it, from plus round to minus.",
+      "unmet": "open"
+    },
+    {
+      "cardLine": "Too little power: it switches off and starts again.",
+      "id": "low-voltage",
+      "need": "power",
+      "shows": [
+        "off"
+      ],
+      "teachingNote": "Below 3 volts the microcontroller cannot run. It switches off, and starts again when the power comes back.",
+      "unmet": "low"
+    }
+  ],
+  "id": "microcontroller",
+  "identity": {
+    "art": "part/microcontroller",
+    "colours": {
+      "accent": "#ffd54f",
+      "main": "#00897b"
+    },
+    "domains": [
+      "programs-and-computing",
+      "electronics-and-power"
+    ],
+    "family": "brain",
+    "level": 3,
+    "name": "microcontroller"
+  },
+  "needs": [
+    {
+      "id": "power",
+      "kind": "power",
+      "maxVolts": 6,
+      "minVolts": 3,
+      "supply": {
+        "neg": "minus",
+        "pos": "plus"
+      }
+    }
+  ],
+  "ports": [
+    {
+      "id": "plus",
+      "label": "power in (+)",
+      "polarity": "positive",
+      "type": "power"
+    },
+    {
+      "id": "minus",
+      "label": "ground (−)",
+      "polarity": "negative",
+      "type": "power"
+    },
+    {
+      "id": "pin-3v",
+      "label": "3V pin (+)",
+      "polarity": "positive",
+      "type": "power"
+    },
+    {
+      "direction": "out",
+      "id": "out-1",
+      "label": "out 1",
+      "type": "signal"
+    },
+    {
+      "direction": "out",
+      "id": "out-2",
+      "label": "out 2",
+      "type": "signal"
+    },
+    {
+      "direction": "in",
+      "id": "in-1",
+      "label": "in 1",
+      "type": "signal"
+    },
+    {
+      "direction": "in",
+      "id": "in-2",
+      "label": "in 2",
+      "type": "signal"
+    },
+    {
+      "at": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "id": "mount",
+      "label": "mount",
+      "role": "mount",
+      "type": "mechanical",
+      "yaw": 0
+    }
+  ],
+  "settings": []
+}

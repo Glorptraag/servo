@@ -1,0 +1,81 @@
+{
+  "friction": 0.9,
+  "id": "ramp",
+  "lines": [
+    {
+      "id": "guide-line",
+      "points": [
+        {
+          "x": 250,
+          "y": 600
+        },
+        {
+          "x": 900,
+          "y": 600
+        },
+        {
+          "x": 1700,
+          "y": 600
+        }
+      ],
+      "widthMm": 20
+    }
+  ],
+  "name": "Ramp",
+  "props": [
+    {
+      "at": {
+        "heading": 0,
+        "x": 600,
+        "y": 400
+      },
+      "fixed": true,
+      "grams": 200,
+      "id": "bump",
+      "shape": "cylinder",
+      "size": {
+        "x": 50,
+        "y": 50,
+        "z": 10
+      }
+    }
+  ],
+  "ramps": [
+    {
+      "from": {
+        "x": 900,
+        "y": 300
+      },
+      "id": "slope",
+      "riseMm": 60,
+      "to": {
+        "x": 1500,
+        "y": 900
+      },
+      "uphill": "+x"
+    }
+  ],
+  "size": {
+    "x": 2400,
+    "y": 1200
+  },
+  "start": {
+    "heading": 0,
+    "x": 250,
+    "y": 600
+  },
+  "walls": [],
+  "zones": [
+    {
+      "from": {
+        "x": 1500,
+        "y": 300
+      },
+      "id": "top",
+      "to": {
+        "x": 1900,
+        "y": 900
+      }
+    }
+  ]
+}

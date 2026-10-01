@@ -1,0 +1,121 @@
+{
+  "behaviour": [
+    {
+      "capacityMah": 40,
+      "emptyVolts": 2,
+      "id": "cells",
+      "internalOhms": 0.4,
+      "kind": "source",
+      "output": {
+        "neg": "minus",
+        "pos": "plus"
+      },
+      "volts": 3
+    }
+  ],
+  "body": {
+    "centreOfMass": {
+      "x": 0,
+      "y": 0,
+      "z": 8
+    },
+    "grams": 60,
+    "size": {
+      "x": 58,
+      "y": 32,
+      "z": 17
+    }
+  },
+  "card": {
+    "does": "Stores electricity and gives it out through plus and minus.",
+    "gives": "Gives: power (red), about 3 volts.",
+    "needs": "Needs: a loop of wire from plus, through a part, back to minus.",
+    "popularMechanics": "The same kind of cells power a TV remote and a torch.",
+    "safetyNote": "Real battery packs need an adult nearby: never join plus to minus with a bare wire.",
+    "specLine": "2 × AA cells · 3 V"
+  },
+  "failureModes": [
+    {
+      "cardLine": "Short circuit: the battery pack drains fast.",
+      "hint": "Plus is joined straight to minus",
+      "id": "short-circuit",
+      "need": "no-short",
+      "shows": [
+        "drain"
+      ],
+      "teachingNote": "A path from plus back to minus with nothing that uses power on it, such as a bare wire or a closed switch, gives the current nothing to slow it, so the pack empties in seconds and grows warm.",
+      "unmet": "shorted"
+    },
+    {
+      "cardLine": "No loop: nothing on the battery pack works.",
+      "hint": "This battery pack has no loop back to minus",
+      "id": "no-loop",
+      "need": "loop",
+      "shows": [
+        "off"
+      ],
+      "teachingNote": "A battery pack gives power only round a closed loop from plus back to minus. With no loop at all nothing flows, so nothing on it works.",
+      "unmet": "open"
+    }
+  ],
+  "id": "battery-pack-2-cell",
+  "identity": {
+    "art": "part/battery-pack-2-cell",
+    "colours": {
+      "accent": "#212121",
+      "main": "#c62828"
+    },
+    "domains": [
+      "electronics-and-power",
+      "robotic-system-components"
+    ],
+    "family": "power",
+    "level": 1,
+    "name": "2-cell battery pack"
+  },
+  "needs": [
+    {
+      "id": "no-short",
+      "kind": "isolation",
+      "ports": [
+        "plus",
+        "minus"
+      ]
+    },
+    {
+      "id": "loop",
+      "kind": "loop",
+      "ports": [
+        "plus",
+        "minus"
+      ]
+    }
+  ],
+  "ports": [
+    {
+      "id": "plus",
+      "label": "plus (+)",
+      "polarity": "positive",
+      "type": "power"
+    },
+    {
+      "id": "minus",
+      "label": "minus (−)",
+      "polarity": "negative",
+      "type": "power"
+    },
+    {
+      "at": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "id": "mount",
+      "label": "mount",
+      "role": "mount",
+      "type": "mechanical",
+      "yaw": 0
+    }
+  ],
+  "settings": []
+}

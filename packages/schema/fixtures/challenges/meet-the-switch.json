@@ -1,0 +1,199 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "goal": {
+    "kind": "sequence",
+    "of": [
+      {
+        "forTicks": 15,
+        "kind": "holds",
+        "when": {
+          "kind": "state",
+          "state": "turning",
+          "target": {
+            "placed": "motor"
+          }
+        }
+      },
+      {
+        "forTicks": 15,
+        "kind": "holds",
+        "when": {
+          "kind": "and",
+          "of": [
+            {
+              "kind": "state",
+              "state": "open",
+              "target": {
+                "placed": "switch"
+              }
+            },
+            {
+              "kind": "state",
+              "state": "still",
+              "target": {
+                "placed": "motor"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "goalLine": "Put the switch in the power line, then press it",
+  "hints": [
+    {
+      "steps": [
+        {
+          "line": "The switch goes in the power line",
+          "step": "pulse-part",
+          "target": {
+            "placed": "switch"
+          }
+        },
+        {
+          "line": "Side A of the switch takes power from the battery pack",
+          "step": "pulse-port",
+          "target": {
+            "placed": "switch",
+            "port": "a"
+          }
+        },
+        {
+          "from": {
+            "placed": "battery",
+            "port": "plus"
+          },
+          "line": "Plus to side A",
+          "step": "ghost-wire",
+          "to": {
+            "placed": "switch",
+            "port": "a"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "switch",
+                "port": "a"
+              }
+            }
+          ],
+          "line": "Wired the battery pack's plus to side A",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "placed": "switch",
+        "port": "a"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "Side B sends power on to the motor",
+          "step": "pulse-port",
+          "target": {
+            "placed": "switch",
+            "port": "b"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "motor",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "switch",
+                "port": "b"
+              }
+            }
+          ],
+          "line": "Wired side B to the motor's plus",
+          "step": "do-it"
+        }
+      ]
+    }
+  ],
+  "id": "meet-the-switch",
+  "introduces": "switch",
+  "kind": "part-introduction",
+  "kit": "rolling-start",
+  "level": 1,
+  "start": {
+    "arena": {
+      "preset": "open-floor",
+      "props": []
+    },
+    "meta": {
+      "createdAt": "2026-10-01T09:00:00.000Z",
+      "highWater": {
+        "parts": 0,
+        "wires": 1
+      },
+      "id": "6b7c8d9e-0f1a-4b2c-93d4-e5f6a7b8c9d0",
+      "level": 1,
+      "name": "Meet the switch",
+      "updatedAt": "2026-10-01T09:20:00.000Z"
+    },
+    "parts": [
+      {
+        "id": "battery",
+        "part": "battery-pack-2-cell",
+        "position": {
+          "x": -100,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "motor",
+        "part": "dc-motor",
+        "position": {
+          "x": 100,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "switch",
+        "part": "switch",
+        "position": {
+          "x": 0,
+          "y": -80
+        },
+        "rotation": 0,
+        "settings": {}
+      }
+    ],
+    "version": 1,
+    "wires": [
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w1",
+        "to": {
+          "part": "motor",
+          "port": "minus"
+        }
+      }
+    ]
+  },
+  "title": "Meet the switch"
+}

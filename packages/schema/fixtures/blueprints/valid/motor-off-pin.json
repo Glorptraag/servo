@@ -1,0 +1,141 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "meta": {
+    "createdAt": "2026-10-01T09:00:00.000Z",
+    "highWater": {
+      "parts": 0,
+      "wires": 7
+    },
+    "id": "5a6b7c8d-9e0f-4a1b-82c3-d4e5f6a7b8c9",
+    "level": 3,
+    "name": "Motor on a pin",
+    "updatedAt": "2026-10-01T09:20:00.000Z"
+  },
+  "parts": [
+    {
+      "id": "battery",
+      "part": "battery-pack-2-cell",
+      "position": {
+        "x": -120,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "brain",
+      "part": "microcontroller",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "motor",
+      "part": "dc-motor",
+      "position": {
+        "x": 120,
+        "y": -60
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "servo",
+      "part": "servo-motor",
+      "position": {
+        "x": 120,
+        "y": 60
+      },
+      "rotation": 0,
+      "settings": {
+        "angle": 45
+      }
+    }
+  ],
+  "version": 1,
+  "wires": [
+    {
+      "from": {
+        "part": "battery",
+        "port": "plus"
+      },
+      "id": "w1",
+      "to": {
+        "part": "brain",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "minus"
+      },
+      "id": "w2",
+      "to": {
+        "part": "brain",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "brain",
+        "port": "pin-3v"
+      },
+      "id": "w3",
+      "to": {
+        "part": "motor",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "brain",
+        "port": "minus"
+      },
+      "id": "w4",
+      "to": {
+        "part": "motor",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "plus"
+      },
+      "id": "w5",
+      "to": {
+        "part": "servo",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "minus"
+      },
+      "id": "w6",
+      "to": {
+        "part": "servo",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "brain",
+        "port": "out-1"
+      },
+      "id": "w7",
+      "to": {
+        "part": "servo",
+        "port": "signal"
+      }
+    }
+  ]
+}
