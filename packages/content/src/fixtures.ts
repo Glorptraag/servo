@@ -82,6 +82,139 @@ export const FIXTURES: Readonly<Record<string, FixtureSpec>> = {
     ticks: 120,
     expect: { faults: [] },
   },
+  // Task 2.6, working builds: each Run shows no fault.
+  'level-1-roller': {
+    description: 'Level 1: two DC motors wired red to red on the 2-cell battery pack drive the robot forward.',
+    blueprint: 'level-1-roller',
+    inputs: [],
+    ticks: 90,
+    expect: { faults: [] },
+  },
+  'switch-in-the-line': {
+    description: 'Level 1: the switch in the power line is opened at tick 30, so the robot stops, and closed at tick 60, so it drives on.',
+    blueprint: 'switch-in-the-line',
+    inputs: [
+      { tick: 30, partId: 'switch', kind: 'switch', closed: false },
+      { tick: 60, partId: 'switch', kind: 'switch', closed: true },
+    ],
+    ticks: 90,
+    expect: { faults: [] },
+  },
+  'small-wheel-roller': {
+    description: 'Level 2: the Level 1 roller on small wheels drives forward more slowly, its chassis tilted nose down and clear of the floor.',
+    blueprint: 'small-wheel-roller',
+    inputs: [],
+    ticks: 90,
+    expect: { faults: [] },
+  },
+  'motor-driver-robot': {
+    description: 'Level 2: the motor driver, behind the switch, runs both DC motors forward.',
+    blueprint: 'motor-driver-robot',
+    inputs: [],
+    ticks: 90,
+    expect: { faults: [] },
+  },
+  'bumper-stops-at-wall': {
+    description: 'Level 2: the bumper switch feeds the motor driver, so the robot crosses the arena and stops when the bumper switch meets the far wall.',
+    blueprint: 'bumper-stops-at-wall',
+    inputs: [],
+    ticks: 240,
+    expect: { faults: [] },
+  },
+  'led-and-buzzer-robot': {
+    description: 'Level 2: behind one switch, the robot drives forward with its LED lit and its buzzer sounding.',
+    blueprint: 'led-and-buzzer-robot',
+    inputs: [],
+    ticks: 90,
+    expect: { faults: [] },
+  },
+  'geared-robot': {
+    description: 'Level 2: a gearbox between each DC motor and its large wheel, so the robot drives forward at about a third of the speed.',
+    blueprint: 'geared-robot',
+    inputs: [],
+    ticks: 90,
+    expect: { faults: [] },
+  },
+  'busy-workbench': {
+    description: 'Level 2, 25 parts for canvas performance: the fullest direct-drive robot the chassis holds, beside a test board and a lamp on the bench.',
+    blueprint: 'busy-workbench',
+    inputs: [],
+    ticks: 90,
+    expect: { faults: [] },
+  },
+  // Task 2.6, broken builds: one fault each, named, or one impossible drop refused. Every other part is fault-free.
+  'broken-reversed-motor': {
+    description: 'Level 2 breakdown: the right DC motor is wired backwards, so the robot spins on the spot.',
+    blueprint: 'broken-reversed-motor',
+    inputs: [],
+    ticks: 90,
+    expect: { faults: [{ partId: 'motor-right', failure: 'reversed' }], namedFault: { partId: 'motor-right', failure: 'reversed' } },
+  },
+  'broken-missing-return-wire': {
+    description: 'Level 1: the left DC motor has no wire back to the battery pack’s minus, so it stays still and the robot turns.',
+    blueprint: 'broken-missing-return-wire',
+    inputs: [],
+    ticks: 90,
+    expect: { faults: [{ partId: 'motor-left', failure: 'no-circuit' }], namedFault: { partId: 'motor-left', failure: 'no-circuit' } },
+  },
+  'broken-servo-without-signal': {
+    description: 'Level 2: a servo motor on two 2-cell battery packs in series has power and no signal, so its arm holds and hums (D50).',
+    blueprint: 'broken-servo-without-signal',
+    inputs: [],
+    ticks: 60,
+    expect: { faults: [{ partId: 'servo', failure: 'no-signal' }], namedFault: { partId: 'servo', failure: 'no-signal' } },
+  },
+  'broken-underpowered-pack': {
+    description:
+      'Level 2: the 1-cell battery pack cannot switch the motor driver on, so the driver gives its DC motors nothing and holds the one fault; wired straight to the pack, both motors would show low voltage.',
+    blueprint: 'broken-underpowered-pack',
+    inputs: [],
+    ticks: 60,
+    expect: { faults: [{ partId: 'driver', failure: 'low-voltage' }], namedFault: { partId: 'driver', failure: 'low-voltage' } },
+  },
+  'broken-chassis-on-the-floor': {
+    description:
+      'Level 2: with no caster, the geared robot rocks back 8.0° onto the chassis’s rear edge and rests there, its centre of mass 85 mm inside that edge, so it drags (grounded); no Level 1–2 build on this chassis tips (D49).',
+    blueprint: 'broken-chassis-on-the-floor',
+    inputs: [],
+    ticks: 90,
+    expect: { faults: [{ partId: 'chassis', failure: 'scraping' }], namedFault: { partId: 'chassis', failure: 'scraping' } },
+  },
+  'broken-short-circuit': {
+    description: 'Level 1: a wire straight across the battery pack shorts it; the DC motors and the switch it starves show no fault of their own.',
+    blueprint: 'broken-short-circuit',
+    inputs: [],
+    ticks: 60,
+    expect: { faults: [{ partId: 'battery', failure: 'short-circuit' }], namedFault: { partId: 'battery', failure: 'short-circuit' } },
+  },
+  'broken-wrong-type-wire': {
+    description: 'Level 2: a power line (red) dropped on the motor driver’s signal in (yellow) is refused at the socket; the build before it works.',
+    blueprint: 'broken-wrong-type-wire',
+    inputs: [],
+    ticks: 30,
+    expect: { faults: [], refused: { from: { part: 'battery', port: 'plus' }, to: { part: 'driver', port: 'in-a' }, code: 'wire.type_mismatch' } },
+  },
+  'broken-loose-caster': {
+    description:
+      'Level 1: the caster lies behind the robot, fixed to nothing, so the chassis rests on its rear edge and drags; the loose caster’s own fault stands for the chassis’s balance, as a motor driver stands for its motors, so it is the one fault (R-2.6 Q2).',
+    blueprint: 'broken-loose-caster',
+    inputs: [],
+    ticks: 90,
+    expect: { faults: [{ partId: 'caster', failure: 'loose' }], namedFault: { partId: 'caster', failure: 'loose' } },
+  },
+  // Task 2.6, extra: the battery what-if for task 4.8. Neither working nor broken, so not one of the eight and eight.
+  'one-cell-roller': {
+    description: 'Level 2 what-if, neither working nor broken: on the 1-cell battery pack the robot drives at about half speed, and both DC motors show low voltage.',
+    blueprint: 'one-cell-roller',
+    inputs: [],
+    ticks: 90,
+    expect: {
+      faults: [
+        { partId: 'motor-left', failure: 'low-voltage' },
+        { partId: 'motor-right', failure: 'low-voltage' },
+      ],
+    },
+  },
 };
 
 const MANIFEST = 'src/fixtures.ts';

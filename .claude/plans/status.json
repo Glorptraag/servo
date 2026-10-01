@@ -205,7 +205,7 @@
       "dispatched_at": "2026-10-01T04:09:31+00:00"
     },
     "1.2": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -219,8 +219,8 @@
       ],
       "done_when": "A motor on a 1-cell vs 2-cell pack shows the speed ratio stated in the part record; a shorted pack drains in the specified time; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T08:38:47+00:00",
+      "completed_by": "W-1.2",
       "dispatched_at": "2026-10-01T04:45:51+00:00"
     },
     "1.3": {
@@ -442,7 +442,7 @@
       "dispatched_at": "2026-10-01T04:01:20+00:00"
     },
     "2.6": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -457,12 +457,12 @@
       ],
       "done_when": "All 16 validate; each broken fixture's named fault reproduces in sim-core (a failing assertion per fixture); tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T08:07:35+00:00",
+      "completed_by": "W-2.6",
       "dispatched_at": "2026-10-01T06:17:01+00:00"
     },
     "G2": {
-      "status": "pending",
+      "status": "done",
       "model": "opus",
       "size": "micro",
       "batch": null,
@@ -482,11 +482,11 @@
       ],
       "done_when": "docs/gates/G2.md records validator results and Drew's sign-off on every spec card.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null
+      "completed_at": "2026-10-01T08:08:35+00:00",
+      "completed_by": "orchestrator-provisional"
     },
     "3.1": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -502,8 +502,8 @@
       ],
       "done_when": "60 fps (16 ms frame budget) on a 25-part fixture in the e2e harness's iPad profile; layer order verified by screenshot tests; tests pass.",
       "contracts": "Canvas imports sim-core only through packages/sim-core/src/interface.ts.",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T08:34:36+00:00",
+      "completed_by": "W-3.1",
       "dispatched_at": "2026-10-01T04:52:13+00:00"
     },
     "3.2": {
@@ -1667,6 +1667,54 @@
       "id": "D59",
       "question": "D54 wording correction (review R-1.3): in the v1 runtime a signal level drives a motor driver channel forward only (0 to 1 maps onto 0 to full forward); reversing from a signal is not modelled.",
       "recommendation": "Accept forward-only for v1; the Level 3 design decides whether a signal can reverse a channel.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D60",
+      "question": "Mechanical defaults from task 1.4: a ramp's drop-off edge acts as a wall; wheel grip is the wheel's grip times the arena floor's friction; an unpowered DC motor brakes its wheel (a gear motor's gearbox resists turning); loose parts do not collide with the robot; hitting a wall never tips a robot; a fallen robot's wheels show no 'lifted' fault.",
+      "recommendation": "Accept all six for Levels 1\u20132; revisit with the behaviour-rules sub-draft (brief Section 15, item 4) and a robotics teacher.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D61",
+      "question": "No Level 1\u20132 build can tip over with the real part records: a search of 2,152,008 builds found none on flat floor (caster-less builds settle on the frame at least 76 mm inside the edge), and on a slope tipping starts only at 49.7 degrees (the ramp preset is 8.1). Brief Sections 2\u20133 place 'balance a chassis' at Level 4. The plan's 2.6 fault list and 1.4's acceptance name a top-heavy tip.",
+      "recommendation": "At Levels 1\u20132 the balance lesson is 'frame on the floor: the robot drags' (the 2.6 fixture broken-chassis-on-the-floor); true tipping is a Level 4 lesson with taller structures. The mechanical solver's tip is proven on a tall test variant.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D62",
+      "question": "Loose support attribution (review R-2.6 Q2, built into task 1.4): when a frame drags because the caster is loose, only the caster records a fault (mount \u00b7 absent \u2192 drag); the chassis records no balance fault of its own. With no caster in the build at all, the chassis's own grounded/scraping fault applies.",
+      "recommendation": "Accept: one fault, on the part the child must fix.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D63",
+      "question": "D61 figures corrected (review R-2.6 N1): without a caster, the most front-heavy Level 1\u20132 load reaches 34.2 mm (not 30.9) against the 40 mm axle, and tips on a slope only from 47.9 degrees (not 49.7); the conclusion stands: no Level 1\u20132 build tips.",
+      "recommendation": "No change to D61's recommendation; the figures in its question were for the build with a caster.",
+      "confidence": "high",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D64",
+      "question": "Gate G2 sign-off (provisionally closed so the build continues): Drew reads every Level 1\u20132 spec card in docs/gates/G2.md (14 parts, every card line, hint and teaching note) and marks any change.",
+      "recommendation": "Read docs/gates/G2.md; tick the sign-off box with the date; any line to change becomes a content fix task. Nothing technical waits on this.",
+      "confidence": "high",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D65",
+      "question": "D55 updated (review R-3.1): the canvas renderer's default choices are now the ten listed in packages/canvas/docs/renderer.md (scale, socket layout, tile sizes, mount-point drawing, mirrored light, trackpad zoom, fonts and three more). Known issue for task 3.3: sockets of neighbouring parts overlap on the Level 2 bumper robot and the Circuit Crew kit robot (5.6 px apart).",
+      "recommendation": "Review renderer.md's ten choices with the canvas interaction spec; task 3.3 fixes the socket overlap before G3.",
       "confidence": "medium",
       "blocks": [],
       "resolved": false
