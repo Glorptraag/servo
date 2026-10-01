@@ -80,8 +80,12 @@ export const classify = (file: string, value: unknown, repoRoot: string): Classi
   return only !== undefined && candidates.length === 1 ? { kind: only, by: 'fields' } : { kind: undefined, candidates };
 };
 
-/** Folders the walk leaves out: dependencies, hidden folders, and the terminology lists (read separately). */
-export const isSkippedFolder = (name: string): boolean => name.startsWith('.') || name === 'node_modules' || name === 'terminology';
+/**
+ * Folders the walk leaves out: dependencies, hidden folders, the terminology lists (read separately) and
+ * part art, whose generated folder holds `pnpm art`'s registry.json.
+ */
+export const isSkippedFolder = (name: string): boolean =>
+  name.startsWith('.') || name === 'node_modules' || name === 'terminology' || name === 'art';
 
 /** Package configuration, not content: `package.json` and `tsconfig*.json`. */
 export const isConfigFile = (name: string): boolean => name === 'package.json' || /^tsconfig(?:\.[^/\\]+)?\.json$/.test(name);

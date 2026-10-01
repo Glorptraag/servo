@@ -99,13 +99,19 @@ export const validateContent = (options: ValidateContentOptions): ContentReport 
   const matcher = compileTerminology(terminology.terminology);
   const componentsFile = path.join(options.terminology, TERMINOLOGY_FILES.components);
   const bannedFile = path.join(options.terminology, TERMINOLOGY_FILES.banned);
+  // A file that cannot be read, is not JSON or is not an object has its issue at `$`.
+  const unusable = (file: string): boolean => terminology.issues.some((issue) => issue.file === file && issue.path === '$');
   if (terminology.missing.includes(componentsFile)) {
     notes.push(`No components list at ${show(componentsFile)}, so part names are not checked against real component names.`);
+  } else if (unusable(componentsFile)) {
+    notes.push(`The components list at ${show(componentsFile)} cannot be used, so part names are not checked.`);
   } else if (terminology.terminology.components.length === 0) {
     notes.push(`The components list at ${show(componentsFile)} names no components, so part names are not checked.`);
   }
   if (terminology.missing.includes(bannedFile)) {
     notes.push(`No banned list at ${show(bannedFile)}, so text is not checked for banned words.`);
+  } else if (unusable(bannedFile)) {
+    notes.push(`The banned list at ${show(bannedFile)} cannot be used, so text is not checked for banned words.`);
   } else if (terminology.terminology.banned.length === 0) {
     notes.push(`The banned list at ${show(bannedFile)} bans nothing, so text is not checked for banned words.`);
   }

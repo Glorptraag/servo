@@ -1,9 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import process from 'node:process';
 import { ISSUE_CODES } from '@servo/schema';
 import { exampleArenas, exampleParts, invalidBlueprints, invalidKits, validKits } from '@servo/schema/fixtures';
 import { afterEach, describe, expect, it } from 'vitest';
 import * as tools from '../src/index.ts';
+import { generateArt } from '../src/placeholder-art/cli.ts';
 import { CONTENT_ISSUE_CODES } from '../src/validate-content/codes.ts';
 import { validateContent } from '../src/validate-content/validate.ts';
 import {
@@ -60,10 +62,27 @@ describe('done when: rejects a character-style name or a missing port type, with
     }
   });
 
-  it('rejects a character name beside the real name', () => {
-    const run = cli([partFile('sparky', (part) => (identity(part).name = 'Sparky the DC motor')), '--terminology', TERMINOLOGY]);
-    expect(run.status).toBe(1);
-    expect(issueLines(run.out)).toEqual([expect.stringMatching(/: terminology\.proper_name at \$\.identity\.name: 'Sparky' is capitalised outside the real name/)]);
+  it('rejects a character name beside the real name, in any case', () => {
+    const capitalised = cli([partFile('sparky', (part) => (identity(part).name = 'Sparky the DC motor')), '--terminology', TERMINOLOGY]);
+    expect(capitalised.status).toBe(1);
+    expect(issueLines(capitalised.out)).toEqual([
+      expect.stringMatching(/: terminology\.proper_name at \$\.identity\.name: 'Sparky' is capitalised and is not part of a real name/),
+      expect.stringMatching(/: terminology\.not_qualifier at \$\.identity\.name: 'the' is not part of a real name/),
+    ]);
+    const lower = cli([partFile('sparky', (part) => (identity(part).name = 'sparky the DC motor')), '--terminology', TERMINOLOGY]);
+    expect(lower.status).toBe(1);
+    expect(issueLines(lower.out).map((line) => line.slice(line.indexOf(': ') + 2))).toEqual([
+      "terminology.not_qualifier at $.identity.name: 'sparky' is not part of a real name, a listed qualifier or a gloss. A part's name is a real component name with nothing beside it but listed qualifiers, such as sizes.",
+      "terminology.not_qualifier at $.identity.name: 'the' is not part of a real name, a listed qualifier or a gloss. A part's name is a real component name with nothing beside it but listed qualifiers, such as sizes.",
+    ]);
+  });
+
+  it('rejects a name with no letters', () => {
+    for (const name of ['🤖', '???']) {
+      const run = cli([partFile('face', (part) => (identity(part).name = name)), '--terminology', TERMINOLOGY]);
+      expect(run.status).toBe(1);
+      expect(issueLines(run.out)).toEqual([expect.stringContaining(`: terminology.not_real_name at $.identity.name: '${name}' has no letters`)]);
+    }
   });
 
   it('rejects a port with no type', () => {
@@ -156,6 +175,17 @@ describe('files that are not records', () => {
       'loose/thing.json: file.unknown_kind at $: Its kind is unknown: it is in no record folder and has the fields of no record. Put it in one of parts/, arenas/, kits/, challenges/, blueprints/, run-records/.',
       expect.stringMatching(/^parts\/broken\.json: file\.bad_json at \$: Not valid JSON: /),
     ]);
+  });
+
+  it('skips the art folder, where pnpm art writes registry.json', () => {
+    const content = tempFolder();
+    const parts = exampleParts.map((part) => write(content, `parts/level-1/${idOf(part)}.json`, part));
+    generateArt({ parts: path.join(content, 'parts'), out: path.join(content, 'art/generated'), final: path.join(content, 'art/final') });
+    expect(fs.existsSync(path.join(content, 'art/generated/registry.json'))).toBe(true);
+    const run = cli(['.', '--terminology', TERMINOLOGY], { cwd: content, contentDir: content });
+    expect(issueLines(run.out)).toEqual([]);
+    expect(run.out).toEqual([`validate-content: ${parts.length} records checked, no issues.`]);
+    expect(run.status).toBe(0);
   });
 
   it('classifies a record outside the record folders by its fields', () => {
@@ -259,6 +289,22 @@ describe('terminology files', () => {
       `${shown(path.join(terms, 'banned.json'))}: terminology.bad_file at $.banned[0].reason: Missing 'reason'.`,
     ]);
   });
+
+  it('says a list that cannot be used is not checked, rather than empty', () => {
+    const terms = tempFolder();
+    const components = write(terms, 'components.json', '{ "components": [');
+    const banned = write(terms, 'banned.json', ['coins']);
+    const run = cli([partFile('dc-motor', () => undefined), '--terminology', terms]);
+    expect(run.status).toBe(1);
+    expect(run.out.filter((line) => line.startsWith('note: '))).toEqual([
+      `note: The components list at ${shown(components)} cannot be used, so part names are not checked.`,
+      `note: The banned list at ${shown(banned)} cannot be used, so text is not checked for banned words.`,
+    ]);
+    write(terms, 'components.json', { components: [] });
+    expect(cli([partFile('dc-motor', () => undefined), '--terminology', terms]).out).toContain(
+      `note: The components list at ${shown(components)} names no components, so part names are not checked.`,
+    );
+  });
 });
 
 describe('the command', () => {
@@ -310,6 +356,32 @@ describe('the command', () => {
     expect(run.status).toBe(2);
     expect(run.out).toEqual([]);
     expect(run.err.join('\n')).toMatch(message);
+  });
+
+  it('says what is not a record when a folder holds none', () => {
+    const folder = tempFolder();
+    write(folder, 'content/terminology/banned.json', { banned: [] });
+    write(folder, 'content/art/generated/registry.json', {});
+    const run = cli(['content'], { cwd: folder });
+    expect(run.status).toBe(2);
+    expect(run.err).toEqual([
+      'validate-content: No .json records in content. Terminology and art folders, node_modules, hidden folders, package.json, tsconfig files and symbolic links are not records.',
+    ]);
+  });
+
+  it.skipIf(process.getuid?.() === 0)('reports a named folder it cannot list as an issue with its cause, not as misuse', () => {
+    const folder = tempFolder();
+    write(folder, 'locked/parts/led.json', partFixture('led'));
+    const locked = path.join(folder, 'locked');
+    fs.chmodSync(locked, 0o000);
+    try {
+      const run = cli(['locked', '--terminology', TERMINOLOGY], { cwd: folder });
+      expect(run.err).toEqual([]);
+      expect(issueLines(run.out)).toEqual(['locked: file.unreadable at $: Could not list the folder (EACCES).']);
+      expect(run.status).toBe(1);
+    } finally {
+      fs.chmodSync(locked, 0o755);
+    }
   });
 
   it('prints help', () => {

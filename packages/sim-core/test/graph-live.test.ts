@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { makeCatalogue, validateArenaPreset, validatePartRecord, wiredNeeds } from '@servo/schema';
 import type { Blueprint, ControlState, PartRecord, PortRef, ValidationResult, WiredVerdict } from '@servo/schema';
 import { exampleArenas, exampleParts, validBlueprints } from '@servo/schema/fixtures';
-import { LIVE_TABLE_CONTROLS, buildGraph, liveAt } from '../src/index.ts';
-import type { SimGraph } from '../src/index.ts';
+import { LIVE_TABLE_CONTROLS, buildGraph, liveAt } from '../src/graph/index.ts';
+import type { SimGraph } from '../src/graph/index.ts';
 
 const unwrap = <T>(result: ValidationResult<T>): T => {
   if (!result.ok) throw new Error(`Expected valid data:\n${JSON.stringify(result.issues, null, 2)}`);

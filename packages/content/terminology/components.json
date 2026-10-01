@@ -14,7 +14,14 @@
     { "name": "buzzer" },
     { "name": "microcontroller", "glosses": ["brain"] },
     { "name": "line sensor" },
-    { "name": "ultrasonic sensor" }
+    { "name": "ultrasonic sensor" },
+    { "name": "gripper" },
+    { "name": "breadboard" },
+    { "name": "power line" },
+    { "name": "signal line" },
+    { "name": "mechanical linkage" },
+    { "name": "mount" },
+    { "name": "mount point" }
   ],
   "qualifiers": ["1-cell", "2-cell", "large", "small"]
 }

@@ -35,6 +35,7 @@ describe('loading the terminology folder', () => {
     expect(lists.missing).toEqual([]);
     expect(lists.terminology.components).toContainEqual({ name: 'chassis', glosses: ['frame'] });
     expect(lists.terminology.components).toContainEqual({ name: 'DC motor', glosses: [] });
+    expect(lists.terminology.qualifiers).toEqual(['1-cell', '2-cell', 'large', 'small']);
     expect(lists.terminology.banned.map((entry) => entry.phrase)).toContain('points');
     expect(lists.terminology.allowed).toEqual(['mount point', 'mount points']);
   });
@@ -42,7 +43,7 @@ describe('loading the terminology folder', () => {
   it('treats a missing folder as empty lists, with both files missing and no issues', () => {
     const folder = path.join(tempFolder(), 'terminology');
     const loaded = loadTerminology(folder);
-    expect(loaded.terminology).toEqual({ components: [], banned: [], allowed: [] });
+    expect(loaded.terminology).toEqual({ components: [], qualifiers: [], banned: [], allowed: [] });
     expect(loaded.missing).toEqual([path.join(folder, 'components.json'), path.join(folder, 'banned.json')]);
     expect(loaded.issues).toEqual([]);
   });
@@ -91,6 +92,23 @@ describe('loading the terminology folder', () => {
     expect(problems({ 'components.json': ['DC motor'] })).toEqual(['components.json terminology.bad_file at $: Expected an object.']);
   });
 
+  it('reads qualifiers as an optional list of phrases, reporting bad and repeated ones', () => {
+    const folder = tempFolder();
+    write(folder, 'components.json', { components: [{ name: 'wheel' }], qualifiers: ['large', 7, ' small', 'Large', '2-cell'] });
+    const loaded = loadTerminology(folder);
+    expect(loaded.terminology.qualifiers).toEqual(['large', 'Large', '2-cell']);
+    expect(loaded.issues.map((issue) => `${issue.path}: ${issue.message}`)).toEqual([
+      '$.qualifiers[1]: Expected a qualifier as a string.',
+      '$.qualifiers[2]: Expected a qualifier on one line, without spaces at either end.',
+      "$.qualifiers[3]: 'Large' is already listed.",
+    ]);
+    expect(problems({ 'components.json': { components: [], qualifiers: 'large' } })).toEqual([
+      'components.json terminology.bad_file at $.qualifiers: Expected a list.',
+    ]);
+    write(folder, 'components.json', { components: [{ name: 'wheel' }] });
+    expect(loadTerminology(folder).terminology.qualifiers).toEqual([]);
+  });
+
   it('reports a phrase with no words, pointing exclamation marks at the schema', () => {
     expect(problems({ 'banned.json': { banned: [{ phrase: '!', reason: 'Shouting.' }] } })).toEqual([
       'banned.json terminology.bad_file at $.banned[0].phrase: Expected a banned word or phrase with at least one word. Exclamation marks need no entry: the schema refuses them in all system text.',
@@ -136,6 +154,24 @@ describe('loading the terminology folder', () => {
       "banned.json terminology.bad_file at $.banned[0].phrase: 'Brain' is banned but is also a gloss for 'microcontroller' in components.json.",
       "banned.json terminology.bad_file at $.banned[1].phrase: 'microcontroller' is banned but is also a real component name in components.json.",
       "banned.json terminology.bad_file at $.banned[2].phrase: 'mount points' is banned but is also an allowed phrase.",
+    ]);
+  });
+
+  it('reports a banned phrase that a qualifier holds, since no part name could use that qualifier', () => {
+    expect(
+      problems({
+        'components.json': { components: [{ name: 'wheel' }], qualifiers: ['large', 'extra-large', 'small', 'mount points'] },
+        'banned.json': {
+          banned: [
+            { phrase: 'large', reason: 'Test.' },
+            { phrase: 'points', reason: 'Test.' },
+          ],
+          allowed: ['mount points'],
+        },
+      }),
+    ).toEqual([
+      "banned.json terminology.bad_file at $.banned[0].phrase: 'large' is banned, so the qualifier 'large' in components.json could never be used.",
+      "banned.json terminology.bad_file at $.banned[0].phrase: 'large' is banned, so the qualifier 'extra-large' in components.json could never be used.",
     ]);
   });
 
@@ -207,9 +243,26 @@ describe('banned words in system text', () => {
     ]);
   });
 
+  it('leaves a banned word inside a longer banned phrase to that phrase, and refuses it elsewhere', () => {
+    const own = compileTerminology({
+      components: [],
+      qualifiers: [],
+      banned: [
+        { phrase: 'great', reason: 'Word.' },
+        { phrase: 'great job', reason: 'Phrase.' },
+      ],
+      allowed: [],
+    });
+    const messages = (text: string): string[] => bannedFindings(text, own).map((finding) => finding.message);
+    expect(messages('Great job')).toEqual(["'Great job' is on the banned list: Phrase."]);
+    expect(messages('A great robot')).toEqual(["'great' is on the banned list: Word."]);
+    expect(messages('A great job and a great robot')).toEqual(["'great' is on the banned list: Word.", "'great job' is on the banned list: Phrase."]);
+  });
+
   it('never refuses a word inside a real name or a gloss', () => {
     const custom: Terminology = {
       components: [{ name: 'mount plate', glosses: ['bolt plate'] }],
+      qualifiers: [],
       banned: [{ phrase: 'plate', reason: 'Test.' }],
       allowed: [],
     };
@@ -219,7 +272,7 @@ describe('banned words in system text', () => {
   });
 
   it('checks nothing with an empty list', () => {
-    expect(bannedFindings('Points, coins and a great job', compileTerminology({ components: [], banned: [], allowed: [] }))).toEqual([]);
+    expect(bannedFindings('Points, coins and a great job', compileTerminology({ components: [], qualifiers: [], banned: [], allowed: [] }))).toEqual([]);
   });
 });
 
@@ -255,6 +308,7 @@ describe('glosses in system text', () => {
         { name: 'servo motor', glosses: [] },
         { name: 'microcontroller', glosses: ['brain'] },
       ],
+      qualifiers: [],
       banned: [{ phrase: 'brain-y bit', reason: 'Test.' }],
       allowed: ['motor oil'],
     });
@@ -272,6 +326,7 @@ describe('glosses in system text', () => {
         { name: 'DC motor', glosses: ['motor'] },
         { name: 'servo motor', glosses: ['motor'] },
       ],
+      qualifiers: [],
       banned: [],
       allowed: [],
     });
@@ -282,7 +337,9 @@ describe('glosses in system text', () => {
   });
 
   it('checks nothing without glosses', () => {
-    expect(glossFindings('The frame', compileTerminology({ components: [{ name: 'chassis', glosses: [] }], banned: [], allowed: [] }))).toEqual([]);
+    expect(glossFindings('The frame', compileTerminology({ components: [{ name: 'chassis', glosses: [] }], qualifiers: [], banned: [], allowed: [] }))).toEqual(
+      [],
+    );
   });
 });
 
@@ -309,29 +366,80 @@ describe("a part's name", () => {
     expect(glossFindings('chassis (frame)', matcher)).toEqual([]);
   });
 
-  it('refuses a real name written another way', () => {
+  it('refuses a name with no letters, such as a robot face or question marks', () => {
+    for (const text of ['🤖', '???', '42', '🤖 ???']) {
+      expect(name(text)).toEqual([
+        `terminology.not_real_name: '${text}' has no letters, so it contains no real component name. A part's name is built on a real name from the components list.`,
+      ]);
+    }
+  });
+
+  it('refuses a real name, qualifier or gloss written another way', () => {
     expect(name('Dc motor')).toEqual(["terminology.name_form: Write the real name as 'DC motor', not 'Dc motor'."]);
     expect(name('DC-motor')).toEqual(["terminology.name_form: Write the real name as 'DC motor', not 'DC-motor'."]);
     expect(name('large led')).toEqual(["terminology.name_form: Write the real name as 'LED', not 'led'."]);
     expect(name('Bumper switch')).toEqual(["terminology.name_form: Write the real name as 'bumper switch', not 'Bumper switch'."]);
+    expect(name('Large wheel')).toEqual(["terminology.name_form: Write the qualifier as 'large', not 'Large'."]);
+    expect(name('2 cell battery pack')).toEqual(["terminology.name_form: Write the qualifier as '2-cell', not '2 cell'."]);
+    expect(name('chassis (Frame)')).toEqual(["terminology.name_form: Write the gloss as 'frame', not 'Frame'."]);
+  });
+
+  const TAIL = "A part's name is a real component name with nothing beside it but listed qualifiers, such as sizes.";
+  const notQualifier = (text: string): string => `terminology.not_qualifier: '${text}' is not part of a real name, a listed qualifier or a gloss. ${TAIL}`;
+
+  it('refuses a nickname, an unlisted word or a symbol beside the real name', () => {
+    expect(name('sparky the DC motor')).toEqual([notQualifier('sparky'), notQualifier('the')]);
+    expect(name('DC motor 🤖')).toEqual([notQualifier('🤖')]);
+    expect(name('DC motor ???')).toEqual([notQualifier('???')]);
+    expect(name('sparky DC motor (sparky)')).toEqual([notQualifier('sparky')]);
+    expect(name('AA battery pack')).toEqual([notQualifier('AA')]);
+    expect(name('large-wheel')).toEqual([notQualifier('-')]);
   });
 
   it('refuses a capitalised word beside the real name, which reads as a character name', () => {
     expect(name('Sparky the DC motor')).toEqual([
-      "terminology.proper_name: 'Sparky' is capitalised outside the real name, so it reads as a character's name. A part's name reads mid-sentence: lower case apart from the real name's own capitals.",
+      `terminology.proper_name: 'Sparky' is capitalised and is not part of a real name, a listed qualifier or a gloss, so it reads as a character's name. ${TAIL}`,
+      notQualifier('the'),
     ]);
-    expect(codes(partNameFindings('Large wheel', matcher))).toEqual(['terminology.proper_name']);
     expect(codes(partNameFindings('Mr Buzz buzzer', matcher))).toEqual(['terminology.proper_name', 'terminology.proper_name']);
+    expect(codes(partNameFindings('LiPo battery pack', matcher))).toEqual(['terminology.proper_name']);
   });
 
-  it('accepts lower-case qualifiers and all-capital marks beside the real name', () => {
-    expect(name('small wheel')).toEqual([]);
-    expect(name('2-cell battery pack')).toEqual([]);
-    expect(name('AA battery pack')).toEqual([]);
+  it('accepts listed qualifiers and glosses beside the real name, with spaces and brackets between them', () => {
+    for (const text of ['small wheel', '2-cell battery pack', 'small 2-cell battery pack', 'wheel (large)', 'chassis (frame)', 'microcontroller (brain)']) {
+      expect(name(text)).toEqual([]);
+    }
+  });
+
+  it('accepts real names that hold or overlap one another', () => {
+    const own = compileTerminology({
+      components: [
+        { name: 'DC motor', glosses: [] },
+        { name: 'motor driver', glosses: [] },
+      ],
+      qualifiers: [],
+      banned: [],
+      allowed: [],
+    });
+    expect(name('bumper switch')).toEqual([]);
+    expect(partNameFindings('DC motor driver', own)).toEqual([]);
+    expect(codes(partNameFindings('Dc motor driver', own))).toEqual(['terminology.name_form']);
+  });
+
+  it('leaves a gloss beside the wrong real name to the gloss check', () => {
+    expect(name('DC motor (frame)')).toEqual([]);
+    expect(codes(glossFindings('DC motor (frame)', matcher))).toEqual(['terminology.gloss_alone']);
+  });
+
+  it('allows no qualifier at all when none is listed', () => {
+    const own = compileTerminology({ components: [{ name: 'wheel', glosses: [] }], qualifiers: [], banned: [], allowed: [] });
+    expect(partNameFindings('wheel', own)).toEqual([]);
+    expect(codes(partNameFindings('large wheel', own))).toEqual(['terminology.not_qualifier']);
   });
 
   it('checks nothing without a components list, or with an empty name', () => {
-    expect(partNameFindings('Sparky', compileTerminology({ components: [], banned: [], allowed: [] }))).toEqual([]);
+    expect(partNameFindings('Sparky', compileTerminology({ components: [], qualifiers: [], banned: [], allowed: [] }))).toEqual([]);
+    expect(partNameFindings('🤖', compileTerminology({ components: [], qualifiers: ['large'], banned: [], allowed: [] }))).toEqual([]);
     expect(name('')).toEqual([]);
   });
 });
