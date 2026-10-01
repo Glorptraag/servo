@@ -1,32 +1,35 @@
 // What placement draws on the canvas: the part or prop under a dragging finger, the free mount points and shafts a part
-// can go onto, and the rotate and bin handles beside the selected part (D44). All in canvas millimetres, sized from the
-// brief's pixels at the default zoom (44 px targets), with colour kept for meaning: the snap rings are mechanical grey,
-// and the handles are neutral. See docs/placement.md.
+// can go onto, the move, rotate and bin handles beside the selected part (D44), and the one plain line. Canvas
+// millimetres; the handles and the line keep their screen size at every zoom (44 px targets, 15 px type). Colour is
+// kept for meaning: the snap rings are mechanical grey, the handles and the line neutral. See docs/placement.md.
 import { Container, Graphics, Text } from 'pixi.js';
 import type { Vec2 } from '@servo/schema';
-import type { Rect } from '../scene/geometry.ts';
-import type { ScenePart } from '../scene/scene.ts';
-import { PORT_MM, PX_PER_MM, mmOf } from '../scene/units.ts';
 import type { PartPose } from '../scene/geometry.ts';
+import type { ScenePart } from '../scene/scene.ts';
+import { PORT_MM, mmOf } from '../scene/units.ts';
 import type { ArtState } from '../renderer/art.ts';
 import { FONT_STACKS } from '../renderer/style.ts';
 import type { Palette } from '../renderer/style.ts';
 import { PartView } from '../renderer/views.ts';
 import type { DrawContext, WorldLayers } from '../renderer/views.ts';
 import type { Outline } from './free-spot.ts';
+import type { HandleKind } from './overlays.ts';
 import type { SnapTarget } from './rules.ts';
 
 /** A part or prop being placed or dragged is drawn a little see-through, so what lies under it still shows. */
 export const GHOST_ALPHA = 0.75;
 /** Over a remove target (the tray, the arena strip) it fades further: letting go there removes it. */
 export const REMOVING_ALPHA = 0.35;
-/** A handle is a 44 px target at the default zoom, like a port (brief Section 9). */
-export const HANDLE_MM = PORT_MM;
-/** The space between a part (with its sockets) and its handles, and between the two handles. */
-const HANDLE_GAP_MM = mmOf(8);
-const RING_MM = mmOf(3);
+/** A handle is a 44 px target on screen at every zoom, like a port at the default zoom (brief Sections 9 and 13). */
+export const HANDLE_PX = 44;
+/** The space between a part (with its sockets) and its handles, and between handles, on screen. */
+export const HANDLE_GAP_PX = 8;
+/** The line's type size on screen at every zoom: a label's, in regular weight. */
+export const CALLOUT_PX = 15;
+const CALLOUT_PADDING_PX = 20;
+export const CALLOUT_GAP_PX = 30;
+const RING_MM = mmOf(4);
 const ACTIVE_RING_MM = mmOf(6);
-const ICON_MM = mmOf(3);
 
 /** A hexagon with flat top and bottom, `size` across its flats: the mechanical socket's shape (D20). */
 const hexagon = (at: Vec2, size: number): number[] => {
@@ -96,7 +99,10 @@ export class PropGhost {
   }
 }
 
-/** The free mount points and shafts a part can go onto: faint rings, and a strong one where it will snap. */
+/**
+ * Where a part can go: a grey halo round each free mount point and shaft, wider than the socket so it shows round a
+ * mount point's own drawing, and a strong one where the part will snap. Drawn on top of the sockets.
+ */
 export class TargetRings {
   readonly graphics = new Graphics({ label: 'snap targets' });
 
@@ -106,11 +112,14 @@ export class TargetRings {
     const { colour, casing } = palette.types.mechanical;
     for (const target of targets) {
       if (target === active) continue;
-      g.poly(hexagon(target.at, PORT_MM), true).stroke({ color: colour, width: RING_MM, alpha: 0.8, alignment: 1 });
+      g.poly(hexagon(target.at, PORT_MM + 2 * RING_MM), true)
+        .fill({ color: colour, alpha: 0.2 })
+        .stroke({ color: colour, width: RING_MM, alpha: 0.9, alignment: 0 });
     }
     if (active) {
-      g.poly(hexagon(active.at, PORT_MM + 2 * ACTIVE_RING_MM), true).fill({ color: colour, alpha: 0.35 });
-      g.poly(hexagon(active.at, PORT_MM), true).stroke({ color: casing, width: ACTIVE_RING_MM, alignment: 1 });
+      g.poly(hexagon(active.at, PORT_MM + 2 * ACTIVE_RING_MM), true)
+        .fill({ color: colour, alpha: 0.45 })
+        .stroke({ color: casing, width: ACTIVE_RING_MM, alignment: 0 });
     }
   }
 
@@ -119,19 +128,18 @@ export class TargetRings {
   }
 }
 
-/** The callout's type size in screen pixels at the default zoom: a label's, in regular weight. */
-const CALLOUT_PX = 15;
-const CALLOUT_PADDING_MM = mmOf(8);
-const CALLOUT_GAP_MM = mmOf(12);
-
 /**
- * One plain line on the canvas, in the hints layer (brief Section 9: above everything), centred over an area: what a
- * removal left loose (D35). No dialog, nothing to dismiss: it goes with the next change.
+ * One plain line on the canvas, in the hints layer (brief Section 9: above everything): what a removal took and left
+ * loose (D35), or why a held part has no rotate handle. No dialog, nothing to dismiss: it goes with the next change or
+ * tap. Its type keeps its screen size at every zoom.
  */
 export class Callout {
   readonly container = new Container({ label: 'callout' });
   private readonly back = new Graphics();
-  private readonly text = new Text({ text: '', anchor: { x: 0.5, y: 1 } });
+  private readonly text = new Text({ text: '', anchor: 0.5 });
+  private box: { readonly at: Vec2; readonly w: number; readonly h: number } | undefined;
+  /** What the text was last set with: the same again (a pinch's every frame) keeps its texture. */
+  private setWith = '';
 
   constructor() {
     this.container.addChild(this.back, this.text);
@@ -142,95 +150,104 @@ export class Callout {
     return this.container.visible ? this.text.text : undefined;
   }
 
-  /**
-   * Centred over `over`, or under it when there is no room above in `view` (what the screen shows), and held inside
-   * the view where it can be.
-   */
-  show(line: string, over: Rect, view: Rect, context: DrawContext): void {
-    const { palette } = context;
-    this.text.text = line;
-    this.text.style = { fontFamily: [...FONT_STACKS[context.typeface]], fontSize: CALLOUT_PX, fill: palette.label };
-    this.text.resolution = context.resolution * 2;
-    this.text.scale.set(1 / PX_PER_MM);
-    const w = this.text.width + 2 * CALLOUT_PADDING_MM;
-    const h = this.text.height + CALLOUT_PADDING_MM;
-    const hold = (value: number, min: number, max: number): number => (min > max ? (min + max) / 2 : Math.min(Math.max(value, min), max));
-    const x = hold((over.minX + over.maxX) / 2, view.minX + w / 2, view.maxX - w / 2);
-    // `y` is the text's baseline edge: the bottom of the text, the box reaching half a padding beyond it.
-    const above = over.minY - CALLOUT_GAP_MM;
-    const below = over.maxY + CALLOUT_GAP_MM + this.text.height;
-    const roomAbove = above - this.text.height - CALLOUT_PADDING_MM / 2 >= view.minY;
-    const y = hold(roomAbove ? above : below, view.minY + this.text.height + CALLOUT_PADDING_MM / 2, view.maxY - CALLOUT_PADDING_MM / 2);
-    this.text.position.set(x, y);
+  /** Sets the line at `scale` screen pixels per millimetre, and gives the size of its box in mm. */
+  measure(line: string, context: DrawContext, scale: number): { readonly w: number; readonly h: number } {
+    const setWith = `${line}|${context.typeface}|${context.palette.label}|${context.resolution}`;
+    if (setWith !== this.setWith) {
+      this.setWith = setWith;
+      this.text.text = line;
+      this.text.style = { fontFamily: [...FONT_STACKS[context.typeface]], fontSize: CALLOUT_PX, fill: context.palette.label };
+      this.text.resolution = context.resolution;
+    }
+    this.text.scale.set(1 / scale);
+    return { w: this.text.width + (2 * CALLOUT_PADDING_PX) / scale, h: this.text.height + CALLOUT_PADDING_PX / scale };
+  }
+
+  /** Shows the measured line in a rounded box centred at `at`. */
+  place(at: Vec2, size: { readonly w: number; readonly h: number }, palette: Palette, scale: number): void {
+    this.text.position.set(at.x, at.y);
     this.back.clear();
     this.back
-      .roundRect(x - w / 2, y - this.text.height - CALLOUT_PADDING_MM / 2, w, h, h / 2)
+      .roundRect(at.x - size.w / 2, at.y - size.h / 2, size.w, size.h, size.h / 2)
       .fill({ color: palette.tile })
-      .stroke({ color: palette.tileEdge, width: mmOf(1.5), alignment: 1 });
+      .stroke({ color: palette.tileEdge, width: 1.5 / scale, alignment: 1 });
+    this.box = { at, ...size };
     this.container.visible = true;
+  }
+
+  /** Whether a canvas point is on the line's box. */
+  covers(point: Vec2): boolean {
+    const box = this.box;
+    if (!box || !this.container.visible) return false;
+    return Math.abs(point.x - box.at.x) <= box.w / 2 && Math.abs(point.y - box.at.y) <= box.h / 2;
   }
 
   hide(): void {
     this.container.visible = false;
+    this.box = undefined;
   }
 }
 
-export type HandleKind = 'rotate' | 'bin';
-
 /**
- * The rotate and bin handles beside the selected part (D44): on its right, rotate above bin, or on its left for
- * left-handed use, clear of the part and its sockets.
+ * The handles beside the selected part (D44): move, rotate (a free part only: a mount or a shaft sets a held part's
+ * turn) and bin, each a 44 px disc with its sign. The one waiting for its tap (move) shows dark.
  */
 export class Handles {
   readonly graphics = new Graphics({ label: 'handles' });
-  private places: { readonly rotate: Vec2; readonly bin: Vec2 } | undefined;
+  private places: ReadonlyMap<HandleKind, Vec2> = new Map();
+  private radius = 0;
 
-  /** Where each handle's centre sits next to a part whose tile and sockets span `bounds`. */
-  static placesFor(bounds: Rect, leftHanded: boolean): { readonly rotate: Vec2; readonly bin: Vec2 } {
-    const r = HANDLE_MM / 2;
-    const x = leftHanded ? bounds.minX - HANDLE_GAP_MM - r : bounds.maxX + HANDLE_GAP_MM + r;
-    const middle = (bounds.minY + bounds.maxY) / 2;
-    return { rotate: { x, y: middle - r - HANDLE_GAP_MM / 2 }, bin: { x, y: middle + r + HANDLE_GAP_MM / 2 } };
-  }
-
-  get shown(): { readonly rotate: Vec2; readonly bin: Vec2 } | undefined {
+  get shown(): ReadonlyMap<HandleKind, Vec2> {
     return this.places;
   }
 
-  draw(part: ScenePart | undefined, leftHanded: boolean, palette: Palette): void {
+  get size(): number {
+    return this.radius;
+  }
+
+  draw(places: ReadonlyMap<HandleKind, Vec2>, radius: number, palette: Palette, active?: HandleKind): void {
+    this.places = places;
+    this.radius = radius;
     const g = this.graphics;
     g.clear();
-    this.places = part ? Handles.placesFor(part.bounds, leftHanded) : undefined;
-    if (!this.places) return;
-    const r = HANDLE_MM / 2;
-    for (const at of [this.places.rotate, this.places.bin]) {
-      g.circle(at.x, at.y, r).fill({ color: palette.tile }).stroke({ color: palette.tileEdge, width: mmOf(2), alignment: 1 });
+    const line = radius * 0.14;
+    for (const [kind, at] of places) {
+      const ink = kind === active ? palette.tile : palette.label;
+      g.circle(at.x, at.y, radius)
+        .fill({ color: kind === active ? palette.label : palette.tile })
+        .stroke({ color: palette.tileEdge, width: radius * 0.09, alignment: 1 });
+      if (kind === 'move') {
+        // Four arrows out from the middle: the part goes where the next tap says.
+        const reach = radius * 0.55;
+        const head = radius * 0.2;
+        g.moveTo(at.x - reach, at.y).lineTo(at.x + reach, at.y).stroke({ color: ink, width: line, cap: 'round' });
+        g.moveTo(at.x, at.y - reach).lineTo(at.x, at.y + reach).stroke({ color: ink, width: line, cap: 'round' });
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+          const tip = { x: at.x + dx * (reach + head * 0.4), y: at.y + dy * (reach + head * 0.4) };
+          const back = { x: tip.x - dx * head * 1.3, y: tip.y - dy * head * 1.3 };
+          g.poly([tip.x, tip.y, back.x - dy * head, back.y + dx * head, back.x + dy * head, back.y - dx * head], true).fill({ color: ink });
+        }
+      } else if (kind === 'rotate') {
+        // A clockwise arrow, the way a tap turns the part: three quarters of a circle from the top round to the left,
+        // with its head pointing on round towards the top.
+        const arc = radius * 0.5;
+        g.moveTo(at.x, at.y - arc).arc(at.x, at.y, arc, -Math.PI / 2, Math.PI).stroke({ color: ink, width: line, cap: 'round' });
+        const tip = { x: at.x - arc, y: at.y - arc * 0.5 };
+        g.poly([tip.x - arc * 0.45, tip.y + arc * 0.35, tip.x + arc * 0.45, tip.y + arc * 0.35, tip.x, tip.y - arc * 0.2], true).fill({ color: ink });
+      } else {
+        // A bin: a lid with a handle, and a body.
+        const w = radius * 0.9;
+        g.rect(at.x - w / 2, at.y - w * 0.45, w, line).fill({ color: ink });
+        g.rect(at.x - w * 0.15, at.y - w * 0.6, w * 0.3, line).fill({ color: ink });
+        g.roundRect(at.x - w * 0.38, at.y - w * 0.3, w * 0.76, w * 0.8, line / 2).stroke({ color: ink, width: line });
+      }
     }
-    // A clockwise arrow, the way a tap turns the part: three quarters of a circle from the top round to the left,
-    // with its head pointing on round towards the top.
-    const { rotate, bin } = this.places;
-    const arc = r * 0.5;
-    g.moveTo(rotate.x, rotate.y - arc)
-      .arc(rotate.x, rotate.y, arc, -Math.PI / 2, Math.PI)
-      .stroke({ color: palette.label, width: ICON_MM, cap: 'round' });
-    const tip = { x: rotate.x - arc, y: rotate.y - arc * 0.5 };
-    g.poly([tip.x - arc * 0.45, tip.y + arc * 0.35, tip.x + arc * 0.45, tip.y + arc * 0.35, tip.x, tip.y - arc * 0.2], true).fill({
-      color: palette.label,
-    });
-    // A bin: a lid with a handle, and a body.
-    const w = r * 0.9;
-    g.rect(bin.x - w / 2, bin.y - w * 0.45, w, ICON_MM).fill({ color: palette.label });
-    g.rect(bin.x - w * 0.15, bin.y - w * 0.6, w * 0.3, ICON_MM).fill({ color: palette.label });
-    g.roundRect(bin.x - w * 0.38, bin.y - w * 0.3, w * 0.76, w * 0.8, ICON_MM / 2).stroke({ color: palette.label, width: ICON_MM });
   }
 
   /** The handle under a canvas point, if any. */
   hit(point: Vec2): HandleKind | undefined {
-    if (!this.places) return undefined;
-    const reach = (HANDLE_MM / 2) ** 2;
-    for (const kind of ['rotate', 'bin'] as const) {
-      const at = this.places[kind];
-      if ((point.x - at.x) ** 2 + (point.y - at.y) ** 2 <= reach) return kind;
+    for (const [kind, at] of this.places) {
+      if ((point.x - at.x) ** 2 + (point.y - at.y) ** 2 <= this.radius * this.radius) return kind;
     }
     return undefined;
   }

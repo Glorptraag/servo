@@ -1,7 +1,8 @@
 // Placing, moving, turning and removing parts by touch and by pointer (brief Section 10, task 3.2). Dragging and
 // tap-then-tap are equals, and every gesture ends in one EditCommand through the handle's `apply`, the layer the list
 // view uses too (ground rule 8), so the same steps give byte-identical blueprints on every path. There is no long-press
-// and no double-tap, and two fingers always move the view. See docs/placement.md.
+// and no double-tap, and two fingers always move the view. What the child sees on top is what a tap reaches (brief
+// Section 9). See docs/placement.md.
 import { normalizeDegrees } from '@servo/schema';
 import type { AssetKey, Blueprint, Catalogue, PartRecord, PartTypeId, PlacedPartId, Prop, Vec2 } from '@servo/schema';
 import type { CanvasPrefs, EditCommand, EditResult, PlacementEvent, PropTemplate } from '../interface.ts';
@@ -18,24 +19,28 @@ import type { PartPose, Rect } from '../scene/geometry.ts';
 import type { Hit } from '../scene/hit.ts';
 import { buildScene } from '../scene/scene.ts';
 import type { Scene, ScenePart } from '../scene/scene.ts';
+import { PORT_MM } from '../scene/units.ts';
 import { roundPoint } from './free-spot.ts';
-import { layOut, leftLoose, readHolding, subtreeOf, takeOff } from './holding.ts';
+import { layOut, readHolding, subtreeOf, takeOff } from './holding.ts';
 import type { Holding } from './holding.ts';
+import { heldLine, removalLine } from './notices.ts';
+import { layOutCallout, layOutHandles } from './overlays.ts';
+import type { Circle, HandleKind } from './overlays.ts';
 import { canvasToArena, onProp, propOutline, propSpot } from './props.ts';
 import { movedPartSpot, moveTargets, nearestTarget, newPartSpot, placeTargets } from './rules.ts';
 import type { SnapTarget } from './rules.ts';
-import { Callout, Handles, PartGhost, PropGhost, TargetRings } from './views.ts';
+import { CALLOUT_GAP_PX, Callout, HANDLE_GAP_PX, HANDLE_PX, Handles, PartGhost, PropGhost, TargetRings } from './views.ts';
 
 /** Forgiveness: a part snaps to a free mount point or shaft within this many screen pixels (brief Section 10). */
 export const SNAP_RADIUS_PX = 48;
-/** A tap on the rotate handle turns a part a quarter turn clockwise, as the list view's turn does. */
+/** A tap on the rotate handle turns a part a quarter turn clockwise, and a drag turns it in quarter turns, as the list view does. */
 export const QUARTER_TURN = 90;
-/** Dragging the rotate handle turns a part in child-sized steps (brief Section 10: angles in 15° steps). */
-export const TURN_STEP = 15;
 /** A part that lands away from where it was let go slides there over this long (UI motion, brief Section 11). */
 export const SLIDE_MS = 160;
 /** Drag sensitivity is held at or above this, as the view's pan threshold holds it. */
 const MIN_SENSITIVITY = 0.05;
+/** How far a socket reaches from its centre: a hexagon's corner reaches furthest (scene/scene.ts). */
+const SOCKET_REACH_MM = (PORT_MM / 2) * (2 / Math.sqrt(3));
 
 export interface PlacementHost {
   readonly surface: CanvasSurface;
@@ -52,6 +57,21 @@ export interface PlacementHost {
 type Incoming =
   | { readonly kind: 'part'; readonly part: PartTypeId; readonly record: PartRecord; targets: readonly SnapTarget[]; build: Blueprint }
   | { readonly kind: 'prop'; readonly prop: PropTemplate };
+
+/** A placed part waiting for the tap that says where it goes (the Move handle): tap-then-tap for a move. */
+interface Relocating {
+  readonly id: PlacedPartId;
+  readonly targets: readonly SnapTarget[];
+  /** The shaft it rides on: tapped there, it stays. */
+  readonly home: SnapTarget | undefined;
+}
+
+/** The line on show, and the area it speaks about. */
+interface Notice {
+  readonly kind: 'removal' | 'held';
+  readonly line: string;
+  readonly over: Rect;
+}
 
 /** What a pressed pointer does: a tap until it travels the drag threshold, then a drag. Wiring (task 3.3) shares it. */
 export interface Gesture {
@@ -134,16 +154,6 @@ const portAt = (record: PartRecord, port: string, pose: PartPose): Vec2 => {
 /** The shortest way between two turns, `k` of the way along. */
 const turnBetween = (from: number, to: number, k: number): number => from + ((((to - from + 540) % 360) + 360) % 360 - 180) * k;
 
-/**
- * D35's one plain line: the real names of the parts a removal left loose, each once, as the spec card lists needs
- * ("Needs: power (red) and a signal (yellow)"). A callout ends without a full stop (brief Section 12).
- */
-export const looseLine = (names: readonly string[]): string => {
-  const distinct = [...new Set(names)];
-  const last = distinct.pop() ?? '';
-  return `Loose now: ${distinct.length > 0 ? `${distinct.join(', ')} and ${last}` : last}`;
-};
-
 export class PlacementController {
   private readonly host: PlacementHost;
   private readonly surface: CanvasSurface;
@@ -159,9 +169,10 @@ export class PlacementController {
   private carrying: number | undefined;
   private press: Press | undefined;
   private selected: PlacedPartId | undefined;
+  private relocating: Relocating | undefined;
+  private said: Notice | undefined;
   private removeTargets: readonly HTMLElement[] = [];
   private slideFrame: number | undefined;
-  private attached = false;
   private readonly windowListeners: readonly [string, EventListener][];
 
   constructor(host: PlacementHost) {
@@ -172,6 +183,8 @@ export class PlacementController {
     input.handlers.unshift((event, screen, hit) => this.pressed(event, screen, hit));
     input.taps.push((event) => this.tapped(event));
     this.surface.on('edit', ({ blueprint }) => this.edited(blueprint));
+    // The handles and the line keep their screen size, so they are laid out again as the zoom changes.
+    this.surface.on('zoom', () => this.drawHandles());
     // Focusable without joining the tab order, so a click on a part lets the Delete key remove it. The list view is
     // the keyboard's way round the build (task 3.6).
     if (!canvas.hasAttribute('tabindex')) canvas.tabIndex = -1;
@@ -183,9 +196,29 @@ export class PlacementController {
     ];
   }
 
-  /** The part whose rotate and bin handles show. Task 3.4 joins this to the handle's selection. */
+  /** The part whose handles show. Task 3.4 joins this to the handle's selection. */
   get selectedPart(): PlacedPartId | undefined {
     return this.selected;
+  }
+
+  /** Where each handle beside the selected part sits now, canvas mm, with their radius. */
+  get handlePlaces(): { readonly places: ReadonlyMap<HandleKind, Vec2>; readonly radius: number } {
+    return { places: this.handles.shown, radius: this.handles.size };
+  }
+
+  /** Whether a part or prop from the tray or the arena strip is on its way in. */
+  get placing(): boolean {
+    return this.incoming !== undefined;
+  }
+
+  /** The part the Move handle is moving, waiting for the tap that says where it goes. */
+  get moving(): PlacedPartId | undefined {
+    return this.relocating?.id;
+  }
+
+  /** The one plain line the canvas shows (D35, removals, held parts), for the list view to read out (task 3.6). */
+  get notice(): string | undefined {
+    return this.callout.line;
   }
 
   /** Hides the handles: wiring (task 3.3) calls it when a socket or a wire is tapped instead. */
@@ -194,18 +227,13 @@ export class PlacementController {
   }
 
   /** The handle drawn under a canvas point, if any: handles take a press before the sockets beneath them. */
-  handleAt(world: Vec2): 'rotate' | 'bin' | undefined {
+  handleAt(world: Vec2): HandleKind | undefined {
     return this.selected !== undefined ? this.handles.hit(world) : undefined;
   }
 
-  /** Whether a part or prop from the tray or the arena strip is on its way in. */
-  get placing(): boolean {
-    return this.incoming !== undefined;
-  }
-
-  /** The line the canvas shows after a removal left parts loose (D35), for the list view to read out (task 3.6). */
-  get notice(): string | undefined {
-    return this.callout.line;
+  /** Shows the handles beside a part, or none: the tap on a part does this, and task 3.4's `select` will. */
+  selectPart(id: PlacedPartId | undefined): void {
+    this.select(id !== undefined && this.surface.scene.partById.has(id) ? id : undefined);
   }
 
   // ---------------------------------------------------------------------------------------------------------
@@ -213,7 +241,7 @@ export class PlacementController {
 
   begin(part: PartTypeId, pointer?: PointerEvent): void {
     this.endIncoming(false);
-    this.hideCallout();
+    this.hideNotice();
     const build = this.surface.blueprint;
     const record = this.host.catalogue.parts.get(part);
     if (!build || !record || !this.editable()) {
@@ -229,7 +257,7 @@ export class PlacementController {
 
   beginProp(prop: PropTemplate, pointer?: PointerEvent): void {
     this.endIncoming(false);
-    this.hideCallout();
+    this.hideNotice();
     const shaped = (prop.shape === 'box' || prop.shape === 'cylinder') && typeof prop.size?.x === 'number' && typeof prop.size.y === 'number';
     if (!this.surface.blueprint || !this.surface.arena || !shaped || !this.editable()) {
       this.host.placed({ kind: 'prop', placed: false });
@@ -252,15 +280,19 @@ export class PlacementController {
   // ---------------------------------------------------------------------------------------------------------
   // Hooks the surface calls
 
-  /** After every redraw of the build: drops a gesture the build changed under, and redraws targets and handles. */
+  /**
+   * After every redraw of the build: puts the rings and handles back on top of the sockets the redraw re-layered,
+   * drops a gesture the build changed under, and lays the handles out again.
+   */
   refresh(): void {
-    this.attach();
+    this.raise();
     const build = this.surface.blueprint;
     const previous = this.seen;
     this.seen = { build, scene: this.surface.scene };
-    if (previous && previous.build !== build) {
+    const changed = previous !== undefined && previous.build !== build;
+    if (changed) {
       this.prior = previous;
-      this.callout.hide();
+      this.hideNotice();
     }
     if (this.press && !this.press.done && this.press.build !== build) {
       this.press.cancel();
@@ -273,6 +305,7 @@ export class PlacementController {
       incoming.build = build;
     }
     if (incoming?.kind === 'part' && this.carrying === undefined) this.rings.draw(incoming.targets, undefined, this.palette);
+    if (changed && this.relocating) this.endRelocation();
     if (this.selected !== undefined && !this.surface.scene.partById.has(this.selected)) this.selected = undefined;
     this.drawHandles();
   }
@@ -284,32 +317,24 @@ export class PlacementController {
     this.press?.cancel();
     this.press = undefined;
     this.select(undefined);
-    this.callout.hide();
+    this.hideNotice();
   }
 
-  /** After an edit by any path: when it left parts loose (D35), the canvas says which in one plain line. */
+  /**
+   * After an edit by any path: a removal says what went with the part and what it left loose, in one plain line
+   * (brief Section 10, D35), above where it was and clear of every socket and handle.
+   */
   private edited(after: Blueprint): void {
     const before = this.prior?.build;
     const scene = this.prior?.scene;
     if (!before || !scene || after !== this.surface.blueprint) return;
-    const loose = leftLoose(before, after, this.host.catalogue);
-    if (loose.length === 0) return;
-    // Above where the removed part was and everything it left loose, so the line covers none of their sockets.
+    const line = removalLine(before, after, this.host.catalogue);
+    if (!line) return;
     let over: Rect | undefined;
     for (const part of before.parts) {
       if (!after.parts.some((other) => other.id === part.id)) over = unionRect(over, scene.partById.get(part.id)?.bounds);
     }
-    const holding = readHolding(after, this.host.catalogue);
-    for (const id of loose) {
-      for (const held of subtreeOf(holding, id)) over = unionRect(over, this.surface.scene.partById.get(held)?.bounds);
-    }
-    const names = loose.map((id) => {
-      const type = after.parts.find((part) => part.id === id)?.part ?? '';
-      return this.host.catalogue.parts.get(type)?.identity.name ?? type;
-    });
-    if (!over) return;
-    this.callout.show(looseLine(names), over, this.surface.camera.visible(), this.host.drawContext());
-    this.surface.requestFrame();
+    if (over) this.showNotice('removal', line, over);
   }
 
   destroy(): void {
@@ -326,17 +351,21 @@ export class PlacementController {
   // ---------------------------------------------------------------------------------------------------------
   // Pointers on the canvas
 
+  /**
+   * What a press lands on, top first as the child sees it (brief Section 9): the line, then the handles, then a
+   * socket, a wire or a part, then the child's props on the floor. The handles are laid out clear of every socket;
+   * a socket still wins, so a tap on one never reaches a handle.
+   */
   private pressed(event: PointerEvent, screen: Vec2, hit: Hit | null): PointerClaim | null {
     if (!this.editable() || this.carrying !== undefined) return null;
     this.stopSlide();
     const world = this.surface.camera.screenToWorld(screen);
-    const handle = this.selected !== undefined ? this.handles.hit(world) : undefined;
-    if (handle && this.selected !== undefined) {
-      return this.claim(event, handle === 'rotate' ? this.turnGesture(this.selected, event) : this.binGesture(this.selected));
-    }
+    if (this.callout.covers(world)) return this.claim(event, { tap: () => this.hideNotice() });
+    const handle = hit?.kind === 'port' ? undefined : this.handles.hit(world);
+    if (handle && this.selected !== undefined) return this.claim(event, this.handleGesture(handle, this.selected, event));
     if (hit?.kind === 'part') return this.claim(event, this.moveGesture(hit.part.id, event));
     // While a part waits for its tap, a tap on a socket or a wire is where it goes.
-    if (hit && this.incoming) return this.claim(event, { tap: (up) => this.tapped(up) });
+    if (hit && (this.incoming || this.relocating)) return this.claim(event, { tap: (up) => this.tapped(up) });
     const prop = hit ? undefined : this.propAt(world);
     if (prop) return this.claim(event, this.propGesture(prop, event));
     return null;
@@ -347,16 +376,28 @@ export class PlacementController {
     return this.press;
   }
 
-  /** A tap on the canvas: where a waiting part goes, or a part to show the handles of, or nothing to clear them. */
+  /**
+   * A tap on the canvas: where a waiting part goes (from the tray, or by the Move handle), or a part to show the
+   * handles of, or nothing to clear them. A tap on a held part says why it has no rotate handle.
+   */
   private tapped(event: PointerEvent, part?: PlacedPartId): void {
     if (!this.editable()) return;
-    this.hideCallout();
+    this.hideNotice();
     if (this.incoming && this.carrying === undefined) {
       this.land(this.worldOf(event), 'tap');
       return;
     }
+    if (this.relocating) {
+      // A tap on the part itself leaves it where it is; anywhere else is where it goes.
+      if (part === this.relocating.id) this.endRelocation();
+      else this.landRelocation(this.worldOf(event));
+      return;
+    }
     this.select(part);
-    if (part !== undefined) this.surface.canvas.focus({ preventScroll: true });
+    if (part === undefined) return;
+    this.surface.canvas.focus({ preventScroll: true });
+    const scenePart = this.surface.scene.partById.get(part);
+    if (scenePart && scenePart.held !== 'root') this.showNotice('held', heldLine(scenePart.held), scenePart.bounds);
   }
 
   private readonly keyed = (event: KeyboardEvent): void => {
@@ -489,9 +530,10 @@ export class PlacementController {
         if (!carry) return;
         const at = this.worldOf(start);
         grab = { x: at.x - carry.part.position.x, y: at.y - carry.part.position.y };
-        home = this.homeOf(carry);
+        home = this.homeOf(id);
         targets = [...moveTargets(this.surface.blueprint as Blueprint, this.host.catalogue, id), ...(home ? [home] : [])];
         this.select(undefined);
+        this.hideNotice();
       },
       drag: (event) => {
         if (!carry) return;
@@ -530,7 +572,29 @@ export class PlacementController {
     };
   }
 
-  /** A tap on the rotate handle turns the part a quarter turn; a drag turns it in 15° steps (D34: it comes off). */
+  private handleGesture(kind: HandleKind, id: PlacedPartId, start: PointerEvent): Gesture {
+    if (kind === 'rotate') return this.turnGesture(id, start);
+    if (kind === 'bin') {
+      // D35: what the part held stays, loose, and the line says so.
+      return {
+        tap: () => {
+          this.commit({ kind: 'remove-part', partId: id });
+        },
+      };
+    }
+    // The Move handle: tap it, then tap where the part goes. Tapped again, it lets the part be.
+    return {
+      tap: () => {
+        if (this.relocating?.id === id) this.endRelocation();
+        else this.startRelocation(id);
+      },
+    };
+  }
+
+  /**
+   * The rotate handle, shown on a free part only (a mount or a shaft sets a held part's turn). A tap turns the part a
+   * quarter turn clockwise; a drag turns it round its origin in quarter turns, as the list view does.
+   */
   private turnGesture(id: PlacedPartId, start: PointerEvent): Gesture {
     let carry: Carry | undefined;
     let from = 0;
@@ -546,8 +610,8 @@ export class PlacementController {
       },
       drag: (event) => {
         if (!carry) return;
-        const turned = carry.part.rotation + this.angleAround(carry, event) - from;
-        rotation = normalizeDegrees(Math.round(turned / TURN_STEP) * TURN_STEP);
+        const turned = ((((this.angleAround(carry, event) - from + 540) % 360) + 360) % 360) - 180;
+        rotation = normalizeDegrees(carry.part.rotation + Math.round(turned / QUARTER_TURN) * QUARTER_TURN);
         const { x, y } = carry.part.position;
         this.show(carry, layOut(carry.holding, id, { x, y, rotation, mirrored: false }), false);
         this.surface.wakeGrid();
@@ -561,13 +625,45 @@ export class PlacementController {
     };
   }
 
-  /** A tap on the bin handle removes the part (D35: what it held stays, loose). */
-  private binGesture(id: PlacedPartId): Gesture {
-    return {
-      tap: () => {
-        this.commit({ kind: 'remove-part', partId: id });
-      },
-    };
+  /** The Move handle was tapped: show where the part can re-snap (D34), and wait for the tap that says where it goes. */
+  private startRelocation(id: PlacedPartId): void {
+    const build = this.surface.blueprint;
+    if (!build) return;
+    const home = this.homeOf(id);
+    this.relocating = { id, targets: [...moveTargets(build, this.host.catalogue, id), ...(home ? [home] : [])], home };
+    this.rings.draw(this.relocating.targets, undefined, this.palette);
+    this.drawHandles();
+  }
+
+  /**
+   * The tap after the Move handle, with the same rules as a drag (D34): within reach of a free mount point the part
+   * re-snaps there; on the shaft it rides on, it stays; anywhere else it comes off and goes to the free spot there,
+   * with everything it holds and every wire it has.
+   */
+  private landRelocation(world: Vec2): void {
+    const relocating = this.relocating;
+    const build = this.surface.blueprint;
+    this.endRelocation();
+    if (!relocating || !build) return;
+    const { id } = relocating;
+    const target = this.snapTap(relocating.targets, world);
+    if (target && target === relocating.home) return;
+    const holding = readHolding(takeOff(build, this.host.catalogue, id), this.host.catalogue);
+    const from = new Map<PlacedPartId, PartPose>();
+    for (const part of subtreeOf(holding, id)) {
+      const pose = this.surface.scene.partById.get(part)?.pose;
+      if (pose) from.set(part, pose);
+    }
+    if (target) this.commit({ kind: 'mount', partId: id, port: target.port, onto: target.onto });
+    else this.commit({ kind: 'move-part', partId: id, position: movedPartSpot(build, this.host.catalogue, id, world) });
+    if (this.surface.blueprint !== build) this.slide(from);
+  }
+
+  private endRelocation(): void {
+    if (!this.relocating) return;
+    this.relocating = undefined;
+    this.rings.clear();
+    this.drawHandles();
   }
 
   /** The part, taken off whatever holds it, with everything it holds. */
@@ -589,11 +685,13 @@ export class PlacementController {
     };
   }
 
-  /** Where a part carried on a shaft came from: dropped back there, it stays on it. */
-  private homeOf(carry: Carry): SnapTarget | undefined {
-    const scenePart = this.surface.scene.partById.get(carry.id);
+  /** The shaft a carried part rides on: brought back there, it stays on it. */
+  private homeOf(id: PlacedPartId): SnapTarget | undefined {
+    const scenePart = this.surface.scene.partById.get(id);
     if (scenePart?.held !== 'carried') return undefined;
-    const linkage = this.surface.scene.linkages.find((wire) => wire.kind === 'drive' && wire.to.ref.part === carry.id && carry.letGo.has(wire.id));
+    const linkage = this.surface.scene.linkages.find(
+      (wire) => wire.kind === 'drive' && wire.to.ref.part === id && wire.from.ref.part === scenePart.parent,
+    );
     if (!linkage) return undefined;
     return { kind: 'shaft', port: linkage.to.ref.port, onto: linkage.from.ref, at: linkage.from.at, pose: scenePart.pose };
   }
@@ -686,7 +784,7 @@ export class PlacementController {
 
   /** Puts every part and wire back where the scene has them. */
   private restore(): void {
-    this.rings.clear();
+    if (!this.relocating) this.rings.clear();
     const palette = this.palette;
     for (const part of this.surface.scene.parts) {
       const view = this.surface.partView(part.id);
@@ -753,30 +851,82 @@ export class PlacementController {
     this.restore();
   }
 
+  /** Every socket a tap can reach, drawn above the parts, as far as each reaches. */
+  private sockets(): Circle[] {
+    return this.surface.scene.parts.flatMap((part) =>
+      part.ports.filter((port) => port.layer === 'ports').map((port) => ({ x: port.at.x, y: port.at.y, r: SOCKET_REACH_MM })),
+    );
+  }
+
+  /**
+   * The handles beside the selected part (D44), 44 px on screen at every zoom: move and bin, with rotate between them
+   * on a free part. They draw on top, so they are laid out clear of every socket and inside the view where they fit.
+   */
   private drawHandles(): void {
     const part = this.selected !== undefined && this.editable() ? this.surface.scene.partById.get(this.selected) : undefined;
-    this.handles.draw(part, this.host.prefs().leftHanded, this.palette);
+    const scale = this.surface.camera.scale;
+    const radius = HANDLE_PX / 2 / scale;
+    const kinds: HandleKind[] = part?.held === 'root' ? ['move', 'rotate', 'bin'] : ['move', 'bin'];
+    const places = part
+      ? layOutHandles({
+          kinds,
+          part: part.bounds,
+          sockets: this.sockets(),
+          radius,
+          gap: HANDLE_GAP_PX / scale,
+          view: this.surface.camera.visible(),
+          leftHanded: this.host.prefs().leftHanded,
+        })
+      : new Map<HandleKind, Vec2>();
+    this.handles.draw(places, radius, this.palette, this.relocating ? 'move' : undefined);
+    this.placeNotice();
     this.surface.requestFrame();
   }
 
   private select(id: PlacedPartId | undefined): void {
     if (this.selected === id) return;
     this.selected = id;
+    if (this.said?.kind === 'held') this.hideNotice();
+    if (this.relocating && this.relocating.id !== id) this.endRelocation();
     this.drawHandles();
   }
 
-  private hideCallout(): void {
-    if (this.callout.line === undefined) return;
+  private showNotice(kind: Notice['kind'], line: string, over: Rect): void {
+    this.said = { kind, line, over };
+    this.placeNotice();
+  }
+
+  /** Lays the line out at the current zoom: 15 px type, clear of every socket and handle, inside the view. */
+  private placeNotice(): void {
+    const said = this.said;
+    if (!said) return;
+    const scale = this.surface.camera.scale;
+    const size = this.callout.measure(said.line, this.host.drawContext(), scale);
+    const handles = [...this.handles.shown.values()].map((at) => ({ x: at.x, y: at.y, r: this.handles.size }));
+    const at = layOutCallout(size, said.over, [...this.sockets(), ...handles], this.surface.camera.visible(), CALLOUT_GAP_PX / scale);
+    this.callout.place(at, size, this.palette, scale);
+    this.surface.requestFrame();
+  }
+
+  private hideNotice(): void {
+    if (!this.said && this.callout.line === undefined) return;
+    this.said = undefined;
     this.callout.hide();
     this.surface.requestFrame();
   }
 
-  /** Puts the rings and handles in the ports-and-handles layer, and the callout in the hints layer, once the renderer is up. */
-  private attach(): void {
+  /**
+   * Puts the rings and handles last in the ports-and-handles layer, over the sockets each redraw re-layers, and the
+   * line last in the hints layer, above everything (brief Section 9).
+   */
+  private raise(): void {
     const layers = this.surface.layers;
-    if (this.attached || !layers) return;
-    this.attached = true;
-    layers.ports.attach(this.rings.graphics, this.handles.graphics);
+    if (!layers) return;
+    for (const graphics of [this.rings.graphics, this.handles.graphics]) {
+      graphics.parentRenderLayer?.detach(graphics);
+      layers.ports.attach(graphics);
+    }
+    this.callout.container.parentRenderLayer?.detach(this.callout.container);
     layers.hints.attach(this.callout.container);
   }
 

@@ -89,13 +89,17 @@ export const frames = (count: number): Promise<void> =>
     requestAnimationFrame(tick);
   });
 
-/** Waits until every picture has loaded, every fade has finished and the grid is at rest, then for two frames more. */
+/**
+ * Waits until every picture has loaded, every fade has finished and the grid is at rest, then for two frames more.
+ * Generous, as the browser project's timeout is: on a busy machine a software GPU, shared by every page under test,
+ * can take seconds a frame.
+ */
 export const settle = async (surface: CanvasSurface): Promise<void> => {
   await vi.waitFor(
     () => {
       if (!surface.settled || surface.gridOpacity > 0) throw new Error('the canvas is still moving');
     },
-    { timeout: 10_000, interval: 25 },
+    { timeout: 60_000, interval: 25 },
   );
   await frames(2);
 };
