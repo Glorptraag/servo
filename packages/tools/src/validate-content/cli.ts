@@ -34,6 +34,9 @@ export const USAGE = [
 
 const plural = (count: number, noun: string): string => `${count} ${noun}${count === 1 ? '' : 's'}`;
 
+/** What the walk leaves out (records.ts), said when a folder holds no records. */
+const NOT_RECORDS = 'Terminology folders, node_modules, hidden folders, package.json, tsconfig files and symbolic links are not records.';
+
 /** One line per issue: file, code, JSON path and message. */
 export const formatIssue = (issue: ContentIssue, show: (file: string) => string): string =>
   `${show(issue.file)}: ${issue.code} at ${issue.path}: ${issue.message}`;
@@ -90,7 +93,11 @@ export const runValidateContent = (argv: readonly string[], env: ValidateContent
   const paths = parsed.positionals.map(resolve);
   for (const target of paths) {
     if (!fs.existsSync(target)) return misuse(`No such file or folder: ${show(target)}`);
-    if (findRecordFiles(target).length === 0) return misuse(`No .json records in ${show(target)}`);
+    // A folder that cannot be listed is no misuse: the run reports it as file.unreadable, with its cause.
+    const unlisted: string[] = [];
+    if (findRecordFiles(target, (folder) => unlisted.push(folder)).length === 0 && unlisted.length === 0) {
+      return misuse(`No .json records in ${show(target)}. ${NOT_RECORDS}`);
+    }
   }
   const { catalogue, terminology } = parsed.values;
   if (catalogue !== undefined && !isFolder(resolve(catalogue))) return misuse(`--catalogue is not a folder: ${catalogue}`);
