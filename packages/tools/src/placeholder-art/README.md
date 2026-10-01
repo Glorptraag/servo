@@ -50,7 +50,7 @@ Every part names an art key in `identity.art`. The registry resolves each key to
 }
 ```
 
-The app builds its own `resolveArt(assetKey)` from this file and injects it into the canvas: look the key up, throw on a missing key, and resolve `src` against the URL `registry.json` was served from. `resolveArt` in this package is the same lookup, for tools and tests.
+Content's `loadArtRegistry()` reads this file and resolves each `src` to a bundled URL, and the app builds the canvas's `resolveArt(assetKey)` from it. A key the registry lacks gives `undefined`, and the canvas draws a neutral tile. `resolveArt` in this package throws on a missing key instead, for tools and tests.
 
 ## The placeholder tiles
 
