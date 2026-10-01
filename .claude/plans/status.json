@@ -77,7 +77,7 @@
       "dispatched_at": "2026-10-01T00:55:41+00:00"
     },
     "0.3": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -92,8 +92,8 @@
       ],
       "done_when": "A v0 fixture migrates to v1, validates, and round-trips (migrate \u2192 serialise \u2192 parse) byte-identically; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-01T03:44:50+00:00",
+      "completed_by": "W-0.3",
       "dispatched_at": "2026-10-01T02:52:50+00:00"
     },
     "0.4": {
@@ -1397,6 +1397,46 @@
       "id": "D27",
       "question": "Under D23 the app's chassis mounts are mirrored so red-to-red drives forward, but in a real kit one motor's leads must be crossed. The parts-list export (task 5.3) has to bridge that gap.",
       "recommendation": "The export's wiring summary says plainly which motor's two leads to swap in the real kit, with a one-line reason and the adult-supervision note.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D28",
+      "question": "Where does the adult (parent) view live, and how is it kept out of a child's way? (task 0.4 open question; tasks 5.1\u20135.4)",
+      "recommendation": "A separate route reached from Home through a parental gate (a short arithmetic question an adult answers), the usual pattern for children's apps; no account details in the child's view.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D29",
+      "question": "What does 'Reset arena' on the Run bar do? (task 0.4 open question; task 4.4)",
+      "recommendation": "It returns the arena to its preset: props the child dragged in are removed and preset props go back to their places; parts and wires are never touched; Undo brings the props back.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D30",
+      "question": "How does a child flip a switch during a Run? (task 0.4 open question; tasks 3.5, 4.4)",
+      "recommendation": "Tap the switch on the canvas (touch and pointer), select it and press Space or Enter (keyboard), or use the list view's flip action; each flip is recorded in the run record's inputs for replay.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D31",
+      "question": "Which build changes count as how a fault was 'fixed' in the run record? (task 0.4 open question; tasks 1.5, 5.2)",
+      "recommendation": "The EditCommands applied between the Run that showed the fault and the next Run in which it no longer appears, limited to commands touching the faulted part, its ports or its wires.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D32",
+      "question": "Art pipeline details from task 0.6: should the swap registry also track card.realWorldArt (a photo, no placeholder possible), which final render formats are accepted, and does the canvas need separate art per quarter-turn?",
+      "recommendation": "Track realWorldArt keys with no placeholder (the spec card shows no photo until one is dropped in); accept SVG, PNG and WebP finals; one tile per part, rotated by the canvas.",
       "confidence": "medium",
       "blocks": [],
       "resolved": false

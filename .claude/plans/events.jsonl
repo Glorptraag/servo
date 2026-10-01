@@ -30,3 +30,9 @@
 {"ts": "2026-10-01T01:30:20+00:00", "event": "decision_add", "id": "D27", "blocks": []}
 {"ts": "2026-10-01T02:52:50+00:00", "event": "dispatch", "tasks": ["0.3", "0.4", "0.5", "0.6", "2.4"]}
 {"ts": "2026-10-01T03:28:25+00:00", "event": "done", "tasks": ["0.2"], "by": "W-0.2"}
+{"ts": "2026-10-01T03:32:26+00:00", "event": "decision_add", "id": "D28", "blocks": []}
+{"ts": "2026-10-01T03:32:26+00:00", "event": "decision_add", "id": "D29", "blocks": []}
+{"ts": "2026-10-01T03:32:26+00:00", "event": "decision_add", "id": "D30", "blocks": []}
+{"ts": "2026-10-01T03:32:26+00:00", "event": "decision_add", "id": "D31", "blocks": []}
+{"ts": "2026-10-01T03:39:21+00:00", "event": "decision_add", "id": "D32", "blocks": []}
+{"ts": "2026-10-01T03:44:50+00:00", "event": "done", "tasks": ["0.3"], "by": "W-0.3"}
