@@ -15,6 +15,7 @@ import { systemText } from '../src/validate-content/system-text.ts';
 import {
   bannedFindings,
   compileTerminology,
+  glossFindings,
   loadTerminology,
   partNameFindings,
   wordsOf,
@@ -222,6 +223,69 @@ describe('banned words in system text', () => {
   });
 });
 
+describe('glosses in system text', () => {
+  const alone = (text: string, own = matcher): string[] => glossFindings(text, own).map((finding) => finding.message);
+
+  it('refuses a gloss with no real name in the same field, quoting it as written', () => {
+    expect(alone('Loose: the frame drags on the floor.')).toEqual([
+      "'frame' is a gloss for 'chassis' and never stands alone: write the real name beside it, as in 'chassis (frame)'.",
+    ]);
+    expect(alone('Frame on the floor: the robot drags.')).toEqual([
+      "'Frame' is a gloss for 'chassis' and never stands alone: write the real name beside it, as in 'chassis (frame)'.",
+    ]);
+    expect(codes(glossFindings('Plug it into the brain', matcher))).toEqual(['terminology.gloss_alone']);
+  });
+
+  it('accepts a gloss beside its real name anywhere in the same field, in any case', () => {
+    expect(alone('Loose: the chassis (frame) drags on the floor.')).toEqual([]);
+    expect(alone('A car has a chassis too: the frame its engine, seats and wheels bolt to.')).toEqual([]);
+    expect(alone('The Frame of the robot is its Chassis.')).toEqual([]);
+    expect(alone('Loose: the chassis drags on the floor.')).toEqual([]);
+  });
+
+  it('gives one finding per gloss per field, and checks whole words only', () => {
+    expect(alone('The frame and the frame and the brain')).toHaveLength(2);
+    expect(alone('A framed picture and a brainstorm')).toEqual([]);
+  });
+
+  it('ignores a gloss inside a real name, an allowed phrase or a banned phrase', () => {
+    const own = compileTerminology({
+      components: [
+        { name: 'DC motor', glosses: ['motor'] },
+        { name: 'servo motor', glosses: [] },
+        { name: 'microcontroller', glosses: ['brain'] },
+      ],
+      banned: [{ phrase: 'brain-y bit', reason: 'Test.' }],
+      allowed: ['motor oil'],
+    });
+    expect(alone('The servo motor turns its arm', own)).toEqual([]);
+    expect(alone('Like motor oil in a car', own)).toEqual([]);
+    expect(alone('Plug in the brain-y bit', own)).toEqual([]);
+    expect(alone('The servo motor and the motor', own)).toEqual([
+      "'motor' is a gloss for 'DC motor' and never stands alone: write the real name beside it, as in 'DC motor (motor)'.",
+    ]);
+  });
+
+  it('accepts a gloss shared by several components beside any of their real names', () => {
+    const own = compileTerminology({
+      components: [
+        { name: 'DC motor', glosses: ['motor'] },
+        { name: 'servo motor', glosses: ['motor'] },
+      ],
+      banned: [],
+      allowed: [],
+    });
+    expect(alone('The servo motor is a motor that holds an angle', own)).toEqual([]);
+    expect(alone('A motor turns', own)).toEqual([
+      "'motor' is a gloss for 'DC motor' or 'servo motor' and never stands alone: write the real name beside it, as in 'DC motor (motor)'.",
+    ]);
+  });
+
+  it('checks nothing without glosses', () => {
+    expect(glossFindings('The frame', compileTerminology({ components: [{ name: 'chassis', glosses: [] }], banned: [], allowed: [] }))).toEqual([]);
+  });
+});
+
 describe("a part's name", () => {
   const name = (text: string): string[] => partNameFindings(text, matcher).map((finding) => `${finding.code}: ${finding.message}`);
 
@@ -238,11 +302,11 @@ describe("a part's name", () => {
     ]);
   });
 
-  it('refuses a gloss in place of the real name', () => {
-    expect(name('frame')).toEqual([
-      "terminology.not_real_name: 'frame' is a plain-language gloss for 'chassis'. Name the part by its real name; the gloss only sits beside it.",
-    ]);
-    expect(name('robot brain')).toEqual([expect.stringContaining("'brain' is a plain-language gloss for 'microcontroller'")]);
+  it('refuses a gloss in place of the real name, and accepts it beside the real name', () => {
+    expect(codes(partNameFindings('frame', matcher))).toEqual(['terminology.not_real_name']);
+    expect(codes(glossFindings('frame', matcher))).toEqual(['terminology.gloss_alone']);
+    expect(name('chassis (frame)')).toEqual([]);
+    expect(glossFindings('chassis (frame)', matcher)).toEqual([]);
   });
 
   it('refuses a real name written another way', () => {

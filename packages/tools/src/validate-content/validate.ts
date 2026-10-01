@@ -15,7 +15,7 @@ import type { ContentIssue } from './codes.ts';
 import { cachedReader, classify, field, findRecordFiles, KIND_FOLDERS, KIND_LABELS } from './records.ts';
 import type { RecordKind } from './records.ts';
 import { systemText } from './system-text.ts';
-import { bannedFindings, compileTerminology, loadTerminology, partNameFindings, TERMINOLOGY_FILES } from './terminology.ts';
+import { bannedFindings, compileTerminology, glossFindings, loadTerminology, partNameFindings, TERMINOLOGY_FILES } from './terminology.ts';
 
 export interface ValidateContentOptions {
   /** Record files, or folders to search for `.json` records: absolute, or relative to the process's working folder. */
@@ -134,7 +134,11 @@ export const validateContent = (options: ValidateContentOptions): ContentReport 
     const checked = checkRecord(kind, result.value, catalogue);
     if (!checked.ok) issues.push(...checked.issues.map((issue: Issue) => ({ file, ...issue })));
     for (const text of systemText(kind, result.value)) {
-      const findings = [...bannedFindings(text.text, matcher), ...(text.partName ? partNameFindings(text.text, matcher) : [])];
+      const findings = [
+        ...bannedFindings(text.text, matcher),
+        ...glossFindings(text.text, matcher),
+        ...(text.partName ? partNameFindings(text.text, matcher) : []),
+      ];
       issues.push(...findings.map((finding) => ({ file, path: text.path, ...finding })));
     }
     // Only records that pass the schema claim their id, as only they can enter a catalogue.

@@ -26,7 +26,7 @@
   "card": {
     "does": "Trades speed for strength: the output turns slower but pushes harder.",
     "gives": "Gives: a slower, stronger turning shaft.",
-    "needs": "Needs: a turning shaft at its input (grey), and a place on the frame.",
+    "needs": "Needs: a turning shaft at its input (grey), and a place on the chassis (frame).",
     "popularMechanics": "The low gears on a bike do the same job when you ride up a hill."
   },
   "failureModes": [
@@ -42,7 +42,7 @@
     },
     {
       "cardLine": "Loose: the housing turns instead of the output.",
-      "hint": "The gearbox is not fixed to the frame",
+      "hint": "The gearbox is not fixed to the chassis",
       "id": "loose",
       "need": "fixed",
       "shows": [

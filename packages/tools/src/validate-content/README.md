@@ -75,14 +75,14 @@ A file with the fields of no kind, or of more than one, is refused as `file.unkn
 ## What is checked
 
 1. **The schema.** Each record goes through its kind's validator from `@servo/schema`. Their issues are passed through unchanged, with the schema's codes, paths and messages ([validation.md](../../../schema/docs/validation.md)). The schema refuses exclamation marks and badly formed text in every system-text field.
-2. **Banned words.** The banned list is checked against every system-text field of the record:
+2. **Banned words and lone glosses.** The banned list and the glosses are checked against every system-text field of the record:
    - **Part record:** `identity.name`, `ports[].label`, `settings[].label`, `settings[].options[].label`, `failureModes[].teachingNote`, `cardLine` and `hint`, and `card.does`, `needs`, `gives`, `popularMechanics`, `specLine` and `safetyNote`.
    - **Arena preset and kit:** `name`.
    - **Challenge:** `title`, `goalLine`, `hints[].steps[].line`, and the name of its starting blueprint, `start.meta.name`.
    - **Blueprint:** `meta.name`.
    - **Run record:** nothing, because sim-core makes it.
 
-   These are exactly the fields the schema reads as system text, plus blueprint names, and a test keeps the two equal. In the app, a blueprint's name is the child's own text, so voice rules do not apply. A content blueprint's name is authored, though, and children see it, so the banned list applies to it.
+   These are exactly the fields the schema reads as system text, plus blueprint names, and a test keeps the two equal. In the app, a blueprint's name is the child's own text, so voice rules do not apply. A content blueprint's name is authored, though, and children see it, so the terminology lists apply to it.
 3. **Part names.** A part record's `identity.name` is checked against the components list. See [Part names](#part-names).
 4. **Ids.** No two records of the same kind may share an `id`. Only records that pass the schema claim their id, because only they can enter a catalogue.
 
@@ -142,11 +142,20 @@ A malformed entry is left out of the run, and the rest of its file is still used
 - A banned word inside an **allowed phrase, a real name or a gloss** is not refused (D22). `mount points` passes, while `Score points on the mount points` is refused for its first `points`.
 - There is one issue per banned entry per field. The message quotes the text as written.
 
+### Glosses
+
+A gloss explains a real name and never replaces it (brief Section 12). So in system text, a gloss passes only when its real name is in the same field, matched as whole words in any case:
+- `Loose: the chassis (frame) drags on the floor.` passes.
+- `Loose: the frame drags on the floor.` is refused as `terminology.gloss_alone`.
+- A gloss listed for several components passes beside any of their real names.
+- Words inside a real name, an allowed phrase or a banned phrase are not a gloss's use. The `motor` in `servo motor` is part of the real name, and a banned phrase reports its own words.
+- There is one issue per gloss per field.
+
 ### Part names
 
 When the components list names at least one component, a part's `identity.name` must:
 
-1. contain a listed real name as whole words. Qualifier words may stand beside it, as in `large wheel` and `1-cell battery pack`. A name with none is refused as `terminology.not_real_name`, such as `Sparky` or `zappy wire`. When it uses a gloss in place of the real name, such as `frame` for `chassis`, the message says so;
+1. contain a listed real name as whole words. Qualifier words may stand beside it, as in `large wheel` and `1-cell battery pack`. A name with none is refused as `terminology.not_real_name`, such as `Sparky` or `zappy wire`. A gloss in place of the real name, such as `frame`, is also refused as `terminology.gloss_alone`, as in any system text;
 2. write that real name exactly as listed, with the same case, spaces and hyphens. `Dc motor`, `DC-motor` and `led` are refused as `terminology.name_form`;
 3. have no capitalised word outside the real name. Names read mid-sentence, so `Sparky the DC motor` and `Large wheel` are refused as `terminology.proper_name`. All-capital marks such as `AA` pass.
 
@@ -161,6 +170,7 @@ Schema codes are listed in [validation.md](../../../schema/docs/validation.md). 
 | `file.unknown_kind` | The file is in no record folder, and its fields match no kind of record or more than one. |
 | `content.duplicate_id` | Another record of the same kind already uses this id. |
 | `terminology.banned` | System text uses a word or phrase on the banned list. |
+| `terminology.gloss_alone` | System text uses a plain-language gloss without its real name in the same field. |
 | `terminology.not_real_name` | A part's name contains no real component name from the components list. |
 | `terminology.name_form` | A part's name writes a real component name differently from the list: another case, spacing or hyphen. |
 | `terminology.proper_name` | A part's name has a capitalised word outside its real name, which reads as a character's name. |
@@ -182,8 +192,7 @@ Tests are in `packages/tools/test/validate-content*.test.ts`. Their lists in `pa
 
 The validator takes these conservative readings, for review:
 
-1. A content blueprint's `meta.name` gets the banned list, though the schema treats blueprint names as child text.
+1. A content blueprint's `meta.name` gets the terminology lists, though the schema treats blueprint names as child text.
 2. Part names must contain a listed real name and have no capitalised word outside it (`terminology.proper_name`). This is how a character-style name is caught beyond the banned list.
-3. Glosses are allowed words, and a gloss in place of a part's name is refused. Elsewhere in text, the validator does not require a gloss to sit beside its real name: the schema's own fixtures write `frame` alone in card lines.
-   - Open question: should the brief's "explanations beside the name, never replacements" be enforced in card text too?
+3. A gloss must sit beside its real name in the same field (orchestrator ruling on brief Section 12). The schema's example parts were reworded to match: `frame` alone became `chassis (frame)` on card lines and `chassis` in hints and teaching notes.
 4. Run records are checked against the schema only, so that fixture folders check cleanly. They are not content.

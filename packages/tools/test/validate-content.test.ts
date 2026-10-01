@@ -86,6 +86,18 @@ describe('done when: rejects a character-style name or a missing port type, with
     ]);
   });
 
+  it('rejects a gloss standing in for its real name in system text, but not one beside it', () => {
+    const file = partFile('gloss', (part) => {
+      card(part).needs = 'Needs: a place on the frame.';
+      card(part).gives = 'Gives: a turning shaft under the chassis (frame).';
+    });
+    const run = cli([file, '--terminology', TERMINOLOGY]);
+    expect(run.status).toBe(1);
+    expect(issueLines(run.out)).toEqual([
+      `${shown(file)}: terminology.gloss_alone at $.card.needs: 'frame' is a gloss for 'chassis' and never stands alone: write the real name beside it, as in 'chassis (frame)'.`,
+    ]);
+  });
+
   it('leaves exclamation marks to the schema', () => {
     const run = cli([partFile('shout', (part) => (card(part).does = 'Spins fast!')), '--terminology', TERMINOLOGY]);
     expect(run.status).toBe(1);

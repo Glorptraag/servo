@@ -99,8 +99,10 @@ const sameKeys = (a: Phrase, b: Phrase): boolean => a.keys.join(' ') === b.keys.
 export interface TermMatcher {
   readonly components: readonly { readonly component: ComponentTerm; readonly name: Phrase; readonly glosses: readonly Phrase[] }[];
   readonly banned: readonly { readonly entry: BannedPhrase; readonly phrase: Phrase }[];
-  /** Allowed phrases, real names and glosses: a banned word inside one of them is not refused. */
+  /** The allow-list. */
   readonly allowed: readonly Phrase[];
+  /** Each gloss once, with every component it is a gloss for. */
+  readonly glosses: readonly { readonly gloss: Phrase; readonly owners: readonly { readonly component: ComponentTerm; readonly name: Phrase }[] }[];
 }
 
 export const compileTerminology = (terminology: Terminology): TermMatcher => {
@@ -109,12 +111,29 @@ export const compileTerminology = (terminology: Terminology): TermMatcher => {
     name: phraseOf(component.name),
     glosses: component.glosses.map(phraseOf),
   }));
+  const glosses: { gloss: Phrase; owners: { component: ComponentTerm; name: Phrase }[] }[] = [];
+  for (const { component, name, glosses: own } of components) {
+    for (const gloss of own) {
+      const known = glosses.find((entry) => sameKeys(entry.gloss, gloss));
+      if (known) known.owners.push({ component, name });
+      else glosses.push({ gloss, owners: [{ component, name }] });
+    }
+  }
   return {
     components,
     banned: terminology.banned.map((entry) => ({ entry, phrase: phraseOf(entry.phrase) })),
-    allowed: [...terminology.allowed.map(phraseOf), ...components.flatMap(({ name, glosses }) => [name, ...glosses])],
+    allowed: terminology.allowed.map(phraseOf),
+    glosses,
   };
 };
+
+type Span = readonly [from: number, to: number];
+
+/** Where the phrases occur among the words, as word spans. */
+const spansOf = (words: readonly Word[], phrases: readonly Phrase[]): Span[] =>
+  phrases.flatMap(({ keys }) => findKeys(words, keys).map((start): Span => [start, start + keys.length]));
+
+const within = (spans: readonly Span[], from: number, to: number): boolean => spans.some(([spanFrom, spanTo]) => spanFrom <= from && to <= spanTo);
 
 /**
  * Banned words and phrases in one line of system text: whole words, ignoring case, accents and the
@@ -124,17 +143,44 @@ export const compileTerminology = (terminology: Terminology): TermMatcher => {
 export const bannedFindings = (text: string, matcher: TermMatcher): Finding[] => {
   if (matcher.banned.length === 0) return [];
   const words = wordsOf(text);
-  const allowedSpans = matcher.allowed.flatMap(({ keys }) => findKeys(words, keys).map((start) => [start, start + keys.length] as const));
+  const realTerms = [...matcher.allowed, ...matcher.components.flatMap(({ name, glosses }) => [name, ...glosses])];
+  const allowedSpans = spansOf(words, realTerms);
   const findings: Finding[] = [];
   for (const { entry, phrase } of matcher.banned) {
     const length = phrase.keys.length;
-    const start = findKeys(words, phrase.keys).find(
-      (from) => !allowedSpans.some(([allowedFrom, allowedTo]) => allowedFrom <= from && from + length <= allowedTo),
-    );
+    const start = findKeys(words, phrase.keys).find((from) => !within(allowedSpans, from, from + length));
     if (start === undefined) continue;
     findings.push({
       code: 'terminology.banned',
       message: `${quoted(written(text, words, start, start + length))} is on the banned list: ${entry.reason}`,
+    });
+  }
+  return findings;
+};
+
+/**
+ * Glosses standing alone in one line of system text. A plain-language gloss explains a real name and never
+ * replaces it (brief Section 12), so a gloss passes only in a field that also holds its real name, as in
+ * `chassis (frame)`; a gloss shared by several components passes beside any of them. Words inside a real
+ * name, an allowed phrase or a banned phrase are not a gloss's use: the banned list reports those. One
+ * finding per gloss.
+ */
+export const glossFindings = (text: string, matcher: TermMatcher): Finding[] => {
+  if (matcher.glosses.length === 0) return [];
+  const words = wordsOf(text);
+  const realNames = matcher.components.map(({ name }) => name);
+  const otherTerms = spansOf(words, [...realNames, ...matcher.allowed, ...matcher.banned.map(({ phrase }) => phrase)]);
+  const findings: Finding[] = [];
+  for (const { gloss, owners } of matcher.glosses) {
+    if (owners.some(({ name }) => findKeys(words, name.keys).length > 0)) continue;
+    const length = gloss.keys.length;
+    const start = findKeys(words, gloss.keys).find((from) => !within(otherTerms, from, from + length));
+    const [first] = owners;
+    if (start === undefined || first === undefined) continue;
+    const names = owners.map(({ component }) => quoted(component.name)).join(' or ');
+    findings.push({
+      code: 'terminology.gloss_alone',
+      message: `${quoted(written(text, words, start, start + length))} is a gloss for ${names} and never stands alone: write the real name beside it, as in ${quoted(`${first.component.name} (${gloss.text})`)}.`,
     });
   }
   return findings;
@@ -145,8 +191,9 @@ const PROPER_NAME = /^\p{Lu}\p{Ll}/u;
 /**
  * Checks a part's name (`identity.name`, the real name as it reads mid-sentence) against the components
  * list: it must contain a listed real name, written exactly as listed, and no capitalised word outside it.
- * Qualifiers such as `large` or `2-cell` may stand beside the real name. With no components listed, nothing
- * is checked.
+ * Qualifiers such as `large` or `2-cell` may stand beside the real name. A gloss used in place of the real
+ * name is also reported by glossFindings, as for any system text. With no components listed, nothing is
+ * checked.
  */
 export const partNameFindings = (name: string, matcher: TermMatcher): Finding[] => {
   const words = wordsOf(name);
@@ -155,19 +202,6 @@ export const partNameFindings = (name: string, matcher: TermMatcher): Finding[] 
     findKeys(words, real.keys).map((from) => ({ component, real, from, to: from + real.keys.length })),
   );
   if (found.length === 0) {
-    for (const { component, glosses } of matcher.components) {
-      for (const gloss of glosses) {
-        const [from] = findKeys(words, gloss.keys);
-        if (from === undefined) continue;
-        const glossAsWritten = written(name, words, from, from + gloss.keys.length);
-        return [
-          {
-            code: 'terminology.not_real_name',
-            message: `${quoted(glossAsWritten)} is a plain-language gloss for ${quoted(component.name)}. Name the part by its real name; the gloss only sits beside it.`,
-          },
-        ];
-      }
-    }
     return [
       {
         code: 'terminology.not_real_name',

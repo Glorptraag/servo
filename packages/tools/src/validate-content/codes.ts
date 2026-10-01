@@ -10,6 +10,7 @@ export const CONTENT_ISSUE_CODES = {
   'file.unknown_kind': 'The file is in no record folder, and its fields match no kind of record or more than one.',
   'content.duplicate_id': 'Another record of the same kind already uses this id.',
   'terminology.banned': 'System text uses a word or phrase on the banned list.',
+  'terminology.gloss_alone': 'System text uses a plain-language gloss without its real name in the same field.',
   'terminology.not_real_name': "A part's name contains no real component name from the components list.",
   'terminology.name_form': "A part's name writes a real component name differently from the list: another case, spacing or hyphen.",
   'terminology.proper_name': "A part's name has a capitalised word outside its real name, which reads as a character's name.",
