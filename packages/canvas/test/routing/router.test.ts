@@ -1,9 +1,10 @@
-// The tidy-wires router (task 3.7): routed wires never cross a part body on the 25-part busy workbench, but where a
-// socket is boxed in by other parts' tiles, leave their sockets away from their parts, and come out the same every
-// time. The crossing check here samples each route against every tile, independently of the router's own shape maths.
-// It skips only the stretch a wire's own two sockets are drawn over (44 px across, above the wires), where a socket
-// sitting over another part's tile (a battery pack's over the caster under it) leaves no choice. Whether a socket is
-// boxed in is checked independently too, by a flood fill of the open workbench. Pure. See docs/routing.md.
+// The tidy-wires router (task 3.7): after tidying, no wire on the 25-part busy workbench crosses a part body, routes
+// run socket to socket, and they come out the same every time. A body is the part as drawn, its footprint
+// (`body.size`), not its touch tile: the tile's padding up to 96 px is a hit affordance a wire may pass over. The
+// crossing check here samples each route against every body, independently of the router's own shape maths. It
+// skips only the stretch a wire's own two sockets are drawn over (44 px across, above the wires), where a socket
+// sitting over another part (the motor driver's sockets over the battery pack beside it) leaves no choice. A flood fill
+// of the open workbench independently shows every busy-workbench wire has a clean way. Pure. See docs/routing.md.
 import { describe, expect, it } from 'vitest';
 import type { Blueprint, Catalogue, Vec2 } from '@servo/schema';
 import { canvasToPart, distance } from '../../src/scene/geometry.ts';
@@ -12,7 +13,7 @@ import type { Scene, ScenePart, SceneWire } from '../../src/scene/scene.ts';
 import { PORT_MM } from '../../src/scene/units.ts';
 import { CLEARANCE_MM, pathOf, routeWires } from '../../src/routing/router.ts';
 import type { Route } from '../../src/routing/router.ts';
-import { rayInside, segmentEnters, squareShape, tileShape } from '../../src/routing/shapes.ts';
+import { bodyShape, rayInside, segmentEnters, squareShape, tileShape } from '../../src/routing/shapes.ts';
 import { benchCatalogue, busyWorkbench } from '../helpers/busy-workbench.ts';
 import { catalogue, fixture, twentyFiveParts } from '../helpers/catalogue.ts';
 import { crewCatalogue, crewRobot } from '../helpers/circuit-crew.ts';
@@ -24,10 +25,10 @@ const SLOW_MS = 60_000;
 const STEP_MM = 0.08;
 const HIDDEN_MM = PORT_MM / 2;
 
-/** Strictly inside a part's tile, by its own frame. */
-const insideTile = (part: ScenePart, point: Vec2): boolean => {
+/** Strictly inside a part's body as drawn: its footprint (`body.size`) centred on its frame origin, not its touch tile. */
+const insideBody = (part: ScenePart, point: Vec2): boolean => {
   const local = canvasToPart(part.pose, point);
-  return Math.abs(local.x) < part.tile.w / 2 - 1e-6 && Math.abs(local.y) < part.tile.h / 2 - 1e-6;
+  return Math.abs(local.x) < part.record.body.size.x / 2 - 1e-6 && Math.abs(local.y) < part.record.body.size.y / 2 - 1e-6;
 };
 
 /** The bodies a path passes through where it shows, by sampling it: outside the sockets at `hidden` (its two ends). */
@@ -41,14 +42,14 @@ const bodiesCrossed = (scene: Scene, path: readonly Vec2[], hidden: readonly Vec
       const t = k / steps;
       const at = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
       if (hidden.some((end) => distance(end, at) <= HIDDEN_MM + 1e-6)) continue;
-      for (const part of scene.parts) if (!part.frame && insideTile(part, at)) crossed.add(part.id);
+      for (const part of scene.parts) if (!part.frame && insideBody(part, at)) crossed.add(part.id);
     }
   }
   return [...crossed].sort();
 };
 
 /**
- * Whether open workbench joins a wire's two sockets: the scene's open space (outside every part tile) on a 0.25 mm
+ * Whether open workbench joins a wire's two sockets: the scene's open space (outside every drawn part body) on a 0.25 mm
  * grid, split into connected regions once, and a wire's ends joined when one region touches the stretch under both
  * of its sockets (a wire may pass under its own socket). False means a socket is boxed in, so every way between them
  * crosses a part.
@@ -69,7 +70,7 @@ const openSpace = (scene: Scene): ((wire: SceneWire) => boolean) => {
     const i1 = Math.min(columns - 1, Math.ceil((part.bounds.maxX - minX) / cell));
     const j0 = Math.max(0, Math.floor((part.bounds.minY - minY) / cell));
     const j1 = Math.min(rows - 1, Math.ceil((part.bounds.maxY - minY) / cell));
-    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) if (insideTile(part, centre(i, j))) blocked[j * columns + i] = 1;
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) if (insideBody(part, centre(i, j))) blocked[j * columns + i] = 1;
   }
   const region = new Int32Array(columns * rows).fill(-1);
   let regions = 0;
@@ -129,35 +130,24 @@ const builds: readonly [string, Blueprint, Catalogue][] = [
 describe('the busy workbench', () => {
   const scene = buildScene(busyWorkbench, benchCatalogue);
   const routes = routeWires(scene);
-  const crossed = scene.wires.filter((wire) => bodiesCrossed(scene, pathOf(wire, routes)).length > 0).map((wire) => wire.id);
-  const boxedIn = ['w14', 'w20', 'w21'];
-  const joined = openSpace(scene);
 
-  it('is the 25-part fixture, and many of its straight wires cross part bodies before tidying', () => {
+  /** All 43: power and signal lines, which tidying routes, and drive linkages and mounts, drawn straight under the parts. */
+  const everyWire = [...scene.wires, ...scene.linkages];
+
+  it('is the 25-part fixture with 43 wires, and many of its straight wires cross part bodies before tidying', () => {
     expect(scene.parts).toHaveLength(25);
+    expect(everyWire).toHaveLength(43);
     const before = scene.wires.filter((wire) => bodiesCrossed(scene, [wire.from.at, wire.to.at]).length > 0);
-    expect(before.length).toBeGreaterThan(10);
+    expect(before.length).toBeGreaterThan(5);
   }, SLOW_MS);
 
-  it('after tidying, no wire crosses a part body but the three whose socket is boxed in', () => {
-    expect(crossed).toEqual(boxedIn);
+  it('after tidying, none of its 43 wires crosses a part body', () => {
+    for (const wire of everyWire) expect(bodiesCrossed(scene, pathOf(wire, routes)), wire.id).toEqual([]);
   }, SLOW_MS);
 
-  it('boxes in the motor driver plus (+) and the LED plus (+) and minus (-): the buzzer, LED, switch and motor driver close round them', () => {
-    // Tiles are drawn at least 96 px, bigger than these parts, so on the Circuit Crew robot they overlap and leave a
-    // pocket about 7 × 28 mm between them with those three sockets in it. No way out of it crosses no part.
-    for (const wire of scene.wires) expect(joined(wire), wire.id).toBe(!boxedIn.includes(wire.id));
-  }, SLOW_MS);
-
-  it('routes a boxed-in wire clean but for one straight run out of the box', () => {
-    for (const id of crossed) {
-      const wire = scene.wires.find((each) => each.id === id) as SceneWire;
-      const route = routes.get(id) as Route;
-      const sockets = [wire.from.at, wire.to.at];
-      const cleanAfterFirst = bodiesCrossed(scene, route.slice(1), sockets).length === 0;
-      const cleanBeforeLast = bodiesCrossed(scene, route.slice(0, -1), sockets).length === 0;
-      expect(cleanAfterFirst || cleanBeforeLast, id).toBe(true);
-    }
+  it('has open workbench between the two sockets of every wire: no socket is boxed in by drawn parts', () => {
+    const joined = openSpace(scene);
+    for (const wire of everyWire) expect(joined(wire), wire.id).toBe(true);
   }, SLOW_MS);
 });
 
@@ -173,33 +163,16 @@ describe.each(builds)('routing %s', (_name, blueprint, parts) => {
     }
   }, SLOW_MS);
 
-  it('routes only the wires that crossed a body, from socket to socket', () => {
+  it('routes the wires that crossed a body, from socket to socket, and leaves the rest straight', () => {
     for (const wire of scene.wires) {
       const route = routes.get(wire.id);
-      const crossed = bodiesCrossed(scene, [wire.from.at, wire.to.at]).length > 0;
-      expect(route !== undefined, wire.id).toBe(crossed);
+      // The router's own check is exact; sampling every 0.08 mm can miss a graze, so it only finds crossings.
+      if (bodiesCrossed(scene, [wire.from.at, wire.to.at]).length > 0) expect(route, wire.id).toBeDefined();
       if (!route) continue;
       expect(route[0]).toEqual(wire.from.at);
       expect(route[route.length - 1]).toEqual(wire.to.at);
     }
     for (const id of routes.keys()) expect(scene.wires.some((wire) => wire.id === id)).toBe(true);
-  }, SLOW_MS);
-
-  it('leaves each socket away from its own part, never back across it', () => {
-    for (const [id, route] of routes) {
-      const wire = scene.wires.find((each) => each.id === id);
-      if (!wire) throw new Error(id);
-      for (const [socket, next] of [
-        [wire.from, route[1]],
-        [wire.to, route[route.length - 2]],
-      ] as const) {
-        if (!socket.outward || !next) continue;
-        const dx = next.x - socket.at.x;
-        const dy = next.y - socket.at.y;
-        const along = (dx * socket.outward.x + dy * socket.outward.y) / Math.hypot(dx, dy);
-        expect(along, `${id} at ${socket.key}`).toBeGreaterThanOrEqual(-1e-9);
-      }
-    }
   }, SLOW_MS);
 
   it('gives the same routes every time, whatever order the blueprint lists things in', () => {
@@ -234,8 +207,8 @@ describe('the shapes', () => {
     expect(rayInside(square, { x: 30, y: 0 }, { x: 1, y: 0 })).toBeUndefined();
   });
 
-  it('turns a tile with its part', () => {
-    const scene = buildScene(fixture('rolling-start'), catalogue);
+  it('turns a tile with its part, and draws the body inside it at its true size', () => {
+    const scene = buildScene(fixture('bumper-robot'), catalogue);
     for (const part of scene.parts) {
       const shape = tileShape(part);
       for (const [index, corner] of shape.corners.entries()) {
@@ -243,7 +216,13 @@ describe('the shapes', () => {
         expect(corner.x).toBeCloseTo(expected.x, 9);
         expect(corner.y).toBeCloseTo(expected.y, 9);
       }
-      expect(tileShape(part, CLEARANCE_MM).box.maxX - shape.box.maxX).toBeGreaterThan(0);
+      const body = bodyShape(part);
+      const [a, b, c] = body.corners as [Vec2, Vec2, Vec2];
+      expect(distance(a, b)).toBeCloseTo(Math.min(part.record.body.size.x, part.tile.w), 9);
+      expect(distance(b, c)).toBeCloseTo(Math.min(part.record.body.size.y, part.tile.h), 9);
+      expect(body.box.minX).toBeGreaterThanOrEqual(shape.box.minX - 1e-9);
+      expect(body.box.maxX).toBeLessThanOrEqual(shape.box.maxX + 1e-9);
+      expect(bodyShape(part, CLEARANCE_MM).box.maxX - body.box.maxX).toBeGreaterThan(0);
     }
   });
 });

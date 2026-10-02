@@ -1,6 +1,6 @@
-// Convex shapes on the canvas plane for the wire router: a part's tile, the same tile grown by a clearance, and
-// the square kept clear round a socket. Touching a shape is allowed; only entering its inside counts. Pure maths
-// with the scene's geometry, no Pixi. See docs/routing.md.
+// Convex shapes on the canvas plane for the wire router: a part's tile, its body as drawn, a body grown by a
+// clearance, and the square kept clear round a socket. Touching a shape is allowed; only entering its inside counts.
+// Pure maths with the scene's geometry, no Pixi. See docs/routing.md.
 import type { Vec2 } from '@servo/schema';
 import { partToCanvas } from '../scene/geometry.ts';
 import type { Rect } from '../scene/geometry.ts';
@@ -33,6 +33,24 @@ export const shapeOf = (corners: readonly Vec2[]): Shape => {
 export const tileShape = (part: ScenePart, grow = 0): Shape => {
   const w = part.tile.w / 2 + grow;
   const h = part.tile.h / 2 + grow;
+  return shapeOf(
+    [
+      { x: -w, y: h },
+      { x: w, y: h },
+      { x: w, y: -h },
+      { x: -w, y: -h },
+    ].map((corner) => partToCanvas(part.pose, corner)),
+  );
+};
+
+/**
+ * A part's body as drawn: its footprint (`body.size` x by y, centred on its frame origin) at its true size, inside
+ * its tile, grown by `grow` mm on every side and turned with the part. The rest of the tile, up to the 96 px minimum
+ * and round the sockets, is touch padding a wire may pass over.
+ */
+export const bodyShape = (part: ScenePart, grow = 0): Shape => {
+  const w = Math.min(part.record.body.size.x, part.tile.w) / 2 + grow;
+  const h = Math.min(part.record.body.size.y, part.tile.h) / 2 + grow;
   return shapeOf(
     [
       { x: -w, y: h },

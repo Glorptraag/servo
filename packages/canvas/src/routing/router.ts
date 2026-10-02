@@ -6,17 +6,20 @@
 // line. A route leaves each socket straight out from its part's edge, then takes the shortest way round the bodies
 // in the way: a visibility graph over the corners of the bodies grown by a clearance, searched with Dijkstra.
 //
+// A body is the part as drawn: its footprint (`body.size`) at its true size. The rest of its tile, up to the 96 px
+// minimum and round its sockets, is touch padding a wire may pass over. Frames (the chassis) are the deck the parts
+// stand on, so wires run over them as over a real chassis.
+//
 // What counts as crossing: the wire as the child sees it. A socket is drawn over the end of its wire, so the stretch
-// of wire under a wire's own two sockets is hidden; where parts overlap on a robot (a battery pack's sockets sit over
-// the caster under it) a route climbs out of the part beneath within that hidden stretch. Frames (the chassis) are
-// the deck the parts stand on, so wires run over them as over a real chassis. A socket boxed in on every side by
-// other parts' tiles cannot be left without crossing one: its route crosses the least it can, straight out of the
-// box, and is clean from there on.
+// of wire under a wire's own two sockets is hidden; where a socket sits over another part (the motor driver's sockets
+// over the battery pack beside it) a route climbs off that part within the hidden stretch. A socket boxed in on every
+// side by other bodies could not be left without crossing one: its route would cross the least it can, straight out,
+// and be clean from there on. No fixture has one.
 import type { Vec2, WireId } from '@servo/schema';
 import { distance } from '../scene/geometry.ts';
 import type { Scene, ScenePort, SceneWire } from '../scene/scene.ts';
 import { PORT_MM, mmOf } from '../scene/units.ts';
-import { EPS, containsPoint, rayInside, segmentEnters, squareShape, tileShape } from './shapes.ts';
+import { EPS, bodyShape, containsPoint, rayInside, segmentEnters, squareShape } from './shapes.ts';
 import type { Shape } from './shapes.ts';
 
 /** How far a routed wire keeps from a part's body when it can: its own half width and a little air, 10 px at the default zoom. */
@@ -67,8 +70,8 @@ interface Exit {
   readonly length: number;
 }
 
-/** The bodies a wire must not cross: every part's tile but a frame's. */
-export const bodiesOf = (scene: Scene): readonly Shape[] => scene.parts.filter((part) => !part.frame).map((part) => tileShape(part));
+/** The bodies a wire must not cross: every part's drawn body but a frame's. */
+export const bodiesOf = (scene: Scene): readonly Shape[] => scene.parts.filter((part) => !part.frame).map((part) => bodyShape(part));
 
 /** The pieces of the segment from `a` to `b` that lie outside every disc, scraps dropped. */
 const outsideDiscs = (a: Vec2, b: Vec2, discs: readonly Vec2[], radius: number): [Vec2, Vec2][] => {
@@ -338,13 +341,13 @@ const cleanBeyondExits = (route: readonly Vec2[], from: Exit, to: Exit, bodies: 
 export const routeWires = (scene: Scene): WireRoutes => {
   const routes = new Map<WireId, Route>();
   const solid = scene.parts.filter((part) => !part.frame);
-  const bodies = solid.map((part) => tileShape(part));
+  const bodies = solid.map((part) => bodyShape(part));
   const crossing = scene.wires.filter((wire) => crossesBodies([wire.from.at, wire.to.at], bodies));
   if (crossing.length === 0) return routes;
 
   const bodyOf = new Map(solid.map((part, index) => [part.id, bodies[index] as Shape]));
   const sockets = solid.flatMap((part) => part.ports.filter((port) => port.layer === 'ports'));
-  const grown: Obstacle[] = solid.map((part, index) => ({ halo: tileShape(part, CLEARANCE_MM), core: bodies[index] as Shape }));
+  const grown: Obstacle[] = solid.map((part, index) => ({ halo: bodyShape(part, CLEARANCE_MM), core: bodies[index] as Shape }));
   const makers: readonly (() => Pass)[] = [
     () => makePass([...grown, ...sockets.map((port) => ({ halo: squareShape(port.at, HIDDEN_MM + CLEARANCE_MM / 2) }))], bodies),
     () => makePass(grown, bodies),

@@ -7,7 +7,7 @@ import { applyEdit } from '../../src/placement/apply.ts';
 import { TIDY_WIRES_ACTION } from '../../src/routing/commands.ts';
 import { RoutingController, tidies } from '../../src/routing/controller.ts';
 import { routeWires } from '../../src/routing/router.ts';
-import { distanceToSegment } from '../../src/scene/geometry.ts';
+import { distance, distanceToSegment } from '../../src/scene/geometry.ts';
 import { hitTest } from '../../src/scene/hit.ts';
 import { buildScene } from '../../src/scene/scene.ts';
 import { WIRE_HIT_MM } from '../../src/scene/units.ts';
@@ -63,9 +63,12 @@ describe('the routes the canvas keeps', () => {
 
     // A new part dropped on a route sends that wire back to straight; routes it does not touch stay.
     routing.tidy(scene);
-    const [id, route] = [...routing.routes].find(([, points]) => points.length >= 3) ?? [];
+    // A bend well clear of both sockets, where nothing hides the wire.
+    const clearBend = (points: readonly Vec2[]): Vec2 | undefined =>
+      points.slice(1, -1).find((point) => distance(point, points[0] as Vec2) > 30 && distance(point, points[points.length - 1] as Vec2) > 30);
+    const [id, route] = [...routing.routes].find(([, points]) => clearBend(points)) ?? [];
     if (!id || !route) throw new Error('no bent route');
-    const bend = route[1] as Vec2;
+    const bend = clearBend(route) as Vec2;
     const placed = applyEdit(busyWorkbench, { kind: 'place-part', part: 'led', position: bend }, benchCatalogue);
     if (!placed.ok) throw new Error(placed.refusal.message);
     const kept = new Map(routing.routes);
