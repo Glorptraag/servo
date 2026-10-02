@@ -231,6 +231,5 @@ describe('members later tasks build', () => {
     expect(surface.selection).toBeNull();
     expect(() => surface.listView).toThrow(/task 3\.6/);
     expect(() => surface.select(null)).toThrow(/task 3\.4/);
-    expect(() => surface.tidyWires()).toThrow(/task 3\.7/);
   });
 });

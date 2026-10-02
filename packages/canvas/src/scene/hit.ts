@@ -1,7 +1,7 @@
 // What lies under a point of the canvas, topmost first in the brief's layer order: a socket, then a wire, then a
 // part, then a frame. Task 3.1 uses it to tell empty canvas (which pans) from the build; the input paths of tasks
 // 3.2–3.4 resolve their targets with it.
-import type { Vec2 } from '@servo/schema';
+import type { Vec2, WireId } from '@servo/schema';
 import { canvasToPart, distance, distanceToSegment } from './geometry.ts';
 import type { Scene, ScenePart, ScenePort, SceneWire } from './scene.ts';
 import { PORT_MM, WIRE_HIT_MM } from './units.ts';
@@ -16,8 +16,8 @@ const insideTile = (part: ScenePart, point: Vec2): boolean => {
   return Math.abs(local.x) <= part.tile.w / 2 && Math.abs(local.y) <= part.tile.h / 2;
 };
 
-/** The topmost thing at `point` (canvas mm), or null for empty canvas. */
-export const hitTest = (scene: Scene, point: Vec2): Hit | null => {
+/** The topmost thing at `point` (canvas mm), or null for empty canvas. A tidied wire is hit along its route (task 3.7). */
+export const hitTest = (scene: Scene, point: Vec2, routes?: ReadonlyMap<WireId, readonly Vec2[]>): Hit | null => {
   for (let i = scene.parts.length - 1; i >= 0; i--) {
     const part = scene.parts[i] as ScenePart;
     for (const port of part.ports) {
@@ -26,7 +26,10 @@ export const hitTest = (scene: Scene, point: Vec2): Hit | null => {
   }
   for (let i = scene.wires.length - 1; i >= 0; i--) {
     const wire = scene.wires[i] as SceneWire;
-    if (distanceToSegment(point, wire.from.at, wire.to.at) <= WIRE_HIT_MM / 2) return { kind: 'wire', wire };
+    const path = routes?.get(wire.id) ?? [wire.from.at, wire.to.at];
+    for (let k = 1; k < path.length; k++) {
+      if (distanceToSegment(point, path[k - 1] as Vec2, path[k] as Vec2) <= WIRE_HIT_MM / 2) return { kind: 'wire', wire };
+    }
   }
   for (let i = scene.parts.length - 1; i >= 0; i--) {
     const part = scene.parts[i] as ScenePart;

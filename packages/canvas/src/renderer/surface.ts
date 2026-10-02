@@ -12,6 +12,7 @@ import type {
   CanvasMode,
   CanvasOptions,
   CanvasPrefs,
+  CanvasSafeArea,
   DrawnHintStep,
   EditCommand,
   EditResult,
@@ -21,6 +22,8 @@ import type {
 } from '../interface.ts';
 import { applyEdit } from '../placement/apply.ts';
 import { PlacementController } from '../placement/controller.ts';
+import { RoutingController, tidies } from '../routing/controller.ts';
+import { checkSafeArea, screenCentre } from '../routing/view.ts';
 import { layArena } from '../scene/arena.ts';
 import type { SceneArena } from '../scene/arena.ts';
 import { unionRect } from '../scene/geometry.ts';
@@ -82,6 +85,8 @@ export class CanvasSurface implements CanvasHandle {
   readonly placement: PlacementController;
   /** Drawing and removing wires by touch and pointer, sockets' glows and crowded sockets fanning out (task 3.3, src/wiring/). */
   readonly wiring: WiringController;
+  /** The routes tidy wires gives, kept while they fit the build (task 3.7, src/routing/). */
+  readonly routing = new RoutingController();
 
   private readonly options: CanvasOptions;
   private readonly emitter = new Emitter<CanvasEventMap>();
@@ -209,9 +214,12 @@ export class CanvasSurface implements CanvasHandle {
   setZoom(zoom: number): void {
     this.alive('setZoom');
     if (!Number.isFinite(zoom)) throw new RangeError(`setZoom needs a finite number, not ${zoom}.`);
-    this.viewChange(() =>
-      this.camera.zoomAbout({ x: this.camera.width / 2, y: this.camera.height / 2 }, zoom, this.limits()),
-    );
+    this.viewChange(() => this.camera.zoomAbout(screenCentre(this.camera.uncovered()), zoom, this.limits()));
+  }
+
+  setSafeArea(safeArea: CanvasSafeArea): void {
+    this.alive('setSafeArea');
+    this.camera.safeArea = checkSafeArea(safeArea);
   }
 
   /**
@@ -275,6 +283,10 @@ export class CanvasSurface implements CanvasHandle {
       this.rebuild();
       this.emitter.emit('edit', { command, blueprint: result.blueprint });
     }
+    if (result.ok && tidies(command)) {
+      this.routing.tidy(this.scene);
+      this.redrawWires();
+    }
     return result;
   }
 
@@ -330,7 +342,8 @@ export class CanvasSurface implements CanvasHandle {
   }
 
   tidyWires(): void {
-    throw notYet('tidyWires', '3.7');
+    this.alive('tidyWires');
+    this.apply({ kind: 'tidy-wires' });
   }
 
   // ---------------------------------------------------------------------------------------------------------
@@ -359,7 +372,7 @@ export class CanvasSurface implements CanvasHandle {
 
   /** The topmost thing under a screen point (CSS pixels from the canvas's top left), or null for empty canvas. */
   hitAt(screen: Vec2): Hit | null {
-    return hitTest(this.scene, this.camera.screenToWorld(screen));
+    return hitTest(this.scene, this.camera.screenToWorld(screen), this.routing.routes);
   }
 
   /** The part's display objects, for the tasks that move and animate them. */
@@ -371,9 +384,10 @@ export class CanvasSurface implements CanvasHandle {
     return this.wireViews.get(id);
   }
 
-  /** The current limits on zoom and pan. */
+  /** The current limits on zoom and pan, for the uncovered canvas. */
   limits(): ViewLimits {
-    return limitsFor(this.content(), this.camera.width, this.camera.height);
+    const view = this.camera.uncovered();
+    return limitsFor(this.targets(), view.width, view.height);
   }
 
   /** True when nothing is loading, fading or waiting to be drawn: the picture on screen is final. */
@@ -419,9 +433,26 @@ export class CanvasSurface implements CanvasHandle {
     return { palette: this.palette, typeface: this.prefs.typeface, resolution: this.resolution };
   }
 
-  /** What fit and the limits look at: the build, and in Run mode the arena around it. */
+  /** What fit frames: the build, and in Run mode the arena around it. */
   private content(): Rect | undefined {
     return this.currentMode === 'run' ? unionRect(this.scene.bounds, this.arena?.bounds) : this.scene.bounds;
+  }
+
+  /** What the limits keep on screen: each part, and in Run mode the arena. */
+  private targets(): Rect[] {
+    const targets = this.scene.parts.map((part) => part.bounds);
+    if (this.currentMode === 'run' && this.arena) targets.push(this.arena.bounds);
+    return targets;
+  }
+
+  /** Draws every wire again along its route or straight, after tidying. */
+  private redrawWires(): void {
+    const palette = this.palette;
+    for (const [id, view] of this.wireViews) {
+      view.setRoute(this.routing.routeOf(id));
+      view.draw(view.wire, palette);
+    }
+    this.loop.request();
   }
 
   private async start(): Promise<void> {
@@ -499,6 +530,7 @@ export class CanvasSurface implements CanvasHandle {
     if (this.destroyed) return;
     this.scene = buildScene(this.current, this.options.catalogue);
     this.arena = layArena(this.current, this.options.catalogue, this.scene);
+    this.routing.refresh(this.scene);
     const layers = this.layers;
     const renderer = this.renderer;
     if (!layers || !renderer) {
@@ -541,6 +573,7 @@ export class CanvasSurface implements CanvasHandle {
         view = new WireView(wire, this.lineNodes);
         this.wireViews.set(wire.id, view);
       }
+      view.setRoute(this.routing.routeOf(wire.id));
       view.draw(wire, context.palette);
     }
     for (const [id, view] of this.wireViews) {

@@ -1,6 +1,6 @@
 # The command layer
 
-Back to the [README](../README.md). The types are in [src/interface.ts](../src/interface.ts). Task 3.3 builds `connect` and `disconnect`; task 3.2 builds every other command and `batch`.
+Back to the [README](../README.md). The types are in [src/interface.ts](../src/interface.ts). Task 3.3 builds `connect` and `disconnect`, task 3.7 `tidy-wires`; task 3.2 builds every other command and `batch`.
 
 Ground rule 8 asks for a touch path, a pointer path and a list-view path for every canvas action. All three only ever emit an `EditCommand`, and one pure function applies it: `applyEdit(blueprint, command, catalogue)`. So the same steps give byte-identical blueprints on every path, which is task 3.6's acceptance and the e2e harness's parity check (task 3.8).
 
@@ -27,6 +27,7 @@ Ground rule 8 asks for a touch path, a pointer path and a list-view path for eve
 | `set-arena` | Replaces the arena: the preset picker, and Reset arena, which drops the child's props (D29) | `ref.unknown_arena`, `arena.outside`, `id.duplicate` |
 | `place-prop`, `move-prop`, `remove-prop` | A prop from the arena strip, Build mode only (D36); `at` in arena millimetres, or the free spot | `arena.outside`, `edit.unknown_prop` |
 | `rename` | The blueprint's name: child text, 1–60 characters on one line | `value.bad_format` |
+| `tidy-wires` | Nothing in the build: routes are view state, so the build comes back as it was and the handle fires no `edit`. The handle then routes the wires round the part bodies (task 3.7, [routing.md](routing.md)) | only the handle's own |
 | `batch` | Single commands in order, all or nothing: one `edit` event, one undo step. The hint ladder's do-it is one batch. A command that wires a part placed earlier in the batch names it by the id `claimPartId` predicts: each `place-part` takes the next `p<n>` in turn (tasks 3.2 and 4.6) | the first refusal, with its `index` |
 
 The handle adds two refusals of its own: `edit.locked` in Run mode or on a read-only canvas, and `edit.no_build` before the first `load`.

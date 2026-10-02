@@ -274,7 +274,8 @@ export class WireView {
   readonly graphics = new Graphics();
   wire: SceneWire;
   private palette: Palette | undefined;
-  private ends: readonly [Vec2, Vec2] | undefined;
+  private points: readonly Vec2[] | undefined;
+  private route: readonly Vec2[] | undefined;
   private emphasis: Emphasis = 'normal';
 
   constructor(wire: SceneWire, parent: Container) {
@@ -289,31 +290,21 @@ export class WireView {
     layer.attach(this.graphics);
   }
 
+  /** The way a tidied wire runs between its sockets (task 3.7), or undefined for a straight line. Takes effect at the next `draw`. */
+  setRoute(route: readonly Vec2[] | undefined): void {
+    this.route = route;
+  }
+
   /**
-   * Power solid, signal dashed, mechanical thick: the line-style twins of brief Section 13. The ends default to the
-   * two sockets; a drag (task 3.3) or a route (task 3.7) can give others.
+   * Power solid, signal dashed, mechanical thick: the line-style twins of brief Section 13. Without ends it runs
+   * between its two sockets, along its route when it has one (task 3.7); given ends (a drag, task 3.3), it runs
+   * straight between them.
    */
-  draw(wire: SceneWire, palette: Palette, from: Vec2 = wire.from.at, to: Vec2 = wire.to.at): void {
+  draw(wire: SceneWire, palette: Palette, from?: Vec2, to?: Vec2): void {
     this.wire = wire;
     this.palette = palette;
-    this.ends = [from, to];
-    const colours = palette.types[wire.type];
-    const g = this.graphics;
-    g.clear();
-    if (this.emphasis === 'highlighted') {
-      const width = (wire.type === 'mechanical' ? LINKAGE_MM : WIRE_MM) + 2 * WIRE_HALO_MM;
-      g.moveTo(from.x, from.y).lineTo(to.x, to.y).stroke({ color: colours.colour, alpha: 0.3, width, cap: 'round' });
-    }
-    if (wire.type === 'signal') {
-      const path = dashedPath(from, to);
-      g.path(path).stroke({ color: colours.casing, width: WIRE_MM + 2 * CASING_MM, cap: 'butt' });
-      g.path(path).stroke({ color: colours.colour, width: WIRE_MM, cap: 'butt' });
-      return;
-    }
-    const width = wire.type === 'mechanical' ? LINKAGE_MM : WIRE_MM;
-    const path = new GraphicsPath().moveTo(from.x, from.y).lineTo(to.x, to.y);
-    g.path(path).stroke({ color: colours.casing, width: width + 2 * CASING_MM, cap: 'round' });
-    g.path(path).stroke({ color: colours.colour, width, cap: 'round' });
+    this.points = from === undefined && to === undefined && this.route ? this.route : [from ?? wire.from.at, to ?? wire.to.at];
+    this.paint();
   }
 
   /** Dimmed draws the line one step fainter; highlighted gives it a glow in its colour. */
@@ -321,30 +312,90 @@ export class WireView {
     const glowChanged = (emphasis === 'highlighted') !== (this.emphasis === 'highlighted');
     this.emphasis = emphasis;
     this.graphics.alpha = emphasis === 'dimmed' ? DIM_ALPHA : 1;
-    if (glowChanged && this.palette && this.ends) this.draw(this.wire, this.palette, this.ends[0], this.ends[1]);
+    if (glowChanged) this.paint();
   }
 
   destroy(): void {
     this.graphics.destroy();
   }
+
+  private paint(): void {
+    const { wire, palette, points } = this;
+    if (!palette || !points) return;
+    const colours = palette.types[wire.type];
+    const g = this.graphics;
+    g.clear();
+    const line = polylinePath(points);
+    if (this.emphasis === 'highlighted') {
+      const width = (wire.type === 'mechanical' ? LINKAGE_MM : WIRE_MM) + 2 * WIRE_HALO_MM;
+      g.path(line).stroke({ color: colours.colour, alpha: 0.3, width, cap: 'round', join: 'round' });
+    }
+    if (wire.type === 'signal') {
+      const path = dashedPath(points);
+      g.path(path).stroke({ color: colours.casing, width: WIRE_MM + 2 * CASING_MM, cap: 'butt' });
+      g.path(path).stroke({ color: colours.colour, width: WIRE_MM, cap: 'butt' });
+      return;
+    }
+    const width = wire.type === 'mechanical' ? LINKAGE_MM : WIRE_MM;
+    g.path(line).stroke({ color: colours.casing, width: width + 2 * CASING_MM, cap: 'round', join: 'round' });
+    g.path(line).stroke({ color: colours.colour, width, cap: 'round', join: 'round' });
+  }
 }
 
-/** Dashes along a straight line, centred so both ends look alike. */
-export const dashedPath = (from: Vec2, to: Vec2): GraphicsPath => {
+const polylinePath = (points: readonly Vec2[]): GraphicsPath => {
   const path = new GraphicsPath();
-  const dx = to.x - from.x;
-  const dy = to.y - from.y;
-  const length = Math.sqrt(dx * dx + dy * dy);
+  const [first, ...rest] = points;
+  if (!first) return path;
+  path.moveTo(first.x, first.y);
+  for (const point of rest) path.lineTo(point.x, point.y);
+  return path;
+};
+
+/**
+ * Dashes along a line through `points` (two for a straight wire, more for a routed one), centred so both ends look
+ * alike. The dashes run on round the bends, so a routed signal line keeps one even rhythm.
+ */
+export const dashedPath = (points: readonly Vec2[]): GraphicsPath => {
+  const path = new GraphicsPath();
+  const lengths = points.slice(1).map((point, i) => Math.hypot(point.x - (points[i] as Vec2).x, point.y - (points[i] as Vec2).y));
+  const length = lengths.reduce((sum, each) => sum + each, 0);
   if (length === 0) return path;
-  const ux = dx / length;
-  const uy = dy / length;
+  /** The point `at` mm along the line. */
+  const along = (at: number): Vec2 => {
+    let left = at;
+    for (let i = 0; i < lengths.length; i++) {
+      const piece = lengths[i] as number;
+      if (left <= piece || i === lengths.length - 1) {
+        const a = points[i] as Vec2;
+        const b = points[i + 1] as Vec2;
+        const k = piece === 0 ? 0 : Math.min(1, left / piece);
+        return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
+      }
+      left -= piece;
+    }
+    return points[points.length - 1] as Vec2;
+  };
+  /** Where the line bends between `start` and `end` mm along it. */
+  const bendsBetween = (start: number, end: number): Vec2[] => {
+    const bends: Vec2[] = [];
+    let at = 0;
+    for (let i = 0; i < lengths.length - 1; i++) {
+      at += lengths[i] as number;
+      if (at > start && at < end) bends.push(points[i + 1] as Vec2);
+    }
+    return bends;
+  };
   const period = DASH_MM + DASH_GAP_MM;
   const count = Math.max(1, Math.floor((length + DASH_GAP_MM) / period));
   const used = count * period - DASH_GAP_MM;
   let start = Math.max(0, (length - used) / 2);
   for (let i = 0; i < count; i++) {
     const end = Math.min(length, start + DASH_MM);
-    path.moveTo(from.x + ux * start, from.y + uy * start).lineTo(from.x + ux * end, from.y + uy * end);
+    const from = along(start);
+    path.moveTo(from.x, from.y);
+    for (const bend of bendsBetween(start, end)) path.lineTo(bend.x, bend.y);
+    const to = along(end);
+    path.lineTo(to.x, to.y);
     start += period;
   }
   return path;
