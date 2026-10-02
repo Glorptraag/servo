@@ -19,6 +19,8 @@ import type {
   PropTemplate,
   Selection,
 } from '../interface.ts';
+import { ListViewDom } from '../list-view/dom.ts';
+import { ListViewModel } from '../list-view/model.ts';
 import { applyEdit } from '../placement/apply.ts';
 import { PlacementController } from '../placement/controller.ts';
 import { layArena } from '../scene/arena.ts';
@@ -82,6 +84,9 @@ export class CanvasSurface implements CanvasHandle {
   readonly placement: PlacementController;
   /** Drawing and removing wires by touch and pointer, sockets' glows and crowded sockets fanning out (task 3.3, src/wiring/). */
   readonly wiring: WiringController;
+  /** The screen-reader and keyboard path: the list view's model and its DOM beside the canvas (task 3.6, src/list-view/). */
+  readonly list: ListViewModel;
+  readonly listDom: ListViewDom;
 
   private readonly options: CanvasOptions;
   private readonly emitter = new Emitter<CanvasEventMap>();
@@ -157,6 +162,17 @@ export class CanvasSurface implements CanvasHandle {
       readOnly: options.readOnly === true,
       prefs: () => this.prefs,
     });
+    this.list = new ListViewModel({
+      catalogue: options.catalogue,
+      readOnly: options.readOnly === true,
+      blueprint: () => this.current,
+      mode: () => this.currentMode,
+      level: () => this.level,
+      apply: (command) => this.apply(command),
+      control: (input) => this.emitter.emit('control', { input }),
+      select: (selection) => this.select(selection),
+    });
+    this.listDom = new ListViewDom(host, this.list, { prefs: () => this.prefs });
     this.resizeObserver =
       typeof ResizeObserver === 'function' ? new ResizeObserver(() => this.resized()) : undefined;
     this.resizeObserver?.observe(this.canvas);
@@ -199,6 +215,7 @@ export class CanvasSurface implements CanvasHandle {
     this.wiring.modeChanged();
     this.modeFade.toward(mode === 'run' ? 1 : 0, this.motion(MODE_FADE_MS), performance.now());
     this.loop.request();
+    this.list.changed();
   }
 
   fit(): void {
@@ -222,6 +239,7 @@ export class CanvasSurface implements CanvasHandle {
   setLevel(level: Level): void {
     this.alive('setLevel');
     this.level = level;
+    this.list.changed();
   }
 
   /** The child's level, as `mountCanvas` or `setLevel` last gave it. */
@@ -245,6 +263,7 @@ export class CanvasSurface implements CanvasHandle {
     live.delete(this);
     this.placement.destroy();
     this.wiring.destroy();
+    this.listDom.destroy();
     this.loop.stop();
     if (this.restTimer !== undefined) clearTimeout(this.restTimer);
     this.resizeObserver?.disconnect();
@@ -300,14 +319,17 @@ export class CanvasSurface implements CanvasHandle {
   }
 
   // ---------------------------------------------------------------------------------------------------------
+  // CanvasHandle: task 3.6 (src/list-view/)
+
+  get listView(): ListView {
+    return this.list;
+  }
+
+  // ---------------------------------------------------------------------------------------------------------
   // CanvasHandle: later tasks
 
   get selection(): Selection | null {
     return null;
-  }
-
-  get listView(): ListView {
-    throw notYet('listView', '3.6');
   }
 
   select(selection: Selection | null): void {
@@ -499,6 +521,7 @@ export class CanvasSurface implements CanvasHandle {
     if (this.destroyed) return;
     this.scene = buildScene(this.current, this.options.catalogue);
     this.arena = layArena(this.current, this.options.catalogue, this.scene);
+    this.list.changed();
     const layers = this.layers;
     const renderer = this.renderer;
     if (!layers || !renderer) {
