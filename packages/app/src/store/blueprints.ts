@@ -182,17 +182,20 @@ export interface UnsavedNote {
   readonly build: Blueprint;
   /** The stored version the build was edited from: its `updatedAt`. */
   readonly base: Timestamp;
-  /** When the page noted it, which is when the copy is said to be from if it is kept as one. */
-  readonly notedAt: Timestamp;
+  /**
+   * When the build was last edited, by the page's clock: what the note is weighed by against a version stored since,
+   * and when it is said to be from if it is kept as a copy.
+   */
+  readonly editedAt: Timestamp;
   /** `contentHashOf` the build, as the page noted it. */
   readonly hash: string;
 }
 
-/** What replaying a note did. */
+/** What replaying a note did. `kept-copy` names the version kept as a copy: the note's, or the stored build's. */
 export type Replay =
   | { readonly outcome: 'stored-already' }
   | { readonly outcome: 'saved'; readonly saved: Blueprint }
-  | { readonly outcome: 'kept-copy'; readonly copy: BlueprintSummary };
+  | { readonly outcome: 'kept-copy'; readonly copy: BlueprintSummary; readonly saved?: Blueprint };
 
 /**
  * Replays a build a page of the app left unsaved (its journal, task 4.9), in one transaction, by the project's rule:
@@ -200,10 +203,13 @@ export type Replay =
  * - The same as the stored build at its id, or as a copy kept from it, but for when it was saved: nothing to do, so
  *   the note's own save, which landed as its page went, is never stored twice.
  * - Edited from the version stored now: the note is the newer, and saves at its id, as a save does.
- * - Otherwise the stored build moved on since the note's base (another tab saved it), so it is the newer, and stays at
- *   its id; the note is kept as its own blueprint, `keptFrom` naming the build, from when it was noted. The same when
- *   the stored build does not load (a newer version of Servo stored it). A note whose build was removed meanwhile is
- *   kept as a build of its own. The note's build must validate.
+ * - The stored build moved on since the note's base (another tab saved it): whichever was changed last wins the id,
+ *   the note's last edit (`editedAt`) against the stored version's `updatedAt`, so the outcome is the one the live
+ *   path gives when the note's own save lands. When the note is later it saves at the id and the stored version is
+ *   kept as its own blueprint, `keptFrom` naming the build; otherwise the stored build stays at its id and the note is
+ *   kept so, dated by its last edit. A tie goes to the stored build.
+ * - The stored build does not load (a newer version of Servo stored it): the note is kept as a copy of it. A note whose
+ *   build was removed meanwhile is kept as a build of its own. The note's build must validate.
  */
 export const replayUnsaved = (ctx: StoreContext, profile: ProfileId, note: UnsavedNote): Promise<Replay> =>
   write(ctx, profile, async () => {
@@ -220,15 +226,25 @@ export const replayUnsaved = (ctx: StoreContext, profile: ProfileId, note: Unsav
       const kept = openRow(other, catalogue);
       if (kept.ok && same(kept.blueprint)) return { outcome: 'stored-already' };
     }
-    if (row && stored?.ok && stored.blueprint.meta.updatedAt === note.base) {
-      const now = ctx.now();
-      const later = now > stored.blueprint.meta.updatedAt ? now : justAfter(stored.blueprint.meta.updatedAt);
-      const saved = withUpdated(draft, later);
-      await putRow(ctx, profile, saved, row.keptFrom);
-      return { outcome: 'saved', saved };
+    const editedAt = isTimestamp(note.editedAt) ? note.editedAt : note.base;
+    if (row && stored?.ok) {
+      const before = stored.blueprint;
+      const unchanged = before.meta.updatedAt === note.base;
+      if (unchanged || editedAt > before.meta.updatedAt) {
+        const now = ctx.now();
+        const saved = withUpdated(draft, now > before.meta.updatedAt ? now : justAfter(before.meta.updatedAt));
+        if (unchanged) {
+          await putRow(ctx, profile, saved, row.keptFrom);
+          return { outcome: 'saved', saved };
+        }
+        const kept: Blueprint = { ...before, meta: { ...before.meta, id: uuidV4() } };
+        await putRow(ctx, profile, kept, id);
+        await putRow(ctx, profile, saved, row.keptFrom);
+        const { name, level, updatedAt } = kept.meta;
+        return { outcome: 'kept-copy', copy: { id: kept.meta.id, name, level, updatedAt, keptFrom: id }, saved };
+      }
     }
-    const notedAt = isTimestamp(note.notedAt) ? note.notedAt : note.base;
-    const copy: Blueprint = { ...draft, meta: { ...draft.meta, id: uuidV4(), updatedAt: notedAt } };
+    const copy: Blueprint = { ...draft, meta: { ...draft.meta, id: uuidV4(), updatedAt: editedAt } };
     await putRow(ctx, profile, copy, row ? id : undefined);
     const { name, level, updatedAt } = copy.meta;
     return { outcome: 'kept-copy', copy: { id: copy.meta.id, name, level, updatedAt, ...(row ? { keptFrom: id } : {}) } };

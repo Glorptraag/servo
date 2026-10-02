@@ -103,13 +103,16 @@ describe('the autosaver', () => {
 });
 
 describe('builds a page left unsaved', () => {
+  // Every time here is fixed, the autosaver's clock as much as the store's, so the tests hold on any date.
+  const EDITED_BEFORE_T1 = '2026-10-01T12:00:00.000Z';
   const T1 = '2026-10-02T10:30:00.000Z';
+  const EDITED_AFTER_T1 = '2026-10-02T12:00:00.000Z';
   const T2 = '2026-10-03T11:45:00.000Z';
   const init = { name: 'Build 1', level: 1, arena: { preset: 'open-floor', props: [] } } as const;
 
   /** Tab A: `build` edited, and the page closed at once, before its save could land (its store closes first). */
-  const closedAtOnce = async (store: ServoStore, child: ProfileStore, build: Blueprint, journal: Journal): Promise<void> => {
-    const tabA = new Autosaver(journal);
+  const closedAtOnce = async (store: ServoStore, child: ProfileStore, build: Blueprint, journal: Journal, editedAt = EDITED_BEFORE_T1): Promise<void> => {
+    const tabA = new Autosaver(journal, clock(editedAt).now);
     tabA.edited(build, child);
     store.close();
     tabA.leaving();
@@ -120,7 +123,7 @@ describe('builds a page left unsaved', () => {
 
   /** Tab A: `build` edited, and the page closed as its save landed, so it never forgot the note. */
   const landedThenClosed = async (child: ProfileStore, build: Blueprint, journal: Journal): Promise<void> => {
-    const tabA = new Autosaver(journal);
+    const tabA = new Autosaver(journal, clock(EDITED_BEFORE_T1).now);
     tabA.edited(build, child);
     tabA.leaving();
     const [item] = notes(journal);
@@ -133,7 +136,7 @@ describe('builds a page left unsaved', () => {
   /** The app opening again: the journal replayed, every outcome heard, then the build it opens. */
   const reopenApp = async (name: string, profile: string, journal: Journal, now: () => string) => {
     const store = await reopen(name, now);
-    const saving = new Autosaver(journal);
+    const saving = new Autosaver(journal, now);
     await saving.recover(store);
     const outcomes: SaveOutcome[] = [];
     saving.subscribe((outcome) => outcomes.push(outcome));
@@ -174,6 +177,45 @@ describe('builds a page left unsaved', () => {
     expect(app.outcomes).toMatchObject([{ kind: 'saved', keptCopy: { name: 'A edit, tab closed at once', keptFrom: build.meta.id } }]);
     expect(notes(journal)).toEqual([]);
     app.store.close();
+  });
+
+  it('win the id when edited after another tab saved the build, as they would have had their save landed', async () => {
+    // The other order: B saves first; A, still on the older version, then edits and is closed at once.
+    const { store, name, child, build, journal } = await setUp();
+    const tabB = await reopen(name, clock(T1).now);
+    await tabB.forProfile(child.profile).blueprints.save(withMeta(build, { name: 'B edit, saved first' }));
+    tabB.close();
+    await closedAtOnce(store, child, withMeta(build, { name: 'A edit, made after B saved' }), journal, EDITED_AFTER_T1);
+
+    const app = await reopenApp(name, child.profile, journal, clock(T2).now);
+    const builds = await app.kid.blueprints.list();
+    expect(builds.map(({ id, name: built, keptFrom }) => ({ id: id === build.meta.id ? 'the build' : 'a copy', built, keptFrom }))).toEqual([
+      { id: 'the build', built: 'A edit, made after B saved', keptFrom: undefined },
+      { id: 'a copy', built: 'B edit, saved first', keptFrom: build.meta.id },
+    ]);
+    expect(builds[0]?.updatedAt).toBe(T2);
+    // The later edit opens, B's is kept once, and the line says a copy was kept.
+    expect(app.opened.meta).toMatchObject({ id: build.meta.id, name: 'A edit, made after B saved' });
+    expect(app.outcomes).toMatchObject([{ kind: 'saved', keptCopy: { name: 'B edit, saved first', keptFrom: build.meta.id } }]);
+    expect(notes(journal)).toEqual([]);
+    app.store.close();
+  });
+
+  it('give the same winner as the live path in both orders', async () => {
+    // Live: A's page stays open and its save lands, after B's. The later edit, A's, keeps the id there too.
+    const { name, child, build } = await setUp();
+    const tabB = await reopen(name, clock(T1).now);
+    await tabB.forProfile(child.profile).blueprints.save(withMeta(build, { name: 'B edit, saved first' }));
+    tabB.close();
+    const live = new Autosaver(undefined, clock(EDITED_AFTER_T1).now);
+    live.edited(withMeta(build, { name: 'A edit, made after B saved' }), child);
+    live.flush();
+    await live.settled();
+    live.dispose();
+    expect((await child.blueprints.list()).map(({ name: built, keptFrom }) => ({ built, keptFrom }))).toEqual([
+      { built: 'A edit, made after B saved', keptFrom: undefined },
+      { built: 'B edit, saved first', keptFrom: build.meta.id },
+    ]);
   });
 
   it('are only forgotten when their own save had landed, so nothing is stored twice, with or without a later save', async () => {

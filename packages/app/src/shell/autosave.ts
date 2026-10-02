@@ -7,7 +7,7 @@
 //
 // A page that is reloaded or closed is gone before an IndexedDB save it starts can finish, so as the page is hidden or
 // left, the app's autosaver first notes each build still waiting or saving in a journal (localStorage, which writes at
-// once): the build, the stored version it was edited from, when it was noted and a hash of its content. Then it saves.
+// once): the build, the stored version it was edited from, when it was last edited and a hash of its content. Then it saves.
 // A note goes once its build is saved. The next time the app opens, `recover` replays each note the page left behind
 // through the store by the project's rule, the latest wins and both are kept (`replayUnsaved`), before the app opens a
 // build. That journal is the one place a build waits outside the store, and only between an edit and its save.
@@ -53,9 +53,11 @@ interface Job {
   readonly build: Blueprint;
   readonly child: ProfileStore;
   readonly pressed: boolean;
+  /** When the build was last edited, by this autosaver's clock. */
+  readonly editedAt: Timestamp;
 }
 
-/** A journal note: the build, its profile, the stored version it was edited from, when it was noted and its hash. */
+/** A journal note: the build, its profile, the stored version it was edited from, when it was last edited and its hash. */
 interface Note extends UnsavedNote {
   readonly profile: ProfileId;
 }
@@ -76,6 +78,7 @@ export class Autosaver {
   /** Outcomes from before anything listened, such as the journal's replay as the app opens, for the first listener. */
   private backlog: SaveOutcome[] = [];
   private readonly journal: Journal | undefined;
+  private readonly now: () => Timestamp;
   /** This page's mark on its journal notes, so two pages left at once never write over each other's. */
   private readonly page = uuidV4();
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -83,9 +86,13 @@ export class Autosaver {
   private stopped = false;
   private chain: Promise<void> = Promise.resolve();
 
-  /** With a journal, builds still waiting when the page is hidden or left are noted there first (`leaving`). */
-  constructor(journal?: Journal) {
+  /**
+   * With a journal, builds still waiting when the page is hidden or left are noted there first (`leaving`). `now` is
+   * the clock each edit is timed by, as toISOString writes it; tests pass a fixed one, as they do the store's.
+   */
+  constructor(journal?: Journal, now: () => Timestamp = () => new Date().toISOString()) {
     this.journal = journal;
+    this.now = now;
   }
 
   /** Hears each save's outcome, starting with any from before anything listened. Returns the unsubscribe function. */
@@ -103,7 +110,7 @@ export class Autosaver {
   edited(build: Blueprint, child: ProfileStore): void {
     const key = keyOf(child.profile, build.meta.id);
     if ([...this.waiting.keys()].some((other) => other !== key)) this.flush();
-    this.waiting.set(key, { build, child, pressed: false });
+    this.waiting.set(key, { build, child, pressed: false, editedAt: this.now() });
     this.retry = 0;
     this.wait(AUTOSAVE_MS);
   }
@@ -111,10 +118,10 @@ export class Autosaver {
   /** Save: this build now, as its latest edit left it, and anything else waiting. */
   saveNow(build: Blueprint, child: ProfileStore): void {
     const key = keyOf(child.profile, build.meta.id);
-    const latest = this.waiting.get(key)?.build ?? build;
+    const waiting = this.waiting.get(key);
     this.waiting.delete(key);
     this.flush();
-    this.enqueue({ build: latest, child, pressed: true });
+    this.enqueue({ build: waiting?.build ?? build, child, pressed: true, editedAt: waiting?.editedAt ?? this.now() });
   }
 
   /** Saves every waiting build now. */
@@ -193,7 +200,7 @@ export class Autosaver {
     const note: Note = {
       profile: job.child.profile,
       base: this.baseOf(key, job.build),
-      notedAt: new Date().toISOString(),
+      editedAt: job.editedAt,
       hash: contentHashOf(job.build),
       build: job.build,
     };
@@ -221,8 +228,9 @@ export class Autosaver {
    * Replays each build a page of the app noted in this journal and left before saving it, and forgets the note. The app
    * runs it as it opens, before it opens a build. Each goes through `replayUnsaved`, by the project's rule: the latest
    * wins and both are kept. A note already stored, at its build or as a copy kept from it, is only forgotten; a note
-   * edited from the version stored now saves to its build; a note the stored build has moved on from since (another tab
-   * saved it) is kept as a copy, and the line says so (an outcome with `keptCopy`); a note whose build was removed is
+   * edited from the version stored now saves to its build; when another tab saved the build since, the later of the
+   * note's last edit and that save keeps the id, the other is kept as a copy, and the line says so (an outcome with
+   * `keptCopy`); a note whose build was removed is
    * kept as a build of its own. A note whose profile is gone goes with the profile (D38). A note that cannot be replayed
    * now stays for next time. Notes of other databases are left alone.
    */
