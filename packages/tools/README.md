@@ -13,7 +13,7 @@ Developer tools and the tests that need the whole system. Dev-only: nothing at r
 | Accepting golden runs | `src/golden-runs/` | 1.7 | `pnpm golden --accept [<case>...]` | Rewrites the golden files from the Runs as they are now, removes those no case has, and prints what changed. For intended changes only, with an orchestrator note; it never makes an `expect` hold |
 | Determinism sweep | `test/sim-determinism.test.ts` | 1.5 | `pnpm --filter @servo/tools test:determinism` | Every content fixture and every valid schema blueprint run 100 times, the run records compared byte for byte. Not part of `pnpm check`, whose run of the same file does three fixtures 100 times and the rest 10 (plan Section 8: nightly) |
 | Canvas e2e harness | `src/e2e/` | 3.8 | Vitest browser mode | Runs `pnpm art` first, then touch and pointer emulation, screenshot diffs, an iPad-class performance profile, and the parity check that touch, pointer and list view give byte-identical blueprints. Under 10 minutes in CI |
-| Release | `src/release/` | 6.3 | a tagged commit | Runs `pnpm art`, then the web build, a versioned content bundle shown in Settings, and tester invite codes. Deploying waits for a host (D10) |
+| Release | `src/release/` | 6.3 | a `v*` tag; `pnpm release:dry`, `pnpm release:preview` | Checks the content, runs `pnpm build` (and so `pnpm art`) with the app and content versions and the invite code hashes baked in, and writes the web build, the versioned content bundle and the tester invite codes. The codes are hashed with the app's own `@servo/app/invite-code`. Deploying waits for a host (D10) ([README](src/release/README.md)) |
 
 ## Tests here
 
