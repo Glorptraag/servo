@@ -1,12 +1,11 @@
 // The schema's valid fixtures built by EditCommands, as touch, pointer and the list view build them: one placement per
 // part, holders first, each part attached by its mount or its hub where the fixture has it held, and loose where the
-// fixture has it loose. Part and wire ids are the ones the commands claim (`p<n>`, `w<n>`), so a fixture's own ids are
-// mapped onto them. Task 3.3 extends this with `connect` for the power lines, signal lines and drive linkages a
-// placement does not make.
+// fixture has it loose; then one `connect` per power line, signal line and drive linkage a placement does not make.
+// Part and wire ids are the ones the commands claim (`p<n>`, `w<n>`), so a fixture's own ids are mapped onto them.
 import { canonicalizeBlueprint, checkPortPair, indexPlacedParts, placeParts, resolvePort } from '@servo/schema';
 import type { Blueprint, PartTypeId, PlacedPartId, PortId, PortRef, Vec2, Wire, WireId } from '@servo/schema';
 import { validBlueprints } from '@servo/schema/fixtures';
-import type { PlacePart, SingleEdit } from '../../src/interface.ts';
+import type { Connect, PlacePart, SingleEdit } from '../../src/interface.ts';
 import { catalogue, fixture } from './catalogue.ts';
 
 export interface PlacementStep {
@@ -120,6 +119,37 @@ export const placedFixture = (plan: Plan, settings = true): Blueprint => {
     const id = wireIds.get(wire.id);
     return id ? [{ id, from: relabel(wire.from), to: relabel(wire.to) }] : [];
   });
+  const parts = plan.fixture.parts.map((part) => ({ ...part, id: mapped(plan, part.id), ...(settings ? {} : { settings: {} }) }));
+  return canonicalizeBlueprint(
+    { ...plan.fixture, parts, wires, meta: { ...plan.fixture.meta, highWater: { parts: parts.length, wires: wires.length } } },
+    catalogue,
+  );
+};
+
+/** A fixture wire's two ends on the placed ids. */
+const relabelled = (plan: Plan, wire: Wire): { readonly from: PortRef; readonly to: PortRef } => ({
+  from: { ...wire.from, part: mapped(plan, wire.from.part) },
+  to: { ...wire.to, part: mapped(plan, wire.to.part) },
+});
+
+/** The fixture's wires a placement does not make (power lines, signal lines, drive linkages between held parts), in id order. */
+export const connectWires = (plan: Plan): readonly Wire[] => {
+  const attached = new Set(plan.steps.flatMap((step) => (step.attach ? [step.attach.wire] : [])));
+  return plan.fixture.wires.filter((wire) => !attached.has(wire.id)).sort((a, b) => wireNumber(a.id) - wireNumber(b.id));
+};
+
+/** A `connect` for each wire a placement does not make, after every placement, naming parts by their placed ids. */
+export const connectCommands = (plan: Plan): Connect[] => connectWires(plan).map((wire) => ({ kind: 'connect', ...relabelled(plan, wire) }));
+
+/**
+ * The whole fixture as the placements and then the connects make it: its parts under the claimed ids, every wire
+ * renumbered in the order the commands claim it (placements first, then connects), and the high-water marks those
+ * claims raise. Canonical form.
+ */
+export const wiredFixture = (plan: Plan, settings = true): Blueprint => {
+  const order = [...plan.steps.flatMap((step) => (step.attach ? [step.attach.wire] : [])), ...connectWires(plan).map((wire) => wire.id)];
+  const wireIds = new Map(order.map((id, index) => [id, `w${index + 1}`] as const));
+  const wires: Wire[] = plan.fixture.wires.map((wire) => ({ id: wireIds.get(wire.id) as WireId, ...relabelled(plan, wire) }));
   const parts = plan.fixture.parts.map((part) => ({ ...part, id: mapped(plan, part.id), ...(settings ? {} : { settings: {} }) }));
   return canonicalizeBlueprint(
     { ...plan.fixture, parts, wires, meta: { ...plan.fixture.meta, highWater: { parts: parts.length, wires: wires.length } } },
