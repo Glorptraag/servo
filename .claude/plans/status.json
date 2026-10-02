@@ -1840,6 +1840,14 @@
       "confidence": "medium",
       "blocks": [],
       "resolved": false
+    },
+    {
+      "id": "D80",
+      "question": "Tidy wires (3.7): a part body is its drawn outline, not the 96 px minimum touch tile, so wires may pass through touch padding. Also: tidy makes no undo step, routes drop when a socket moves, the chassis is not a body, and the app owns the tidy button and calls fit after first load. Accept?",
+      "recommendation": "Accept as ruled by the orchestrator",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
     }
   ]
 }
