@@ -324,7 +324,7 @@
       "dispatched_at": "2026-10-01T13:03:29+00:00"
     },
     "G1": {
-      "status": "pending",
+      "status": "done",
       "model": "opus",
       "size": "micro",
       "batch": null,
@@ -345,8 +345,8 @@
       ],
       "done_when": "docs/gates/G1.md exists with the golden-run and determinism results recorded.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null
+      "completed_at": "2026-10-02T23:08:58+00:00",
+      "completed_by": "orchestrator"
     },
     "2.1": {
       "status": "done",
