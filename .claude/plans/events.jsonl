@@ -113,3 +113,12 @@
 {"ts": "2026-10-01T13:02:27+00:00", "event": "decision_add", "id": "D73", "blocks": []}
 {"ts": "2026-10-01T13:03:01+00:00", "event": "decision_add", "id": "D74", "blocks": []}
 {"ts": "2026-10-01T13:03:29+00:00", "event": "dispatch", "tasks": ["1.7"]}
+{"ts": "2026-10-02T01:56:16+00:00", "event": "dispatch", "tasks": ["3.4", "3.5", "3.6", "3.7"]}
+{"ts": "2026-10-02T22:34:31+00:00", "event": "decision_add", "id": "D75", "blocks": []}
+{"ts": "2026-10-02T22:34:32+00:00", "event": "decision_add", "id": "D76", "blocks": []}
+{"ts": "2026-10-02T22:34:33+00:00", "event": "decision_add", "id": "D77", "blocks": []}
+{"ts": "2026-10-02T22:34:51+00:00", "event": "decision_add", "id": "D78", "blocks": []}
+{"ts": "2026-10-02T22:34:52+00:00", "event": "decision_add", "id": "D79", "blocks": []}
+{"ts": "2026-10-02T22:50:41+00:00", "event": "done", "tasks": ["1.5"], "by": "W-1.5"}
+{"ts": "2026-10-02T22:50:42+00:00", "event": "done", "tasks": ["1.7"], "by": "W-1.7"}
+{"ts": "2026-10-02T22:50:42+00:00", "event": "done", "tasks": ["6.3"], "by": "W-6.3"}
