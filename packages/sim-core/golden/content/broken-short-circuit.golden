@@ -1,0 +1,145 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/broken-short-circuit
+seed 1
+ticks 60
+inputs none
+blueprint b00860934b6a2384
+arena open-floor 297edbfc7ad9a93c
+part battery-pack-2-cell ac49444ad3a2e166
+part caster 85cad363c9f68e25
+part chassis 2b67875c3e879e19
+part dc-motor e80cd3eae3017bf6
+part switch 0a304ca511260dde
+part wheel-large c182e441f60c54e3
+record c8c890363ab5a46777758a776cf0c9dc183f470de5952762c683a1a00d672899
+fault battery short-circuit first-tick=2
+subjects battery caster chassis motor-left motor-right switch wheel-left wheel-right
+tick 0 d6cab83f
+  battery volts=0 milliamps=7500 charge=1
+  chassis x=300 y=600 heading=0 pitch=0 roll=0
+  motor-left volts=0 milliamps=0 rpm=0
+  motor-right volts=0 milliamps=0 rpm=0
+  switch volts=0 milliamps=0 closed=true
+  wheel-left rpm=0
+  wheel-right rpm=0
+tick 1 37517e5f
+tick 2 124b4f86
+  battery milliamps=7495.7 charge=0.9983 faults=short-circuit
+tick 3 944a0f18
+  battery milliamps=7491.3 charge=0.9965
+tick 4 6a7d540c
+  battery milliamps=7487 charge=0.9948
+tick 5 bc8b4a47
+  battery milliamps=7482.7 charge=0.9931
+tick 6 cb2ff848
+  battery milliamps=7478.3 charge=0.9913
+tick 7 265be6bd
+  battery milliamps=7474 charge=0.9896
+tick 8 c94823d0
+  battery milliamps=7469.7 charge=0.9879
+tick 9 5dd5e54d
+  battery milliamps=7465.3 charge=0.9861
+tick 10 e433f780
+  battery milliamps=7461 charge=0.9844
+tick 11 68359c5a
+  battery milliamps=7456.7 charge=0.9827
+tick 12 4a3e3be2
+  battery milliamps=7452.4 charge=0.981
+tick 13 8fa4bb20
+  battery milliamps=7448.1 charge=0.9792
+tick 14 f6b0251f
+  battery milliamps=7443.8 charge=0.9775
+tick 15 61ea6c4f
+  battery milliamps=7439.5 charge=0.9758
+tick 16 a4138b8a
+  battery milliamps=7435.2 charge=0.9741
+tick 17 c672c047
+  battery milliamps=7430.9 charge=0.9723
+tick 18 82594ec5
+  battery milliamps=7426.6 charge=0.9706
+tick 19 00bbd6a0
+  battery milliamps=7422.3 charge=0.9689
+tick 20 14a92282
+  battery milliamps=7418 charge=0.9672
+tick 21 2e414c09
+  battery milliamps=7413.7 charge=0.9655
+tick 22 12d88df6
+  battery milliamps=7409.4 charge=0.9638
+tick 23 0cceffc2
+  battery milliamps=7405.1 charge=0.962
+tick 24 b106ee26
+  battery milliamps=7400.8 charge=0.9603
+tick 25 f5eaf1e5
+  battery milliamps=7396.5 charge=0.9586
+tick 26 c37dc9dd
+  battery milliamps=7392.2 charge=0.9569
+tick 27 d8b99bcc
+  battery milliamps=7388 charge=0.9552
+tick 28 57a0a1db
+  battery milliamps=7383.7 charge=0.9535
+tick 29 b5ba65cf
+  battery milliamps=7379.4 charge=0.9518
+tick 30 97d5cfb7
+  battery milliamps=7375.1 charge=0.9501
+tick 31 9182145a
+  battery milliamps=7370.9 charge=0.9484
+tick 32 8b969f21
+  battery milliamps=7366.6 charge=0.9466
+tick 33 6dfbe2b7
+  battery milliamps=7362.3 charge=0.9449
+tick 34 a7a7e0d7
+  battery milliamps=7358.1 charge=0.9432
+tick 35 30013cb2
+  battery milliamps=7353.8 charge=0.9415
+tick 36 c5ab5343
+  battery milliamps=7349.6 charge=0.9398
+tick 37 1c6e247e
+  battery milliamps=7345.3 charge=0.9381
+tick 38 69b0dee2
+  battery milliamps=7341.1 charge=0.9364
+tick 39 7aa2f70c
+  battery milliamps=7336.8 charge=0.9347
+tick 40 f3749e47
+  battery milliamps=7332.6 charge=0.933
+tick 41 55125fa3
+  battery milliamps=7328.3 charge=0.9313
+tick 42 336de3d7
+  battery milliamps=7324.1 charge=0.9296
+tick 43 bb57db17
+  battery milliamps=7319.9 charge=0.9279
+tick 44 b3a2eab8
+  battery milliamps=7315.6 charge=0.9262
+tick 45 cd219d48
+  battery milliamps=7311.4 charge=0.9246
+tick 46 7144e9b2
+  battery milliamps=7307.2 charge=0.9229
+tick 47 25a1fdf6
+  battery milliamps=7302.9 charge=0.9212
+tick 48 efa01a1f
+  battery milliamps=7298.7 charge=0.9195
+tick 49 9cbcd4da
+  battery milliamps=7294.5 charge=0.9178
+tick 50 c4f3dba2
+  battery milliamps=7290.3 charge=0.9161
+tick 51 0a21af77
+  battery milliamps=7286 charge=0.9144
+tick 52 6b760449
+  battery milliamps=7281.8 charge=0.9127
+tick 53 309574db
+  battery milliamps=7277.6 charge=0.911
+tick 54 cd932b40
+  battery milliamps=7273.4 charge=0.9094
+tick 55 14eb3e8b
+  battery milliamps=7269.2 charge=0.9077
+tick 56 34dec153
+  battery milliamps=7265 charge=0.906
+tick 57 64976e59
+  battery milliamps=7260.8 charge=0.9043
+tick 58 5b3c66ed
+  battery milliamps=7256.6 charge=0.9026
+tick 59 990c429c
+  battery milliamps=7252.4 charge=0.9009
+tick 60 b274c658
+  battery milliamps=7248.2 charge=0.8993
