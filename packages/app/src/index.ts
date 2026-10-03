@@ -11,6 +11,7 @@ import type { Journal } from './shell/index.ts';
 import { DATABASE_NAME } from './store/database.ts';
 import { openStore } from './store/index.ts';
 import type { ProfileStore, ServoStore, StoreOptions } from './store/index.ts';
+import { onProfilesChanged } from './store/device.ts';
 import { buildForOpening, profilesForOpening } from './store/open.ts';
 import { uuidV4 } from './store/uuid.ts';
 
@@ -62,19 +63,19 @@ const unsavedBuild = (content: Content): Blueprint | undefined => {
 };
 
 /**
- * Whose records the app opens, and the build it opens with, until the profile switch (task 5.1) and Home (task 4.5)
- * choose them. On a device with no profile it makes one, "Builder 1", which the parent view can rename later. It opens
- * the one profile, with its newest build that loads, or a new empty "Build 1" when none does, so the child always has
- * a build to work on. Each step is one transaction in the store, so two tabs opening at once never make two of either.
- * With several profiles, before the profile switch exists, none is in use.
+ * Whose records the app opens, and the build it opens with, until Home (task 4.5) chooses the build. On a device with
+ * no profile it makes one, "Builder 1", which the parent view can rename later. It opens the profile in use on this
+ * device (the parent view's profile switch, task 5.1, or the only profile), with its newest build that loads, or a new
+ * empty "Build 1" when none does, so the child always has a build to work on. Each step is one transaction in the
+ * store, so two tabs opening at once never make two of either. With several profiles and none chosen, none is in use.
  */
 const openingOf = async (store: ServoStore): Promise<Opening> => {
-  const profiles = await profilesForOpening(store, FIRST_PROFILE_NAME);
-  const [only] = profiles;
+  await profilesForOpening(store, FIRST_PROFILE_NAME);
+  const inUse = await store.profiles.inUse();
   const arena = firstArena(store.content);
-  if (!only || profiles.length > 1 || !arena) return NO_ONE;
-  const start = await buildForOpening(store, only.id, { name: FIRST_BUILD_NAME, level: START_LEVEL, arena });
-  return { child: store.forProfile(only.id), start };
+  if (!inUse || !arena) return NO_ONE;
+  const start = await buildForOpening(store, inUse.id, { name: FIRST_BUILD_NAME, level: START_LEVEL, arena });
+  return { child: store.forProfile(inUse.id), start };
 };
 
 /**
@@ -104,8 +105,7 @@ export const mountApp: MountApp = async (host, options = {}) => {
       })
     : NO_ONE;
   const content = store?.content ?? loadContent().content;
-  const child = opened.child;
-  const start = child ? opened.start : unsavedBuild(content);
+  const scope = options.store?.name ?? DATABASE_NAME;
   return new Promise<AppHandle>((resolve, reject) => {
     const root = createRoot(host, {
       onUncaughtError: (error) => {
@@ -113,16 +113,58 @@ export const mountApp: MountApp = async (host, options = {}) => {
         reportError(error);
       },
     });
+    let destroyed = false;
+    // Each opening is drawn afresh under its own key, so the shell, the canvas and Save start again for that child.
+    let shown = 0;
+    let current = opened.child?.profile;
+    const show = ({ child, start }: Opening): void => {
+      shown += 1;
+      root.render(
+        createElement(App, { key: shown, content, child, start: child ? start : unsavedBuild(content), saving, onReady: () => resolve(handle) }),
+      );
+    };
+    // The profile switch (task 5.1): when the parent view, in another page, chooses another child, or adds or removes
+    // one, this page follows. What waits is saved first, to the child who made it; a removed child's waiting builds go
+    // with that child (D38). Only then does the app open again, for the child in use now. Every save names its own
+    // child, so an edit is never stored under another.
+    let following = Promise.resolve();
+    const follow = (): void => {
+      following = following
+        .then(async () => {
+          if (!store || destroyed) return;
+          const next = (await store.profiles.inUse())?.id;
+          if (next === current) return;
+          const previous = current;
+          if (previous && !(await store.profiles.list()).some((profile) => profile.id === previous)) saving.drop(previous);
+          saving.flush();
+          await saving.settled();
+          const opening = await openingOf(store).catch((error: unknown) => {
+            console.warn('The store could not open a build, so builds are not kept on this device.', error);
+            return NO_ONE;
+          });
+          if (destroyed) return;
+          current = opening.child?.profile;
+          show(opening);
+        })
+        .catch((error: unknown) => {
+          console.warn('The app could not follow the profile switch.', error);
+        });
+    };
+    const unfollow = store ? onProfilesChanged(scope, follow) : () => undefined;
     const handle: AppHandle = {
       destroy: () => {
+        destroyed = true;
+        unfollow();
         // Unmounting saves what waits; the store closes only once those saves have settled.
         root.unmount();
-        void saving.settled().finally(() => {
-          saving.dispose();
-          store?.close();
-        });
+        void following
+          .then(() => saving.settled())
+          .finally(() => {
+            saving.dispose();
+            store?.close();
+          });
       },
     };
-    root.render(createElement(App, { content, child, start, saving, onReady: () => resolve(handle) }));
+    show(opened);
   });
 };

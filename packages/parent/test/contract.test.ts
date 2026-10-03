@@ -23,7 +23,8 @@ describe('the contracts the parent view builds against', () => {
     expect(() => progressOf({ runs: [], content: {} as ServoStore['content'], cardGames: [] })).toThrow(/task 5\.2/);
     expect(() => partsListOf({} as Parameters<typeof partsListOf>[0], {} as Parameters<typeof partsListOf>[1])).toThrow(/task 5\.3/);
     expect(() => drawCards({} as ServoStore['content'], 1)).toThrow(/task 5\.4/);
-    expect(() => mountParent({} as HTMLElement, {} as ServoStore)).toThrow(/task 5\.1/);
+    // Task 5.1 has landed: mountParent draws the parent view, and test/browser/ tests it in Chromium.
+    expect(mountParent).toBeTypeOf('function');
     expect([progressFor, playRound].every((flow) => typeof flow === 'function')).toBe(true);
   });
 });

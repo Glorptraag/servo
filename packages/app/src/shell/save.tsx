@@ -5,7 +5,7 @@
 // needs to know: a failed save (until a save succeeds), the outcome of pressing Save, another version being kept as a
 // copy (another tab's, or one a page left unsaved that the build has moved on from), or that this device is not keeping
 // builds at all. A save that went as expected says nothing.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { Blueprint } from '@servo/schema';
 import { Autosaver } from './autosave.ts';
 import { useShell } from './context.ts';
@@ -49,8 +49,10 @@ export const SaveControl = ({ saving: given }: SaveControlProps) => {
     [saving],
   );
 
-  // Each edit waits for a quiet second; leaving saves what waits.
-  useEffect(() => {
+  // Each edit waits for a quiet second; leaving saves what waits. A layout effect, so the control hears the canvas in
+  // the same commit that first shows its build: an edit made once the build is on screen is never missed, even when the
+  // page is left at once after it.
+  useLayoutEffect(() => {
     if (!canvas || !child) return undefined;
     const off = canvas.on('edit', ({ blueprint: build }) => {
       fromEdits.add(build);
@@ -62,8 +64,9 @@ export const SaveControl = ({ saving: given }: SaveControlProps) => {
     };
   }, [canvas, child, saving, fromEdits]);
 
-  // Undo loads the build's earlier form with `load`, which fires no edit: a new form of the same build saves like one.
-  useEffect(() => {
+  // Undo loads the build's earlier form with `load`, which fires no edit: a new form of the same build saves like one,
+  // heard in the commit that shows it, as an edit is.
+  useLayoutEffect(() => {
     const before = seen.current;
     seen.current = blueprint;
     if (!blueprint || !before || !child || blueprint === before || fromEdits.has(blueprint)) return;
@@ -92,8 +95,11 @@ export const SaveControl = ({ saving: given }: SaveControlProps) => {
 
   useEffect(() => () => own.dispose(), [own]);
 
+  // Save stores the build as the canvas holds it now. This render's `blueprint` can be a step behind: an edit made in
+  // the same moment as the press, or one fired before this control first heard the canvas, is on the canvas already.
   const save = (): void => {
-    if (blueprint && child) saving.saveNow(blueprint, child);
+    const current = canvas?.blueprint ?? blueprint;
+    if (current && child) saving.saveNow(current, child);
   };
   const shown = !child && blueprint ? SAVE_LINES.notKept : line && (line.for === undefined || line.for === blueprint) ? line.text : null;
   return (

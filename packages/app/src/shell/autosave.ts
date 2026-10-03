@@ -15,6 +15,7 @@ import type { Blueprint, BlueprintId, ProfileId, Timestamp } from '@servo/schema
 import { contentHashOf, keptCopyOf } from '../store/blueprints.ts';
 import type { UnsavedNote } from '../store/blueprints.ts';
 import { isRecord, isTimestamp } from '../store/context.ts';
+import { UNSAVED_PREFIX } from '../store/device.ts';
 import type { BlueprintSummary, ProfileStore, ServoStore } from '../store/index.ts';
 import { replayForOpening } from '../store/open.ts';
 import { uuidV4 } from '../store/uuid.ts';
@@ -26,7 +27,7 @@ export const AUTOSAVE_MS = 1000;
 export const RETRY_MAX_MS = 30_000;
 
 /** The start of every journal item's key: then the database's name, the page and the build. */
-export const UNSAVED_PREFIX = 'servo.unsaved:';
+export { UNSAVED_PREFIX };
 
 export type SaveOutcome =
   | {
@@ -85,6 +86,8 @@ export class Autosaver {
   private retry = 0;
   private stopped = false;
   private chain: Promise<void> = Promise.resolve();
+  /** Profiles removed while this page was open (D38): nothing more is saved or noted for them. */
+  private readonly dropped = new Set<ProfileId>();
 
   /**
    * With a journal, builds still waiting when the page is hidden or left are noted there first (`leaving`). `now` is
@@ -108,6 +111,7 @@ export class Autosaver {
 
   /** An edit: the build waits for a quiet second. An edit to another build first saves the one waiting. */
   edited(build: Blueprint, child: ProfileStore): void {
+    if (this.dropped.has(child.profile)) return;
     const key = keyOf(child.profile, build.meta.id);
     if ([...this.waiting.keys()].some((other) => other !== key)) this.flush();
     this.waiting.set(key, { build, child, pressed: false, editedAt: this.now() });
@@ -117,6 +121,7 @@ export class Autosaver {
 
   /** Save: this build now, as its latest edit left it, and anything else waiting. */
   saveNow(build: Blueprint, child: ProfileStore): void {
+    if (this.dropped.has(child.profile)) return;
     const key = keyOf(child.profile, build.meta.id);
     const waiting = this.waiting.get(key);
     this.waiting.delete(key);
@@ -135,8 +140,21 @@ export class Autosaver {
 
   /** The page is being hidden or left: notes every build still waiting or saving in the journal, then saves them. */
   leaving(): void {
-    for (const [key, job] of [...this.saving, ...this.waiting]) this.note(key, job);
+    for (const [key, job] of [...this.saving, ...this.waiting]) if (!this.dropped.has(job.child.profile)) this.note(key, job);
     this.flush();
+  }
+
+  /**
+   * The profile was removed while this page was open (D38): forgets every build waiting for it, and its notes, and
+   * saves nothing more for it. A save already started is refused by the store, and is not tried again.
+   */
+  drop(profile: ProfileId): void {
+    this.dropped.add(profile);
+    for (const [key, job] of [...this.waiting]) {
+      if (job.child.profile !== profile) continue;
+      this.waiting.delete(key);
+      this.forget(key);
+    }
   }
 
   /** Whether any build is waiting to be saved. */
@@ -171,6 +189,10 @@ export class Autosaver {
 
   private async run(job: Job): Promise<void> {
     const key = keyOf(job.child.profile, job.build.meta.id);
+    if (this.dropped.has(job.child.profile)) {
+      this.forget(key);
+      return;
+    }
     this.saving.set(key, job);
     try {
       const saved = await job.child.blueprints.save({ ...job.build, meta: { ...job.build.meta, updatedAt: this.baseOf(key, job.build) } });
@@ -180,6 +202,10 @@ export class Autosaver {
       const keptCopy = keptCopyOf(saved);
       this.emit({ kind: 'saved', build: job.build, pressed: job.pressed, ...(keptCopy ? { keptCopy } : {}) });
     } catch (error) {
+      if (this.dropped.has(job.child.profile)) {
+        this.forget(key);
+        return;
+      }
       if (this.retry === 0) console.warn('Save failed. It will be tried again.', error);
       // A newer edit of the same build holds this one too; otherwise this one waits and is tried again, later each time.
       if (!this.waiting.has(key)) this.waiting.set(key, { ...job, pressed: false });
@@ -230,8 +256,7 @@ export class Autosaver {
    * wins and both are kept. A note already stored, at its build or as a copy kept from it, is only forgotten; a note
    * edited from the version stored now saves to its build; when another tab saved the build since, the later of the
    * note's last edit and that save keeps the id, the other is kept as a copy, and the line says so (an outcome with
-   * `keptCopy`); a note whose build was removed is
-   * kept as a build of its own. A note whose profile is gone goes with the profile (D38). A note that cannot be replayed
+   * `keptCopy`) when the note is the profile in use's; a note whose build was removed is kept as a build of its own. A note whose profile is gone goes with the profile (D38). A note that cannot be replayed
    * now stays for next time. Notes of other databases are left alone.
    */
   async recover(store: ServoStore): Promise<void> {
@@ -245,6 +270,8 @@ export class Autosaver {
     }
     if (items.length === 0) return;
     const profiles = new Set((await store.profiles.list()).map((profile) => profile.id));
+    // Only the child the app opens for is told a copy was kept: another child's note is that child's business (R-5.1).
+    const opening = (await store.profiles.inUse())?.id;
     for (const item of items) {
       const note = noteOf(storage.getItem(item));
       if (!note || !profiles.has(note.profile)) {
@@ -257,7 +284,7 @@ export class Autosaver {
       });
       if (!replay) continue;
       storage.removeItem(item);
-      if (replay.outcome === 'kept-copy') this.emit({ kind: 'saved', build: note.build, pressed: false, keptCopy: replay.copy });
+      if (replay.outcome === 'kept-copy' && note.profile === opening) this.emit({ kind: 'saved', build: note.build, pressed: false, keptCopy: replay.copy });
     }
   }
 }

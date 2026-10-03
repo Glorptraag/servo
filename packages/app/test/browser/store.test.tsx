@@ -144,6 +144,21 @@ describe('Save in the header', () => {
     expect(app.header.querySelectorAll('[role="status"]')).toHaveLength(1);
   });
 
+  it('stores the build as the canvas holds it when pressed, even an edit the shell has not heard of yet', async () => {
+    const { child, build, clock } = await childWithBuild();
+    const app = await mountShell(child, build);
+    // An edit that reached the canvas but not yet the shell or Save: one fired as the page started, before Save heard
+    // the canvas, or one made in the same moment as the press.
+    const edited = { ...build, meta: { ...build.meta, name: 'Edited as Save was pressed' } };
+    app.canvas.blueprint = edited;
+    clock.time = LATER;
+    app.saveButton().click();
+    await vi.waitFor(async () => expect((await child.blueprints.list())[0]?.name).toBe('Edited as Save was pressed'), SOON);
+    // Once the shell shows that build, the line says it was saved.
+    flushSync(() => app.shell().load(edited));
+    await vi.waitFor(() => expect(app.status()).toBe(SAVE_LINES.saved), SOON);
+  });
+
   it('shows a failed save as one plain line, never a dialog', async () => {
     const { store, child, build } = await childWithBuild();
     const app = await mountShell(child, build);
