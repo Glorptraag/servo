@@ -23,8 +23,9 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # The canvas's browser tests (packages/canvas/vitest.config.ts) run in Playwright's Chromium.
-      - run: pnpm --filter @servo/canvas exec playwright install --with-deps chromium
+      # The canvas's browser tests (packages/canvas/vitest.config.ts) run in Playwright's Chromium; the list view's tap
+      # and click tests run in its WebKit as well, Safari's engine.
+      - run: pnpm --filter @servo/canvas exec playwright install --with-deps chromium webkit
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm -r test
