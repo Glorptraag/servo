@@ -1,0 +1,30 @@
+/* The sound control (control.tsx): the shell's header button, with a speaker that shows waves while sound is on and a
+   cross while it is off, and the state in words beside it. */
+.sound-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sound-control-icon {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+
+.sound-control-speaker {
+  fill: currentColor;
+}
+
+.sound-control-waves,
+.sound-control-off {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.sound-control-state {
+  color: var(--shell-muted);
+  font-weight: 400;
+}
