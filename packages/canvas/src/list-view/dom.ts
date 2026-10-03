@@ -1,7 +1,8 @@
 // The list view's DOM (task 3.6): the screen-reader and keyboard path beside the canvas (ground rule 8). Native lists
 // and buttons, so a screen reader reads every part, port, wire and prop as a line of plain words, and Tab and Enter
 // reach every action. Hidden until it takes focus, then shown over the canvas's corner so a sighted keyboard user sees
-// where focus is. Enter does an action, as it flips a manual switch in Run mode; Space stays the app's Run and Stop
+// where focus is; a tap or click works there too. Hidden again when focus leaves it, on Escape, or on a press outside
+// it. Enter does an action, as it flips a manual switch in Run mode; Space stays the app's Run and Stop
 // (D42). It says what each action changed in a polite live region, which parts a removal left loose among it (D35).
 import type { PlacedPartId, ValuePayload } from '@servo/schema';
 import type { LiveState } from '@servo/sim-core/interface';
@@ -111,7 +112,10 @@ export class ListViewDom {
     this.element.addEventListener('focusin', this.focused);
     this.element.addEventListener('focusout', this.blurred);
     this.element.addEventListener('keyup', this.keyUp);
+    this.element.addEventListener('keydown', this.keyDown);
+    this.element.addEventListener('mousedown', this.pressed);
     this.element.addEventListener('click', this.clicked);
+    doc.addEventListener('pointerdown', this.pressedOutside, true);
     host.appendChild(this.element);
     this.unsubscribe = model.subscribe(() => this.render());
     this.render();
@@ -122,7 +126,10 @@ export class ListViewDom {
     this.element.removeEventListener('focusin', this.focused);
     this.element.removeEventListener('focusout', this.blurred);
     this.element.removeEventListener('keyup', this.keyUp);
+    this.element.removeEventListener('keydown', this.keyDown);
+    this.element.removeEventListener('mousedown', this.pressed);
     this.element.removeEventListener('click', this.clicked);
+    this.element.ownerDocument.removeEventListener('pointerdown', this.pressedOutside, true);
     this.element.remove();
   }
 
@@ -313,6 +320,28 @@ export class ListViewDom {
     this.place();
   };
 
+  private readonly keyDown = (event: KeyboardEvent): void => {
+    if (event.key === 'Escape') this.close();
+  };
+
+  /**
+   * Safari, on iPadOS and macOS, does not focus a button it presses: left alone, focus leaves for the body as a tap or
+   * click begins, the panel hides, and the press ends on the canvas beneath it, so the action never happens. Focus
+   * moves to the pressed button instead, as other engines move it. Only while the panel is shown: a screen reader's
+   * press on the hidden panel stays as it was.
+   */
+  private readonly pressed = (event: MouseEvent): void => {
+    if (!this.open || event.button !== 0) return;
+    event.preventDefault();
+    const button = event.target instanceof Element ? event.target.closest('button') : null;
+    if (button && this.element.contains(button)) button.focus({ preventScroll: true });
+  };
+
+  /** The canvas keeps focus where it was when it is pressed, so a press outside the panel hides it here. */
+  private readonly pressedOutside = (event: PointerEvent): void => {
+    if (this.open && !(event.target instanceof Node && this.element.contains(event.target))) this.close();
+  };
+
   private readonly blurred = (event: FocusEvent): void => {
     const next = event.relatedTarget;
     if (next instanceof Node && this.element.contains(next)) return;
@@ -320,14 +349,22 @@ export class ListViewDom {
     queueMicrotask(() => {
       const active = this.element.ownerDocument.activeElement;
       if (active instanceof Node && this.element.contains(active)) return;
-      this.open = false;
-      this.element.toggleAttribute('data-open', false);
-      this.element.style.removeProperty('left');
-      this.element.style.removeProperty('top');
-      this.element.style.removeProperty('width');
-      this.element.style.removeProperty('max-height');
+      this.close();
     });
   };
+
+  /** Hides the panel, and takes focus out of it so focus is never on a hidden button. */
+  private close(): void {
+    if (!this.open) return;
+    this.open = false;
+    this.element.toggleAttribute('data-open', false);
+    this.element.style.removeProperty('left');
+    this.element.style.removeProperty('top');
+    this.element.style.removeProperty('width');
+    this.element.style.removeProperty('max-height');
+    const active = this.element.ownerDocument.activeElement;
+    if (active instanceof HTMLElement && this.element.contains(active)) active.blur();
+  }
 
   /** Shown over the canvas's top corner, on the side away from the canvas's own handles. */
   private place(): void {
