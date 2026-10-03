@@ -54,3 +54,11 @@ Tests: `test/list-view/model.test.ts` builds Rolling Start, Reversed Motor and S
 ## Testing entry (task 3.4)
 
 `@servo/canvas/testing` exports `probeCanvas(handle)`, for packages/tools' e2e harness (task 3.8) and this package's tests only. Lint keeps it out of every other package's `src/` (`toolsOnly` in eslint.config.js): the app reaches the canvas through `@servo/canvas` alone, and the entry is not part of `interface.ts`. A probe gives, at the current view, both on the canvas plane (mm) and on the page (CSS pixels, as `clientX`): where each part, its tile's corners, each socket (and where it takes a press now, fanned out or not), each wire and its middle, and the shown handles and bins sit. It also gives `ready`, `settled`, `gridOpacity`, the canvas element, the view and `setView(centre, zoom)` (without the limits), `requestFrame`, `pageOf`/`worldOf`, how a part or wire is emphasised, and the selected wire's label and where its pill sits (`wireLabelBox`). The harness can read these instead of the renderer's members.
+
+## Frame time (task 3.1)
+
+`test/browser/frame-time.test.ts` holds the 16 ms frame budget on the 25-part fixture in the iPad profile, with the CPU slowed 4× through CDP. It runs in the `performance` project, through `pnpm --filter @servo/canvas perf` or `pnpm perf` at the root and in CI's `perf` job, never in `pnpm test`, so a busy machine's timings never fail the correctness run.
+
+- **What is timed.** A frame's main-thread work: every `requestAnimationFrame` callback the page runs, the canvas's own included, timed and summed per frame (its input and its drawing). Not the interval between frames, which a software GPU decides.
+- **Samples.** One run of the pan, wheel and pinch is one sample. On CI's shared runners with SwiftShader one sample's p95 has read from 8.1 to 21.1 ms, so each test re-fits the view and takes five samples, printing every one (`[frame time] pictures, sample 3 of 5: median …, p95 …`).
+- **The gate.** The median of the five samples' medians and the median of their p95s must each be within 16 ms, and on a hardware GPU the median sample must arrive at 50 fps or better. The budget is the one task 3.1 set: a typical run keeps 95% of its frames within 16 ms, and one stalled run in five no longer decides it. The summary line prints the worst frame of any sample.

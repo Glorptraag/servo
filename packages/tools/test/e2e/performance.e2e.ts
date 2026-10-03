@@ -3,12 +3,18 @@
 // A hand pans, wheels and pinches one input per frame; the median and the p95 frame's main-thread work must be
 // within 16 ms, and on a hardware GPU frames must arrive at 50 fps or better. A software GPU (CI) draws this frame
 // size far below 60 fps whatever the page does, so there fewer frames run and the frame rate is only printed.
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+// The gestures run FRAME_SAMPLES times from the fitted view; every sample is printed, and the median sample is held to
+// the budget, so one stalled run on a shared runner does not decide it (src/e2e/README.md, "frame time").
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { loadFixtures } from '@servo/content/fixtures';
 import { mountBench, settle } from '../../src/e2e/bench.ts';
 import type { Bench } from '../../src/e2e/bench.ts';
-import { describeStats, gpuName, isSoftwareGpu, measureFrames, panGesture, pinchGesture, wheelGesture } from '../../src/e2e/performance.ts';
+import type { FrameStats } from '../../src/e2e/performance.ts';
+import { FRAME_SAMPLES, describeStats, gpuName, isSoftwareGpu, measureFrames, medianSample, panGesture, pinchGesture, wheelGesture } from '../../src/e2e/performance.ts';
 import { FRAME_BUDGET_MS, IPAD } from '../../src/e2e/profile.ts';
+
+// Five samples take about three minutes on CI's software GPU, past the harness's two-minute test timeout.
+vi.setConfig({ testTimeout: 900_000 });
 
 /** Frames delivered on a hardware GPU, allowing for a machine busy with other work. */
 const MIN_FPS = 50;
@@ -28,15 +34,21 @@ describe('frame time in the iPad profile', () => {
     if (!busy) throw new Error('No busy-workbench fixture.');
     expect(busy.blueprint.parts).toHaveLength(25);
     expect(bench.handle.load(busy.blueprint).ok).toBe(true);
-    bench.handle.fit();
-    await settle(bench);
     const software = isSoftwareGpu(gpuName());
     const frames = software ? 20 : 60;
     const { canvas } = bench.hooks;
-    // Inside the fit's padding: bare workbench, where a drag pans.
-    const stats = await measureFrames([panGesture(canvas, { x: 24, y: 24 }), wheelGesture(canvas, { x: IPAD.width / 2, y: IPAD.height / 2 }, frames), pinchGesture(canvas, { x: IPAD.width / 2, y: IPAD.height / 2 })], frames);
-    console.log(describeStats('busy-workbench, with pictures', stats));
-    expect(stats.frames).toBe(3 * frames);
+    const samples: FrameStats[] = [];
+    for (let index = 1; index <= FRAME_SAMPLES; index += 1) {
+      bench.handle.fit();
+      await settle(bench);
+      // Inside the fit's padding: bare workbench, where a drag pans.
+      const sample = await measureFrames([panGesture(canvas, { x: 24, y: 24 }), wheelGesture(canvas, { x: IPAD.width / 2, y: IPAD.height / 2 }, frames), pinchGesture(canvas, { x: IPAD.width / 2, y: IPAD.height / 2 })], frames);
+      console.log(describeStats(`busy-workbench, with pictures, sample ${index} of ${FRAME_SAMPLES}`, sample));
+      expect(sample.frames).toBe(3 * frames);
+      samples.push(sample);
+    }
+    const stats = medianSample(samples);
+    console.log(describeStats(`busy-workbench, with pictures, median of ${FRAME_SAMPLES} samples`, stats));
     expect(stats.median, 'median frame').toBeLessThanOrEqual(FRAME_BUDGET_MS);
     expect(stats.p95, 'p95 frame').toBeLessThanOrEqual(FRAME_BUDGET_MS);
     if (!software) expect(stats.fps, 'frames delivered per second').toBeGreaterThanOrEqual(MIN_FPS);

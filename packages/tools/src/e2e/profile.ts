@@ -19,3 +19,9 @@ export const SOFTWARE_GPU_FLAGS: readonly string[] = ['--use-angle=swiftshader',
 
 /** Frame times are measured on the machine's own GPU where it has one, at its own display rate. */
 export const OWN_GPU_FLAGS: readonly string[] = ['--enable-unsafe-swiftshader'];
+
+/**
+ * The harness's timing file. The `performance` project runs it alone, through `pnpm perf` and CI's perf job, never
+ * through `pnpm e2e` or an e2e shard, so a busy machine's frame times never fail a correctness run.
+ */
+export const PERFORMANCE_FILE = 'test/e2e/performance.e2e.ts';

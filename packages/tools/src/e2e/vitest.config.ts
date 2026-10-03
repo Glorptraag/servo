@@ -3,19 +3,20 @@
 // - `e2e` renders on SwiftShader, the same software GPU on every machine, so screenshots and pixel probes match
 //   between a laptop and CI: the parity check, screenshots, their mutation test and gestures.
 // - `performance` runs the frame-time measurement on the machine's own GPU where it has one, last and alone.
-// CI runs the files as shards (.github/workflows/ci.yml); `pnpm e2e` with no files runs them all. SERVO_PARITY_STRICT=1
-// makes a parity fixture with a step left out or a path waiting fail (gate G3). See README.md.
+// `pnpm e2e` runs the `e2e` project only: CI runs its files as shards (.github/workflows/ci.yml), and with no files it
+// runs them all. `pnpm perf` runs `performance`, as CI's perf job does. SERVO_PARITY_STRICT=1 makes a parity fixture
+// with a step left out or a path waiting fail (gate G3). See README.md.
 import { fileURLToPath } from 'node:url';
 import { playwright } from '@vitest/browser-playwright';
 import { defineConfig } from 'vitest/config';
 import type { TestProjectInlineConfiguration } from 'vitest/config';
-import { IPAD, OWN_GPU_FLAGS, SOFTWARE_GPU_FLAGS } from './profile.ts';
+import { IPAD, OWN_GPU_FLAGS, PERFORMANCE_FILE, SOFTWARE_GPU_FLAGS } from './profile.ts';
 import { ParityReporter } from './reporter.ts';
 
 /** packages/tools: test paths, screenshots and attachments are relative to it. */
 const root = fileURLToPath(new URL('../..', import.meta.url));
 
-const PERFORMANCE = 'test/e2e/performance.e2e.ts';
+const PERFORMANCE = PERFORMANCE_FILE;
 
 const browserProject = (name: string, include: string[], exclude: string[], flags: readonly string[], groupOrder: number): TestProjectInlineConfiguration => ({
   test: {
@@ -25,7 +26,8 @@ const browserProject = (name: string, include: string[], exclude: string[], flag
     exclude,
     // Generous: a software GPU on a busy machine can take a minute to mount a canvas or settle a screenshot.
     testTimeout: 120_000,
-    hookTimeout: 120_000,
+    // Hooks mount the bench; at load 200–350 beside many agents' browsers that takes minutes.
+    hookTimeout: 300_000,
     sequence: { groupOrder },
     browser: {
       enabled: true,
@@ -40,8 +42,9 @@ const browserProject = (name: string, include: string[], exclude: string[], flag
         },
       }),
       instances: [{ browser: 'chromium' }],
-      // A loaded machine can take over a minute to bring the page up with the canvas and its pictures.
-      connectTimeout: 180_000,
+      // A loaded machine can take over a minute to bring the page up with the canvas and its pictures, and several at
+      // load 200–350 with many agents running.
+      connectTimeout: 300_000,
       viewport: { width: IPAD.width, height: IPAD.height },
       // Screenshots are compared by the harness's own rule (src/e2e/pixels.ts, screenshots.ts), not Vitest's.
       screenshotFailures: false,

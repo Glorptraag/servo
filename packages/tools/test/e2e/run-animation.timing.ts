@@ -3,8 +3,10 @@
 // them, in the iPad profile with the CPU slowed 4× through CDP. Each frame's main-thread work is timed: every
 // requestAnimationFrame callback, the canvas's own included, summed per frame. The simulation is stepped beforehand,
 // since stepping is the app's run loop's cost, not the canvas's. The median and p95 frame must be within 16 ms, and on
-// a hardware GPU frames must arrive at 50 fps or better; the figures are printed.
-import { afterAll, beforeAll, expect, it } from 'vitest';
+// a hardware GPU frames must arrive at 50 fps or better; the figures are printed. The Run plays SAMPLES times from tick
+// 0; every sample is printed and the median sample is held to the budget, since on a shared CI runner with SwiftShader
+// one run's p95 is one noisy sample (packages/tools/src/e2e/README.md, "frame time").
+import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import { cdp } from 'vitest/browser';
 import { loadFixtures } from '@servo/content/fixtures';
 import type { RunFrame } from '@servo/sim-core';
@@ -15,6 +17,11 @@ const SIZE = { width: 1180, height: 820 } as const;
 const CPU_SLOWDOWN = 4;
 const BUDGET_MS = 16;
 const MIN_FPS = 50;
+/** Independent plays of the Run; the median of them is held to the budget. */
+const SAMPLES = 5;
+
+// Five samples take minutes on CI's software GPU, past the config's four-minute test timeout.
+vi.setConfig({ testTimeout: 900_000 });
 
 const gpu = (): string => {
   const gl = document.createElement('canvas').getContext('webgl2');
@@ -48,12 +55,47 @@ it('plays the 25-part build in Run mode within a 16 ms frame', async () => {
 
   const { handle, hooks } = bench;
   expect(handle.load(fixture.blueprint).ok).toBe(true);
-  handle.setMode('run');
-  handle.applyRunFrame(start);
-  frameOn(bench, fixture.blueprint.parts.map((part) => part.position), SIZE, 1, 160);
-  // Tick 0 held is the spin-up, whose dots flow until the next tick: it never settles, so a few frames do.
-  await frames(10);
+  const samples: Sample[] = [];
+  for (let index = 1; index <= SAMPLES; index += 1) {
+    // A fresh Run each time: Stop, then Run from tick 0.
+    handle.setMode('build');
+    handle.setMode('run');
+    handle.applyRunFrame(start);
+    frameOn(bench, fixture.blueprint.parts.map((part) => part.position), SIZE, 1, 160);
+    // Tick 0 held is the spin-up, whose dots flow until the next tick: it never settles, so a few frames do.
+    await frames(10);
+    const sample = await play(handle, ticks);
+    log(`busy-workbench, sample ${index} of ${SAMPLES}`, sample);
+    samples.push(sample);
+  }
+  const middle = (values: readonly number[]): number => quantile([...values].sort((a, b) => a - b), 0.5);
+  const median = middle(samples.map((sample) => sample.median));
+  const p95 = middle(samples.map((sample) => sample.p95));
+  const fps = middle(samples.map((sample) => sample.fps));
+  log(`busy-workbench, median of ${SAMPLES} samples`, { frames: samples.reduce((sum, sample) => sum + sample.frames, 0), median, p95, worst: Math.max(...samples.map((sample) => sample.worst)), fps });
+  expect(hooks.run.state?.tick).toBeGreaterThan(0);
+  expect(median, 'median frame').toBeLessThanOrEqual(BUDGET_MS);
+  expect(p95, 'p95 frame').toBeLessThanOrEqual(BUDGET_MS);
+  if (!SOFTWARE_GPU) expect(fps, 'frames delivered per second').toBeGreaterThanOrEqual(MIN_FPS);
+});
 
+interface Sample {
+  readonly frames: number;
+  readonly median: number;
+  readonly p95: number;
+  readonly worst: number;
+  readonly fps: number;
+}
+
+const log = (label: string, sample: Sample): void => {
+  console.log(
+    `[run frame time] ${label}: median ${sample.median.toFixed(2)} ms, p95 ${sample.p95.toFixed(2)} ms, worst ${sample.worst.toFixed(2)} ms ` +
+      `over ${sample.frames} frames at ${CPU_SLOWDOWN}× CPU slowdown; GPU ${GPU}, drawn at ${sample.fps.toFixed(0)} fps`,
+  );
+};
+
+/** Plays the ticks into the canvas, a new one every other frame, with the CPU slowed, timing each frame's work. */
+const play = async (handle: Bench['handle'], ticks: readonly RunFrame[]): Promise<Sample> => {
   const work = new Map<number, number>();
   const original = window.requestAnimationFrame;
   window.requestAnimationFrame = (callback) =>
@@ -93,15 +135,5 @@ it('plays the 25-part build in Run mode within a 16 ms frame', async () => {
     .slice(1)
     .map((time, index) => time - (driven[index] as number))
     .sort((a, b) => a - b);
-  const median = quantile(times, 0.5);
-  const p95 = quantile(times, 0.95);
-  const fps = 1000 / quantile(intervals, 0.5);
-  console.log(
-    `[run frame time] busy-workbench: median ${median.toFixed(2)} ms, p95 ${p95.toFixed(2)} ms, worst ${(times[times.length - 1] ?? 0).toFixed(2)} ms ` +
-      `over ${times.length} frames at ${CPU_SLOWDOWN}× CPU slowdown; GPU ${GPU}, drawn at ${fps.toFixed(0)} fps`,
-  );
-  expect(hooks.run.state?.tick).toBeGreaterThan(0);
-  expect(median, 'median frame').toBeLessThanOrEqual(BUDGET_MS);
-  expect(p95, 'p95 frame').toBeLessThanOrEqual(BUDGET_MS);
-  if (!SOFTWARE_GPU) expect(fps, 'frames delivered per second').toBeGreaterThanOrEqual(MIN_FPS);
-});
+  return { frames: times.length, median: quantile(times, 0.5), p95: quantile(times, 0.95), worst: times[times.length - 1] ?? 0, fps: 1000 / quantile(intervals, 0.5) };
+};

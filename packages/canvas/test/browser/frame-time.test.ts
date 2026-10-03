@@ -8,6 +8,11 @@
 // frame are printed, with the GPU and the frame rate. A software GPU (SwiftShader, as on CI) draws a frame this size
 // far below 60 fps whatever the page does, so there the gestures run fewer frames and the frame rate is only printed:
 // the main-thread time is still what is measured.
+//
+// One run of the gestures is one sample, and a shared CI runner on SwiftShader stalls now and then: a single run's p95
+// has read anywhere from 8 to 21 ms there. So each test re-fits the view and runs the gestures SAMPLES times, prints
+// every sample, and holds the median sample's median and p95 to the budget. The budget is unchanged: a typical run
+// must keep 95% of its frames within 16 ms; one stalled run out of five no longer decides it.
 import { afterEach, describe, expect, it } from 'vitest';
 import { cdp } from 'vitest/browser';
 import type { Vec2 } from '@servo/schema';
@@ -34,6 +39,8 @@ const gpu = (): string => {
 const GPU = gpu();
 const SOFTWARE_GPU = /swiftshader|llvmpipe|software/i.test(GPU);
 const FRAMES_PER_GESTURE = SOFTWARE_GPU ? 20 : 60;
+/** Independent runs of the gestures per test; the median of them is held to the budget. Odd, so it is one sample. */
+const SAMPLES = 5;
 
 interface Stats {
   readonly frames: number;
@@ -152,6 +159,34 @@ const report = (label: string, stats: Stats): void => {
   );
 };
 
+const medianOf = (values: readonly number[]): number => quantile([...values].sort((a, b) => a - b), 0.5);
+
+/**
+ * Runs the gestures SAMPLES times from the fitted view, printing each sample, and gives the median sample's figures
+ * (the median of the samples' medians, of their p95s and of their frame rates) with the worst frame of any.
+ */
+const sample = async (surface: CanvasSurface, label: string, gestures: () => readonly Step[]): Promise<Stats> => {
+  const samples: Stats[] = [];
+  for (let index = 1; index <= SAMPLES; index += 1) {
+    surface.fit();
+    await settle(surface);
+    const steps = gestures();
+    const stats = await measure(surface, steps);
+    report(`${label}, sample ${index} of ${SAMPLES}`, stats);
+    expect(stats.frames).toBe(steps.length * FRAMES_PER_GESTURE);
+    samples.push(stats);
+  }
+  const summary: Stats = {
+    frames: samples.reduce((sum, stats) => sum + stats.frames, 0),
+    median: medianOf(samples.map((stats) => stats.median)),
+    p95: medianOf(samples.map((stats) => stats.p95)),
+    worst: Math.max(...samples.map((stats) => stats.worst)),
+    fps: medianOf(samples.map((stats) => stats.fps)),
+  };
+  report(`${label}, median of ${SAMPLES} samples`, summary);
+  return summary;
+};
+
 const expectWithinBudget = (stats: Stats): void => {
   expect(stats.median, 'median frame').toBeLessThanOrEqual(BUDGET_MS);
   expect(stats.p95, 'p95 frame').toBeLessThanOrEqual(BUDGET_MS);
@@ -170,9 +205,7 @@ describe('frame time on the 25-part fixture, iPad profile', () => {
     await settle(surface);
     expect(surface.scene.parts).toHaveLength(25);
     expect(surface.scene.parts.every((part) => surface.partView(part.id)?.shows.picture)).toBe(true);
-    const stats = await measure(surface, [pan(emptySpot(surface)), wheel, pinch]);
-    report('pictures', stats);
-    expect(stats.frames).toBe(3 * FRAMES_PER_GESTURE);
+    const stats = await sample(surface, 'pictures', () => [pan(emptySpot(surface)), wheel, pinch]);
     expectWithinBudget(stats);
   });
 
@@ -182,8 +215,7 @@ describe('frame time on the 25-part fixture, iPad profile', () => {
     surface.fit();
     await settle(surface);
     expect(surface.partView('mc')?.shows.name).toBe('microcontroller');
-    const stats = await measure(surface, [pan(emptySpot(surface)), wheel, pinch]);
-    report('neutral tiles', stats);
+    const stats = await sample(surface, 'neutral tiles', () => [pan(emptySpot(surface)), wheel, pinch]);
     expectWithinBudget(stats);
   });
 });
