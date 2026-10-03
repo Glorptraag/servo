@@ -54,21 +54,9 @@
           }
         },
         {
-          "line": "Nothing is wired to side B",
+          "line": "This DC motor's plus takes power straight from the battery pack, round the switch",
           "step": "pulse-port",
           "target": {
-            "placed": "switch",
-            "port": "b"
-          }
-        },
-        {
-          "from": {
-            "placed": "switch",
-            "port": "b"
-          },
-          "line": "Side B to this DC motor's plus",
-          "step": "ghost-wire",
-          "to": {
             "placed": "motor-left",
             "port": "plus"
           }

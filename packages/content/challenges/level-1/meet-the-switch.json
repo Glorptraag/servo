@@ -149,6 +149,49 @@
         "placed": "switch",
         "port": "b"
       }
+    },
+    {
+      "steps": [
+        {
+          "line": "This switch is not in a loop with the battery pack",
+          "step": "pulse-part",
+          "target": {
+            "placed": "switch"
+          }
+        },
+        {
+          "line": "The DC motor's plus also takes power straight from the battery pack",
+          "step": "pulse-port",
+          "target": {
+            "placed": "motor",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "motor",
+                "port": "plus"
+              }
+            }
+          ],
+          "line": "Took off the power line that goes round the switch",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "failure": "outside-loop",
+        "kind": "fault",
+        "target": {
+          "placed": "switch"
+        }
+      }
     }
   ],
   "id": "meet-the-switch",

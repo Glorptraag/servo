@@ -31,7 +31,7 @@
     {
       "steps": [
         {
-          "line": "This motor has power in but no way out",
+          "line": "This DC motor has power in but no way out",
           "step": "pulse-part",
           "target": {
             "placed": "motor-left"

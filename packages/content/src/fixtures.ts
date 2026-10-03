@@ -304,6 +304,14 @@ export const FIXTURES: Readonly<Record<string, FixtureSpec>> = {
     ticks: 75,
     expect: { goal: { met: false }, faults: [] },
   },
+  'meet-the-switch-beside-the-motor': {
+    description: 'Meet the switch with the DC motor also wired straight to plus: the switch is outside the loop, so pressing it changes nothing.',
+    blueprint: 'switch-beside-the-motor',
+    challenge: 'meet-the-switch',
+    inputs: [{ tick: 30, partId: 'switch', kind: 'switch', closed: false }],
+    ticks: 75,
+    expect: { goal: { met: false }, faults: [{ partId: 'switch', failure: 'outside-loop' }] },
+  },
   'drive-forward-both-motors': {
     description: 'Drive forward, done: both DC motors wired red to red, so the robot drives straight.',
     blueprint: 'level-1-roller',
@@ -336,6 +344,14 @@ export const FIXTURES: Readonly<Record<string, FixtureSpec>> = {
     ticks: 75,
     expect: { goal: { met: false }, faults: [] },
   },
+  'stop-with-the-switch-hung-off-plus': {
+    description: 'Stop with the switch, its side A on plus while both DC motors still take plus directly: pressing it does not stop the robot.',
+    blueprint: 'switch-hung-off-plus',
+    challenge: 'stop-with-the-switch',
+    inputs: [{ tick: 30, partId: 'switch', kind: 'switch', closed: false }],
+    ticks: 75,
+    expect: { goal: { met: false }, faults: [{ partId: 'switch', failure: 'outside-loop' }] },
+  },
   'turn-in-a-circle-one-motor': {
     description: 'Turn in a circle, done: only the left DC motor is wired, so the robot goes round in a circle.',
     blueprint: 'one-motor-roller',
@@ -363,7 +379,7 @@ export const FIXTURES: Readonly<Record<string, FixtureSpec>> = {
     description: 'Over the hill as it starts: neither DC motor is wired back to minus, so nothing turns.',
     challenge: 'over-the-hill',
     inputs: [],
-    ticks: 60,
+    ticks: 150,
     expect: {
       goal: { met: false },
       faults: [
@@ -408,7 +424,7 @@ export const FIXTURES: Readonly<Record<string, FixtureSpec>> = {
     challenge: 'no-way-out',
     inputs: [],
     ticks: 60,
-    expect: { goal: { met: false }, faults: [{ partId: 'motor-left', failure: 'no-circuit' }] },
+    expect: { goal: { met: false }, faults: [{ partId: 'motor-left', failure: 'no-circuit' }], namedFault: { partId: 'motor-left', failure: 'no-circuit' } },
   },
   'switch-to-one-side-fixed': {
     description: 'Switch to one side, fixed: both DC motors take power through side B, so pressing the switch stops the robot.',

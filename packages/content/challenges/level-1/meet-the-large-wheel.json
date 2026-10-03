@@ -31,7 +31,7 @@
     {
       "steps": [
         {
-          "line": "This wheel needs a shaft in its hub",
+          "line": "This large wheel needs a shaft in its hub",
           "step": "pulse-part",
           "target": {
             "placed": "wheel-right"

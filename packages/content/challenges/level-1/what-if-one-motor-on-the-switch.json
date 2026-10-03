@@ -47,6 +47,49 @@
     {
       "steps": [
         {
+          "line": "This switch is not in a loop with the battery pack",
+          "step": "pulse-part",
+          "target": {
+            "placed": "switch"
+          }
+        },
+        {
+          "line": "This DC motor's plus still has a line from side B",
+          "step": "pulse-port",
+          "target": {
+            "placed": "motor-right",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "motor-right",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "switch",
+                "port": "b"
+              }
+            }
+          ],
+          "line": "Took this DC motor's plus line off side B",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "failure": "outside-loop",
+        "kind": "fault",
+        "target": {
+          "placed": "switch"
+        }
+      }
+    },
+    {
+      "steps": [
+        {
           "line": "This DC motor gets its power through the switch",
           "step": "pulse-part",
           "target": {

@@ -31,7 +31,7 @@
     {
       "steps": [
         {
-          "line": "This motor is not in a loop with the battery pack",
+          "line": "This DC motor is not in a loop with the battery pack",
           "step": "pulse-part",
           "target": {
             "placed": "motor-right"
@@ -84,7 +84,7 @@
     {
       "steps": [
         {
-          "line": "This motor has power in but no way out",
+          "line": "This DC motor has power in but no way out",
           "step": "pulse-part",
           "target": {
             "placed": "motor-right"

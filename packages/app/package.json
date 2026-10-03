@@ -7,6 +7,7 @@
     ".": "./src/index.ts",
     "./store": "./src/store/index.ts",
     "./goal": "./src/challenges/goal.ts",
+    "./hint-ladder": "./src/hints/ladder.ts",
     "./invite-code": "./src/release/invite-code.ts"
   },
   "scripts": {

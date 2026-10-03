@@ -1,0 +1,96 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "meta": {
+    "createdAt": "2026-10-03T09:00:00.000Z",
+    "highWater": {
+      "parts": 0,
+      "wires": 4
+    },
+    "id": "3b30ba68-5108-437b-b018-7004cadecc49",
+    "level": 1,
+    "name": "DC motor with a switch beside it",
+    "updatedAt": "2026-10-03T09:00:00.000Z"
+  },
+  "parts": [
+    {
+      "id": "battery",
+      "part": "battery-pack-2-cell",
+      "position": {
+        "x": -100,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "motor",
+      "part": "dc-motor",
+      "position": {
+        "x": 100,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "switch",
+      "part": "switch",
+      "position": {
+        "x": 0,
+        "y": -80
+      },
+      "rotation": 0,
+      "settings": {}
+    }
+  ],
+  "version": 1,
+  "wires": [
+    {
+      "from": {
+        "part": "battery",
+        "port": "minus"
+      },
+      "id": "w1",
+      "to": {
+        "part": "motor",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "plus"
+      },
+      "id": "w2",
+      "to": {
+        "part": "motor",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "plus"
+      },
+      "id": "w3",
+      "to": {
+        "part": "switch",
+        "port": "a"
+      }
+    },
+    {
+      "from": {
+        "part": "motor",
+        "port": "plus"
+      },
+      "id": "w4",
+      "to": {
+        "part": "switch",
+        "port": "b"
+      }
+    }
+  ]
+}

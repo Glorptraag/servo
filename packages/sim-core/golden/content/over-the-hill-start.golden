@@ -3,7 +3,7 @@
 golden 1
 case content/over-the-hill-start
 seed 1
-ticks 60
+ticks 150
 inputs none
 blueprint 962b8dbfb3423ed8
 arena ramp 221441cf1bc4861b
@@ -12,7 +12,7 @@ part caster 85cad363c9f68e25
 part chassis 2b67875c3e879e19
 part dc-motor e80cd3eae3017bf6
 part wheel-large c182e441f60c54e3
-record 2d021c36057771e9bbd62704ffdaabf9a8592bf5b7b3c1e1fee8e31c47fd323d
+record cbcdae1b6db138fff220c711fd597eedfdd73160b68642015c6bb4c0fd738ae7
 fault battery no-loop first-tick=2
 fault motor-left no-circuit first-tick=2
 fault motor-right no-circuit first-tick=2
@@ -91,3 +91,93 @@ tick 57 37517e5f
 tick 58 37517e5f
 tick 59 37517e5f
 tick 60 37517e5f
+tick 61 37517e5f
+tick 62 37517e5f
+tick 63 37517e5f
+tick 64 37517e5f
+tick 65 37517e5f
+tick 66 37517e5f
+tick 67 37517e5f
+tick 68 37517e5f
+tick 69 37517e5f
+tick 70 37517e5f
+tick 71 37517e5f
+tick 72 37517e5f
+tick 73 37517e5f
+tick 74 37517e5f
+tick 75 37517e5f
+tick 76 37517e5f
+tick 77 37517e5f
+tick 78 37517e5f
+tick 79 37517e5f
+tick 80 37517e5f
+tick 81 37517e5f
+tick 82 37517e5f
+tick 83 37517e5f
+tick 84 37517e5f
+tick 85 37517e5f
+tick 86 37517e5f
+tick 87 37517e5f
+tick 88 37517e5f
+tick 89 37517e5f
+tick 90 37517e5f
+tick 91 37517e5f
+tick 92 37517e5f
+tick 93 37517e5f
+tick 94 37517e5f
+tick 95 37517e5f
+tick 96 37517e5f
+tick 97 37517e5f
+tick 98 37517e5f
+tick 99 37517e5f
+tick 100 37517e5f
+tick 101 37517e5f
+tick 102 37517e5f
+tick 103 37517e5f
+tick 104 37517e5f
+tick 105 37517e5f
+tick 106 37517e5f
+tick 107 37517e5f
+tick 108 37517e5f
+tick 109 37517e5f
+tick 110 37517e5f
+tick 111 37517e5f
+tick 112 37517e5f
+tick 113 37517e5f
+tick 114 37517e5f
+tick 115 37517e5f
+tick 116 37517e5f
+tick 117 37517e5f
+tick 118 37517e5f
+tick 119 37517e5f
+tick 120 37517e5f
+tick 121 37517e5f
+tick 122 37517e5f
+tick 123 37517e5f
+tick 124 37517e5f
+tick 125 37517e5f
+tick 126 37517e5f
+tick 127 37517e5f
+tick 128 37517e5f
+tick 129 37517e5f
+tick 130 37517e5f
+tick 131 37517e5f
+tick 132 37517e5f
+tick 133 37517e5f
+tick 134 37517e5f
+tick 135 37517e5f
+tick 136 37517e5f
+tick 137 37517e5f
+tick 138 37517e5f
+tick 139 37517e5f
+tick 140 37517e5f
+tick 141 37517e5f
+tick 142 37517e5f
+tick 143 37517e5f
+tick 144 37517e5f
+tick 145 37517e5f
+tick 146 37517e5f
+tick 147 37517e5f
+tick 148 37517e5f
+tick 149 37517e5f
+tick 150 37517e5f

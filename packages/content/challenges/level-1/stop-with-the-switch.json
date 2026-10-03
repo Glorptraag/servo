@@ -100,7 +100,7 @@
     {
       "steps": [
         {
-          "line": "This motor is not in a loop with the battery pack",
+          "line": "This DC motor is not in a loop with the battery pack",
           "step": "pulse-part",
           "target": {
             "placed": "motor-left"
@@ -153,7 +153,7 @@
     {
       "steps": [
         {
-          "line": "This motor is not in a loop with the battery pack",
+          "line": "This DC motor is not in a loop with the battery pack",
           "step": "pulse-part",
           "target": {
             "placed": "motor-right"
@@ -201,6 +201,82 @@
         "kind": "unwired",
         "placed": "motor-right",
         "port": "plus"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This switch is not in a loop with the battery pack",
+          "step": "pulse-part",
+          "target": {
+            "placed": "switch"
+          }
+        },
+        {
+          "line": "This DC motor's plus takes power straight from the battery pack, round the switch",
+          "step": "pulse-port",
+          "target": {
+            "placed": "motor-left",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "motor-left",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "motor-right",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "switch",
+                "port": "b"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "motor-left",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "switch",
+                "port": "b"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "motor-right",
+                "port": "plus"
+              }
+            }
+          ],
+          "line": "Moved both DC motors' plus lines from the battery pack to side B of the switch",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "failure": "outside-loop",
+        "kind": "fault",
+        "target": {
+          "placed": "switch"
+        }
       }
     }
   ],
