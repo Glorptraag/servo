@@ -1,6 +1,6 @@
 # @servo/parent
 
-The adult's side of Servo: the account and child profiles, the progress view, the parts-list export and the name-the-part card game. It imports only `@servo/schema` and `@servo/app/store` (the package map), so it reaches content, and content's types, through the store. Nothing here asks the child to do anything. Phase 5 owns it: accounts 5.1, progress 5.2, export 5.3, card game 5.4. Task 0.4 owns this interface, typed in [src/index.ts](src/index.ts) with stubs that throw until their tasks land; tasks 5.1, 5.2 and 5.3 have landed. Its tests also read `@servo/content` (a dev dependency) for the kit fixtures; its source does not.
+The adult's side of Servo: the account and child profiles, the progress view, the parts-list export and the name-the-part card game. It imports only `@servo/schema` and `@servo/app/store` (the package map), so it reaches content, and content's types, through the store. Nothing here asks the child to do anything. Phase 5 owns it: accounts 5.1, progress 5.2, export 5.3, card game 5.4. Task 0.4 owns this interface, typed in [src/index.ts](src/index.ts) with stubs that throw until their tasks land; all four have landed. Its tests also read `@servo/content` (a dev dependency) for the kit fixtures; its source does not.
 
 ```ts
 import { openStore } from '@servo/app/store';
@@ -18,7 +18,7 @@ const progress = progressOf({ runs: await child.runs.list(), content: store.cont
 | `readAccounts`, `addChild`, `renameChild`, `switchChild`, `removeChild`, `nameOf`, `PARENT_TEXT` | 5.1 | The accounts model and the view's text (below) |
 | `progressOf(input)` → `Progress`, `readProgress(store, profile)`, `PROGRESS_TEXT` | 5.2 | The progress read model, a pure function of the records below; reading it for one child through the store; the view's text |
 | `partsListOf(blueprint, catalogue)` → `PartsList`, `UnknownPart`, `LIST_TEXT`, `EXPORT_TEXT` | 5.3 | The printable parts list for one blueprint, and its text (below) |
-| `drawCards(content, seed)` | 5.4 | Ten Level 1–2 part types for one round of the card game |
+| `drawCards(content, seed)`, `DECK_SIZE`, `CARD_GAME_TEXT` | 5.4 | Ten Level 1–2 part types for one round of the card game, in the order to show them; the game's text (below) |
 
 The parent view runs as its own page of the web build, beside the child's app, because the app may not import parent. A parental gate on the way in keeps it out of a child's way (D28). Home's "For adults" link opens it (D91, below).
 
@@ -178,7 +178,29 @@ In [src/export/](src/export/). Every name, family, port label and note comes fro
 
 ## The card game (task 5.4)
 
-A two-minute game the adult leads (D40). It shows ten cards drawn from the Level 1–2 parts, each a part's picture from the art registry in `store.content`, and the adult marks each named or not named. `child.cardGames.add(marks)` keeps the round; the latest round counts. The adult sees the result, and the child never sees a score.
+The Level 2 check of brief Section 14: a child at the end of Level 2 names 8 of 10 kit parts from a picture, in a two-minute game an adult leads (D40). In [src/card-game/](src/card-game/).
+
+- **The deck** ([deck.ts](src/card-game/deck.ts)), pure: `drawCards(content, seed)` takes the part records whose `identity.level` is 1 or 2, in id order, shuffles them with a seeded generator and deals ten, no repeats. The same content and seed give the same deck. With fewer than ten such parts it deals them all; with none, none. Nothing knows a part by its id (ground rule 1). The view seeds each round from `crypto.getRandomValues`.
+- **The pictures** ([picture.tsx](src/card-game/picture.tsx)) come from `store.content.art` by the record's art key, as the spec card's do; with no picture there yet, a vector placeholder drawn from the record's colours and proportions (ground rule 12).
+- **A round** ([view.tsx](src/card-game/view.tsx)). Behind the gate, a "Card game: name" section for the child in use, after progress. Start a round shows "Card 1 of 10" and the picture. The part's name is hidden until the adult presses Show the name (a disclosure button, `aria-expanded`), so a child who reads cannot read the answer off the screen. The adult marks Named or Not named, and the next card follows. After the tenth mark the round is kept through the child's own scope, `store.forProfile(id).cardGames.add(marks)`, in the order shown. The adult then sees a plain summary: "n of 10 parts named." and each part's real name, named or not named. Progress (5.2) is read again, so it shows the latest round, which is the one that counts (D40).
+- **Nothing kept part way.** Stop the round, a child switch, or the page being hidden (the gate closes the view) drops a round under way, and nothing is stored. A round the store refuses is one plain line, with Try keeping it again.
+- **Rule 7.** No score, points, praise, streak or exclamation mark; the child sees only pictures and "Card n of 10". The summary is for the adult. Every line is in `CARD_GAME_TEXT`.
+- **Input paths** (ground rule 8). Every control is a native button of at least 44 px, so a tap, a pointer, a keyboard (Tab, Enter, Space) and a screen reader take the same path. Focus moves to each card's heading as it is shown, to the summary's heading when the round is kept, and back to Start a round when one is stopped. Nothing is a dialog (ground rule 9).
+- **Records.** No new store table: rounds are `CardGameResult`s in the store's `cardGames` table (packages/app/docs/store.md). Removing a child removes their rounds (5.1, D38).
+
+### Tests
+
+- **Unit** ([test/card-game/deck.test.ts](test/card-game/deck.test.ts)), on the live content: ten distinct Level 1–2 parts for 50 seeds; the same seed the same deck, different seeds shuffled, every Level 1–2 part drawn over many rounds; a Level 3 part never drawn; fewer than ten parts, and none; odd seeds. On fake-indexeddb: a round kept for one child alone, the latest read by `progressOf`, and gone when the child is removed.
+- **Browser** ([test/browser/card-game.test.tsx](test/browser/card-game.test.tsx)), in Chromium: nothing before the gate, and only the child in use; a whole round marked by pointer, touch (CDP touch events) and keyboard (Enter and Space), with each name hidden until shown, focus on each card's heading, the stored marks matching the cards shown, all Level 1–2, nothing kept for the other child, progress updated, and no id or exclamation mark on the page; a stopped round and a round left by a child switch keep nothing.
+
+### Decisions and open questions (task 5.4)
+
+1. **Which parts.** Every part record introduced at Level 1 or 2 (14 today, ten dealt), as D40 and the task say. The brief says "kit parts": should the deck be only the parts in the Level 1–2 kits, or only parts the child has met?
+2. **No timer.** "Two minutes" is how long a round takes, not a clock on the screen: a visible countdown would press the child. Should there be one?
+3. **The name is hidden until shown**, so the check is not given away to a child who reads. Should the adult's name line show at once instead?
+4. **A round stopped part way keeps nothing**: a partial round is not the check's ten cards. Should it be kept?
+5. **The summary shows at once on the same screen**, after the tenth card. A child looking on can see it; it is a plain line with no praise. Should it sit behind a further press?
+6. **Changes outside src/card-game/:** `src/index.ts` binds `drawCards` and exports `DECK_SIZE` and `CARD_GAME_TEXT`; `src/accounts/view.tsx` adds the section and reads progress again after each round; `test/contract.test.ts` no longer expects the 5.4 stub to throw.
 
 ## Privacy
 
