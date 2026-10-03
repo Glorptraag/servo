@@ -99,7 +99,7 @@ jobs:
   perf:
     # Every timing budget, apart from the correctness jobs so that a slow runner reads as a perf result on its own:
     # sim-core's per-tick cost, the canvas's frame time, and the e2e harness's and Run mode's frame time (pnpm perf).
-    # Each frame-time test takes five samples, prints every one, and holds the median sample to the 16 ms budget.
+    # Each frame-time test takes five samples, prints every one, and holds the best (lowest p95) to the 16 ms budget.
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

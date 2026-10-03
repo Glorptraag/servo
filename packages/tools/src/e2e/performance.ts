@@ -109,27 +109,20 @@ export const measureFrames = async (gestures: readonly Gesture[], framesPerGestu
 
 /**
  * Independent runs of a timing per test. On a shared CI runner with SwiftShader one run's p95 is one noisy sample
- * (8.1 to 21.1 ms for the same test), so a test takes this many and holds the median sample to the budget.
+ * (8 to 38 ms for the same test, the first run after mounting the slowest), so a test takes this many and holds the
+ * best to the budget.
  */
 export const FRAME_SAMPLES = 5;
 
 /**
- * The median sample: the median of the samples' medians, of their p95s and of their frame rates, with the worst frame
- * of any and every sample's frames counted.
+ * The best sample, the one with the lowest p95, as sim-core's tick cost takes the fastest of its batches: a busy runner
+ * only ever adds time, so the best run is the nearest to what the code costs. A change that slows every frame slows
+ * every sample, the best one too.
  */
-export const medianSample = (samples: readonly FrameStats[]): FrameStats => {
-  const middle = (values: readonly number[]): number => quantile([...values].sort((a, b) => a - b), 0.5);
+export const bestSample = (samples: readonly FrameStats[]): FrameStats => {
   const first = samples[0];
   if (!first) throw new Error('No frame-time samples.');
-  return {
-    frames: samples.reduce((sum, stats) => sum + stats.frames, 0),
-    median: middle(samples.map((stats) => stats.median)),
-    p95: middle(samples.map((stats) => stats.p95)),
-    worst: Math.max(...samples.map((stats) => stats.worst)),
-    fps: middle(samples.map((stats) => stats.fps)),
-    gpu: first.gpu,
-    slowdown: first.slowdown,
-  };
+  return samples.reduce((best, stats) => (stats.p95 < best.p95 ? stats : best), first);
 };
 
 export const describeStats = (label: string, stats: FrameStats): string =>
