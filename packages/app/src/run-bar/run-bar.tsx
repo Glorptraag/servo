@@ -40,7 +40,7 @@ export interface RunBarProps {
   readonly seed?: (blueprint: Blueprint) => number;
   /** Wall-clock times for the run records. Default now, as toISOString writes it. */
   readonly now?: () => Timestamp;
-  /** Hands out the run loop once the canvas is mounted, and null as it goes: the spec card, sound and challenges listen to it. */
+  /** Hands out the run loop once the bar shows it, and null as it goes: the spec card, sound and challenges listen to it. */
   readonly onLoop?: (loop: RunLoop | null) => void;
   /** The challenge on the canvas (task 4.5): its Runs are kept with its id and the goal's verdict. None in the sandbox. */
   readonly challenge?: Challenge | null;
@@ -93,7 +93,6 @@ export const RunBar = ({ clock, seed, now, onLoop, challenge = null, program }: 
     });
     setLoop(made);
     setRun(made.state);
-    given.onLoop?.(made);
     return () => {
       off();
       made.dispose();
@@ -102,6 +101,11 @@ export const RunBar = ({ clock, seed, now, onLoop, challenge = null, program }: 
       latest.current.onLoop?.(null);
     };
   }, [canvas, content]);
+
+  // Handed out once the bar shows it, so whoever holds the loop finds Run ready to take a press.
+  useEffect(() => {
+    if (loop) latest.current.onLoop?.(loop);
+  }, [loop]);
 
   // Undo's history hears every edit as it happens, in the commit that shows the build, as Save does.
   useLayoutEffect(() => {
