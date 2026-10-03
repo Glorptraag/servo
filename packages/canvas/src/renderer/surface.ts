@@ -215,6 +215,7 @@ export class CanvasSurface implements CanvasHandle {
       blueprint: () => this.current,
       mode: () => this.currentMode,
       level: () => this.level,
+      ...(options.unlockSettings ? { unlockSettings: options.unlockSettings } : {}),
       apply: (command) => this.apply(command),
       control: (input) => this.emitter.emit('control', { input }),
       select: (selection) => this.select(selection),

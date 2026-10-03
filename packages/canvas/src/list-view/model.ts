@@ -17,6 +17,7 @@ import type {
   ListWire,
   PropTemplate,
   Selection,
+  UnlockSettings,
 } from '../interface.ts';
 import { wireKindOf } from '../wiring/commands.ts';
 import { actionsFor, heldOf, placementsFor, propPlacementsFor } from './actions.ts';
@@ -30,6 +31,8 @@ export interface ListHost {
   blueprint(): Blueprint | undefined;
   mode(): CanvasMode;
   level(): Level;
+  /** Settings offered before their unlock level (CanvasOptions.unlockSettings). */
+  readonly unlockSettings?: UnlockSettings;
   /** The canvas's own `apply`: the one way into the build. */
   apply(command: EditCommand): EditResult;
   /** Fires the canvas's `control` event (Run mode, D42). */
@@ -155,6 +158,7 @@ export class ListViewModel implements ListView {
       blueprint: this.host.blueprint(),
       catalogue: this.host.catalogue,
       level: this.host.level(),
+      ...(this.host.unlockSettings ? { unlockSettings: this.host.unlockSettings } : {}),
       mode: this.host.mode(),
       readOnly: this.host.readOnly,
       switchClosed: (partId) => {

@@ -13,6 +13,7 @@ import type {
   HintStepKind,
   IssueCode,
   Level,
+  PartRecord,
   PartTypeId,
   PlacedPartId,
   PortId,
@@ -20,6 +21,7 @@ import type {
   PortType,
   Pose,
   Prop,
+  Setting,
   SettingId,
   SettingValue,
   Text,
@@ -53,7 +55,16 @@ export interface CanvasOptions {
    * and the list view offers inspection only. The app shows a replay, with "keep a copy" beside it.
    */
   readonly readOnly?: boolean;
+  /**
+   * Settings the list view offers before their `unlockLevel` (task 6.6: the app's Level 3 slot names the servo motor's
+   * angle). Default none: every setting waits for its level. Only which settings are offered changes; the level's
+   * reading load does not.
+   */
+  readonly unlockSettings?: UnlockSettings;
 }
+
+/** Whether a part's setting is offered before its unlock level. Must be pure: the list view may ask it at any time. */
+export type UnlockSettings = (record: PartRecord, setting: Setting) => boolean;
 
 /**
  * A part's picture for an asset key (`identity.art`). Undefined when the registry has no entry: the canvas then

@@ -210,3 +210,4 @@ Notes for later tasks:
 - 5.6 merged + done (local app 254, parent 56, release:dry green; CI blocked only by 3.4's canvas failures, fix in flight on fix/selection-ci).
 - 3.7 merged eac2c99 (PASS @93aa16f + integration cc30450). Mark 3.4 and 3.7 done once fix/selection-ci lands and CI is green.
 - 4.3 merged + done: local app all green (unit 219 + every browser file); CI 37105659554 red only on canvas frame-time flake (hardening branch fixes); re-confirm after chore/test-hardening lands.
+- 6.4 sweep: R-4.10 hush sound when tab hidden (finding 2).

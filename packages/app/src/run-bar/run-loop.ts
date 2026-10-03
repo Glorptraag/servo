@@ -10,7 +10,7 @@ import type { CanvasHandle, CanvasMode } from '@servo/canvas';
 import { canonicalJson } from '@servo/schema';
 import type { Blueprint, Catalogue } from '@servo/schema';
 import { createSimulation } from '@servo/sim-core';
-import type { ControlInput, RunFrame, SimSnapshot, Simulation } from '@servo/sim-core';
+import type { ControlInput, ProgramRuntime, RunFrame, SimSnapshot, Simulation } from '@servo/sim-core';
 
 /** Tick 0 stays on screen this long before the robot moves, so the child sees the wires light first (brief Section 10). */
 export const SPIN_UP_MS = 1000;
@@ -104,6 +104,8 @@ export interface RunLoopOptions {
   readonly seed?: (blueprint: Blueprint) => number;
   /** Ticks a second at first. Default NORMAL_RATE. */
   readonly rate?: number;
+  /** The brains' program for a new Simulation of this build (the Level 3 slot, task 6.6). Default none: the no-op brain (D41). */
+  readonly program?: (blueprint: Blueprint) => ProgramRuntime | undefined;
   /**
    * Called as each Run is pressed. A promise it returns is awaited (phase `loading`) before the spin-up, so the app's
    * recorder returns none: the store is never on a Run's path. Must not reject.
@@ -195,7 +197,8 @@ export class RunLoop {
           const arena = this.options.catalogue.arenas?.get(blueprint.arena.preset);
           if (!arena) throw new Error(`The catalogue has no arena '${blueprint.arena.preset}'.`);
           const seed = (this.options.seed ?? freshSeed)(blueprint);
-          const made = await createSimulation({ blueprint, catalogue: this.options.catalogue, arena, seed });
+          const program = this.options.program?.(blueprint);
+          const made = await createSimulation({ blueprint, catalogue: this.options.catalogue, arena, seed, ...(program ? { program } : {}) });
           if (overtaken() || this.simulation) {
             made.dispose();
             return;

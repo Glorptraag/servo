@@ -4,7 +4,7 @@ import { canonicalJson, serializeBlueprint } from '@servo/schema';
 import type { Blueprint, Catalogue, Level } from '@servo/schema';
 import type { ControlInput, LiveState } from '@servo/sim-core/interface';
 import { applyEdit } from '../../src/index.ts';
-import type { CanvasMode, EditCommand, EditResult, ListAction, ListSubject, Selection } from '../../src/interface.ts';
+import type { CanvasMode, EditCommand, EditResult, ListAction, ListSubject, Selection, UnlockSettings } from '../../src/interface.ts';
 import { ListViewModel } from '../../src/list-view/model.ts';
 import { catalogue as exampleCatalogue } from '../helpers/catalogue.ts';
 
@@ -23,7 +23,7 @@ export interface Bench {
 
 export const benchOf = (
   start: Blueprint | undefined,
-  options: { readonly catalogue?: Catalogue; readonly readOnly?: boolean; readonly level?: Level } = {},
+  options: { readonly catalogue?: Catalogue; readonly readOnly?: boolean; readonly level?: Level; readonly unlockSettings?: UnlockSettings } = {},
 ): Bench => {
   const catalogue = options.catalogue ?? exampleCatalogue;
   const readOnly = options.readOnly === true;
@@ -48,6 +48,7 @@ export const benchOf = (
     blueprint: () => bench.blueprint,
     mode: () => bench.mode,
     level: () => bench.level,
+    ...(options.unlockSettings ? { unlockSettings: options.unlockSettings } : {}),
     apply: (command): EditResult => {
       if (readOnly || bench.mode === 'run') return { ok: false, refusal: { code: 'edit.locked', message: 'locked' } };
       const current = bench.blueprint;

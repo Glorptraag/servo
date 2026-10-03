@@ -172,3 +172,7 @@
 {"ts": "2026-10-03T07:51:08+00:00", "event": "dispatch", "tasks": ["4.10"]}
 {"ts": "2026-10-03T07:55:49+00:00", "event": "decision_add", "id": "D102", "blocks": []}
 {"ts": "2026-10-03T08:30:30+00:00", "event": "decision_add", "id": "D103", "blocks": []}
+{"ts": "2026-10-03T08:52:54+00:00", "event": "decision_add", "id": "D104", "blocks": []}
+{"ts": "2026-10-03T09:02:58+00:00", "event": "decision_add", "id": "D105", "blocks": []}
+{"ts": "2026-10-03T09:17:19+00:00", "event": "done", "tasks": ["4.10"], "by": "W-4.10"}
+{"ts": "2026-10-03T09:45:55+00:00", "event": "done", "tasks": ["6.6"], "by": "W-6.6"}

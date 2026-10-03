@@ -849,7 +849,7 @@
       "dispatched_at": "2026-10-01T09:05:09+00:00"
     },
     "4.10": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -863,8 +863,8 @@
       ],
       "done_when": "Audio events map one-to-one to run events in a recorded run; mute persists across reload; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-03T09:17:19+00:00",
+      "completed_by": "W-4.10",
       "dispatched_at": "2026-10-03T07:51:08+00:00"
     },
     "G4": {
@@ -1159,7 +1159,7 @@
       "completed_by": null
     },
     "6.6": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1175,8 +1175,8 @@
       ],
       "done_when": "Flag off by default; with it on, a servo angle can be set and the servo sweeps to it in a run; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-03T09:45:55+00:00",
+      "completed_by": "W-6.6",
       "dispatched_at": "2026-10-03T07:23:14+00:00"
     },
     "G6": {
@@ -2040,6 +2040,22 @@
       "id": "D103",
       "question": "Make the new CI 'perf' job a required status check in GitHub branch protection for main? (repo settings change, Drew's call)",
       "recommendation": "Yes, once it stays green for a week; until then it runs on every push and is read by the orchestrator",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D104",
+      "question": "Sound (R-4.10 Q1-Q4): click only on wire landing (not part landing); shared-build replay silent; hush when tab hidden (small follow-up); on/off only, no volume. Accept?",
+      "recommendation": "Accept; add the hidden-tab hush in the 6.4 sweep",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D105",
+      "question": "Level 3 slot (R-6.6 Q1-Q3): angle shows with flag on though nothing drives it with today's content; run records/shared builds don't record that a program drove a Run (replays differ for flag-on Runs); no Settings row for the flag. Accept defaults?",
+      "recommendation": "Accept all three defaults; record program-driven Runs with the schema minor bump that adds brain rules, before any brain part ships",
       "confidence": "medium",
       "blocks": [],
       "resolved": false

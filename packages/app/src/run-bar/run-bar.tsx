@@ -6,6 +6,7 @@
 // The run loop itself is run-loop.ts, which the shared build's replay shares.
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { Blueprint, Challenge, Timestamp } from '@servo/schema';
+import type { ProgramRuntime } from '@servo/sim-core';
 import { useShell } from '../shell/context.ts';
 import { UndoHistory } from './history.ts';
 import { isRunKey } from './keys.ts';
@@ -43,11 +44,13 @@ export interface RunBarProps {
   readonly onLoop?: (loop: RunLoop | null) => void;
   /** The challenge on the canvas (task 4.5): its Runs are kept with its id and the goal's verdict. None in the sandbox. */
   readonly challenge?: Challenge | null;
+  /** The brains' program for each new Simulation (the Level 3 slot, task 6.6). Default none: the no-op brain (D41). */
+  readonly program?: (blueprint: Blueprint) => ProgramRuntime | undefined;
 }
 
 const BUILD: RunState = { phase: 'build', tick: 0, rate: NORMAL_RATE };
 
-export const RunBar = ({ clock, seed, now, onLoop, challenge = null }: RunBarProps) => {
+export const RunBar = ({ clock, seed, now, onLoop, challenge = null, program }: RunBarProps) => {
   const { canvas, content, child, blueprint, mode, setMode, load } = useShell();
   const reasonId = useId();
   const barRef = useRef<HTMLDivElement>(null);
@@ -56,8 +59,8 @@ export const RunBar = ({ clock, seed, now, onLoop, challenge = null }: RunBarPro
   const [history] = useState(() => new UndoHistory());
   const [undoSteps, setUndoSteps] = useState(0);
   const recorderRef = useRef<RunRecorder | null>(null);
-  const latest = useRef({ setMode, child, clock, seed, now, onLoop, challenge, rate: run.rate });
-  latest.current = { setMode, child, clock, seed, now, onLoop, challenge, rate: run.rate };
+  const latest = useRef({ setMode, child, clock, seed, now, onLoop, challenge, program, rate: run.rate });
+  latest.current = { setMode, child, clock, seed, now, onLoop, challenge, program, rate: run.rate };
 
   // One loop per canvas. Frames at normal speed redraw nothing here, so the bar re-renders only for what it shows.
   useEffect(() => {
@@ -78,6 +81,7 @@ export const RunBar = ({ clock, seed, now, onLoop, challenge = null }: RunBarPro
       clock: given.clock ?? pageClock(view),
       setMode: (next) => latest.current.setMode(next),
       ...(given.seed ? { seed: given.seed } : {}),
+      program: (build) => latest.current.program?.(build),
       rate: given.rate,
       onStart: (build) => recorder.start(build),
       onEnd: (simulation) => recorder.end(simulation),

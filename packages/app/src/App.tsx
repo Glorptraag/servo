@@ -8,6 +8,9 @@ import type { CanvasHandle, ResolveArt } from '@servo/canvas';
 import type { Content } from '@servo/content';
 import type { Blueprint, Challenge, Level } from '@servo/schema';
 import { ArenaStrip, GoalLine, Home } from './challenges/index.ts';
+import { deviceFlags } from './flags/index.ts';
+import type { Flags } from './flags/index.ts';
+import { ProgramView, programFor, slotSetting } from './program-view/index.ts';
 import { RunBar } from './run-bar/index.ts';
 import type { RunLoop } from './run-bar/index.ts';
 import { PLACEHOLDER_SLOTS, SaveControl, Shell, pageStorage } from './shell/index.ts';
@@ -29,9 +32,12 @@ export interface AppProps {
   readonly saving?: Autosaver;
   /** Called once the canvas is mounted. */
   readonly onReady?: () => void;
+  /** The feature flags (task 6.6). Default this device's, read once as the app mounts. */
+  readonly flags?: Flags;
 }
 
-export const App = ({ content, child = null, start, saving, onReady }: AppProps) => {
+export const App = ({ content, child = null, start, saving, onReady, flags: givenFlags }: AppProps) => {
+  const flags = useMemo(() => givenFlags ?? deviceFlags(), [givenFlags]);
   // The run loop (task 4.4) gives each Run frame to the spec card's live readouts, which clear whenever no Run plays:
   // on Stop, on a failed Run, and while the next one loads.
   // The goal line judges the same loop's frames (task 4.5).
@@ -55,23 +61,35 @@ export const App = ({ content, child = null, start, saving, onReady }: AppProps)
   }, [runFrames, sound]);
   // A challenge chosen on Home lays its goal line, kit, level and arena over the same canvas (task 4.5); none is the sandbox.
   const [challenge, setChallenge] = useState<Challenge | null>(null);
+  // The Level 3 slot (task 6.6, README "Feature flags"): with the flag on, the servo motor's angle unlocks on its card,
+  // a brain's card shows its program, and each Run drives the brains by it.
+  const slot = flags['level-3-slot'];
+  const program = useMemo(
+    () => (slot ? (blueprint: Blueprint) => programFor(flags, blueprint, content.catalogue) : undefined),
+    [slot, flags, content],
+  );
   const slots = useMemo<ShellSlots>(
     () => ({
       ...PLACEHOLDER_SLOTS,
       home: <Home challenge={challenge} onChallenge={setChallenge} sandboxLevel={START_LEVEL} loop={loop} saving={saving} />,
       goal: <GoalLine challenge={challenge} loop={loop} />,
       arenaStrip: <ArenaStrip challenge={challenge} />,
-      specCard: <SpecCard frames={runFrames} />,
+      specCard: (
+        <>
+          <SpecCard frames={runFrames} {...(slot ? { unlocked: slotSetting } : {})} />
+          {slot && <ProgramView />}
+        </>
+      ),
       sound: <SoundControl layer={sound} />,
       save: <SaveControl saving={saving} />,
-      runBar: <RunBar onLoop={joinRunLoop} challenge={challenge} />,
+      runBar: <RunBar onLoop={joinRunLoop} challenge={challenge} {...(program ? { program } : {})} />,
     }),
-    [saving, runFrames, joinRunLoop, sound, challenge, loop],
+    [saving, runFrames, joinRunLoop, sound, slot, program, challenge, loop],
   );
   // The swap registry: a key with no picture gives undefined, and the canvas draws a neutral tile.
   const resolveArt: ResolveArt = (key) => content.art.get(key);
   const drawCanvas = (host: HTMLElement, setup: CanvasSetup): CanvasHandle =>
-    mountCanvas(host, { catalogue: content.catalogue, resolveArt, level: setup.level, prefs: setup.prefs });
+    mountCanvas(host, { catalogue: content.catalogue, resolveArt, level: setup.level, prefs: setup.prefs, ...(slot ? { unlockSettings: slotSetting } : {}) });
   // The canvas fits and zooms in the part of it the panels leave uncovered (D70, task 3.7).
   return (
     <Shell
