@@ -20,7 +20,7 @@ part wheel-large a38367d03cf69dba
 record f746833a69e704fd6d46785738efe3c67cd69b03b2eae6fb71d916e02fe134a6
 fault buzzer low-voltage first-tick=2
 fault servo low-voltage first-tick=2
-subjects battery bumper buzzer caster chassis driver gear-left gear-right motor-left motor-right servo wheel-left wheel-right arena:box arena:cone
+subjects battery bumper buzzer caster chassis driver gear-left gear-right motor-left motor-right servo wheel-left wheel-right arena:box arena:cone wire:w10 wire:w11 wire:w12 wire:w13 wire:w14 wire:w15 wire:w16 wire:w17 wire:w18 wire:w19 wire:w20 wire:w21 wire:w22 wire:w23 wire:w24
 tick 0 f6e42e92
   battery volts=2.622 milliamps=945.9 charge=1
   bumper volts=0 milliamps=945.9 closed=true
@@ -36,6 +36,21 @@ tick 0 f6e42e92
   wheel-right rpm=25.7
   arena:box x=1000 y=950 heading=0
   arena:cone x=1200 y=300 heading=0
+  wire:w10 rpm=77.2
+  wire:w11 rpm=25.7
+  wire:w12 rpm=77.2
+  wire:w13 rpm=25.7
+  wire:w14 milliamps=945.9
+  wire:w15 milliamps=928.8
+  wire:w16 milliamps=-928.8
+  wire:w17 milliamps=463.4
+  wire:w18 milliamps=-463.4
+  wire:w19 milliamps=463.4
+  wire:w20 milliamps=-463.4
+  wire:w21 milliamps=9.6
+  wire:w22 milliamps=-9.6
+  wire:w23 milliamps=7.5
+  wire:w24 milliamps=-7.5
 tick 1 fc24a6d0
   chassis x=301.9
 tick 2 c79afb79
@@ -51,6 +66,21 @@ tick 2 c79afb79
   servo volts=2.808 milliamps=8 faults=low-voltage
   wheel-left rpm=23.9
   wheel-right rpm=23.9
+  wire:w10 rpm=71.7
+  wire:w11 rpm=23.9
+  wire:w12 rpm=71.7
+  wire:w13 rpm=23.9
+  wire:w14 milliamps=478.6
+  wire:w15 milliamps=459.3
+  wire:w16 milliamps=-459.3
+  wire:w17 milliamps=228.7
+  wire:w18 milliamps=-228.7
+  wire:w19 milliamps=228.7
+  wire:w20 milliamps=-228.7
+  wire:w21 milliamps=11.2
+  wire:w22 milliamps=-11.2
+  wire:w23 milliamps=8
+  wire:w24 milliamps=-8
 tick 3 bb5914d5
   battery volts=2.87 milliamps=325.1 charge=0.9997
   bumper milliamps=325.1
@@ -64,6 +94,21 @@ tick 3 bb5914d5
   servo volts=2.87 milliamps=8.2
   wheel-left rpm=27.5
   wheel-right rpm=27.5
+  wire:w10 rpm=82.4
+  wire:w11 rpm=27.5
+  wire:w12 rpm=82.4
+  wire:w13 rpm=27.5
+  wire:w14 milliamps=325.1
+  wire:w15 milliamps=305.2
+  wire:w16 milliamps=-305.2
+  wire:w17 milliamps=151.6
+  wire:w18 milliamps=-151.6
+  wire:w19 milliamps=151.6
+  wire:w20 milliamps=-151.6
+  wire:w21 milliamps=11.7
+  wire:w22 milliamps=-11.7
+  wire:w23 milliamps=8.2
+  wire:w24 milliamps=-8.2
 tick 4 c6e27503
   battery volts=2.886 milliamps=284.6 charge=0.9996
   bumper milliamps=284.6
@@ -77,6 +122,19 @@ tick 4 c6e27503
   servo volts=2.886
   wheel-left rpm=28.3
   wheel-right rpm=28.3
+  wire:w10 rpm=84.8
+  wire:w11 rpm=28.3
+  wire:w12 rpm=84.8
+  wire:w13 rpm=28.3
+  wire:w14 milliamps=284.6
+  wire:w15 milliamps=264.4
+  wire:w16 milliamps=-264.4
+  wire:w17 milliamps=131.2
+  wire:w18 milliamps=-131.2
+  wire:w19 milliamps=131.2
+  wire:w20 milliamps=-131.2
+  wire:w21 milliamps=11.9
+  wire:w22 milliamps=-11.9
 tick 5 9258ae37
   battery volts=2.89 milliamps=273.8 charge=0.9995
   bumper milliamps=273.8
@@ -90,6 +148,19 @@ tick 5 9258ae37
   servo volts=2.89 milliamps=8.3
   wheel-left rpm=28.5
   wheel-right rpm=28.5
+  wire:w10 rpm=85.5
+  wire:w11 rpm=28.5
+  wire:w12 rpm=85.5
+  wire:w13 rpm=28.5
+  wire:w14 milliamps=273.8
+  wire:w15 milliamps=253.6
+  wire:w16 milliamps=-253.6
+  wire:w17 milliamps=125.8
+  wire:w18 milliamps=-125.8
+  wire:w19 milliamps=125.8
+  wire:w20 milliamps=-125.8
+  wire:w23 milliamps=8.3
+  wire:w24 milliamps=-8.3
 tick 6 6993442c
   battery volts=2.891 milliamps=270.8
   bumper milliamps=270.8
@@ -99,6 +170,15 @@ tick 6 6993442c
   motor-left volts=2.59 milliamps=124.3 rpm=85.6 sound.motor=0.428
   motor-right volts=2.59 milliamps=124.3 rpm=85.6 sound.motor=0.428
   servo volts=2.891
+  wire:w10 rpm=85.6
+  wire:w12 rpm=85.6
+  wire:w14 milliamps=270.8
+  wire:w15 milliamps=250.7
+  wire:w16 milliamps=-250.7
+  wire:w17 milliamps=124.3
+  wire:w18 milliamps=-124.3
+  wire:w19 milliamps=124.3
+  wire:w20 milliamps=-124.3
 tick 7 be8d592b
   battery milliamps=270.2 charge=0.9994
   bumper milliamps=270.2
@@ -111,6 +191,17 @@ tick 7 be8d592b
   motor-right milliamps=124 rpm=85.7
   wheel-left rpm=28.6
   wheel-right rpm=28.6
+  wire:w10 rpm=85.7
+  wire:w11 rpm=28.6
+  wire:w12 rpm=85.7
+  wire:w13 rpm=28.6
+  wire:w14 milliamps=270.2
+  wire:w15 milliamps=250
+  wire:w16 milliamps=-250
+  wire:w17 milliamps=124
+  wire:w18 milliamps=-124
+  wire:w19 milliamps=124
+  wire:w20 milliamps=-124
 tick 8 41449264
   battery milliamps=270 charge=0.9993
   bumper milliamps=270
@@ -118,6 +209,13 @@ tick 8 41449264
   driver milliamps=249.8
   motor-left milliamps=123.9
   motor-right milliamps=123.9
+  wire:w14 milliamps=270
+  wire:w15 milliamps=249.8
+  wire:w16 milliamps=-249.8
+  wire:w17 milliamps=123.9
+  wire:w18 milliamps=-123.9
+  wire:w19 milliamps=123.9
+  wire:w20 milliamps=-123.9
 tick 9 c4b98d82
   chassis x=327.4
 tick 10 8f90ee77
@@ -128,10 +226,13 @@ tick 11 95debf8f
   battery milliamps=269.9
   bumper milliamps=269.9
   chassis x=333.8
+  wire:w14 milliamps=269.9
 tick 12 66731ccc
   battery charge=0.9991
   chassis x=337.1
   driver milliamps=249.7
+  wire:w15 milliamps=249.7
+  wire:w16 milliamps=-249.7
 tick 13 b0bfe9ec
   battery charge=0.999
   chassis x=340.3
@@ -139,14 +240,21 @@ tick 14 448c46ad
   chassis x=343.6
   motor-left milliamps=123.8
   motor-right milliamps=123.8
+  wire:w17 milliamps=123.8
+  wire:w18 milliamps=-123.8
+  wire:w19 milliamps=123.8
+  wire:w20 milliamps=-123.8
 tick 15 7fac2ea2
   battery milliamps=269.8 charge=0.9989
   bumper milliamps=269.8
   chassis x=346.8
+  wire:w14 milliamps=269.8
 tick 16 87f382c6
   battery charge=0.9988
   chassis x=350.1
   driver milliamps=249.6
+  wire:w15 milliamps=249.6
+  wire:w16 milliamps=-249.6
 tick 17 0d7ab8a6
   chassis x=353.3
 tick 18 13c65980
@@ -160,10 +268,13 @@ tick 20 c48bcd6f
   chassis x=363
   motor-left volts=2.589
   motor-right volts=2.589
+  wire:w14 milliamps=269.7
 tick 21 d6157d38
   battery charge=0.9985
   chassis x=366.3
   driver milliamps=249.5
+  wire:w15 milliamps=249.5
+  wire:w16 milliamps=-249.5
 tick 22 2721c2b5
   chassis x=369.5
 tick 23 91a87b50
@@ -171,6 +282,10 @@ tick 23 91a87b50
   chassis x=372.7
   motor-left milliamps=123.7
   motor-right milliamps=123.7
+  wire:w17 milliamps=123.7
+  wire:w18 milliamps=-123.7
+  wire:w19 milliamps=123.7
+  wire:w20 milliamps=-123.7
 tick 24 f08a27e8
   battery volts=2.89 milliamps=269.8 charge=0.9983
   bumper milliamps=269.8
@@ -180,15 +295,25 @@ tick 24 f08a27e8
   motor-left milliamps=123.8
   motor-right milliamps=123.8
   servo volts=2.89
+  wire:w14 milliamps=269.8
+  wire:w15 milliamps=249.6
+  wire:w16 milliamps=-249.6
+  wire:w17 milliamps=123.8
+  wire:w18 milliamps=-123.8
+  wire:w19 milliamps=123.8
+  wire:w20 milliamps=-123.8
 tick 25 50d0c87e
   chassis x=379.2
 tick 26 8af8815a
   battery milliamps=269.7 charge=0.9982
   bumper milliamps=269.7
   chassis x=382.5
+  wire:w14 milliamps=269.7
 tick 27 35183cc9
   chassis x=385.7
   driver milliamps=249.5
+  wire:w15 milliamps=249.5
+  wire:w16 milliamps=-249.5
 tick 28 11c21dff
   battery charge=0.9981
   chassis x=388.9
@@ -197,6 +322,10 @@ tick 29 b7d374b6
   chassis x=392.2
   motor-left milliamps=123.7
   motor-right milliamps=123.7
+  wire:w17 milliamps=123.7
+  wire:w18 milliamps=-123.7
+  wire:w19 milliamps=123.7
+  wire:w20 milliamps=-123.7
 tick 30 dc0b60e6
   battery milliamps=269.8
   bumper milliamps=269.8
@@ -204,3 +333,10 @@ tick 30 dc0b60e6
   driver milliamps=249.6
   motor-left milliamps=123.8
   motor-right milliamps=123.8
+  wire:w14 milliamps=269.8
+  wire:w15 milliamps=249.6
+  wire:w16 milliamps=-249.6
+  wire:w17 milliamps=123.8
+  wire:w18 milliamps=-123.8
+  wire:w19 milliamps=123.8
+  wire:w20 milliamps=-123.8

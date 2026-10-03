@@ -7,7 +7,7 @@ import type { FixtureVerdict } from '@servo/content/fixtures';
 import { createSimulation } from '@servo/sim-core';
 import type { RunFrame, RunRecordContext } from '@servo/sim-core';
 import type { GoldenFile, GoldenTick } from './file.ts';
-import { summarizeLive } from './summary.ts';
+import { summarizeFlows, summarizeLive } from './summary.ts';
 
 /** One Run the harness keeps a reference for. */
 export interface GoldenCase {
@@ -45,7 +45,7 @@ export const sha256 = (text: string): string => createHash('sha256').update(text
 const tickOf = (frame: RunFrame): GoldenTick => ({
   tick: frame.tick,
   hash: sha256(canonicalJson(frame.events)).slice(0, 8),
-  state: summarizeLive(frame.live),
+  state: new Map([...summarizeLive(frame.live), ...summarizeFlows(frame.flows)]),
 });
 
 const inputsText = (inputs: readonly RunInput[]): string =>
@@ -82,7 +82,7 @@ export const runCase = async (golden: GoldenCase): Promise<GoldenRun> => {
       parts: partTypes.map((id) => ({ id, hash: sha256(canonicalJson(golden.catalogue.parts.get(id) ?? null)).slice(0, 16) })),
       record: sha256(canonicalJson(record)),
       faults: record.faults,
-      subjects: [...simulation.frame.live.keys()],
+      subjects: [...frames[0]?.state.keys() ?? []],
       frames,
     };
     return { file, record };

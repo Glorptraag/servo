@@ -16,7 +16,7 @@ part switch 0a304ca511260dde
 part wheel-large c182e441f60c54e3
 record 9c6bd06d8e81cf02c5ad4466dcef050279c2d782177f4ef96d5aa1b51a5027bc
 fault driver low-voltage first-tick=2
-subjects battery caster chassis driver motor-left motor-right switch wheel-left wheel-right
+subjects battery caster chassis driver motor-left motor-right switch wheel-left wheel-right wire:w10 wire:w11 wire:w12 wire:w13 wire:w14 wire:w15 wire:w7 wire:w8 wire:w9
 tick 0 34ed7221
   battery volts=1.5 milliamps=1.2 charge=1
   chassis x=300 y=600 heading=0 pitch=0 roll=0
@@ -26,6 +26,15 @@ tick 0 34ed7221
   switch volts=0 milliamps=1.2 closed=true
   wheel-left rpm=0
   wheel-right rpm=0
+  wire:w10 milliamps=-1.2
+  wire:w11 milliamps=-1.2
+  wire:w12 milliamps=0
+  wire:w13 milliamps=0
+  wire:w14 milliamps=0
+  wire:w15 milliamps=0
+  wire:w7 rpm=0
+  wire:w8 rpm=0
+  wire:w9 milliamps=1.2
 tick 1 37517e5f
 tick 2 2c33297b
   driver faults=low-voltage

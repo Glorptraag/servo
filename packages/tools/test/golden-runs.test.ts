@@ -143,7 +143,8 @@ describe('golden runs: a Run', () => {
     expect(file.frames.map((frame) => frame.hash)).toEqual(file.frames.map((frame) => sha256(canonicalJson(byTick(frame.tick))).slice(0, 8)));
     expect(file.inputs).toEqual(golden.inputs);
     expect(file.faults).toEqual(record.faults);
-    expect(file.subjects).toEqual(['battery', 'switch']);
+    // The parts, then each wire's flow (D78): the canvas's moving dots follow them.
+    expect(file.subjects).toEqual(['battery', 'switch', 'wire:w1', 'wire:w2']);
     // Debounced: the short shows from tick 2, ends 3 ticks after the switch opens at tick 10, and shows again from tick 23.
     const shorted = file.frames.filter((frame) => frame.state.get('battery')?.get('faults') === 'short-circuit').map((frame) => frame.tick);
     expect(shorted[0]).toBe(2);
@@ -196,10 +197,12 @@ describe('golden runs: the golden file', () => {
       expect.stringMatching(/^record [0-9a-f]{64}$/),
       'fault battery short-circuit first-tick=2',
       'fault switch across-the-pack first-tick=2',
-      'subjects battery switch',
+      'subjects battery switch wire:w1 wire:w2',
     ]);
     expect(lines[16]).toMatch(/^tick 0 [0-9a-f]{8}$/);
     expect(lines[17]).toBe('  battery volts=0 milliamps=7500 charge=1 x=240 y=600 heading=0');
+    // What flows along each wire, signed from its `from` port to its `to` port: round the short and back.
+    expect(lines.slice(19, 21)).toEqual(['  wire:w1 milliamps=7500', '  wire:w2 milliamps=-7500']);
     expect(lines.filter((line) => line.startsWith('tick '))).toHaveLength(31);
     expect(text.endsWith('\n')).toBe(true);
   });
