@@ -43,6 +43,16 @@ const nodePosition = (id: string): Vec2 => {
 };
 
 describe('Run mode draws the frames it is given', () => {
+  it('draws the build as it stands in Run mode until the first frame', async () => {
+    surface.setMode('run');
+    await settle(surface);
+    expect(surface.scene.parts.every((part) => surface.partView(part.id)?.run.visible === false)).toBe(true);
+    surface.applyRunFrame(rollingStartFrame(0));
+    surface.applyRunFrame(rollingStartFrame(1));
+    await settle(surface);
+    expect(surface.partView('wheel-left')?.run.visible).toBe(true);
+  });
+
   it('ignores frames in Build mode', async () => {
     surface.applyRunFrame(rollingStartFrame(0, { x: 400 }));
     await settle(surface);
