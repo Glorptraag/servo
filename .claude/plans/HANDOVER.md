@@ -206,3 +206,4 @@ Notes for later tasks:
 - 4.9 save-gap fix merged 3240a4b (Save stores canvas.blueprint; layout effects).
 - 3.8 + 5.1 marked done: CI run 37088995393 e2e jobs all green; check job red only on known placement CI failure, which stops pnpm -r before app/parent/tools on CI; those were green locally (parent 17, app 215, tools 927). Re-confirm on CI after the placement fix.
 - LESSON: merge checks must run every browser file of a changed package (canvas browser project + e2e views), not only unit tests. 3.5 broke layers.test.ts and views e2e on CI 37091074167; fix on fix/run-layers by 3.5 builder.
+- CI GREEN on main (run 37092956291) after CI placement fix (test tray user-select) + run-layers fix. 3.3, 3.5, 3.6 done.
