@@ -37,6 +37,8 @@ export interface WirePlace {
   readonly to: Place;
   /** Halfway along: where a tap selects it. */
   readonly middle: Place;
+  /** The line as drawn, end to end: two points, or a tidied route's corners too. */
+  readonly path: readonly Place[];
 }
 
 export interface CanvasView {
@@ -164,7 +166,7 @@ export const probeCanvas = (handle: CanvasHandle): CanvasProbe => {
         }
         left -= length;
       }
-      return { from: place(from), to: place(to), middle: place(middle) };
+      return { from: place(from), to: place(to), middle: place(middle), path: path.map(place) };
     },
     handles: () => {
       const shown = new Map<'move' | 'rotate' | 'bin', Place>();

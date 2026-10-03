@@ -50,6 +50,11 @@ describe('where the label of a selected wire sits', () => {
     expect(Math.abs(at.y)).toBeLessThanOrEqual(4.8 + 5 + 2 * 10 + 1e-9);
   });
 
+  it('stays on a line long enough to hold it even where every stop meets a socket', () => {
+    const crowded = LABEL_STOPS.map((t) => ({ ...pointAlong(straight, t), r: 3 }));
+    expect(placeLabel({ path: straight, size, avoid: crowded, others: [], reach: 4.8 })).toEqual({ x: 50, y: 0 });
+  });
+
   it('follows a bent path, as a tidied route will draw one (task 3.7)', () => {
     const route: Vec2[] = [
       { x: 0, y: 0 },

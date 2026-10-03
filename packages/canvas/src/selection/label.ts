@@ -82,9 +82,9 @@ export const BESIDE_STEPS = 3;
 
 /**
  * The label's centre. On the selected wire's path: the first stop clear of every socket, the bin and every other line
- * wins; failing that, the first clear of the sockets and the bin. A line too short to hold it without covering a socket
- * (a wheel's drive linkage on its motor's shaft) has it just beside its middle instead, a row at a time on either side,
- * up to BESIDE_STEPS rows out. Failing everything, the middle.
+ * wins; failing that, the first clear of the sockets and the bin; failing that, on a line at least as long as the pill,
+ * its middle. A line shorter than the pill (a wheel's drive linkage on its motor's shaft) has it just beside its middle
+ * instead, a row at a time on either side, up to BESIDE_STEPS rows out, or failing that its middle.
  */
 export const placeLabel = (query: LabelQuery): Vec2 => {
   const stops = LABEL_STOPS.map((t) => pointAlong(query.path, t));
@@ -94,11 +94,14 @@ export const placeLabel = (query: LabelQuery): Vec2 => {
   const onLine = stops.find((at) => clear(at) && apart(at)) ?? stops.find(clear);
   if (onLine) return onLine;
   const middle = stops[0] as Vec2;
+  // A line long enough to hold the pill keeps it, at its middle, even over a socket: the label rides its own line.
+  const length = query.path.slice(1).reduce((sum, b, i) => sum + Math.hypot(b.x - (query.path[i] as Vec2).x, b.y - (query.path[i] as Vec2).y), 0);
+  if (length >= query.size.w) return middle;
   const first = query.path[0] ?? middle;
   const last = query.path[query.path.length - 1] ?? middle;
-  const length = Math.hypot(last.x - first.x, last.y - first.y);
+  const span = Math.hypot(last.x - first.x, last.y - first.y);
   // Across the line: its normal, or straight up and down for a line with no length.
-  const across = length === 0 ? { x: 0, y: 1 } : { x: -(last.y - first.y) / length, y: (last.x - first.x) / length };
+  const across = span === 0 ? { x: 0, y: 1 } : { x: -(last.y - first.y) / span, y: (last.x - first.x) / span };
   const extent = Math.abs(across.x) * (query.size.w / 2) + Math.abs(across.y) * (query.size.h / 2);
   const beside: Vec2[] = [];
   for (let row = 0; row < BESIDE_STEPS; row++) {

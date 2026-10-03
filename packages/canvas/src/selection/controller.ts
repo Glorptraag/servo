@@ -31,6 +31,9 @@ import type { HintTargets } from './hints.ts';
 import { HintMarks, PropRing, SOCKET_REACH_MM, pulseAt } from './views.ts';
 
 const MIN_SENSITIVITY = 0.05;
+/** The wire label's pill: a fixed height, and a width in steps of this, on screen at every zoom. */
+export const LABEL_HEIGHT_PX = 40;
+export const LABEL_STEP_PX = 16;
 /** How often a pulsing hint is redrawn. */
 export const PULSE_FPS = 20;
 
@@ -78,6 +81,9 @@ export class SelectionController {
   private letGoOf: Selection | null = null;
   private press: Press | undefined;
   private labelBox: { readonly at: Vec2; readonly w: number; readonly h: number } | undefined;
+  /** Whether the prop's ring or bin is drawn, and whether a rung is: what there is to clear. */
+  private propShown = false;
+  private hintShown = false;
   private destroyed = false;
 
   constructor(host: SelectionHost) {
@@ -95,9 +101,10 @@ export class SelectionController {
     canvas.addEventListener('pointercancel', this.pressEnded);
     canvas.addEventListener('lostpointercapture', this.pressEnded);
     // The label and the bin keep their screen size at every zoom.
+    // Only when one is shown: with nothing selected a zoom (a wheel or a pinch, every frame) costs selection nothing.
     this.offZoom = this.surface.on('zoom', () => {
-      this.drawProp();
-      this.drawLabel();
+      if (this.current?.kind === 'prop') this.drawProp();
+      else if (this.current?.kind === 'wire') this.drawLabel();
     });
   }
 
@@ -371,10 +378,15 @@ export class SelectionController {
     const prop = current?.kind === 'prop' ? this.propOf(current.propId) : undefined;
     const arena = this.surface.arena;
     if (!prop || !arena) {
-      this.ring.clear();
-      this.propBin.draw(new Map(), radius, this.palette);
+      // Clears only what is drawn: an untouched Graphics costs the renderer nothing.
+      if (this.propShown) {
+        this.ring.clear();
+        this.propBin.draw(new Map(), radius, this.palette);
+        this.propShown = false;
+      }
       return;
     }
+    this.propShown = true;
     // In Run mode a prop the robot pushes is where the Run draws it now.
     const at = (this.surface.mode === 'run' ? this.surface.run.shown?.props.get(prop.id) : undefined) ?? prop.at;
     const corners = propOutline(prop, at).map((corner) => arenaToCanvas(arena.matrix, corner));
@@ -408,13 +420,18 @@ export class SelectionController {
     const current = this.current;
     const wire = current?.kind === 'wire' ? wireOf(this.surface.scene, current.wireId) : undefined;
     if (!wire) {
-      this.label.hide();
-      this.labelBox = undefined;
-      if (request) this.surface.requestFrame();
+      if (this.labelBox !== undefined) {
+        this.label.hide();
+        this.labelBox = undefined;
+        if (request) this.surface.requestFrame();
+      }
       return;
     }
     const scale = this.surface.camera.scale;
-    const size = this.label.measure(flowLine(wire.kind), this.host.drawContext(), scale);
+    // The pill's size steps rather than following the type's exact metrics, which differ between devices' fonts: the
+    // same word gives the same pill, and so the same place on the line, on every device that draws it.
+    const measured = this.label.measure(flowLine(wire.kind), this.host.drawContext(), scale);
+    const size = { w: (Math.ceil((measured.w * scale) / LABEL_STEP_PX) * LABEL_STEP_PX) / scale, h: LABEL_HEIGHT_PX / scale };
     const pathOf = (each: SceneWire): readonly Vec2[] => this.drawnPath(each);
     const bin = this.surface.wiring.binPlace;
     const at = placeLabel({
@@ -437,11 +454,15 @@ export class SelectionController {
     const hint = this.hint;
     if (!hint || !drawsAnything(hint.targets) || this.surface.mode === 'run') {
       this.stopPulse();
-      this.marks.clear();
-      this.surface.requestFrame();
+      if (this.hintShown) {
+        this.marks.clear();
+        this.hintShown = false;
+        this.surface.requestFrame();
+      }
       return;
     }
     this.marks.draw(hint.targets, this.palette, this.everySocket());
+    this.hintShown = true;
     if (reducedMotion()) {
       this.stopPulse();
       this.marks.graphics.alpha = 1;
