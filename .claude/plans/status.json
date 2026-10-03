@@ -547,7 +547,7 @@
       "dispatched_at": "2026-10-01T08:46:24+00:00"
     },
     "3.4": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -561,8 +561,8 @@
       ],
       "done_when": "Screenshot tests for each focus state pass; selection events are emitted with the right ids.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-03T05:35:54+00:00",
+      "completed_by": "W-3.4",
       "dispatched_at": "2026-10-02T01:56:16+00:00"
     },
     "3.5": {
@@ -605,7 +605,7 @@
       "dispatched_at": "2026-10-02T01:56:16+00:00"
     },
     "3.7": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -619,8 +619,8 @@
       ],
       "done_when": "Routed wires never cross a part body on the 25-part fixture; zoom cannot lose the build; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-03T05:35:54+00:00",
+      "completed_by": "W-3.7",
       "dispatched_at": "2026-10-02T01:56:16+00:00"
     },
     "3.8": {
@@ -643,7 +643,7 @@
       "dispatched_at": "2026-10-01T08:38:56+00:00"
     },
     "G3": {
-      "status": "pending",
+      "status": "done",
       "model": "opus",
       "size": "micro",
       "batch": null,
@@ -666,8 +666,8 @@
       ],
       "done_when": "docs/gates/G3.md records Drew's pass on tablet and laptop and any findings filed as new tasks.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null
+      "completed_at": "2026-10-03T05:35:54+00:00",
+      "completed_by": "orchestrator"
     },
     "4.1": {
       "status": "done",
@@ -1963,6 +1963,14 @@
       "question": "Share-link size caps (R-5.6): refuse links over 32 KB compressed, 256 KB decompressed, more than 100 parts or 200 wires (busy-workbench is 25 parts / 43 wires). Acceptable limits for Levels 1-2 and the ladder to ~12?",
       "recommendation": "Accept for launch; revisit when Level 3+ kits exceed 50 parts",
       "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D95",
+      "question": "G3 sign-off: wire both Level 1 robots by hand on the iPad (Safari) and a laptop using docs/gates/G3-howto.md (pnpm gate:g3); both run; list view drives the same build. Pass or fail, with findings?",
+      "recommendation": "Drew runs the session; findings become fix tasks before 4.2-4.8 land. G3 closed PROVISIONAL meanwhile.",
+      "confidence": "high",
       "blocks": [],
       "resolved": false
     }
