@@ -18,7 +18,7 @@ import type { Palette } from '../renderer/style.ts';
 import type { CanvasSurface } from '../renderer/surface.ts';
 import type { DrawContext } from '../renderer/views.ts';
 import { arenaToCanvas } from '../scene/arena.ts';
-import { rectOfPoints } from '../scene/geometry.ts';
+import { distanceToSegment, rectOfPoints } from '../scene/geometry.ts';
 import type { Rect } from '../scene/geometry.ts';
 import type { Hit } from '../scene/hit.ts';
 import type { SceneWire } from '../scene/scene.ts';
@@ -93,6 +93,7 @@ export class SelectionController {
     canvas.addEventListener('pointerdown', this.pressBegan, { capture: true });
     canvas.addEventListener('pointerup', this.pressEnded);
     canvas.addEventListener('pointercancel', this.pressEnded);
+    canvas.addEventListener('lostpointercapture', this.pressEnded);
     // The label and the bin keep their screen size at every zoom.
     this.offZoom = this.surface.on('zoom', () => {
       this.drawProp();
@@ -183,6 +184,17 @@ export class SelectionController {
     this.redraw();
   }
 
+  /**
+   * Run mode, each painted frame: the selected wire's label and a selected prop's ring go where the Run draws the line
+   * and the prop now (task 3.5 moves the robot and its lines, and the props, without a rebuild).
+   */
+  followRun(): void {
+    // Called while a frame is drawn: it moves what that frame shows, and asks for no frame of its own.
+    if (this.destroyed || this.current === null) return;
+    if (this.current.kind === 'wire') this.drawLabel(false);
+    else if (this.current.kind === 'prop') this.drawProp(false);
+  }
+
   /** Run keeps the selection, for the spec card's live readouts; back in Build its handles or bin show again. */
   modeChanged(): void {
     this.press?.cancel();
@@ -200,6 +212,7 @@ export class SelectionController {
     this.surface.canvas.removeEventListener('pointerdown', this.pressBegan, { capture: true });
     this.surface.canvas.removeEventListener('pointerup', this.pressEnded);
     this.surface.canvas.removeEventListener('pointercancel', this.pressEnded);
+    this.surface.canvas.removeEventListener('lostpointercapture', this.pressEnded);
     this.ring.graphics.destroy();
     this.propBin.graphics.destroy();
     this.marks.graphics.destroy();
@@ -301,7 +314,9 @@ export class SelectionController {
       else if (this.current?.kind === 'prop') this.choose(null);
       return;
     }
-    const hit = this.surface.hitAt(screen);
+    // In Run mode the robot and its lines move: a line is hit where the Run draws it, above the parts, as in Build.
+    const runWire = this.surface.mode === 'run' ? this.runWireAt(world) : undefined;
+    const hit: Hit | null = runWire ? { kind: 'wire', wire: runWire } : this.surface.hitAt(screen);
     const prop = hit === null && this.surface.mode === 'build' ? this.propAt(world) : undefined;
     const next: Selection | null =
       hit?.kind === 'wire'
@@ -349,7 +364,7 @@ export class SelectionController {
   }
 
   /** The ring round a selected prop, and in Build mode its bin when it is the child's (the preset's stay). */
-  private drawProp(): void {
+  private drawProp(request = true): void {
     const scale = this.surface.camera.scale;
     const radius = HANDLE_PX / 2 / scale;
     const current = this.current;
@@ -360,9 +375,11 @@ export class SelectionController {
       this.propBin.draw(new Map(), radius, this.palette);
       return;
     }
-    const corners = propOutline(prop, prop.at).map((corner) => arenaToCanvas(arena.matrix, corner));
+    // In Run mode a prop the robot pushes is where the Run draws it now.
+    const at = (this.surface.mode === 'run' ? this.surface.run.shown?.props.get(prop.id) : undefined) ?? prop.at;
+    const corners = propOutline(prop, at).map((corner) => arenaToCanvas(arena.matrix, corner));
     if (prop.shape === 'cylinder') {
-      this.ring.draw({ kind: 'circle', at: arenaToCanvas(arena.matrix, prop.at), r: prop.size.x / 2 }, this.palette);
+      this.ring.draw({ kind: 'circle', at: arenaToCanvas(arena.matrix, at), r: prop.size.x / 2 }, this.palette);
     } else {
       this.ring.draw({ kind: 'outline', corners }, this.palette);
     }
@@ -380,30 +397,30 @@ export class SelectionController {
       leftHanded: this.host.prefs().leftHanded,
     });
     this.propBin.draw(places, radius, this.palette);
-    this.surface.requestFrame();
+    if (request) this.surface.requestFrame();
   }
 
   /**
    * What flows on the selected wire, in one word on the wire itself: a pill over the line at the middle of the path it
    * is drawn along, slid along the line off any socket and the bin, and off other lines where it can (label.ts).
    */
-  private drawLabel(): void {
+  private drawLabel(request = true): void {
     const current = this.current;
     const wire = current?.kind === 'wire' ? wireOf(this.surface.scene, current.wireId) : undefined;
     if (!wire) {
       this.label.hide();
       this.labelBox = undefined;
-      this.surface.requestFrame();
+      if (request) this.surface.requestFrame();
       return;
     }
     const scale = this.surface.camera.scale;
     const size = this.label.measure(flowLine(wire.kind), this.host.drawContext(), scale);
-    const pathOf = (each: SceneWire): readonly Vec2[] => this.surface.wireView(each.id)?.path ?? [each.from.at, each.to.at];
+    const pathOf = (each: SceneWire): readonly Vec2[] => this.drawnPath(each);
     const bin = this.surface.wiring.binPlace;
     const at = placeLabel({
       path: pathOf(wire),
       size,
-      avoid: [...this.socketCircles(), ...(bin ? [{ ...bin, r: HANDLE_PX / 2 / scale }] : [])],
+      avoid: [...this.socketCircles(true), ...(bin ? [{ ...bin, r: HANDLE_PX / 2 / scale }] : [])],
       others: allWires(this.surface.scene)
         .filter((other) => other.id !== wire.id && other.kind !== 'mount')
         .map(pathOf),
@@ -411,7 +428,7 @@ export class SelectionController {
     });
     this.label.place(at, size, this.palette, scale);
     this.labelBox = { at, ...size };
-    this.surface.requestFrame();
+    if (request) this.surface.requestFrame();
   }
 
   /** The hint rung, pulsing; still with reduced motion. Hidden in Run mode. */
@@ -495,8 +512,33 @@ export class SelectionController {
     return [...arena.props].reverse().find((prop) => onProp(prop, point));
   }
 
-  private socketCircles(): Circle[] {
-    return drawnSockets(this.surface.scene).map((port) => ({ ...port.at, r: SOCKET_REACH_MM }));
+  /** The drawn sockets, where the build has them, or with `asDrawn` in Run mode where the Run draws them now. */
+  private socketCircles(asDrawn = false): Circle[] {
+    const run = asDrawn && this.surface.mode === 'run' ? this.surface.run : undefined;
+    return drawnSockets(this.surface.scene).map((port) => ({
+      ...(run ? run.partPoint(port.ref.part, port.local) : port.at),
+      r: SOCKET_REACH_MM,
+    }));
+  }
+
+  /** A line's path as drawn now: in Run mode where the Run draws it (it moves with the robot), else its view's path. */
+  private drawnPath(wire: SceneWire): readonly Vec2[] {
+    if (this.surface.mode === 'run') {
+      const ends = this.surface.run.endsOf(wire.id);
+      if (ends) return ends;
+    }
+    return this.surface.wireView(wire.id)?.path ?? [wire.from.at, wire.to.at];
+  }
+
+  /** The topmost power or signal line drawn at a canvas point in Run mode, where the Run draws it (24 px hit area). */
+  private runWireAt(world: Vec2): SceneWire | undefined {
+    const wires = this.surface.scene.wires;
+    for (let i = wires.length - 1; i >= 0; i--) {
+      const wire = wires[i] as SceneWire;
+      const [a, b] = this.drawnPath(wire) as [Vec2, Vec2];
+      if (distanceToSegment(world, a, b) <= WIRE_HIT_MM / 2) return wire;
+    }
+    return undefined;
   }
 
   /** Every socket the canvas draws, a frame's mount points too: a hint covers none of them. */

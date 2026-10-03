@@ -15,6 +15,7 @@ export interface Place {
   readonly page: Vec2;
 }
 
+/** In Run mode, where a part, a socket or a line is drawn now, as the Run moves the robot. */
 export interface PartPlace {
   /** The part's frame origin, where its tile is centred. */
   readonly centre: Place;
@@ -94,6 +95,8 @@ export const probeCanvas = (handle: CanvasHandle): CanvasProbe => {
     return { x: box.left + screen.x, y: box.top + screen.y };
   };
   const place = (world: Vec2): Place => ({ world: { x: world.x, y: world.y }, page: pageOf(world) });
+  /** In Run mode parts, sockets and lines are where the Run draws them now (task 3.5), not where the build has them. */
+  const running = (): boolean => surface.mode === 'run';
   return {
     ready: surface.ready,
     get settled() {
@@ -119,20 +122,33 @@ export const probeCanvas = (handle: CanvasHandle): CanvasProbe => {
     part: (id) => {
       const part = surface.scene.partById.get(id);
       if (!part) return undefined;
-      return { centre: place({ x: part.pose.x, y: part.pose.y }), corners: part.corners.map(place) };
+      if (!running()) return { centre: place({ x: part.pose.x, y: part.pose.y }), corners: part.corners.map(place) };
+      const { w, h } = part.tile;
+      const corners = [
+        { x: -w / 2, y: h / 2 },
+        { x: w / 2, y: h / 2 },
+        { x: w / 2, y: -h / 2 },
+        { x: -w / 2, y: -h / 2 },
+      ];
+      return { centre: place(surface.run.partPoint(id, { x: 0, y: 0 })), corners: corners.map((corner) => place(surface.run.partPoint(id, corner))) };
     },
     socket: (port) => {
       const key = typeof port === 'string' ? port : `${port.part}.${port.port}`;
       const socket = surface.scene.portByKey.get(key);
       if (!socket) return undefined;
+      if (running()) {
+        const at = place(surface.run.partPoint(socket.ref.part, socket.local));
+        return { at, press: at, fanned: false };
+      }
       const fanned = surface.wiring.fanned?.get(key);
       return { at: place(socket.at), press: place(fanned ?? socket.at), fanned: fanned !== undefined };
     },
     wire: (id) => {
       const wire = wireOf(surface.scene, id);
       if (!wire) return undefined;
-      const middle = { x: (wire.from.at.x + wire.to.at.x) / 2, y: (wire.from.at.y + wire.to.at.y) / 2 };
-      return { from: place(wire.from.at), to: place(wire.to.at), middle: place(middle) };
+      const [from, to] = (running() ? surface.run.endsOf(id) : undefined) ?? [wire.from.at, wire.to.at];
+      const middle = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
+      return { from: place(from), to: place(to), middle: place(middle) };
     },
     handles: () => {
       const shown = new Map<'move' | 'rotate' | 'bin', Place>();

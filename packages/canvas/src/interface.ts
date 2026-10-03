@@ -143,7 +143,12 @@ export interface CanvasHandle {
    * A read-only canvas shows the build in either mode and never lets it change. Task 3.1.
    */
   setMode(mode: CanvasMode): void;
-  /** Run mode: live values, motion, sounds' visual twins and faults for one tick, from Simulation.step. Ignored in Build mode. Task 3.5. */
+  /**
+   * Run mode: live values, motion, sounds' visual twins and faults for one tick, from Simulation.step. Ignored in Build
+   * mode. Task 3.5. Give each frame once, in tick order: a frame at the same or an earlier tick than the last starts
+   * the drawing again (a restore). The one-second spin-up is tick 0's frame given once and held, not given again
+   * (packages/canvas/docs/run-animation.md).
+   */
   applyRunFrame(frame: RunFrame): void;
   /**
    * Draws one hint rung over everything without covering a port. A target given by type (`{ part }`) matches

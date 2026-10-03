@@ -10,10 +10,12 @@ import { STANDARD_PALETTE } from '../../src/renderer/style.ts';
 import { PORT_MM, WIRE_HIT_MM } from '../../src/scene/units.ts';
 import { HINT_GAP_MM, HINT_RING_MM, PROP_RING_MM, SOCKET_REACH_MM } from '../../src/selection/views.ts';
 import { distanceToSegment } from '../../src/scene/geometry.ts';
+import { hitTest } from '../../src/scene/hit.ts';
 import { BESIDE_STEPS } from '../../src/selection/label.ts';
 import { probeCanvas } from '../../src/testing.ts';
 import type { CanvasProbe } from '../../src/testing.ts';
 import { blueprintOf, fixture } from '../helpers/catalogue.ts';
+import { rollingStartFrame } from '../helpers/run-frames.ts';
 import { PREFS, colourDistance, describeRgb, frames, listen, mount, rgbOf, settle, shoot, unmountAll } from './helpers.ts';
 import type { Shot } from './helpers.ts';
 import { pictures, tap } from './placing.ts';
@@ -85,7 +87,8 @@ const onWire = (id: WireId): Vec2 => {
   if (!wire) throw new Error(`no wire ${id}`);
   for (const t of [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8]) {
     const at = { x: wire.from.world.x + (wire.to.world.x - wire.from.world.x) * t, y: wire.from.world.y + (wire.to.world.y - wire.from.world.y) * t };
-    const hit = surface.hitAt(screenOf(at));
+    // The scene's own hit test: in Run mode (no frames yet) the lines are where the build has them.
+    const hit = hitTest(surface.scene, at);
     if (hit?.kind === 'wire' && hit.wire.id === id) return probe.pageOf(at);
   }
   throw new Error(`no spot on ${id} reaches it`);
@@ -216,6 +219,51 @@ describe('the list view (task 3.6)', () => {
     surface.showHint({ step: 'pulse-part', target: { placed: 'switch' }, line: 'The switch' });
     surface.clearHints();
     expect(surface.listView.hint).toBeUndefined();
+  });
+});
+
+describe('Run mode moves the robot (task 3.5): selection follows what the Run draws', () => {
+  /** Run mode with the robot driven 100 mm forward: frame 0 at the start pose, then tick 1 at arena x 400. */
+  const driven = async (): Promise<void> => {
+    surface.setMode('run');
+    surface.applyRunFrame(rollingStartFrame(0));
+    surface.applyRunFrame(rollingStartFrame(1, { x: 400 }));
+    await settle(surface);
+  };
+
+  it('selects a wire by tap where the Run draws it, not where the build has it', async () => {
+    const built = probe.wire('w8');
+    await driven();
+    const drawn = probe.wire('w8');
+    if (!built || !drawn) throw new Error('no w8');
+    expect(drawn.middle.world.x - built.middle.world.x).toBeCloseTo(100, 6);
+    const events = listen(surface, 'select');
+    await tap('touch', drawn.middle.page);
+    expect(surface.selection).toEqual({ kind: 'wire', wireId: 'w8' });
+    expect(probe.wireLabel).toBe('power');
+    await tap('mouse', probe.pageOf({ x: 100, y: 140 }));
+    expect(selections(events)).toEqual([{ kind: 'wire', wireId: 'w8' }, null]);
+  });
+
+  it('keeps the label on the selected wire as the robot drives', async () => {
+    surface.select({ kind: 'wire', wireId: 'w8' });
+    await show();
+    const before = probe.wireLabelBox?.centre.world;
+    await driven();
+    const after = probe.wireLabelBox?.centre.world;
+    // The robot drove 100 mm; the label went with its line (it may sit at another stop along it, with no bin in Run).
+    expect((after?.x ?? 0) - (before?.x ?? 0), 'the label moved with the robot').toBeGreaterThan(50);
+    expectLabelOn('w8', await shoot(surface.canvas));
+  });
+
+  it('flips the selected manual switch with Enter (D42)', async () => {
+    const controls = listen(surface, 'control');
+    surface.select({ kind: 'part', partId: 'switch' });
+    surface.setMode('run');
+    surface.applyRunFrame(rollingStartFrame(0));
+    await settle(surface);
+    key('Enter');
+    expect(controls.map((control) => control.input)).toEqual([{ partId: 'switch', kind: 'switch', closed: expect.any(Boolean) }]);
   });
 });
 

@@ -13,11 +13,14 @@ part led da7f1e454d72d95f
 part switch bcdbfddbd71ae424
 record 79d3a039a3f513f289eba300102bf39134c5939af2c88a5a9b0976fe8f93140b
 faults none
-subjects battery led switch
+subjects battery led switch wire:w1 wire:w2 wire:w3
 tick 0 5cb58f02
   battery volts=2.994 milliamps=14.9 charge=1 x=220 y=600 heading=0
   led volts=2.994 milliamps=14.9 light=0.995 x=380 y=600 heading=0
   switch volts=0 milliamps=14.9 closed=true x=300 y=660 heading=0
+  wire:w1 milliamps=14.9
+  wire:w2 milliamps=-14.9
+  wire:w3 milliamps=-14.9
 tick 1 37517e5f
 tick 2 201b614f
 tick 3 09c0fb38
@@ -32,6 +35,9 @@ tick 11 ff9d9f1b
   battery volts=3 milliamps=0
   led volts=0 milliamps=0 light=0
   switch volts=3 milliamps=0 closed=false
+  wire:w1 milliamps=0
+  wire:w2 milliamps=0
+  wire:w3 milliamps=0
 tick 12 37517e5f
 tick 13 37517e5f
 tick 14 37517e5f
@@ -45,6 +51,9 @@ tick 21 1f0e3396
   battery volts=2.994 milliamps=14.9
   led volts=2.994 milliamps=14.9 light=0.995
   switch volts=0 milliamps=14.9 closed=true
+  wire:w1 milliamps=14.9
+  wire:w2 milliamps=-14.9
+  wire:w3 milliamps=-14.9
 tick 22 a3a02ab4
 tick 23 429c488a
 tick 24 ef80c509
