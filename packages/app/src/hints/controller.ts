@@ -213,6 +213,12 @@ export class HintLadderController {
         this.sync();
         return false;
       }
+      // Do-it fixed the fault its ladder is about: that ladder stays retired until a Run shows the fault again (R-4.6
+      // finding 1), so a later edit never points the child back at a part that is no longer faulty.
+      const when = choice.ladder.when;
+      if (when?.kind === 'fault' && choice.part !== undefined) {
+        this.faults = this.faults.filter((fault) => !(fault.partId === choice.part && fault.failure === when.failure));
+      }
       // The canvas's edit may already have moved the build onto another ladder (this one's trigger no longer holds).
       // A ladder still in place is done until the build changes again.
       this.sync();

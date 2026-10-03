@@ -111,7 +111,7 @@ Taken conservatively, for Drew and the orchestrator:
 
 1. **What an offer does.** After two missed Runs the ladder draws its next drawn rung itself and the button pulses; the count starts again after any step. It never offers do-it, which changes the build. Whether an offer should only pulse the button, or only ever draw the first rung, is open.
 2. **Do-it's line shows** as quiet text beside the button (brief Section 12: "does the action and says what it did"), while drawn rungs' lines are only the text twin. Whether it should be spoken only is open.
-3. **Where the ladder starts again.** A ladder keeps its place while it applies; a finished ladder starts again once the build changes from what do-it left. A `fault` trigger waits for a Run that shows the fault.
+3. **Where the ladder starts again.** A ladder keeps its place while it applies; a finished ladder starts again once the build changes from what do-it left. A `fault` trigger waits for a Run that shows the fault, and once do-it fixes it the ladder stays retired, through any edit, until a Run shows that fault again (R-4.6 finding 1).
 4. **A type target do-it cannot narrow** (no trigger part of that type) uses the first part of the type, in id order, that the change fits.
 5. **Missed Runs are judged from the run loop's frames** by the same GoalWatch the recorder's `judgeRun` uses, rather than read from the stored records, so the ladder works on a device that keeps nothing.
 6. **The button's word is "Hint"**, with no reason line when it rests.

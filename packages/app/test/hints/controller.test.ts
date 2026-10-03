@@ -237,6 +237,32 @@ describe('Runs that miss the goal', { timeout: 60_000 }, () => {
     ladder.dispose();
   });
 
+  it('retires a fault ladder once do-it fixes the fault, through later edits, until a Run shows the fault again (R-4.6)', async () => {
+    const broken = fixture('broken-reversed-motor');
+    const challenge = example('one-motor-backwards', broken);
+    const { canvas, log, ladder, loop, runFor } = setUp(challenge, broken);
+    await runFor(60);
+    for (let tap = 0; tap < 4; tap += 1) expect(ladder.ask()).toBe(true);
+    expect(canvas.applied).toHaveLength(1);
+    // A later edit, with no Run between: the motor is wired right now, so the ladder stays retired.
+    canvas.apply({ kind: 'place-part', part: 'led' });
+    ladder.buildChanged();
+    expect(ladder.state.available).toBe(false);
+    expect(ladder.ask()).toBe(false);
+    expect(canvas.shown).toBeNull();
+    expect(log.pending(canvas.blueprint as Blueprint).map((use) => use.step)).toEqual(['pulse-part', 'pulse-port', 'ghost-wire', 'do-it']);
+    // The motor wired backwards again: the ladder waits for the Run that shows the fault, then starts from its first rung.
+    canvas.blueprint = broken;
+    ladder.buildChanged();
+    expect(ladder.state.available).toBe(false);
+    await runFor(60);
+    expect(ladder.state.available).toBe(true);
+    expect(ladder.ask()).toBe(true);
+    expect(canvas.shown).toMatchObject({ step: 'pulse-part', target: { placed: 'motor-right' } });
+    loop.dispose();
+    ladder.dispose();
+  });
+
   it('clears the rung and the count when a Run meets the goal', async () => {
     const lit = contentFixture('led-and-buzzer-robot');
     const base = example('drive-and-light', lit.blueprint);
