@@ -7,6 +7,9 @@ import { serializeBlueprint } from '@servo/schema';
 import type { Blueprint, PlacedPartId } from '@servo/schema';
 import { STEP_KINDS, describeStep } from './plan.ts';
 import type { BuildPlan, Step, StepKind } from './plan.ts';
+import type { Verdict } from './report.ts';
+
+export type { Verdict } from './report.ts';
 
 export type PathFamily = 'commands' | 'touch' | 'pointer' | 'list view';
 
@@ -36,7 +39,7 @@ export interface PendingSteps {
 
 export interface ParityResult {
   readonly fixture: string;
-  readonly verdict: 'identical' | 'mismatch' | 'pending';
+  readonly verdict: Verdict;
   /** The steps the compared paths took, by kind. */
   readonly compared: Readonly<Record<StepKind, number>>;
   /** Steps left out for every path, by kind and the tasks they wait for. */
@@ -193,7 +196,8 @@ export const checkParity = async (plan: BuildPlan, reference: InputPath, others:
     }
   }
 
-  const verdict = mismatches.length > 0 ? 'mismatch' : identical.length > 1 ? 'identical' : 'pending';
+  const verdict: Verdict =
+    mismatches.length > 0 ? 'mismatch' : identical.length < 2 ? 'pending' : pending.length > 0 || waiting.length > 0 ? 'partial' : 'identical';
   return { fixture: plan.fixture, verdict, compared, pending, identical, mismatches, waiting, bytes };
 };
 
@@ -275,6 +279,8 @@ export const reportLine = (result: ParityResult): string => {
     if (result.identical.length > 0) parts.push(`identical on ${listed(result.identical)} (${steps})`);
   } else if (result.verdict === 'identical') {
     parts.push(`identical on ${listed(result.identical)} (${steps})`);
+  } else if (result.verdict === 'partial') {
+    parts.push(`partial: identical on ${listed(result.identical)} (${steps})`);
   }
   if (result.pending.length > 0) {
     const byTasks = new Map<string, PendingSteps[]>();
@@ -287,8 +293,25 @@ export const reportLine = (result: ParityResult): string => {
   return `${result.fixture}: ${parts.join('; ')}`;
 };
 
-/** The closing line: how many fixtures were identical, mismatched and pending. */
-export const reportSummary = (results: readonly ParityResult[]): string => {
-  const count = (verdict: ParityResult['verdict']): number => results.filter((result) => result.verdict === verdict).length;
-  return `${results.length} fixtures: ${count('identical')} identical, ${count('mismatch')} mismatched, ${count('pending')} pending`;
+/**
+ * Strict mode (`SERVO_PARITY_STRICT=1`, for gate G3): a fixture passes only when every path built every step to the
+ * same bytes, so a step left out or a path waiting fails it as a difference would.
+ */
+export const passes = (result: ParityResult, strict: boolean): boolean => result.verdict !== 'mismatch' && (!strict || result.verdict === 'identical');
+
+/**
+ * Splits fixtures into `count` groups of about equal work, for the parity check's test files: each fixture, the
+ * heaviest first, goes to the group with the least work so far (ties to the lowest group). `weight` is a fixture's
+ * work, its plan's steps. Deterministic: the same fixtures give the same groups.
+ */
+export const fixtureGroups = <T>(fixtures: readonly T[], count: number, weight: (fixture: T) => number): T[][] => {
+  const groups: T[][] = Array.from({ length: count }, () => []);
+  const loads = Array.from({ length: count }, () => 0);
+  const order = fixtures.map((fixture, index) => ({ fixture, index, weight: weight(fixture) })).sort((a, b) => b.weight - a.weight || a.index - b.index);
+  for (const { fixture, weight: work } of order) {
+    const lightest = loads.indexOf(Math.min(...loads));
+    groups[lightest]?.push(fixture);
+    loads[lightest] = (loads[lightest] ?? 0) + work;
+  }
+  return groups;
 };

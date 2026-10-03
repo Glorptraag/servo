@@ -3,7 +3,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { loadFixtures } from '@servo/content/fixtures';
 import type { Blueprint } from '@servo/schema';
-import { BUILT_BY, READY, attempt, checkParity, describeDifference, pendingTasks, reportLine, reportSummary, waitingLike } from '../src/e2e/parity.ts';
+import { BUILT_BY, READY, attempt, checkParity, describeDifference, fixtureGroups, passes, pendingTasks, reportLine, waitingLike } from '../src/e2e/parity.ts';
+import { reportSummary } from '../src/e2e/report.ts';
 import type { Capability, InputPath, PathBuild, PathFamily } from '../src/e2e/parity.ts';
 import type { BuildPlan, Step, StepKind } from '../src/e2e/plan.ts';
 
@@ -74,19 +75,19 @@ describe('checkParity', () => {
     );
   });
 
-  it('leaves out every step the reference cannot take yet, for every path, by the tasks it waits for', async () => {
+  it('leaves out every step the reference cannot take yet, for every path, by the tasks it waits for: partial', async () => {
     const can = { place: READY, setting: READY, connect: waiting('3.3'), refuse: waiting('3.3') };
     const reference = fake('commands', 'commands', can);
     const touch = fake('touch drag', 'touch', can);
     const result = await checkParity(plan, reference, [touch]);
-    expect(result.verdict).toBe('identical');
+    expect(result.verdict).toBe('partial');
     expect(touch.calls).toEqual([steps.slice(0, 4)]);
     expect(result.pending).toEqual([
       { kind: 'connect', count: 1, tasks: ['3.3'] },
       { kind: 'refuse', count: 1, tasks: ['3.3'] },
     ]);
     expect(reportLine(result)).toBe(
-      'test-robot: identical on commands and touch drag (3 placements and 1 setting); pending: needs task 3.3 (1 wire and 1 refused drop)',
+      'test-robot: partial: identical on commands and touch drag (3 placements and 1 setting); pending: needs task 3.3 (1 wire and 1 refused drop)',
     );
   });
 
@@ -108,15 +109,27 @@ describe('checkParity', () => {
     );
   });
 
-  it('lets a path that cannot take a compared step wait, and builds nothing on it', async () => {
+  it('lets a path that cannot take a compared step wait, builds nothing on it, and calls the fixture partial', async () => {
     const reference = fake('commands', 'commands', all(READY));
     const touch = fake('touch drag', 'touch', all(READY));
     const list = fake('list view', 'list view', all(waiting('3.6')));
     const result = await checkParity(plan, reference, [touch, list]);
-    expect(result.verdict).toBe('identical');
+    expect(result.verdict).toBe('partial');
     expect(list.calls).toEqual([]);
     expect(result.waiting).toEqual([{ path: 'list view', tasks: ['3.6'] }]);
-    expect(reportLine(result)).toMatch(/; list view needs task 3\.6$/);
+    expect(reportLine(result)).toBe(
+      'test-robot: partial: identical on commands and touch drag (3 placements, 1 setting, 1 wire and 1 refused drop); list view needs task 3.6',
+    );
+  });
+
+  it('passes a partial fixture, and fails it in strict mode (gate G3); a mismatch fails either way', async () => {
+    const reference = fake('commands', 'commands', all(READY));
+    const partial = await checkParity(plan, reference, [fake('touch drag', 'touch', all(READY)), fake('list view', 'list view', all(waiting('3.6')))]);
+    const whole = await checkParity(plan, reference, [fake('touch drag', 'touch', all(READY))]);
+    const differs = await checkParity(plan, reference, [fake('touch drag', 'touch', all(READY), (taken) => ({ ok: true, blueprint: buildOf(taken, { index: 0, x: 1 }) }))]);
+    expect([passes(partial, false), passes(partial, true)]).toEqual([true, false]);
+    expect([passes(whole, false), passes(whole, true)]).toEqual([true, true]);
+    expect([passes(differs, false), passes(differs, true)]).toEqual([false, false]);
   });
 
   it('reports a path whose build differs, part by part, and keeps both builds’ bytes for the diff', async () => {
@@ -165,7 +178,24 @@ describe('checkParity', () => {
     const reference = fake('commands', 'commands', all(READY));
     const identical = await checkParity(plan, reference, [fake('touch drag', 'touch', all(READY))]);
     const pending = await checkParity(plan, fake('commands', 'commands', all(waiting('3.2'))), []);
-    expect(reportSummary([identical, pending, pending])).toBe('3 fixtures: 1 identical, 0 mismatched, 2 pending');
+    expect(reportSummary([identical.verdict, pending.verdict, pending.verdict])).toBe('3 fixtures: 1 identical, 0 partial, 0 mismatched, 2 pending');
+  });
+});
+
+describe('fixtureGroups', () => {
+  it('splits fixtures into groups of about equal work, heaviest first, each in one group', () => {
+    const weights = { a: 59, b: 24, c: 24, d: 20, e: 17, f: 17, g: 16, h: 12, i: 6 };
+    const names = Object.keys(weights) as (keyof typeof weights)[];
+    const groups = fixtureGroups(names, 3, (name) => weights[name]);
+    expect(groups).toEqual([['a', 'i'], ['b', 'd', 'g'], ['c', 'e', 'f', 'h']]);
+    const loads = groups.map((group) => group.reduce((sum, name) => sum + weights[name], 0));
+    expect(Math.max(...loads) - Math.min(...loads)).toBeLessThanOrEqual(weights.a);
+    expect(groups.flat().sort()).toEqual([...names].sort());
+  });
+
+  it('gives the same groups for the same fixtures, and empty groups when there are fewer fixtures than groups', () => {
+    expect(fixtureGroups(['x', 'y'], 3, () => 1)).toEqual([['x'], ['y'], []]);
+    expect(fixtureGroups(['x', 'y', 'z'], 2, () => 1)).toEqual(fixtureGroups(['x', 'y', 'z'], 2, () => 1));
   });
 });
 

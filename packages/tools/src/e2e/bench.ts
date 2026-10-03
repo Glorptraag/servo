@@ -35,10 +35,13 @@ export const benchContent = (): Content => {
 export const registryArt: ResolveArt = (key) => benchContent().art.get(key);
 
 /**
- * What the harness reads from the canvas beyond its interface (packages/canvas/src/interface.ts): the renderer's hooks
- * for the later canvas tasks (packages/canvas/docs/renderer.md). The handle has no way yet to say where a canvas point
- * is on screen or when a frame is final, and a hand needs both. Read at run time, never imported, so the harness stays
- * inside the package map; `hooksOf` names any member that goes missing.
+ * What the harness reads from the canvas beyond its interface (packages/canvas/src/interface.ts): members of the
+ * renderer's surface as built (task 3.1's `CanvasSurface`). renderer.md lists `scene` and `requestFrame` among its
+ * hooks for later canvas tasks; the rest are the surface's own. The handle has no way yet to say where a canvas point
+ * or a socket is on screen, or when a frame is final, and a hand needs all three: review R-3.8 (finding 5) asks for a
+ * tools-only testing entry on the canvas, which a later canvas task gives. Until then they are read at run time
+ * through one cast, never imported, so the harness stays inside the package map; `hooksOf` names any that go missing,
+ * and the view is moved by writing the camera's centre and zoom (`setView`).
  */
 export interface RendererHooks {
   /** Resolves once the GPU renderer is up. */
@@ -58,7 +61,13 @@ export interface RendererHooks {
   };
   readonly scene: {
     /** Every socket by `<part>.<port>`, with where it sits on the canvas (mm). */
-    readonly portByKey: ReadonlyMap<string, { readonly at: Vec2 }>;
+    readonly portByKey: ReadonlyMap<string, SceneSocket>;
+    /** In draw order: a later part's tile covers an earlier one's. */
+    readonly parts: readonly SceneTile[];
+    /** Power and signal lines, drawn above every part and under every socket. */
+    readonly wires: readonly SceneLine[];
+    /** Mechanical linkages, drawn under every part but a frame. */
+    readonly linkages: readonly SceneLine[];
   };
   requestFrame(): void;
   /**
@@ -67,6 +76,30 @@ export interface RendererHooks {
    * Optional: read only when present.
    */
   readonly wiring?: { readonly fanned?: ReadonlyMap<string, Vec2> };
+}
+
+/** A socket as the scene places it. `ports` sockets draw above every part and wire; a frame's mount points under its parts. */
+export interface SceneSocket {
+  readonly key: string;
+  readonly at: Vec2;
+  readonly layer: string;
+}
+
+/** A part's tile as the scene lays it out: its size and its corners on the canvas (mm), clockwise from the back left. */
+export interface SceneTile {
+  readonly id: string;
+  readonly tile: { readonly w: number; readonly h: number };
+  readonly corners: readonly Vec2[];
+  readonly record: { readonly id: string };
+  readonly ports: readonly SceneSocket[];
+}
+
+/** A line between two sockets: power or signal, or a mechanical linkage. */
+export interface SceneLine {
+  readonly id: string;
+  readonly type: string;
+  readonly from: SceneSocket;
+  readonly to: SceneSocket;
 }
 
 const HOOKS: readonly (keyof RendererHooks)[] = ['ready', 'settled', 'gridOpacity', 'canvas', 'camera', 'scene', 'requestFrame'];

@@ -1,9 +1,10 @@
 // The canvas e2e harness (task 3.8): `pnpm e2e` at the repo root runs `pnpm art`, then this config from packages/tools.
 // Two Vitest browser projects in Playwright's Chromium, in the iPad profile (profile.ts), one after the other:
 // - `e2e` renders on SwiftShader, the same software GPU on every machine, so screenshots and pixel probes match
-//   between a laptop and CI: the parity check, screenshots and gestures.
+//   between a laptop and CI: the parity check, screenshots, their mutation test and gestures.
 // - `performance` runs the frame-time measurement on the machine's own GPU where it has one, last and alone.
-// See README.md.
+// CI runs the files as shards (.github/workflows/ci.yml); `pnpm e2e` with no files runs them all. SERVO_PARITY_STRICT=1
+// makes a parity fixture with a step left out or a path waiting fail (gate G3). See README.md.
 import { fileURLToPath } from 'node:url';
 import { playwright } from '@vitest/browser-playwright';
 import { defineConfig } from 'vitest/config';
@@ -39,22 +40,13 @@ const browserProject = (name: string, include: string[], exclude: string[], flag
         },
       }),
       instances: [{ browser: 'chromium' }],
+      // A loaded machine can take over a minute to bring the page up with the canvas and its pictures.
+      connectTimeout: 180_000,
       viewport: { width: IPAD.width, height: IPAD.height },
+      // Screenshots are compared by the harness's own rule (src/e2e/pixels.ts, screenshots.ts), not Vitest's.
       screenshotFailures: false,
-      expect: {
-        toMatchScreenshot: {
-          comparatorName: 'pixelmatch',
-          // A pixel differs past 3% (YIQ); up to 0.5% of pixels may differ, for anti-aliasing between machines.
-          comparatorOptions: { threshold: 0.03, allowedMismatchedPixelRatio: 0.005 },
-          // A 2360 × 1640 screenshot rendered in software takes a while; two in a row must match.
-          timeout: 30_000,
-          // One reference for every platform: the pixels come from SwiftShader everywhere.
-          resolveScreenshotPath: ({ root: base, testFileDirectory, testFileName, arg, ext }) =>
-            `${base}/${testFileDirectory}/__screenshots__/${testFileName}/${arg}${ext}`,
-          resolveDiffPath: ({ root: base, testFileName, arg, ext }) => `${base}/node_modules/.vitest-screenshots/${testFileName}/${arg}${ext}`,
-        },
-      },
     },
+    provide: { parityStrict: process.env.SERVO_PARITY_STRICT === '1' },
   },
 });
 
