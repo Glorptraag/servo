@@ -208,3 +208,4 @@ Notes for later tasks:
 - LESSON: merge checks must run every browser file of a changed package (canvas browser project + e2e views), not only unit tests. 3.5 broke layers.test.ts and views e2e on CI 37091074167; fix on fix/run-layers by 3.5 builder.
 - CI GREEN on main (run 37092956291) after CI placement fix (test tray user-select) + run-layers fix. 3.3, 3.5, 3.6 done.
 - 5.6 merged + done (local app 254, parent 56, release:dry green; CI blocked only by 3.4's canvas failures, fix in flight on fix/selection-ci).
+- 3.7 merged eac2c99 (PASS @93aa16f + integration cc30450). Mark 3.4 and 3.7 done once fix/selection-ci lands and CI is green.
