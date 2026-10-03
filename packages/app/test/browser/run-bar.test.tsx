@@ -15,6 +15,7 @@ import { loadFixtures } from '@servo/content/fixtures';
 import { serializeBlueprint } from '@servo/schema';
 import type { Blueprint } from '@servo/schema';
 import type { RunFrame } from '@servo/sim-core';
+import { App } from '../../src/App.tsx';
 import { RUN_BAR_TEXT, RunBar, SPIN_UP_MS } from '../../src/run-bar/index.ts';
 import type { RunClock, RunLoop } from '../../src/run-bar/index.ts';
 import { PLACEHOLDER_SLOTS, SAVE_LINES, SaveControl, Shell, useShell } from '../../src/shell/index.ts';
@@ -413,5 +414,41 @@ describe('the Run bar', () => {
       [2, 1, 7],
     ]);
     expect(runs.every((run) => run.profile === app.child.profile)).toBe(true);
+  });
+});
+
+describe('the app’s Run bar and spec card together', () => {
+  it('gives the spec card each frame, so its live readouts follow the Run and clear on Stop', async () => {
+    const host = document.createElement('div');
+    host.style.cssText = 'position: fixed; left: 0; top: 0; width: 1180px; height: 820px;';
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    try {
+      await new Promise<void>((ready) => root.render(<App content={content} start={roller} onReady={ready} />));
+      // Select the left DC motor through the canvas's list view: the screen-reader path to the spec card.
+      const inList = (selector: string): HTMLButtonElement | null => host.querySelector<HTMLButtonElement>(`.servo-list-view ${selector}`);
+      await vi.waitFor(() => expect(inList('[data-toggle="part:motor-left"]')).not.toBeNull(), { timeout: 30_000 });
+      inList('[data-toggle="part:motor-left"]')?.click();
+      await vi.waitFor(() => expect(inList('[data-action="select:part:motor-left"]')).not.toBeNull(), SOON);
+      inList('[data-action="select:part:motor-left"]')?.click();
+      const card = (): HTMLElement => host.querySelector<HTMLElement>('[data-region="specCard"]') as HTMLElement;
+      await vi.waitFor(() => expect(card().dataset.shown).toBe('true'), SOON);
+      const readouts = (): Element | null => card().querySelector('.spec-card-readouts');
+      expect(readouts()).toBeNull();
+
+      const run = host.querySelector<HTMLButtonElement>('[data-region="runBar"] .run-bar-toggle') as HTMLButtonElement;
+      run.click();
+      // Live readouts appear with the Run, and change as it steps.
+      await vi.waitFor(() => expect(readouts()).not.toBeNull(), { timeout: 30_000 });
+      const values = (): string => [...card().querySelectorAll('.spec-card-readout')].map((readout) => readout.getAttribute('data-value')).join(' ');
+      const first = values();
+      await vi.waitFor(() => expect(values()).not.toBe(first), { timeout: 30_000 });
+      run.click();
+      await vi.waitFor(() => expect(readouts()).toBeNull(), SOON);
+      expect(run.textContent).toBe(RUN_BAR_TEXT.run);
+    } finally {
+      root.unmount();
+      host.remove();
+    }
   });
 });

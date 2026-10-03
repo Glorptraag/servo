@@ -159,3 +159,6 @@
 {"ts": "2026-10-03T05:36:05+00:00", "event": "dispatch", "tasks": ["4.2"]}
 {"ts": "2026-10-03T05:36:05+00:00", "event": "dispatch", "tasks": ["4.3"]}
 {"ts": "2026-10-03T05:36:05+00:00", "event": "dispatch", "tasks": ["4.4"]}
+{"ts": "2026-10-03T06:50:57+00:00", "event": "decision_add", "id": "D96", "blocks": []}
+{"ts": "2026-10-03T06:50:57+00:00", "event": "decision_add", "id": "D97", "blocks": []}
+{"ts": "2026-10-03T06:50:58+00:00", "event": "decision_add", "id": "D98", "blocks": []}

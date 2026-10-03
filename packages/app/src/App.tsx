@@ -7,8 +7,10 @@ import type { CanvasHandle, ResolveArt } from '@servo/canvas';
 import type { Content } from '@servo/content';
 import type { Blueprint, Level } from '@servo/schema';
 import { RunBar } from './run-bar/index.ts';
+import type { RunLoop } from './run-bar/index.ts';
 import { PLACEHOLDER_SLOTS, SaveControl, Shell } from './shell/index.ts';
 import type { Autosaver, CanvasSetup, ShellSlots } from './shell/index.ts';
+import { SpecCard, createRunFrames } from './spec-card/index.ts';
 import type { ProfileStore } from './store/index.ts';
 
 /** A child starts at Level 1 (brief Section 2); the level comes from progress once task 5.2 records it. */
@@ -27,7 +29,29 @@ export interface AppProps {
 }
 
 export const App = ({ content, child = null, start, saving, onReady }: AppProps) => {
-  const slots = useMemo<ShellSlots>(() => ({ ...PLACEHOLDER_SLOTS, save: <SaveControl saving={saving} />, runBar: <RunBar /> }), [saving]);
+  // The run loop (task 4.4) gives each Run frame to the spec card's live readouts, which clear whenever no Run plays:
+  // on Stop, on a failed Run, and while the next one loads.
+  const runFrames = useMemo(createRunFrames, []);
+  const joinRunLoop = useMemo(() => {
+    let off: (() => void) | undefined;
+    return (loop: RunLoop | null): void => {
+      off?.();
+      runFrames.clear();
+      off = loop?.subscribe((state, frame) => {
+        if (frame) runFrames.push(frame);
+        else if (state.phase !== 'spin-up' && state.phase !== 'running') runFrames.clear();
+      });
+    };
+  }, [runFrames]);
+  const slots = useMemo<ShellSlots>(
+    () => ({
+      ...PLACEHOLDER_SLOTS,
+      specCard: <SpecCard frames={runFrames} />,
+      save: <SaveControl saving={saving} />,
+      runBar: <RunBar onLoop={joinRunLoop} />,
+    }),
+    [saving, runFrames, joinRunLoop],
+  );
   // The swap registry: a key with no picture gives undefined, and the canvas draws a neutral tile.
   const resolveArt: ResolveArt = (key) => content.art.get(key);
   const drawCanvas = (host: HTMLElement, setup: CanvasSetup): CanvasHandle =>

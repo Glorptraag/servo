@@ -1976,6 +1976,30 @@
       "confidence": "high",
       "blocks": [],
       "resolved": false
+    },
+    {
+      "id": "D96",
+      "question": "D31 'fixed' (R-4.4 Q1): should 'fixed' also require the new Run to last past the tick at which the fault first appeared?",
+      "recommendation": "Yes: a fault counts as fixed only if the later Run passes that tick without it; queue for the 5.2 progress view",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D97",
+      "question": "Space is always Run/Stop (D42) and never activates a focused button anywhere in the app; Enter activates buttons (R-4.4 Q2). OK for launch given switch-access setups that send Space?",
+      "recommendation": "Yes for launch; revisit with an accessibility review before G4",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D98",
+      "question": "Clock speed: starts at 30 tps on each visit, not persisted per child (R-4.4 Q3).",
+      "recommendation": "Keep as built",
+      "confidence": "high",
+      "blocks": [],
+      "resolved": false
     }
   ]
 }
