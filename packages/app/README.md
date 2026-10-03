@@ -6,6 +6,7 @@ The child's app: shell, tray, library, spec card, Run bar, arena strip, challeng
 | --- | --- | --- |
 | `@servo/app` | 4.1 | `mountApp(host, options?)`, started by the web build ([src/main.tsx](src/main.tsx)) and the e2e harness: the shell round the canvas. It opens the store from task 4.9 |
 | `@servo/app/store` | 0.4 types, 4.9, 5.5 | `openStore(options)`, the store's types and content's types ([src/store/index.ts](src/store/index.ts)) |
+| `@servo/app/invite-code` | 6.3 | The tester invite code's reduction and hash, `normalizeInviteCode` and `hashInviteCode` ([src/release/invite-code.ts](src/release/invite-code.ts)). Pure: no DOM, React or Node. The release in packages/tools imports it, so the hashes it bakes in are the ones the invite gate makes |
 
 ## The shell (brief Section 9)
 
@@ -22,7 +23,7 @@ The canvas fills the screen, and the chrome over it (header, tray, spec card, Ru
 
 ## How the packages meet
 
-- **Content.** `openStore()` loads it once (until task 4.9, `mountApp` calls `loadContent()` itself); the app passes `content.catalogue` and a `resolveArt` built from `content.art` to `mountCanvas`.
+- **Content.** `openStore()` loads it once, and `mountApp` takes it from the store (or from `loadContent()` itself when the device's storage cannot be opened); the app passes `content.catalogue` and a `resolveArt` built from `content.art` to `mountCanvas`.
 - **Canvas.** The app listens to `edit` (Undo history and saving), `select` (spec card), `placement` (tray and arena strip) and `control` (switch flips). Its own changes (settings, name, arena and Reset arena, the hint ladder's do-it) go through `canvas.apply`, so every change to a build is an `EditCommand`.
 - **sim-core.** Run snapshots tick 0 and switches the canvas to Run mode. After a one-second spin-up, a wall-clock driver steps the simulation at 30 ticks a second or in slow motion, and passes each frame to the canvas, spec card, sound layer and challenge runner. Stop records the Run, restores tick 0 and returns the canvas to Build mode, where the build is exactly as it was (ground rule 4). An unchanged build keeps its Simulation and seed (D37).
 - **Shared links** open a read-only canvas: a replay with "keep a copy" (D43).
@@ -33,9 +34,11 @@ Details: [docs/run-loop.md](docs/run-loop.md).
 
 From the repository root, `pnpm dev` serves the app and `pnpm build` writes it to `packages/app/dist`; both run `pnpm art` first. `pnpm --filter @servo/app preview` serves the build, and `pnpm --filter @servo/app test` runs the unit and browser tests ([docs/shell.md](docs/shell.md), "Tests").
 
+A release (`pnpm release:dry`, or a `v*` tag; [packages/tools/src/release/README.md](../tools/src/release/README.md)) bakes in the app version, the content version and, in a tester build, the hashes of the invite codes. A tester build opens on the invite form, a plain page with one field, before anything else, and remembers an accepted code on the device. `/settings` shows both versions; a build made any other way has no gate and shows "Not a release build" there.
+
 ## The store
 
-Local-first on Dexie and profile-scoped: blueprints keyed by `meta.id`, run records and card-game results. Loading migrates and validates, and a document that fails stays stored. A content defect never stops the store opening. Sync goes through a pluggable `SyncRemote`, off until one is configured (D10, D13); two devices' copies of one blueprint are both kept. Details: [docs/store.md](docs/store.md).
+Local-first on Dexie and profile-scoped: blueprints keyed by `meta.id`, run records and card-game results. Loading migrates and validates, and a document that fails stays stored. A content defect never stops the store opening. Sync goes through a pluggable `SyncRemote`, off until one is configured (D10, D13); two devices' copies of one blueprint are both kept. On first run the app makes a profile, "Builder 1", and an empty "Build 1"; after that it opens the one profile's newest build. The build saves itself a second after each edit, and at once on Run and when the page is hidden or left; Save in the header stores it at once, and a tap on the build's name renames it. Two tabs on one build keep both versions, and a device that cannot keep builds still builds, with a line saying so. Details: [docs/store.md](docs/store.md).
 
 ## Areas and owners
 
@@ -52,4 +55,5 @@ Local-first on Dexie and profile-scoped: blueprints keyed by `meta.id`, run reco
 | `sharing/` | 5.6 | Read-only links with the blueprint in the URL fragment and no profile data (D10, D43) |
 | `a11y/`, `theme/` | 5.7 | WCAG 2.2 AA chrome, high contrast, dyslexia-friendly type, left-handed mirror |
 | `telemetry/` | 6.2 | Only the events the success measures need |
+| `release/` | 6.3 | What a release bakes in (`build-info.ts`), the page's start (`start.ts`: the invite gate first in a tester build, then Settings at `/settings` or the app), the invite gate, Settings, and the invite code's hash (`@servo/app/invite-code`) |
 | `flags/`, `program-view/` | 6.6 | The Level 3 slot, off by default |

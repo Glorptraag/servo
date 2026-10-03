@@ -1,0 +1,822 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/busy-workbench
+seed 1
+ticks 90
+inputs none
+blueprint 4430f05091861f2a
+arena open-floor 297edbfc7ad9a93c
+part battery-pack-2-cell ac49444ad3a2e166
+part bumper-switch 07e8a283c2f64a5b
+part buzzer d100587ca3edbd2e
+part caster 85cad363c9f68e25
+part chassis 2b67875c3e879e19
+part dc-motor e80cd3eae3017bf6
+part led f79a09a51f13bec4
+part motor-driver 7bba5ed414f432a1
+part switch 0a304ca511260dde
+part wheel-large c182e441f60c54e3
+record e473e67eefad8119300608e172772800c082dedc76bc28eac71b8017dfb761f6
+faults none
+subjects battery bench-battery bench-buzzer bench-driver bench-led-1 bench-led-2 bench-led-3 bench-motor-a bench-motor-b bench-motor-c bench-switch bumper buzzer caster chassis driver lamp-battery lamp-led lamp-switch led motor-left motor-right switch wheel-left wheel-right
+tick 0 09688d5b
+  battery volts=2.616 milliamps=960.8 charge=1
+  bench-battery volts=2.5 milliamps=1250 charge=1 x=150 y=380 heading=0
+  bench-buzzer volts=2.5 milliamps=22.5 x=330 y=290 heading=0 sound.buzz=0.75@2300hz
+  bench-driver volts=2.5 milliamps=701.2 x=330 y=380 heading=0
+  bench-led-1 volts=2.5 milliamps=8.8 light=0.583 x=240 y=290 heading=0
+  bench-led-2 volts=2.5 milliamps=8.8 light=0.583 x=240 y=200 heading=0
+  bench-led-3 volts=2.5 milliamps=8.8 light=0.583 x=330 y=200 heading=0
+  bench-motor-a volts=1.959 milliamps=391.8 rpm=65.3 x=420 y=380 heading=0 sound.motor=0.327
+  bench-motor-b volts=-1.959 milliamps=-391.8 rpm=-65.3 x=420 y=290 heading=0 sound.motor=0.327
+  bench-motor-c volts=2.5 milliamps=500 rpm=83.3 x=510 y=380 heading=0 sound.motor=0.417
+  bench-switch volts=0 milliamps=1250 closed=true x=240 y=380 heading=0
+  bumper volts=0 milliamps=960.8 closed=true
+  buzzer volts=2.616 milliamps=24.2 sound.buzz=0.808@2300hz
+  chassis x=300 y=600 heading=0 pitch=0 roll=0
+  driver volts=2.616 milliamps=926.4
+  lamp-battery volts=2.994 milliamps=14.9 charge=1 x=600 y=380 heading=0
+  lamp-led volts=2.994 milliamps=14.9 light=0.995 x=600 y=200 heading=0
+  lamp-switch volts=0 milliamps=14.9 closed=true x=600 y=290 heading=0
+  led volts=2.616 milliamps=10.2 light=0.68
+  motor-left volts=2.311 milliamps=462.2 rpm=77 sound.motor=0.385
+  motor-right volts=2.311 milliamps=462.2 rpm=77 sound.motor=0.385
+  switch volts=0 milliamps=960.8 closed=true
+  wheel-left rpm=77
+  wheel-right rpm=77
+tick 1 ec436e09
+  bench-battery volts=2.736 milliamps=660.2
+  bench-buzzer volts=2.736 milliamps=26 sound.buzz=0.868@2300hz
+  bench-driver volts=2.736 milliamps=431.9
+  bench-led-1 volts=2.736 milliamps=11.7 light=0.78
+  bench-led-2 volts=2.736 milliamps=11.7 light=0.78
+  bench-led-3 volts=2.736 milliamps=11.7 light=0.78
+  bench-motor-a volts=2.434 milliamps=214.9 rpm=81.1 sound.motor=0.406
+  bench-motor-b volts=-2.434 milliamps=-214.9 rpm=-81.1 sound.motor=0.406
+  bench-motor-c volts=2.736 milliamps=167.2 rpm=91.2 sound.motor=0.456
+  bench-switch milliamps=660.2
+  chassis x=301.7 heading=360
+tick 2 608d93c3
+  battery volts=2.629 milliamps=927.7 charge=0.9998
+  bench-battery volts=2.811 milliamps=472.4 charge=0.9998
+  bench-buzzer volts=2.811 milliamps=27.2 sound.buzz=0.905@2300hz
+  bench-driver volts=2.811 milliamps=272.3
+  bench-led-1 volts=2.811 milliamps=12.6 light=0.842
+  bench-led-2 volts=2.811 milliamps=12.6 light=0.842
+  bench-led-3 volts=2.811 milliamps=12.6 light=0.842
+  bench-motor-a volts=2.51 milliamps=135.2 rpm=83.7 sound.motor=0.418
+  bench-motor-b volts=-2.51 milliamps=-135.2 rpm=-83.7 sound.motor=0.418
+  bench-motor-c volts=2.811 milliamps=135 rpm=93.7 sound.motor=0.468
+  bench-switch milliamps=472.4
+  bumper milliamps=927.7
+  buzzer volts=2.629 milliamps=24.4 sound.buzz=0.814@2300hz
+  chassis x=305.6 heading=359.99
+  driver volts=2.629 milliamps=892.9
+  led volts=2.629 milliamps=10.4 light=0.691
+  motor-left volts=2.324 milliamps=445 rpm=23.7 sound.motor=0.119
+  motor-right volts=2.324 milliamps=445.9 rpm=23.6 sound.motor=0.118
+  switch milliamps=927.7
+  wheel-left rpm=23.7
+  wheel-right rpm=23.6
+tick 3 c243420d
+  battery volts=2.695 milliamps=762 charge=0.9996
+  bench-battery volts=2.825 milliamps=436.4 charge=0.9997
+  bench-buzzer volts=2.825 milliamps=27.4 sound.buzz=0.913@2300hz
+  bench-driver volts=2.825 milliamps=247.8
+  bench-led-1 volts=2.825 milliamps=12.8 light=0.854
+  bench-led-2 volts=2.825 milliamps=12.8 light=0.854
+  bench-led-3 volts=2.825 milliamps=12.8 light=0.854
+  bench-motor-a volts=2.524 milliamps=122.9 rpm=84.1 sound.motor=0.421
+  bench-motor-b volts=-2.524 milliamps=-122.9 rpm=-84.1 sound.motor=0.421
+  bench-motor-c volts=2.825 milliamps=122.9 rpm=94.2 sound.motor=0.471
+  bench-switch milliamps=436.4
+  bumper milliamps=762
+  buzzer volts=2.695 milliamps=25.4 sound.buzz=0.847@2300hz
+  chassis x=310.9 heading=359.98
+  driver volts=2.695 milliamps=725.4
+  led volts=2.695 milliamps=11.2 light=0.746
+  motor-left volts=2.391 milliamps=361.1 rpm=41.8 sound.motor=0.209
+  motor-right volts=2.391 milliamps=362.4 rpm=41.5 sound.motor=0.208
+  switch milliamps=762
+  wheel-left rpm=41.8
+  wheel-right rpm=41.5
+tick 4 4762e646
+  battery volts=2.743 milliamps=640.4 charge=0.9994
+  bench-battery volts=2.828 milliamps=429.6 charge=0.9996
+  bench-buzzer volts=2.828 sound.buzz=0.914@2300hz
+  bench-driver volts=2.828 milliamps=243.1
+  bench-led-1 volts=2.828 light=0.857
+  bench-led-2 volts=2.828 light=0.857
+  bench-led-3 volts=2.828 light=0.857
+  bench-motor-a volts=2.527 milliamps=120.5 rpm=84.2
+  bench-motor-b volts=-2.527 milliamps=-120.5 rpm=-84.2
+  bench-motor-c volts=2.828 milliamps=120.5 rpm=94.3
+  bench-switch milliamps=429.6
+  bumper milliamps=640.4
+  buzzer volts=2.743 milliamps=26.1 sound.buzz=0.872@2300hz
+  chassis x=317.4 heading=359.97
+  driver volts=2.743 milliamps=602.4
+  led volts=2.743 milliamps=11.8 light=0.786
+  motor-left volts=2.44 milliamps=299.5 rpm=53.1 sound.motor=0.265
+  motor-right volts=2.44 milliamps=300.9 rpm=52.8 sound.motor=0.264
+  switch milliamps=640.4
+  wheel-left rpm=53.1
+  wheel-right rpm=52.8
+tick 5 e560651d
+  battery volts=2.779 milliamps=551.1 charge=0.9992
+  bench-battery milliamps=428.2 charge=0.9995
+  bench-driver milliamps=242.2
+  bench-led-1 milliamps=12.9
+  bench-led-2 milliamps=12.9
+  bench-led-3 milliamps=12.9
+  bench-motor-a milliamps=120.1
+  bench-motor-b milliamps=-120.1
+  bench-motor-c milliamps=120.1
+  bench-switch milliamps=428.2
+  bumper milliamps=551.1
+  buzzer volts=2.779 milliamps=26.7 sound.buzz=0.889@2300hz
+  chassis x=324.7 heading=359.96
+  driver volts=2.779 milliamps=512.2
+  led volts=2.779 milliamps=12.2 light=0.816
+  motor-left volts=2.476 milliamps=254.4 rpm=61.3 sound.motor=0.307
+  motor-right volts=2.476 milliamps=255.7 rpm=61.1 sound.motor=0.306
+  switch milliamps=551.1
+  wheel-left rpm=61.3
+  wheel-right rpm=61.1
+tick 6 560ab671
+  battery volts=2.805 milliamps=485.5 charge=0.9991
+  bench-battery milliamps=428 charge=0.9994
+  bench-driver milliamps=242
+  bench-motor-a milliamps=120
+  bench-motor-b milliamps=-120
+  bench-motor-c milliamps=120
+  bench-switch milliamps=428
+  bumper milliamps=485.5
+  buzzer volts=2.805 milliamps=27.1 sound.buzz=0.902@2300hz
+  chassis x=332.6 heading=359.95
+  driver volts=2.805 milliamps=445.8
+  led volts=2.805 milliamps=12.6 light=0.837
+  motor-left volts=2.503 milliamps=221.3 rpm=67.4 sound.motor=0.337
+  motor-right volts=2.503 milliamps=222.5 rpm=67.2 sound.motor=0.336
+  switch milliamps=485.5
+  wheel-left rpm=67.4
+  wheel-right rpm=67.2
+tick 7 1613b1a0
+  battery volts=2.824 milliamps=437.3 charge=0.999
+  bench-battery milliamps=427.9 charge=0.9993
+  bench-switch milliamps=427.9
+  bumper milliamps=437.3
+  buzzer volts=2.824 milliamps=27.4 sound.buzz=0.912@2300hz
+  chassis x=340.9
+  driver volts=2.824 milliamps=397.1
+  led volts=2.824 milliamps=12.8 light=0.853
+  motor-left volts=2.522 milliamps=197 rpm=71.9 sound.motor=0.359
+  motor-right volts=2.522 milliamps=198.1 rpm=71.7 sound.motor=0.359
+  switch milliamps=437.3
+  wheel-left rpm=71.9
+  wheel-right rpm=71.7
+tick 8 8b25ab2c
+  battery volts=2.838 milliamps=401.9 charge=0.9989
+  bench-battery charge=0.9992
+  bumper milliamps=401.9
+  buzzer volts=2.838 milliamps=27.6 sound.buzz=0.919@2300hz
+  chassis x=349.5 heading=359.94
+  driver volts=2.838 milliamps=361.3
+  led volts=2.838 milliamps=13 light=0.865
+  motor-left volts=2.536 milliamps=179.2 rpm=75.1 sound.motor=0.376
+  motor-right volts=2.536 milliamps=180.1 rpm=75 sound.motor=0.375
+  switch milliamps=401.9
+  wheel-left rpm=75.1
+  wheel-right rpm=75
+tick 9 60a95207
+  battery volts=2.848 milliamps=375.9 charge=0.9988
+  bench-battery charge=0.9991
+  bench-led-1 milliamps=12.8
+  bench-led-2 milliamps=12.8
+  bench-led-3 milliamps=12.8
+  bumper milliamps=375.9
+  buzzer volts=2.848 milliamps=27.7 sound.buzz=0.924@2300hz
+  chassis x=358.4
+  driver volts=2.848 milliamps=335.1
+  led volts=2.848 milliamps=13.1 light=0.874
+  motor-left volts=2.547 milliamps=166.2 rpm=77.5 sound.motor=0.388
+  motor-right volts=2.547 milliamps=166.9 rpm=77.4 sound.motor=0.387
+  switch milliamps=375.9
+  wheel-left rpm=77.5
+  wheel-right rpm=77.4
+tick 10 b1eaa9f7
+  battery volts=2.856 milliamps=356.8 charge=0.9987
+  bench-battery charge=0.999
+  bumper milliamps=356.8
+  buzzer volts=2.856 milliamps=27.8 sound.buzz=0.928@2300hz
+  chassis x=367.5 heading=359.93
+  driver volts=2.856 milliamps=315.7
+  led volts=2.856 milliamps=13.2 light=0.88
+  motor-left volts=2.554 milliamps=156.6 rpm=79.3 sound.motor=0.397
+  motor-right volts=2.554 milliamps=157.1 rpm=79.2 sound.motor=0.396
+  switch milliamps=356.8
+  wheel-left rpm=79.3
+  wheel-right rpm=79.2
+tick 11 c1c41002
+  battery volts=2.862 milliamps=342.7 charge=0.9986
+  bench-battery charge=0.9989
+  bench-led-1 light=0.856
+  bench-led-2 light=0.856
+  bench-led-3 light=0.856
+  bumper milliamps=342.7
+  buzzer volts=2.862 milliamps=27.9 sound.buzz=0.931@2300hz
+  chassis x=376.7
+  driver volts=2.862 milliamps=301.5
+  led volts=2.862 milliamps=13.3 light=0.885
+  motor-left volts=2.56 milliamps=149.5 rpm=80.6 sound.motor=0.403
+  motor-right volts=2.56 milliamps=150 rpm=80.5 sound.motor=0.403
+  switch milliamps=342.7
+  wheel-left rpm=80.6
+  wheel-right rpm=80.5
+tick 12 0b495607
+  battery volts=2.866 milliamps=332.5
+  bench-battery charge=0.9988
+  bench-motor-a volts=2.526
+  bench-motor-b volts=-2.526
+  bumper milliamps=332.5
+  buzzer volts=2.866 milliamps=28 sound.buzz=0.933@2300hz
+  chassis x=386
+  driver volts=2.866 milliamps=291.2
+  led volts=2.866 light=0.888
+  motor-left volts=2.564 milliamps=144.6 rpm=81.5 sound.motor=0.408
+  motor-right volts=2.564 milliamps=144.6 rpm=81.5 sound.motor=0.408
+  switch milliamps=332.5
+  wheel-left rpm=81.5
+  wheel-right rpm=81.5
+tick 13 6b5857c2
+  battery volts=2.869 milliamps=324.9 charge=0.9985
+  bench-battery charge=0.9987
+  bumper milliamps=324.9
+  buzzer volts=2.869 sound.buzz=0.934@2300hz
+  chassis x=395.3
+  driver volts=2.869 milliamps=283.5
+  led volts=2.869 milliamps=13.4 light=0.89
+  motor-left volts=2.567 milliamps=140.8 rpm=82.2 sound.motor=0.411
+  motor-right volts=2.567 milliamps=140.8 rpm=82.2 sound.motor=0.411
+  switch milliamps=324.9
+  wheel-left rpm=82.2
+  wheel-right rpm=82.2
+tick 14 f53e0d07
+  battery volts=2.871 milliamps=319.3 charge=0.9984
+  bench-battery volts=2.827 charge=0.9986
+  bench-buzzer volts=2.827
+  bench-driver volts=2.827
+  bench-led-1 volts=2.827
+  bench-led-2 volts=2.827
+  bench-led-3 volts=2.827
+  bench-motor-c volts=2.827 rpm=94.2
+  bumper milliamps=319.3
+  buzzer volts=2.871 milliamps=28.1 sound.buzz=0.935@2300hz
+  chassis x=404.7
+  driver volts=2.871 milliamps=277.9
+  led volts=2.871 light=0.892
+  motor-left volts=2.569 milliamps=138 rpm=82.7 sound.motor=0.414
+  motor-right volts=2.569 milliamps=138 rpm=82.7 sound.motor=0.414
+  switch milliamps=319.3
+  wheel-left rpm=82.7
+  wheel-right rpm=82.7
+tick 15 6098144c
+  battery volts=2.872 milliamps=315.3 charge=0.9983
+  bench-battery charge=0.9985
+  bumper milliamps=315.3
+  buzzer volts=2.872 sound.buzz=0.936@2300hz
+  chassis x=414.2 y=599.9
+  driver volts=2.872 milliamps=273.8
+  led volts=2.872 light=0.894
+  motor-left volts=2.571 milliamps=135.9 rpm=83.1 sound.motor=0.415
+  motor-right volts=2.571 milliamps=135.9 rpm=83.1 sound.motor=0.415
+  switch milliamps=315.3
+  wheel-left rpm=83.1
+  wheel-right rpm=83.1
+tick 16 74b9f502
+  battery volts=2.873 milliamps=312.3
+  bench-battery charge=0.9984
+  bumper milliamps=312.3
+  buzzer volts=2.873 sound.buzz=0.937@2300hz
+  chassis x=423.6
+  driver volts=2.873 milliamps=270.8
+  lamp-battery charge=0.9999
+  led volts=2.873
+  motor-left volts=2.572 milliamps=134.4 rpm=83.4 sound.motor=0.417
+  motor-right volts=2.572 milliamps=134.4 rpm=83.4 sound.motor=0.417
+  switch milliamps=312.3
+  wheel-left rpm=83.4
+  wheel-right rpm=83.4
+tick 17 8423a7a6
+  battery volts=2.874 milliamps=310.1 charge=0.9982
+  bench-battery charge=0.9983
+  bumper milliamps=310.1
+  buzzer volts=2.874
+  chassis x=433.1
+  driver volts=2.874 milliamps=268.5
+  led volts=2.874 light=0.895
+  motor-left volts=2.573 milliamps=133.3 rpm=83.6 sound.motor=0.418
+  motor-right volts=2.573 milliamps=133.3 rpm=83.6 sound.motor=0.418
+  switch milliamps=310.1
+  wheel-left rpm=83.6
+  wheel-right rpm=83.6
+tick 18 5c36e3c3
+  battery volts=2.875 milliamps=308.5 charge=0.9981
+  bench-battery charge=0.9982
+  bumper milliamps=308.5
+  buzzer volts=2.875
+  chassis x=442.6
+  driver volts=2.875 milliamps=266.9
+  led volts=2.875 light=0.896
+  motor-left milliamps=132.5 rpm=83.7 sound.motor=0.419
+  motor-right milliamps=132.5 rpm=83.7 sound.motor=0.419
+  switch milliamps=308.5
+  wheel-left rpm=83.7
+  wheel-right rpm=83.7
+tick 19 98747fe7
+  battery milliamps=307.3 charge=0.998
+  bumper milliamps=307.3
+  buzzer sound.buzz=0.938@2300hz
+  chassis x=452.1
+  driver milliamps=265.8
+  motor-left volts=2.574 milliamps=131.9 rpm=83.8
+  motor-right volts=2.574 milliamps=131.9 rpm=83.8
+  switch milliamps=307.3
+  wheel-left rpm=83.8
+  wheel-right rpm=83.8
+tick 20 916ebaf8
+  battery milliamps=306.5
+  bench-battery charge=0.9981
+  bench-buzzer sound.buzz=0.913@2300hz
+  bumper milliamps=306.5
+  chassis x=461.7
+  driver milliamps=264.9
+  motor-left milliamps=131.4 rpm=83.9 sound.motor=0.42
+  motor-right milliamps=131.4 rpm=83.9 sound.motor=0.42
+  switch milliamps=306.5
+  wheel-left rpm=83.9
+  wheel-right rpm=83.9
+tick 21 1b61ec8c
+  battery volts=2.876 milliamps=305.8 charge=0.9979
+  bench-battery milliamps=427.8 charge=0.998
+  bench-switch milliamps=427.8
+  bumper milliamps=305.8
+  buzzer volts=2.876
+  chassis x=471.2
+  driver volts=2.876 milliamps=264.2
+  led volts=2.876
+  motor-left milliamps=131.1 rpm=84
+  motor-right milliamps=131.1 rpm=84
+  switch milliamps=305.8
+  wheel-left rpm=84
+  wheel-right rpm=84
+tick 22 d1d4bc75
+  battery milliamps=305.4 charge=0.9978
+  bench-battery charge=0.9979
+  bumper milliamps=305.4
+  chassis x=480.7
+  driver milliamps=263.8
+  motor-left milliamps=130.9
+  motor-right milliamps=130.9
+  switch milliamps=305.4
+tick 23 64fd7b30
+  battery milliamps=305
+  bench-battery charge=0.9978
+  bench-motor-a volts=2.525
+  bench-motor-b volts=-2.525
+  bumper milliamps=305
+  chassis x=490.3
+  driver milliamps=263.4
+  motor-left milliamps=130.7
+  motor-right milliamps=130.7
+  switch milliamps=305
+tick 24 02a8f10c
+  battery milliamps=304.8 charge=0.9977
+  bench-battery charge=0.9977
+  bench-led-1 light=0.855
+  bench-led-2 light=0.855
+  bench-led-3 light=0.855
+  bumper milliamps=304.8
+  chassis x=499.8 y=599.8
+  driver milliamps=263.2
+  motor-left milliamps=130.6 rpm=84.1
+  motor-right milliamps=130.6 rpm=84.1
+  switch milliamps=304.8
+  wheel-left rpm=84.1
+  wheel-right rpm=84.1
+tick 25 ac56dc8b
+  battery milliamps=304.6 charge=0.9976
+  bench-battery volts=2.826 charge=0.9976
+  bench-buzzer volts=2.826
+  bench-driver volts=2.826
+  bench-led-1 volts=2.826
+  bench-led-2 volts=2.826
+  bench-led-3 volts=2.826
+  bench-motor-c volts=2.826
+  bumper milliamps=304.6
+  chassis x=509.3
+  driver milliamps=263
+  motor-left milliamps=130.5
+  motor-right milliamps=130.5
+  switch milliamps=304.6
+tick 26 bc05de8c
+  battery milliamps=304.4 charge=0.9975
+  bench-battery charge=0.9975
+  bumper milliamps=304.4
+  chassis x=518.9
+  driver milliamps=262.8
+  motor-left milliamps=130.4
+  motor-right milliamps=130.4
+  switch milliamps=304.4
+tick 27 a0d208d6
+  battery milliamps=304.3
+  bench-battery charge=0.9974
+  bumper milliamps=304.3
+  chassis x=528.4
+  switch milliamps=304.3
+tick 28 c557c9ee
+  battery charge=0.9974
+  bench-battery charge=0.9973
+  chassis x=538
+  driver milliamps=262.7
+tick 29 a9b58728
+  battery charge=0.9973
+  bench-battery charge=0.9972
+  chassis x=547.5
+tick 30 5332f135
+  bench-battery charge=0.9971
+  chassis x=557
+  motor-left milliamps=130.3
+  motor-right milliamps=130.3
+tick 31 6029f7f8
+  battery volts=2.875 milliamps=304.2 charge=0.9972
+  bench-battery charge=0.997
+  bumper milliamps=304.2
+  buzzer volts=2.875
+  chassis x=566.6
+  driver volts=2.875
+  led volts=2.875
+  switch milliamps=304.2
+tick 32 b38b8f45
+  battery charge=0.9971
+  bench-battery charge=0.9969
+  chassis x=576.1
+  driver milliamps=262.6
+tick 33 7d61deec
+  bench-battery charge=0.9968
+  bench-motor-a volts=2.524 rpm=84.1
+  bench-motor-b volts=-2.524 rpm=-84.1
+  chassis x=585.6 y=599.7
+tick 34 c2fbbb70
+  battery charge=0.997
+  bench-battery charge=0.9967
+  chassis x=595.2
+tick 35 22627423
+  battery milliamps=304.1 charge=0.9969
+  bench-battery volts=2.825 charge=0.9966
+  bench-buzzer volts=2.825
+  bench-driver volts=2.825
+  bench-led-1 volts=2.825
+  bench-led-2 volts=2.825
+  bench-led-3 volts=2.825
+  bench-motor-c volts=2.825
+  bumper milliamps=304.1
+  chassis x=604.7
+  switch milliamps=304.1
+tick 36 aad0d667
+  battery charge=0.9968
+  bench-battery charge=0.9965
+  bench-led-1 light=0.854
+  bench-led-2 light=0.854
+  bench-led-3 light=0.854
+  chassis x=614.3
+  driver milliamps=262.5
+tick 37 6c7ffe14
+  bench-battery charge=0.9964
+  chassis x=623.8
+tick 38 428c726b
+  battery charge=0.9967
+  bench-battery charge=0.9963
+  chassis x=633.3
+  motor-left milliamps=130.2
+  motor-right milliamps=130.2
+tick 39 a012dda5
+  battery milliamps=304 charge=0.9966
+  bench-battery charge=0.9962
+  bumper milliamps=304
+  chassis x=642.9
+  switch milliamps=304
+tick 40 05d78a96
+  bench-battery charge=0.9961
+  bench-buzzer sound.buzz=0.912@2300hz
+  buzzer sound.buzz=0.937@2300hz
+  chassis x=652.4
+  driver milliamps=262.4
+tick 41 a8cda109
+  battery charge=0.9965
+  bench-battery milliamps=427.7 charge=0.996
+  bench-switch milliamps=427.7
+  chassis x=662
+tick 42 02fc750f
+  battery charge=0.9964
+  bench-battery charge=0.9959
+  chassis x=671.5
+tick 43 61f28538
+  battery milliamps=303.9 charge=0.9963
+  bench-battery charge=0.9958
+  bench-motor-a volts=2.523
+  bench-motor-b volts=-2.523
+  bumper milliamps=303.9
+  chassis x=681 y=599.6
+  motor-left volts=2.573
+  motor-right volts=2.573
+  switch milliamps=303.9
+tick 44 fbb50792
+  bench-battery charge=0.9957
+  chassis x=690.6
+tick 45 b9065d19
+  battery charge=0.9962
+  bench-battery volts=2.824 charge=0.9956
+  bench-buzzer volts=2.824
+  bench-driver volts=2.824
+  bench-led-1 volts=2.824
+  bench-led-2 volts=2.824
+  bench-led-3 volts=2.824
+  bench-motor-c volts=2.824 rpm=94.1
+  chassis x=700.1
+  driver milliamps=262.3
+  lamp-battery charge=0.9998
+tick 46 ec096875
+  battery charge=0.9961
+  bench-battery charge=0.9955
+  chassis x=709.7
+  led light=0.895
+tick 47 408ea4ac
+  battery milliamps=303.8
+  bench-battery charge=0.9954
+  bumper milliamps=303.8
+  chassis x=719.2
+  motor-left milliamps=130.1
+  motor-right milliamps=130.1
+  switch milliamps=303.8
+tick 48 a74caab0
+  battery volts=2.874 charge=0.996
+  bench-battery charge=0.9953
+  bench-led-1 light=0.853
+  bench-led-2 light=0.853
+  bench-led-3 light=0.853
+  bench-motor-a sound.motor=0.42
+  bench-motor-b sound.motor=0.42
+  buzzer volts=2.874
+  chassis x=728.7
+  driver volts=2.874
+  led volts=2.874
+tick 49 3bb5a503
+  battery charge=0.9959
+  bench-battery charge=0.9952
+  chassis x=738.3
+  driver milliamps=262.2
+tick 50 ac8b6731
+  bench-battery charge=0.9951
+  chassis x=747.8
+tick 51 02bd0a06
+  battery milliamps=303.7 charge=0.9958
+  bench-battery charge=0.995
+  bumper milliamps=303.7
+  chassis x=757.4
+  switch milliamps=303.7
+tick 52 005ed9fc
+  battery charge=0.9957
+  bench-battery charge=0.9949
+  chassis x=766.9 y=599.5
+tick 53 1907d4f1
+  battery charge=0.9956
+  bench-battery charge=0.9948
+  chassis x=776.4
+  driver milliamps=262.1
+tick 54 240086a7
+  bench-battery charge=0.9947
+  bench-motor-a volts=2.522
+  bench-motor-b volts=-2.522
+  chassis x=786
+tick 55 f38e6afa
+  battery milliamps=303.6 charge=0.9955
+  bench-battery charge=0.9946
+  bumper milliamps=303.6
+  chassis x=795.5
+  motor-left milliamps=130
+  motor-right milliamps=130
+  switch milliamps=303.6
+tick 56 9514fe43
+  battery charge=0.9954
+  bench-battery volts=2.823 charge=0.9945
+  bench-buzzer volts=2.823
+  bench-driver volts=2.823
+  bench-led-1 volts=2.823
+  bench-led-2 volts=2.823
+  bench-led-3 volts=2.823
+  bench-motor-c volts=2.823
+  chassis x=805
+tick 57 9da19795
+  bench-battery charge=0.9944
+  bench-buzzer milliamps=27.3
+  chassis x=814.6
+  driver milliamps=262
+tick 58 ceb73f87
+  battery milliamps=303.5 charge=0.9953
+  bench-battery charge=0.9943
+  bumper milliamps=303.5
+  chassis x=824.1
+  switch milliamps=303.5
+tick 59 c9b5490c
+  battery charge=0.9952
+  bench-battery charge=0.9942
+  chassis x=833.7
+tick 60 9cb552cc
+  bench-battery charge=0.9941
+  chassis x=843.2
+  motor-left volts=2.572
+  motor-right volts=2.572
+tick 61 6cdfe51a
+  battery milliamps=303.6 charge=0.9951
+  bench-battery milliamps=427.6 charge=0.994
+  bench-buzzer sound.buzz=0.911@2300hz
+  bench-led-1 light=0.852
+  bench-led-2 light=0.852
+  bench-led-3 light=0.852
+  bench-motor-c sound.motor=0.47
+  bench-switch milliamps=427.6
+  bumper milliamps=303.6
+  chassis x=852.7 y=599.4
+  switch milliamps=303.6
+tick 62 bafcecf0
+  battery milliamps=303.5 charge=0.995
+  bench-battery charge=0.9939
+  bumper milliamps=303.5
+  chassis x=862.3
+  switch milliamps=303.5
+tick 63 a49d0127
+  battery charge=0.9949
+  bench-battery charge=0.9938
+  chassis x=871.8
+tick 64 c1e40c70
+  battery volts=2.873
+  bench-battery charge=0.9937
+  bench-motor-a volts=2.521 rpm=84
+  bench-motor-b volts=-2.521 rpm=-84
+  buzzer volts=2.873
+  chassis x=881.4
+  driver volts=2.873
+  led volts=2.873
+tick 65 eee41b83
+  battery charge=0.9948
+  bench-battery charge=0.9936
+  chassis x=890.9
+  led light=0.894
+tick 66 6d57caac
+  battery charge=0.9947
+  bench-battery volts=2.822 charge=0.9935
+  bench-buzzer volts=2.822
+  bench-driver volts=2.822
+  bench-led-1 volts=2.822
+  bench-led-2 volts=2.822
+  bench-led-3 volts=2.822
+  bench-motor-c volts=2.822
+  chassis x=900.4
+tick 67 b3f62dd1
+  bench-battery charge=0.9934
+  chassis x=910
+tick 68 de36c8cb
+  battery charge=0.9946
+  bench-battery charge=0.9933
+  chassis x=919.5
+tick 69 2528eab6
+  battery charge=0.9945
+  bench-battery charge=0.9932
+  chassis x=929
+tick 70 060a5486
+  bench-battery charge=0.9931
+  chassis x=938.6
+tick 71 02e87354
+  battery charge=0.9944
+  bench-battery charge=0.993
+  buzzer sound.buzz=0.936@2300hz
+  chassis x=948.1 y=599.3
+tick 72 122fc4d0
+  battery charge=0.9943
+  bench-battery charge=0.9929
+  chassis x=957.6
+  motor-left rpm=84
+  motor-right rpm=84
+  wheel-left rpm=84
+  wheel-right rpm=84
+tick 73 c75830f3
+  battery charge=0.9942
+  bench-battery charge=0.9928
+  bench-led-1 light=0.851
+  bench-led-2 light=0.851
+  bench-led-3 light=0.851
+  chassis x=967.2
+tick 74 45bc4596
+  bench-battery charge=0.9927
+  bench-motor-a volts=2.52
+  bench-motor-b volts=-2.52
+  chassis x=976.7
+  lamp-battery charge=0.9997
+  motor-left volts=2.571
+  motor-right volts=2.571
+tick 75 416391f4
+  battery charge=0.9941
+  bench-battery charge=0.9926
+  chassis x=986.2
+tick 76 cd502e96
+  battery charge=0.994
+  bench-battery volts=2.821 charge=0.9925
+  bench-buzzer volts=2.821
+  bench-driver volts=2.821
+  bench-led-1 volts=2.821
+  bench-led-2 volts=2.821
+  bench-led-3 volts=2.821
+  bench-motor-c volts=2.821 rpm=94
+  chassis x=995.8
+tick 77 19cd38f9
+  bench-battery charge=0.9924
+  chassis x=1005.3
+tick 78 3c6e64bc
+  battery volts=2.872 charge=0.9939
+  bench-battery charge=0.9923
+  buzzer volts=2.872
+  chassis x=1014.9
+  driver volts=2.872
+  led volts=2.872
+tick 79 402d9e5b
+  battery charge=0.9938
+  bench-battery charge=0.9922
+  chassis x=1024.4
+tick 80 aea5270b
+  battery charge=0.9937
+  bench-battery milliamps=427.5 charge=0.9921
+  bench-switch milliamps=427.5
+  chassis x=1033.9 y=599.2
+tick 81 03713d31
+  bench-battery charge=0.992
+  bench-buzzer sound.buzz=0.91@2300hz
+  chassis x=1043.4
+tick 82 cdd4eadd
+  battery charge=0.9936
+  bench-battery charge=0.9919
+  chassis x=1053
+tick 83 4d994061
+  battery milliamps=303.4 charge=0.9935
+  bench-battery charge=0.9918
+  bumper milliamps=303.4
+  chassis x=1062.5
+  led light=0.893
+  switch milliamps=303.4
+tick 84 574aa730
+  bench-battery charge=0.9917
+  chassis x=1072
+  driver milliamps=261.9
+tick 85 233b25f2
+  battery charge=0.9934
+  bench-battery charge=0.9916
+  bench-motor-a volts=2.519
+  bench-motor-b volts=-2.519
+  chassis x=1081.6
+tick 86 ea23f9a9
+  battery charge=0.9933
+  bench-battery charge=0.9915
+  bench-led-1 light=0.85
+  bench-led-2 light=0.85
+  bench-led-3 light=0.85
+  chassis x=1091.1
+  motor-left milliamps=129.9
+  motor-right milliamps=129.9
+tick 87 097a4b44
+  battery milliamps=303.3
+  bench-battery volts=2.82 charge=0.9914
+  bench-buzzer volts=2.82
+  bench-driver volts=2.82
+  bench-led-1 volts=2.82
+  bench-led-2 volts=2.82
+  bench-led-3 volts=2.82
+  bench-motor-c volts=2.82
+  bumper milliamps=303.3
+  chassis x=1100.6
+  switch milliamps=303.3
+tick 88 534f2bdb
+  battery charge=0.9932
+  bench-battery charge=0.9913
+  chassis x=1110.2
+  driver milliamps=261.8
+tick 89 f6428ec2
+  battery charge=0.9931
+  bench-battery charge=0.9912
+  chassis x=1119.7 y=599.1
+tick 90 35315ad7
+  battery charge=0.993
+  bench-battery charge=0.9911
+  chassis x=1129.2
+  motor-left volts=2.57
+  motor-right volts=2.57

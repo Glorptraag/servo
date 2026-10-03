@@ -1,0 +1,74 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case schema/short-circuit
+seed 2026
+ticks 30
+inputs none
+blueprint d4dd7d7794c37e9a
+arena open-floor 297edbfc7ad9a93c
+part battery-pack-1-cell 17a1fd9ced0c9385
+record a33792e5de3b3788f614dfb3369b5088656f39907d121488ff05f11f39323fab
+fault battery short-circuit first-tick=2
+subjects battery
+tick 0 be32f5e9
+  battery volts=0 milliamps=5000 charge=1 x=300 y=600 heading=0
+tick 1 37517e5f
+tick 2 f320eb48
+  battery milliamps=4998.1 charge=0.9988 faults=short-circuit
+tick 3 637e2f90
+  battery milliamps=4996.1 charge=0.9977
+tick 4 e610b8c3
+  battery milliamps=4994.2 charge=0.9965
+tick 5 33e8341c
+  battery milliamps=4992.3 charge=0.9954
+tick 6 21695910
+  battery milliamps=4990.4 charge=0.9942
+tick 7 a703ea46
+  battery milliamps=4988.4 charge=0.9931
+tick 8 9c652904
+  battery milliamps=4986.5 charge=0.9919
+tick 9 f5123ad5
+  battery milliamps=4984.6 charge=0.9908
+tick 10 507d45e5
+  battery milliamps=4982.7 charge=0.9896
+tick 11 dbce21e4
+  battery milliamps=4980.7 charge=0.9884
+tick 12 5f602a06
+  battery milliamps=4978.8 charge=0.9873
+tick 13 087d3101
+  battery milliamps=4976.9 charge=0.9861
+tick 14 30955484
+  battery milliamps=4975 charge=0.985
+tick 15 4ea0fb4d
+  battery milliamps=4973.1 charge=0.9838
+tick 16 d1ab4a45
+  battery milliamps=4971.1 charge=0.9827
+tick 17 33195404
+  battery milliamps=4969.2 charge=0.9815
+tick 18 fc882100
+  battery milliamps=4967.3 charge=0.9804
+tick 19 17f99633
+  battery milliamps=4965.4 charge=0.9792
+tick 20 3f02e12a
+  battery milliamps=4963.5 charge=0.9781
+tick 21 d838f054
+  battery milliamps=4961.6 charge=0.9769
+tick 22 c3a0e44b
+  battery milliamps=4959.6 charge=0.9758
+tick 23 7d8713be
+  battery milliamps=4957.7 charge=0.9746
+tick 24 bb7dca85
+  battery milliamps=4955.8 charge=0.9735
+tick 25 bc65529e
+  battery milliamps=4953.9 charge=0.9723
+tick 26 f0e9920f
+  battery milliamps=4952 charge=0.9712
+tick 27 4817ea1f
+  battery milliamps=4950.1 charge=0.9701
+tick 28 10bca79c
+  battery milliamps=4948.2 charge=0.9689
+tick 29 cbf63832
+  battery milliamps=4946.3 charge=0.9678
+tick 30 835e1ac8
+  battery milliamps=4944.4 charge=0.9666

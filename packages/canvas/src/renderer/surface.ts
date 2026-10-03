@@ -19,6 +19,8 @@ import type {
   PropTemplate,
   Selection,
 } from '../interface.ts';
+import { ListViewDom } from '../list-view/dom.ts';
+import { ListViewModel } from '../list-view/model.ts';
 import { applyEdit } from '../placement/apply.ts';
 import { PlacementController } from '../placement/controller.ts';
 import { layArena } from '../scene/arena.ts';
@@ -86,6 +88,9 @@ export class CanvasSurface implements CanvasHandle {
   readonly wiring: WiringController;
   /** The one selection, its focus states, and the hint rungs (task 3.4, src/selection/). */
   readonly selecting: SelectionController;
+  /** The screen-reader and keyboard path: the list view's model and its DOM beside the canvas (task 3.6, src/list-view/). */
+  readonly list: ListViewModel;
+  readonly listDom: ListViewDom;
 
   private readonly options: CanvasOptions;
   private readonly emitter = new Emitter<CanvasEventMap>();
@@ -170,6 +175,21 @@ export class CanvasSurface implements CanvasHandle {
       drawContext: () => this.drawContext,
       selected: (event) => this.emitter.emit('select', event),
     });
+    this.list = new ListViewModel({
+      catalogue: options.catalogue,
+      readOnly: options.readOnly === true,
+      blueprint: () => this.current,
+      mode: () => this.currentMode,
+      level: () => this.level,
+      apply: (command) => this.apply(command),
+      control: (input) => this.emitter.emit('control', { input }),
+      select: (selection) => this.select(selection),
+      hint: () => {
+        const step = this.selecting.shownHint;
+        return step && { step: step.step, line: step.line };
+      },
+    });
+    this.listDom = new ListViewDom(host, this.list, { prefs: () => this.prefs });
     this.resizeObserver =
       typeof ResizeObserver === 'function' ? new ResizeObserver(() => this.resized()) : undefined;
     this.resizeObserver?.observe(this.canvas);
@@ -213,6 +233,7 @@ export class CanvasSurface implements CanvasHandle {
     this.selecting.modeChanged();
     this.modeFade.toward(mode === 'run' ? 1 : 0, this.motion(MODE_FADE_MS), performance.now());
     this.loop.request();
+    this.list.changed();
   }
 
   fit(): void {
@@ -236,6 +257,7 @@ export class CanvasSurface implements CanvasHandle {
   setLevel(level: Level): void {
     this.alive('setLevel');
     this.level = level;
+    this.list.changed();
   }
 
   /** The child's level, as `mountCanvas` or `setLevel` last gave it. */
@@ -260,6 +282,7 @@ export class CanvasSurface implements CanvasHandle {
     this.selecting.destroy();
     this.placement.destroy();
     this.wiring.destroy();
+    this.listDom.destroy();
     this.loop.stop();
     if (this.restTimer !== undefined) clearTimeout(this.restTimer);
     this.resizeObserver?.disconnect();
@@ -315,6 +338,13 @@ export class CanvasSurface implements CanvasHandle {
   }
 
   // ---------------------------------------------------------------------------------------------------------
+  // CanvasHandle: task 3.6 (src/list-view/)
+
+  get listView(): ListView {
+    return this.list;
+  }
+
+  // ---------------------------------------------------------------------------------------------------------
   // CanvasHandle: task 3.4 (src/selection/, docs/selection.md)
 
   get selection(): Selection | null {
@@ -328,12 +358,15 @@ export class CanvasSurface implements CanvasHandle {
 
   showHint(step: DrawnHintStep): boolean {
     this.alive('showHint');
-    return this.selecting.showHint(step);
+    const drawn = this.selecting.showHint(step);
+    this.list.changed();
+    return drawn;
   }
 
   clearHints(): void {
     this.alive('clearHints');
     this.selecting.clearHints();
+    this.list.changed();
   }
 
   /** Placement, wiring and a tapped prop say what they now show; selection makes it the canvas's one selection. */
@@ -344,10 +377,6 @@ export class CanvasSurface implements CanvasHandle {
 
   // ---------------------------------------------------------------------------------------------------------
   // CanvasHandle: later tasks
-
-  get listView(): ListView {
-    throw notYet('listView', '3.6');
-  }
 
   applyRunFrame(frame: RunFrame): void {
     void frame;
@@ -524,6 +553,7 @@ export class CanvasSurface implements CanvasHandle {
     if (this.destroyed) return;
     this.scene = buildScene(this.current, this.options.catalogue);
     this.arena = layArena(this.current, this.options.catalogue, this.scene);
+    this.list.changed();
     const layers = this.layers;
     const renderer = this.renderer;
     if (!layers || !renderer) {

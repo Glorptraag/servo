@@ -179,6 +179,41 @@ describe('`select` from the app and the list view', () => {
   });
 });
 
+describe('the list view (task 3.6)', () => {
+  const perform = (subject: Parameters<CanvasSurface['listView']['actionsFor']>[0], id: string): boolean => {
+    const action = surface.listView.actionsFor(subject).find((each) => each.id === id);
+    if (!action) throw new Error(`no action ${id}`);
+    return surface.listView.perform(action);
+  };
+
+  it('selects through the same selection, with the handles and the bin, in Build and Run mode', () => {
+    const events = listen(surface, 'select');
+    expect(perform({ kind: 'part', partId: 'switch' }, 'select:part:switch')).toBe(true);
+    expect(surface.placement.selectedPart).toBe('switch');
+    expect(perform({ kind: 'wire', wireId: 'w8' }, 'select:wire:w8')).toBe(true);
+    expect(surface.wiring.selectedWire).toBe('w8');
+    expect(probe.wireLabel).toBe('power');
+    surface.setMode('run');
+    expect(perform({ kind: 'part', partId: 'caster' }, 'select:part:caster')).toBe(true);
+    expect(selections(events)).toEqual([
+      { kind: 'part', partId: 'switch' },
+      { kind: 'wire', wireId: 'w8' },
+      { kind: 'part', partId: 'caster' },
+    ]);
+  });
+
+  it('reads out the rung drawn now as its text twin', () => {
+    expect(surface.listView.hint).toBeUndefined();
+    surface.showHint({ step: 'pulse-port', target: { placed: 'battery', port: 'plus' }, line: 'The battery pack’s plus (+)' });
+    expect(surface.listView.hint).toEqual({ step: 'pulse-port', line: 'The battery pack’s plus (+)' });
+    surface.showHint({ step: 'pulse-part', target: { part: 'servo-motor' }, line: 'The servo motor' });
+    expect(surface.listView.hint).toBeUndefined();
+    surface.showHint({ step: 'pulse-part', target: { placed: 'switch' }, line: 'The switch' });
+    surface.clearHints();
+    expect(surface.listView.hint).toBeUndefined();
+  });
+});
+
 describe('Run mode and a read-only canvas: a tap inspects', () => {
   it('keeps the selection through Run and Stop, selects by tap while running, and shows the handles again on Stop', async () => {
     const events = listen(surface, 'select');
