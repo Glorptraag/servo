@@ -19,6 +19,9 @@ const IPAD = { width: 1180, height: 820, deviceScaleFactor: 2 } as const;
 const PERFORMANCE = 'test/e2e/run-animation.timing.ts';
 
 const project = (name: string, include: string[], args: string[], groupOrder: number): TestProjectInlineConfiguration => ({
+  // The third-party packages the bench reaches, optimised before any page loads: one Vite found late would reload a
+  // running test page, which then may never load again.
+  optimizeDeps: { include: ['@servo/canvas > pixi.js', '@servo/sim-core > @dimforge/rapier2d-deterministic-compat'] },
   test: {
     name,
     root,

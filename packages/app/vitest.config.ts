@@ -26,7 +26,17 @@ export default defineConfig({
       {
         // The app page loads these in a frame; optimising them up front keeps Vite from reloading the page mid-test.
         optimizeDeps: {
-          include: ['react', 'react/jsx-runtime', 'react/jsx-dev-runtime', 'react-dom', 'react-dom/client', '@servo/canvas > pixi.js'],
+          // Every third-party package the app reaches: one found late (rapier, through sim-core) reloads a running page.
+          include: [
+            'react',
+            'react/jsx-runtime',
+            'react/jsx-dev-runtime',
+            'react-dom',
+            'react-dom/client',
+            'dexie',
+            '@servo/canvas > pixi.js',
+            '@servo/sim-core > @dimforge/rapier2d-deterministic-compat',
+          ],
         },
         test: {
           name: 'browser',

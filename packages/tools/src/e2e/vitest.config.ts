@@ -19,6 +19,9 @@ const root = fileURLToPath(new URL('../..', import.meta.url));
 const PERFORMANCE = PERFORMANCE_FILE;
 
 const browserProject = (name: string, include: string[], exclude: string[], flags: readonly string[], groupOrder: number): TestProjectInlineConfiguration => ({
+  // The third-party packages the bench reaches, optimised before any page loads: one Vite found late would reload a
+  // running test page, which then may never load again.
+  optimizeDeps: { include: ['@servo/canvas > pixi.js', '@servo/sim-core > @dimforge/rapier2d-deterministic-compat'] },
   test: {
     name,
     root,

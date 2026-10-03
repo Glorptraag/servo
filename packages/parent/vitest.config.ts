@@ -19,7 +19,17 @@ export default defineConfig({
         // The two-page test loads the child's app in a frame; optimising its dependencies up front keeps Vite from
         // reloading the page mid-test. The canvas renders on SwiftShader, as in packages/app.
         optimizeDeps: {
-          include: ['react', 'react/jsx-runtime', 'react/jsx-dev-runtime', 'react-dom', 'react-dom/client', '@servo/app > @servo/canvas > pixi.js'],
+          // Every third-party package the app reaches: rapier, through sim-core, was found late and reloaded a page in CI.
+          include: [
+            'react',
+            'react/jsx-runtime',
+            'react/jsx-dev-runtime',
+            'react-dom',
+            'react-dom/client',
+            '@servo/app > dexie',
+            '@servo/app > @servo/canvas > pixi.js',
+            '@servo/app > @servo/sim-core > @dimforge/rapier2d-deterministic-compat',
+          ],
         },
         test: {
           name: 'browser',

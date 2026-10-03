@@ -20,6 +20,9 @@ const IPAD = { width: 1180, height: 820, deviceScaleFactor: 2 };
 // the 10 s default hook timeout. Generous for both, in every browser project.
 const CONNECT_TIMEOUT = 300_000;
 const HOOK_TIMEOUT = 300_000;
+// The canvas's one third-party package, optimised before any page loads: one Vite found late would reload a running
+// test page, which then may never load again.
+const OPTIMIZE_DEPS = { include: ['pixi.js'] };
 
 const chromium = (args: string[]) =>
   playwright({
@@ -36,6 +39,7 @@ const browserProject = (
   testTimeout: number,
   groupOrder: number,
 ): TestProjectInlineConfiguration => ({
+  optimizeDeps: OPTIMIZE_DEPS,
   test: {
     name,
     include,
@@ -105,6 +109,7 @@ export default defineConfig({
       // at load 45 and above a placement or art test has run past two minutes (every file here mounts one), so five.
       browserProject('browser', ['test/browser/**/*.test.ts'], [FRAME_TIME, HANDS], ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'], 300_000, 0),
       {
+        optimizeDeps: OPTIMIZE_DEPS,
         test: {
           name: 'hands',
           include: [HANDS],
