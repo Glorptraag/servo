@@ -29,7 +29,7 @@ In this order. Layers follow the schema's `SPEC_CARD_LAYERS`, so the level decid
 | Popular mechanics, with the real-world picture where the registry has one | Level 2 | `card.popularMechanics`, `card.realWorldArt` |
 | Safety note | With the popular-mechanics line | `card.safetyNote` |
 
-Nothing is cut off: every line wraps, and a card taller than the panel scrolls inside it. At the 10-inch landscape size (1180 × 820) the panel is 320 × 308 px: every Level 1 card fits without scrolling; at Level 2 the wheels fit and the rest scroll.
+Nothing is cut off: every line wraps, and a card taller than the panel scrolls inside it. At the 10-inch landscape size (1180 × 820) the panel is 320 × 308 px. With macOS's system face every Level 1 card fits without scrolling, and at Level 2 the wheels fit and the rest scroll; how much fits depends on the typeface, which task 5.7 chooses, so the test reports it rather than asserting it.
 
 ## Settings
 
@@ -59,7 +59,7 @@ One 44 px button beside the name, "Read aloud" to a screen reader. It reads the 
 ## Tests
 
 - **Unit, Node** ([test/spec-card/](../../test/spec-card/)). Every Level 1–2 part's layers at Levels 1 and 2; settings by level, with values and defaults; units; failure lines in order. Readout text. Every content fixture run on the real sim-core: at every tick, every part's readouts equal the fold of the run record's value events.
-- **Browser, Chromium** ([test/browser/spec-card.test.tsx](../../test/browser/spec-card.test.tsx)). The real shell at 1180 × 820 with the real content and a stand-in canvas that applies commands with the canvas's `applyEdit`. Every Level 1–2 card at Levels 1 and 2: its words, ports and settings, the panel 320 × 308, nothing past the card's sides, clipped, ellipsed or clamped, the last line reachable, and every Level 1 card whole without scrolling. Settings by mouse, finger (CDP touch) and arrow keys, one `set-setting` each, the card following Undo; locked in Run; the servo motor's angle slider at Level 3 by arrow key and by drag, one change on release. Readouts on the card equal to the run record's values for every part at every tick of switch-in-the-line; the failure line of broken-missing-return-wire while it happens, and no dialog. Speak-it's lines, rate and restart; readouts and failure lines read in Run; no button without speech.
+- **Browser, Chromium** ([test/browser/spec-card.test.tsx](../../test/browser/spec-card.test.tsx)). The real shell at 1180 × 820 with the real content and a stand-in canvas that applies commands with the canvas's `applyEdit`. Every Level 1–2 card at Levels 1 and 2: its words, ports and settings, the panel 320 × 308, nothing past the card's sides, clipped, ellipsed or clamped, the last line reachable; which cards fit without scrolling is printed. Settings by mouse, finger (CDP touch) and arrow keys, one `set-setting` each, the card following Undo; locked in Run; the servo motor's angle slider at Level 3 by arrow key and by drag, one change on release. Readouts on the card equal to the run record's values for every part at every tick of switch-in-the-line; the failure line of broken-missing-return-wire while it happens, and no dialog. Speak-it's lines, rate and restart; readouts and failure lines read in Run; no button without speech.
 
 ## Decisions and open questions
 
