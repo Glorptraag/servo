@@ -41,7 +41,7 @@ export interface GoldenFile {
   readonly record: string;
   /** The run record's faults: each failure mode shown, once, from its first tick. */
   readonly faults: readonly FaultSeen[];
-  /** Every subject, in `frame.live`'s order: placed parts by id, then props. */
+  /** Every subject, in `frame.live`'s order (placed parts by id, then props), then every wire's flow (`wire:<id>`, D78). */
   readonly subjects: readonly string[];
   readonly frames: readonly GoldenTick[];
 }

@@ -13,41 +13,63 @@ part switch bcdbfddbd71ae424
 record e227f7b30979d2448321d132a600ea1de50210a26d8247b1d295abc59238f5fc
 fault battery short-circuit first-tick=2
 fault switch across-the-pack first-tick=2
-subjects battery switch
+subjects battery switch wire:w1 wire:w2
 tick 0 f9e1d502
   battery volts=0 milliamps=7500 charge=1 x=240 y=600 heading=0
   switch volts=0 milliamps=7500 closed=true x=360 y=600 heading=0
+  wire:w1 milliamps=7500
+  wire:w2 milliamps=-7500
 tick 1 37517e5f
 tick 2 c9395cf7
   battery milliamps=7495.7 charge=0.9983 faults=short-circuit
   switch milliamps=7495.7 faults=across-the-pack
+  wire:w1 milliamps=7495.7
+  wire:w2 milliamps=-7495.7
 tick 3 2fd9074a
   battery milliamps=7491.3 charge=0.9965
   switch milliamps=7491.3
+  wire:w1 milliamps=7491.3
+  wire:w2 milliamps=-7491.3
 tick 4 0d210ca7
   battery milliamps=7487 charge=0.9948
   switch milliamps=7487
+  wire:w1 milliamps=7487
+  wire:w2 milliamps=-7487
 tick 5 f3c2a3c5
   battery milliamps=7482.7 charge=0.9931
   switch milliamps=7482.7
+  wire:w1 milliamps=7482.7
+  wire:w2 milliamps=-7482.7
 tick 6 5e66ef9d
   battery milliamps=7478.3 charge=0.9913
   switch milliamps=7478.3
+  wire:w1 milliamps=7478.3
+  wire:w2 milliamps=-7478.3
 tick 7 03e7dc31
   battery milliamps=7474 charge=0.9896
   switch milliamps=7474
+  wire:w1 milliamps=7474
+  wire:w2 milliamps=-7474
 tick 8 bdb88a93
   battery milliamps=7469.7 charge=0.9879
   switch milliamps=7469.7
+  wire:w1 milliamps=7469.7
+  wire:w2 milliamps=-7469.7
 tick 9 7a4f00c7
   battery milliamps=7465.3 charge=0.9861
   switch milliamps=7465.3
+  wire:w1 milliamps=7465.3
+  wire:w2 milliamps=-7465.3
 tick 10 f7f92c99
   battery milliamps=7461 charge=0.9844
   switch milliamps=7461
+  wire:w1 milliamps=7461
+  wire:w2 milliamps=-7461
 tick 11 6e2876fc
   battery volts=2.983 milliamps=0 charge=0.9827
   switch volts=2.983 milliamps=0 closed=false
+  wire:w1 milliamps=0
+  wire:w2 milliamps=0
 tick 12 37517e5f
 tick 13 ca9b8c0f
   battery faults=none
@@ -62,30 +84,50 @@ tick 20 37517e5f
 tick 21 b4ff8048
   battery volts=0 milliamps=7456.7
   switch volts=0 milliamps=7456.7 closed=true
+  wire:w1 milliamps=7456.7
+  wire:w2 milliamps=-7456.7
 tick 22 c49dfcb9
   battery milliamps=7452.4 charge=0.981
   switch milliamps=7452.4
+  wire:w1 milliamps=7452.4
+  wire:w2 milliamps=-7452.4
 tick 23 f709e55b
   battery milliamps=7448.1 charge=0.9792 faults=short-circuit
   switch milliamps=7448.1 faults=across-the-pack
+  wire:w1 milliamps=7448.1
+  wire:w2 milliamps=-7448.1
 tick 24 697754cd
   battery milliamps=7443.8 charge=0.9775
   switch milliamps=7443.8
+  wire:w1 milliamps=7443.8
+  wire:w2 milliamps=-7443.8
 tick 25 d917e76d
   battery milliamps=7439.5 charge=0.9758
   switch milliamps=7439.5
+  wire:w1 milliamps=7439.5
+  wire:w2 milliamps=-7439.5
 tick 26 71bf612d
   battery milliamps=7435.2 charge=0.9741
   switch milliamps=7435.2
+  wire:w1 milliamps=7435.2
+  wire:w2 milliamps=-7435.2
 tick 27 55cb0393
   battery milliamps=7430.9 charge=0.9723
   switch milliamps=7430.9
+  wire:w1 milliamps=7430.9
+  wire:w2 milliamps=-7430.9
 tick 28 71ea6e1b
   battery milliamps=7426.6 charge=0.9706
   switch milliamps=7426.6
+  wire:w1 milliamps=7426.6
+  wire:w2 milliamps=-7426.6
 tick 29 5e421602
   battery milliamps=7422.3 charge=0.9689
   switch milliamps=7422.3
+  wire:w1 milliamps=7422.3
+  wire:w2 milliamps=-7422.3
 tick 30 3e20e2a3
   battery milliamps=7418 charge=0.9672
   switch milliamps=7418
+  wire:w1 milliamps=7418
+  wire:w2 milliamps=-7418

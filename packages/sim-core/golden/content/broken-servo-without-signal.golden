@@ -11,11 +11,14 @@ part battery-pack-2-cell ac49444ad3a2e166
 part servo-motor 8ebf55c8da175c54
 record 195516230d8139bea3afc3524e359d87df44f2ab61aa5cc0de5b80dca9ff8977
 fault servo no-signal first-tick=2
-subjects battery-1 battery-2 servo
+subjects battery-1 battery-2 servo wire:w1 wire:w2 wire:w3
 tick 0 164a63e7
   battery-1 volts=2.996 milliamps=10 charge=1 x=220 y=570 heading=0
   battery-2 volts=2.996 milliamps=10 charge=1 x=220 y=630 heading=0
   servo volts=5.992 milliamps=10 angle=90 x=360 y=600 heading=0 sound.hum=1
+  wire:w1 milliamps=10
+  wire:w2 milliamps=10
+  wire:w3 milliamps=-10
 tick 1 37517e5f
 tick 2 bf12fdf2
   servo faults=no-signal
