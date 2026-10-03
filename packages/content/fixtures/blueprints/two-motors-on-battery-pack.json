@@ -1,0 +1,96 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "meta": {
+    "createdAt": "2026-10-03T09:00:00.000Z",
+    "highWater": {
+      "parts": 0,
+      "wires": 4
+    },
+    "id": "23030211-5716-46ee-8ce5-f07546be3c3e",
+    "level": 1,
+    "name": "Two DC motors on one battery pack",
+    "updatedAt": "2026-10-03T09:00:00.000Z"
+  },
+  "parts": [
+    {
+      "id": "battery",
+      "part": "battery-pack-2-cell",
+      "position": {
+        "x": -100,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "motor-left",
+      "part": "dc-motor",
+      "position": {
+        "x": 100,
+        "y": -60
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "motor-right",
+      "part": "dc-motor",
+      "position": {
+        "x": 100,
+        "y": 60
+      },
+      "rotation": 0,
+      "settings": {}
+    }
+  ],
+  "version": 1,
+  "wires": [
+    {
+      "from": {
+        "part": "battery",
+        "port": "plus"
+      },
+      "id": "w1",
+      "to": {
+        "part": "motor-left",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "minus"
+      },
+      "id": "w2",
+      "to": {
+        "part": "motor-left",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "plus"
+      },
+      "id": "w3",
+      "to": {
+        "part": "motor-right",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "minus"
+      },
+      "id": "w4",
+      "to": {
+        "part": "motor-right",
+        "port": "minus"
+      }
+    }
+  ]
+}

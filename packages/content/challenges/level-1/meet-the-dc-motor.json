@@ -1,0 +1,218 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "goal": {
+    "forTicks": 15,
+    "kind": "holds",
+    "when": {
+      "kind": "and",
+      "of": [
+        {
+          "kind": "state",
+          "state": "turning",
+          "target": {
+            "placed": "motor-left"
+          }
+        },
+        {
+          "kind": "state",
+          "state": "turning",
+          "target": {
+            "placed": "motor-right"
+          }
+        }
+      ]
+    }
+  },
+  "goalLine": "Wire the second DC motor so both DC motors turn",
+  "hints": [
+    {
+      "steps": [
+        {
+          "line": "This motor is not in a loop with the battery pack",
+          "step": "pulse-part",
+          "target": {
+            "placed": "motor-right"
+          }
+        },
+        {
+          "line": "Power goes in at this DC motor's plus",
+          "step": "pulse-port",
+          "target": {
+            "placed": "motor-right",
+            "port": "plus"
+          }
+        },
+        {
+          "from": {
+            "placed": "battery",
+            "port": "plus"
+          },
+          "line": "Plus to plus",
+          "step": "ghost-wire",
+          "to": {
+            "placed": "motor-right",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "motor-right",
+                "port": "plus"
+              }
+            }
+          ],
+          "line": "Wired the battery pack's plus to this DC motor's plus",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "placed": "motor-right",
+        "port": "plus"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This motor has power in but no way out",
+          "step": "pulse-part",
+          "target": {
+            "placed": "motor-right"
+          }
+        },
+        {
+          "line": "Power comes out at this DC motor's minus",
+          "step": "pulse-port",
+          "target": {
+            "placed": "motor-right",
+            "port": "minus"
+          }
+        },
+        {
+          "from": {
+            "placed": "motor-right",
+            "port": "minus"
+          },
+          "line": "Minus back to minus",
+          "step": "ghost-wire",
+          "to": {
+            "placed": "battery",
+            "port": "minus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "motor-right",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "battery",
+                "port": "minus"
+              }
+            }
+          ],
+          "line": "Wired this DC motor's minus back to the battery pack's minus",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "placed": "motor-right",
+        "port": "minus"
+      }
+    }
+  ],
+  "id": "meet-the-dc-motor",
+  "introduces": "dc-motor",
+  "kind": "part-introduction",
+  "kit": "rolling-start",
+  "level": 1,
+  "start": {
+    "arena": {
+      "preset": "open-floor",
+      "props": []
+    },
+    "meta": {
+      "createdAt": "2026-10-03T09:00:00.000Z",
+      "highWater": {
+        "parts": 0,
+        "wires": 2
+      },
+      "id": "e0bcd1b0-d36e-4e15-b884-61b3750bc34c",
+      "level": 1,
+      "name": "Meet the DC motor",
+      "updatedAt": "2026-10-03T09:00:00.000Z"
+    },
+    "parts": [
+      {
+        "id": "battery",
+        "part": "battery-pack-2-cell",
+        "position": {
+          "x": -100,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "motor-left",
+        "part": "dc-motor",
+        "position": {
+          "x": 100,
+          "y": -60
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "motor-right",
+        "part": "dc-motor",
+        "position": {
+          "x": 100,
+          "y": 60
+        },
+        "rotation": 0,
+        "settings": {}
+      }
+    ],
+    "version": 1,
+    "wires": [
+      {
+        "from": {
+          "part": "battery",
+          "port": "plus"
+        },
+        "id": "w1",
+        "to": {
+          "part": "motor-left",
+          "port": "plus"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w2",
+        "to": {
+          "part": "motor-left",
+          "port": "minus"
+        }
+      }
+    ]
+  },
+  "title": "Meet the DC motor"
+}

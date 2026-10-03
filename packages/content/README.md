@@ -45,6 +45,10 @@ A fixture is a Run that tests replay: task 2.6's working and broken builds, the 
 
 Every reference is checked against the content, and a blueprint file no fixture uses is an issue. The blueprints stay bare, so `pnpm validate-content` checks them as blueprints. The package map does not stop app code importing this entry, so review does.
 
+## Level 1 challenges (task 4.7)
+
+Fifteen challenges in `challenges/level-1/`, all on the Rolling Start kit with no settings: part introductions for the battery pack, DC motor, large wheel, caster and switch (the chassis is the base of every build, so it has none); guided `drive-forward`, `stop-with-the-switch`, `turn-in-a-circle`, `over-the-hill` (ramp) and `push-the-box` (bump props); breakdowns `no-way-out` (a DC motor with no return wire) and `switch-to-one-side` (a switch outside the loop), each naming its fault in a `fault` trigger (D48); what-ifs `what-if-one-wheel` and `what-if-one-motor-on-the-switch`; and the unscripted build `cross-the-arena`, to the wall stop's far-side zone (D26). Each has a passing and a failing fixture in `FIXTURES`. A what-if's goal is the behaviour its change shows, since a goal must be a predicate. Home lists challenges in id order, so the order a child meets them in is not authored here.
+
 ## Voice
 
 Every system-text field follows the voice rules: real component names, no character names, no praise, no exclamation marks (ground rule 7, brief Section 12). The schema refuses exclamation marks; the content validator checks terminology and banned words.

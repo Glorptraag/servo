@@ -1,0 +1,76 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/meet-the-dc-motor-start
+seed 1
+ticks 30
+inputs none
+blueprint 61ca34c9790e76f3
+arena open-floor 297edbfc7ad9a93c
+part battery-pack-2-cell ac49444ad3a2e166
+part dc-motor e80cd3eae3017bf6
+record 2c4fd5d86e7a3235e16c771de424f5778d413893ab594d692666093543ff7b04
+fault motor-right no-circuit first-tick=2
+subjects battery motor-left motor-right wire:w1 wire:w2
+tick 0 77830b95
+  battery volts=2.778 milliamps=555.6 charge=1 x=200 y=600 heading=0
+  motor-left volts=2.778 milliamps=555.6 rpm=92.6 x=400 y=660 heading=0 sound.motor=0.463
+  motor-right volts=0 milliamps=0 rpm=0 x=400 y=540 heading=0
+  wire:w1 milliamps=555.6
+  wire:w2 milliamps=-555.6
+tick 1 8e285617
+  battery volts=2.939 milliamps=152.3
+  motor-left volts=2.939 milliamps=152.3 rpm=98 sound.motor=0.49
+  wire:w1 milliamps=152.3
+  wire:w2 milliamps=-152.3
+tick 2 7bbc0665
+  battery volts=2.951 milliamps=122.4
+  motor-left volts=2.951 milliamps=122.4 rpm=98.4 sound.motor=0.492
+  motor-right faults=no-circuit
+  wire:w1 milliamps=122.4
+  wire:w2 milliamps=-122.4
+tick 3 f910cad3
+  battery volts=2.952 milliamps=120.2 charge=0.9999
+  motor-left volts=2.952 milliamps=120.2
+  wire:w1 milliamps=120.2
+  wire:w2 milliamps=-120.2
+tick 4 da80300c
+  battery milliamps=120
+  motor-left milliamps=120
+  wire:w1 milliamps=120
+  wire:w2 milliamps=-120
+tick 5 77aa6bd5
+tick 6 eefb5bda
+tick 7 24a6d2eb
+  battery charge=0.9998
+tick 8 5954794b
+tick 9 9532139b
+tick 10 e1fae9ba
+  battery charge=0.9997
+tick 11 54a6a56e
+tick 12 f8c896bd
+tick 13 b0f6b452
+tick 14 c8b4d4d0
+  battery charge=0.9996
+tick 15 66a96e17
+tick 16 6e68baaf
+tick 17 66f43b0e
+  battery charge=0.9995
+tick 18 3ce3a10c
+tick 19 e191f2de
+  battery volts=2.951
+  motor-left volts=2.951
+tick 20 2a71df20
+tick 21 754bd5f8
+  battery charge=0.9994
+tick 22 e15a5634
+tick 23 af703846
+tick 24 38b133a7
+tick 25 285ca3c0
+  battery charge=0.9993
+tick 26 95c2f87a
+tick 27 e8424697
+tick 28 7b7e4d66
+  battery charge=0.9992
+tick 29 9c65011f
+tick 30 3606d315

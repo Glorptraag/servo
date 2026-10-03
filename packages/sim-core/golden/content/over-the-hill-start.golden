@@ -1,0 +1,93 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/over-the-hill-start
+seed 1
+ticks 60
+inputs none
+blueprint 962b8dbfb3423ed8
+arena ramp 221441cf1bc4861b
+part battery-pack-2-cell ac49444ad3a2e166
+part caster 85cad363c9f68e25
+part chassis 2b67875c3e879e19
+part dc-motor e80cd3eae3017bf6
+part wheel-large c182e441f60c54e3
+record 2d021c36057771e9bbd62704ffdaabf9a8592bf5b7b3c1e1fee8e31c47fd323d
+fault battery no-loop first-tick=2
+fault motor-left no-circuit first-tick=2
+fault motor-right no-circuit first-tick=2
+subjects battery caster chassis motor-left motor-right wheel-left wheel-right wire:w5 wire:w6 wire:w7 wire:w8
+tick 0 03ce7d6f
+  battery volts=3 milliamps=0 charge=1
+  chassis x=300 y=600 heading=0 pitch=0 roll=0
+  motor-left volts=0 milliamps=0 rpm=0
+  motor-right volts=0 milliamps=0 rpm=0
+  wheel-left rpm=0
+  wheel-right rpm=0
+  wire:w5 rpm=0
+  wire:w6 rpm=0
+  wire:w7 milliamps=0
+  wire:w8 milliamps=0
+tick 1 37517e5f
+tick 2 2fd6476f
+  battery faults=no-loop
+  motor-left faults=no-circuit
+  motor-right faults=no-circuit
+tick 3 37517e5f
+tick 4 37517e5f
+tick 5 37517e5f
+tick 6 37517e5f
+tick 7 37517e5f
+tick 8 37517e5f
+tick 9 37517e5f
+tick 10 37517e5f
+tick 11 37517e5f
+tick 12 37517e5f
+tick 13 37517e5f
+tick 14 37517e5f
+tick 15 37517e5f
+tick 16 37517e5f
+tick 17 37517e5f
+tick 18 37517e5f
+tick 19 37517e5f
+tick 20 37517e5f
+tick 21 37517e5f
+tick 22 37517e5f
+tick 23 37517e5f
+tick 24 37517e5f
+tick 25 37517e5f
+tick 26 37517e5f
+tick 27 37517e5f
+tick 28 37517e5f
+tick 29 37517e5f
+tick 30 37517e5f
+tick 31 37517e5f
+tick 32 37517e5f
+tick 33 37517e5f
+tick 34 37517e5f
+tick 35 37517e5f
+tick 36 37517e5f
+tick 37 37517e5f
+tick 38 37517e5f
+tick 39 37517e5f
+tick 40 37517e5f
+tick 41 37517e5f
+tick 42 37517e5f
+tick 43 37517e5f
+tick 44 37517e5f
+tick 45 37517e5f
+tick 46 37517e5f
+tick 47 37517e5f
+tick 48 37517e5f
+tick 49 37517e5f
+tick 50 37517e5f
+tick 51 37517e5f
+tick 52 37517e5f
+tick 53 37517e5f
+tick 54 37517e5f
+tick 55 37517e5f
+tick 56 37517e5f
+tick 57 37517e5f
+tick 58 37517e5f
+tick 59 37517e5f
+tick 60 37517e5f
