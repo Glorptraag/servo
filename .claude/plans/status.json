@@ -956,7 +956,7 @@
       "dispatched_at": "2026-10-03T02:19:54+00:00"
     },
     "5.4": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -970,8 +970,8 @@
       ],
       "done_when": "Draws from Level 1\u20132 parts only; records a result per child; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-03T16:10:13+00:00",
+      "completed_by": "W-5.4",
       "dispatched_at": "2026-10-03T15:13:19+00:00"
     },
     "5.5": {
@@ -2070,6 +2070,14 @@
       "question": "Challenges (R-4.5 Q3-Q6): saved build does not remember its challenge (reopen loses goal line); Home lists all levels' challenges ungated; check mark stays after Stop, clears on edit or next Run. Accept defaults?",
       "recommendation": "Accept for launch; remembering a build's challenge is a small follow-up if G4 children lose their goal",
       "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D107",
+      "question": "GitHub Actions stopped running jobs on 2026-10-03: 'recent account payments have failed or your spending limit needs to be increased' (Billing & plans). Fix billing so CI resumes?",
+      "recommendation": "Drew fixes billing; until then the orchestrator verifies every merge locally (lint, typecheck, all tests of touched packages incl. browser, golden, e2e shard where relevant) and re-runs CI on main once billing is restored",
+      "confidence": "high",
       "blocks": [],
       "resolved": false
     }

@@ -28,7 +28,8 @@ describe('the contracts the parent view builds against', () => {
     });
     // Task 5.3 has landed: partsListOf reads a blueprint against the catalogue, and test/export/ tests it on the kits.
     expect(partsListOf).toBeTypeOf('function');
-    expect(() => drawCards({} as ServoStore['content'], 1)).toThrow(/task 5\.4/);
+    // Task 5.4 has landed: drawCards deals the card game's deck, and test/card-game/ tests it on the content.
+    expect(drawCards).toBeTypeOf('function');
     // Task 5.1 has landed: mountParent draws the parent view, and test/browser/ tests it in Chromium.
     expect(mountParent).toBeTypeOf('function');
     expect([progressFor, playRound].every((flow) => typeof flow === 'function')).toBe(true);

@@ -1,8 +1,8 @@
 // The parent view's first screen (task 5.1): the parental gate (D28), then the children on this device with the
 // profile switch, adding, renaming and removing a child, and the builds of the child in use, each with its parts list
 // (task 5.3, ../export/) and a "Copy link" that shares it read-only with another adult (task 5.6, D21: the build's name
-// only when ticked), then that child's progress (task 5.2, ../progress/). Every control is a native button, radio,
-// checkbox or text field, so touch, pointer, keyboard and screen reader each have the same path. Nothing is a dialog: a
+// only when ticked), then that child's progress (task 5.2, ../progress/) and the card game (task 5.4, ../card-game/).
+// Every control is a native button, radio, checkbox or text field, so touch, pointer, keyboard and screen reader each have the same path. Nothing is a dialog: a
 // removal is confirmed inline, and anything that goes wrong is one plain line. The view has no routes and writes nothing
 // to the address, so no address can open one child's records, and no profile id reaches the page. The data note (task
 // 6.2) closes the view.
@@ -12,6 +12,7 @@ import type { Profile, ServoStore } from '@servo/app/store';
 import { answers, gateQuestion } from './gate.ts';
 import { ChoiceNotKept, NameRefused, addChild, readAccounts, removeChild, renameChild, shareLinkFor, switchChild } from './model.ts';
 import type { Accounts } from './model.ts';
+import { CardGameSection } from '../card-game/index.ts';
 import { DataNote } from './data-note.tsx';
 import { PartsListExport } from '../export/index.ts';
 import { ProgressSection } from '../progress/index.ts';
@@ -135,6 +136,8 @@ const AccountsView = ({ store }: { readonly store: ServoStore }) => {
   // D21: off each time the view opens.
   const [includeName, setIncludeName] = useState(false);
   const [shown, setShown] = useState<{ readonly id: string; readonly url: string } | undefined>(undefined);
+  // Each card-game round kept reads progress again, so it shows the latest round.
+  const [rounds, setRounds] = useState(0);
   const live = useRef(true);
   const switchRef = useRef<HTMLFieldSetElement>(null);
   const addRef = useRef<HTMLInputElement>(null);
@@ -285,7 +288,11 @@ const AccountsView = ({ store }: { readonly store: ServoStore }) => {
         </section>
       )}
 
-      {current && <ProgressSection key={current.id} store={store} profile={current.id} name={current.name} />}
+      {current && <ProgressSection key={`${current.id} ${rounds}`} store={store} profile={current.id} name={current.name} />}
+
+      {current && (
+        <CardGameSection key={current.id} store={store} profile={current.id} name={current.name} onKept={() => setRounds((count) => count + 1)} />
+      )}
 
       <DataNote />
 

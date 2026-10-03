@@ -1,6 +1,5 @@
-// @servo/parent: the adult's side of Servo (tasks 5.1–5.4). Typed stubs until those tasks land; each throws.
-// Tasks 5.1, 5.2 and 5.3 have landed: the account and child profiles, in accounts/, progress, in progress/, and the
-// parts-list export, in export/.
+// @servo/parent: the adult's side of Servo (tasks 5.1–5.4). All four have landed: the account and child profiles, in
+// accounts/, progress, in progress/, the parts-list export, in export/, and the card game, in card-game/.
 // Imports only @servo/schema and @servo/app/store (the package map). See README.md.
 
 import type { CardGameResult, Content, ServoStore } from '@servo/app/store';
@@ -19,6 +18,7 @@ import type {
   Timestamp,
 } from '@servo/schema';
 import { mountParentWith } from './accounts/index.ts';
+import { drawCardsFrom } from './card-game/index.ts';
 import { partsListFrom } from './export/index.ts';
 import { progressFrom } from './progress/index.ts';
 
@@ -104,9 +104,7 @@ export const partsListOf: PartsListOf = partsListFrom;
 /** Ten part types drawn from the Level 1–2 parts in `content`, in the order to show them (D40). Same seed, same deck. */
 export type DrawCards = (content: Content, seed: number) => readonly PartTypeId[];
 
-export const drawCards: DrawCards = () => {
-  throw new Error('drawCards is not implemented yet (task 5.4).');
-};
+export const drawCards: DrawCards = drawCardsFrom;
 
 export interface ParentHandle {
   /** Removes the parent view from its host. */
@@ -137,6 +135,7 @@ export {
   switchChild,
 } from './accounts/index.ts';
 export type { Accounts, ParentOptions } from './accounts/index.ts';
+export { CARD_GAME_TEXT, DECK_SIZE } from './card-game/index.ts';
 export { EXPORT_TEXT, LIST_TEXT, UnknownPart } from './export/index.ts';
 export { PROGRESS_TEXT, readProgress } from './progress/index.ts';
 export type { ProgressRead } from './progress/index.ts';
