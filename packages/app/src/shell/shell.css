@@ -4,6 +4,16 @@
  * panels with soft shadows where they overlap the canvas (brief Section 11), moving in 160 ms (120-200 ms).
  */
 
+/*
+ * A page with the shell in it never swipes back or pulls to refresh: Chrome on a touch screen (Android, ChromeOS,
+ * Linux) reads a sideways swipe the page does not use as Back, which leaves the app (review R-4.2). The app's own page
+ * says so too (index.html); this keeps it wherever the shell is mounted.
+ */
+html:has(.servo-shell),
+body:has(.servo-shell) {
+  overscroll-behavior: none;
+}
+
 .servo-shell {
   --shell-workbench: #ebe8e3;
   --shell-panel: #fbfaf7;

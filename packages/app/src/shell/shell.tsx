@@ -90,6 +90,8 @@ export const Shell = ({
   const storage = useMemo(() => (givenStorage === undefined ? pageStorage() : givenStorage), [givenStorage]);
   const rootRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
+  const trayRef = useRef<HTMLElement>(null);
+  const arenaStripRef = useRef<HTMLElement>(null);
   // Null until the shell is measured: the regions render only then, so nothing animates in from a zero size.
   const [size, setSize] = useState<{ readonly width: number; readonly height: number } | null>(null);
   const [tucked, setTuckedState] = useState<Tucked>(() => readTucked(storage));
@@ -254,6 +256,17 @@ export const Shell = ({
     [size, tucked, mode, prefs.leftHanded, specCardWanted, specCardAside],
   );
 
+  // The tray and the arena strip are where a part, wire or prop dragged off the canvas goes back to, as the bin
+  // (brief Section 10, D36). `setRemoveTargets` replaces the whole list, so the shell, which holds both regions, is its
+  // one caller (review R-4.2). Only a region that shows counts: the canvas tests the box alone, and a tucked arena
+  // strip lies behind the header, where a drop would otherwise remove a part.
+  const trayShown = layout.shown.tray;
+  const arenaStripShown = layout.shown.arenaStrip;
+  useEffect(() => {
+    const targets = [trayShown && trayRef.current, arenaStripShown && arenaStripRef.current].filter((each): each is HTMLElement => !!each);
+    canvas?.setRemoveTargets(targets);
+  }, [canvas, trayShown, arenaStripShown]);
+
   // The safe area goes out whenever it changes, compared by value, so a re-render alone never repeats it.
   const { top, right, bottom, left } = layout.safeArea;
   useEffect(() => {
@@ -291,6 +304,7 @@ export const Shell = ({
       </header>
       <EdgeTab edge="header" controls={ids.header} />
       <section
+        ref={trayRef}
         id={ids.tray}
         className="shell-tray shell-panel"
         data-region="tray"
@@ -306,6 +320,7 @@ export const Shell = ({
         <div ref={hostRef} className="shell-canvas-host" />
       </main>
       <section
+        ref={arenaStripRef}
         id={ids.arenaStrip}
         className="shell-arena-strip shell-panel"
         data-region="arenaStrip"
