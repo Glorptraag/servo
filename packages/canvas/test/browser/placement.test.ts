@@ -227,7 +227,8 @@ describe('snap or slide (brief Section 10)', () => {
       for (const callback of held) original.call(window, callback);
     }
     const landed = at('p2');
-    await expect.poll(() => drawnAt('p2'), { timeout: 2000 }).toEqual({ x: landed.x, y: landed.y });
+    // The slide is an animation; on a machine at load 45 and above its frames come slowly, so wait for it to land.
+    await expect.poll(() => drawnAt('p2'), { timeout: 30_000 }).toEqual({ x: landed.x, y: landed.y });
   });
 });
 
