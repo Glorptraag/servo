@@ -1,0 +1,460 @@
+// Selection and focus states (brief Sections 9 and 10, task 3.4). One selection for the whole canvas: a part, a wire
+// or a prop, made by a tap or a click, by the handle's `select` (the app, the list view), and shown the same way
+// whichever path made it. A part selection is what opens the spec card: every change fires `select`. In Build mode
+// the selected part shows placement's handles and a selected wire wiring's bin; in Run mode and on a read-only canvas
+// a tap still selects, to inspect. The hint rungs draw here too, in the hints layer. See docs/selection.md.
+import type { ArenaFeatureId, Catalogue, Prop, Vec2 } from '@servo/schema';
+import type { CanvasPrefs, DrawnHintStep, EditCommand, SelectEvent, Selection } from '../interface.ts';
+import { Press } from '../placement/controller.ts';
+import type { Gesture } from '../placement/controller.ts';
+import { layOutCallout, layOutHandles } from '../placement/overlays.ts';
+import type { Circle } from '../placement/overlays.ts';
+import { canvasToArena, onProp, propOutline } from '../placement/props.ts';
+import { CALLOUT_GAP_PX, Callout, HANDLE_GAP_PX, HANDLE_PX, Handles } from '../placement/views.ts';
+import { DRAG_THRESHOLD_PX } from '../renderer/input.ts';
+import type { PointerClaim } from '../renderer/input.ts';
+import { paletteFor } from '../renderer/style.ts';
+import type { Palette } from '../renderer/style.ts';
+import type { CanvasSurface } from '../renderer/surface.ts';
+import type { DrawContext } from '../renderer/views.ts';
+import { arenaToCanvas } from '../scene/arena.ts';
+import { rectOfPoints } from '../scene/geometry.ts';
+import type { Rect } from '../scene/geometry.ts';
+import type { Hit } from '../scene/hit.ts';
+import { WIRE_HIT_MM } from '../scene/units.ts';
+import { drawnSockets } from '../wiring/crowds.ts';
+import { flowLine, focusFor, wireOf } from './focus.ts';
+import { drawsAnything, hintTargets } from './hints.ts';
+import type { HintTargets } from './hints.ts';
+import { HintMarks, PropRing, SOCKET_REACH_MM, pulseAt } from './views.ts';
+
+const MIN_SENSITIVITY = 0.05;
+
+export interface SelectionHost {
+  readonly surface: CanvasSurface;
+  readonly catalogue: Catalogue;
+  readonly readOnly: boolean;
+  prefs(): CanvasPrefs;
+  drawContext(): DrawContext;
+  /** Fires the handle's `select` event. */
+  selected(event: SelectEvent): void;
+}
+
+/** Which controller says what it shows: placement's handles (a part), wiring's bin (a wire), or a tapped prop. */
+export type SelectionSource = 'part' | 'wire' | 'prop';
+
+const reducedMotion = (): boolean => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const same = (a: Selection | null, b: Selection | null): boolean => {
+  if (a === null || b === null) return a === b;
+  if (a.kind === 'part' && b.kind === 'part') return a.partId === b.partId;
+  if (a.kind === 'wire' && b.kind === 'wire') return a.wireId === b.wireId;
+  if (a.kind === 'prop' && b.kind === 'prop') return a.propId === b.propId;
+  return false;
+};
+
+const selectionOf = (source: SelectionSource, id: string): Selection =>
+  source === 'part' ? { kind: 'part', partId: id } : source === 'wire' ? { kind: 'wire', wireId: id } : { kind: 'prop', propId: id };
+
+export class SelectionController {
+  private readonly host: SelectionHost;
+  private readonly surface: CanvasSurface;
+  private readonly label = new Callout();
+  private readonly marks = new HintMarks();
+  private readonly ring = new PropRing();
+  private readonly propBin = new Handles();
+  private readonly offZoom: () => void;
+  private current: Selection | null = null;
+  /** Set while the selection is passed on to placement and wiring, so what they report back is not taken as new. */
+  private pushing = false;
+  private hint: { readonly step: DrawnHintStep; targets: HintTargets } | undefined;
+  private pulse: { readonly started: number; frame: number | undefined } | undefined;
+  private press: Press | undefined;
+  private destroyed = false;
+
+  constructor(host: SelectionHost) {
+    this.host = host;
+    this.surface = host.surface;
+    const { canvas, input, overlays } = this.surface;
+    overlays.addChild(this.ring.graphics, this.propBin.graphics, this.marks.graphics, this.label.container);
+    // First in line: it sees every press, and claims one only on the selected prop's bin.
+    input.handlers.unshift((event, screen, hit) => this.pressed(event, screen, hit));
+    input.taps.push((event, screen) => this.tapped(screen));
+    canvas.addEventListener('keydown', this.keyed);
+    // The label and the bin keep their screen size at every zoom.
+    this.offZoom = this.surface.on('zoom', () => {
+      this.drawProp();
+      this.drawLabel();
+    });
+  }
+
+  // ---------------------------------------------------------------------------------------------------------
+  // The handle's members
+
+  get selection(): Selection | null {
+    return this.current;
+  }
+
+  /**
+   * Selects what `next` names, or clears with null, and fires `select` when that changes the selection. A selection
+   * naming nothing on the canvas now (a part Undo took away) changes nothing.
+   */
+  select(next: Selection | null): void {
+    if (next !== null && !['part', 'wire', 'prop'].includes((next as { kind?: unknown }).kind as string)) {
+      throw new RangeError(`Unknown selection kind '${String((next as { kind?: unknown }).kind)}'.`);
+    }
+    if (next !== null && !this.exists(next)) return;
+    this.choose(next);
+  }
+
+  /**
+   * Draws one hint rung over everything, replacing the one before. Returns false, drawing nothing, when nothing on the
+   * canvas matches. Drawn in Build mode; in Run mode it waits, hidden, for Stop.
+   */
+  showHint(step: DrawnHintStep): boolean {
+    if (step.step !== 'pulse-part' && step.step !== 'pulse-port' && step.step !== 'ghost-wire') {
+      throw new RangeError(`The canvas draws pulse-part, pulse-port and ghost-wire; '${String((step as { step?: unknown }).step)}' is the app's.`);
+    }
+    const targets = hintTargets(this.surface.scene, step);
+    this.hint = { step, targets };
+    this.drawHint();
+    return drawsAnything(targets);
+  }
+
+  clearHints(): void {
+    this.hint = undefined;
+    this.drawHint();
+  }
+
+  /** The rung drawn now, for the list view's text twin (task 3.6). Undefined when none is drawn. */
+  get shownHint(): DrawnHintStep | undefined {
+    return this.hint && drawsAnything(this.hint.targets) ? this.hint.step : undefined;
+  }
+
+  /** The label beside the selected wire: what flows on it. */
+  get wireLabel(): string | undefined {
+    return this.label.line;
+  }
+
+  /** Where the selected prop's bin sits, mm. */
+  get propBinPlace(): Vec2 | undefined {
+    return this.propBin.shown.get('bin');
+  }
+
+  // ---------------------------------------------------------------------------------------------------------
+  // Hooks the surface calls
+
+  /**
+   * Placement, wiring and a tapped prop say what they show: placement's handles beside a part, wiring's bin beside a
+   * wire. Something shown is the new selection; the one selected showing nothing any more clears it. Only in Build
+   * mode: locked, they show nothing, and the selection stays for inspecting.
+   */
+  shown(source: SelectionSource, id: string | undefined): void {
+    if (this.pushing || !this.editable()) return;
+    if (id !== undefined) this.choose(selectionOf(source, id));
+    else if (this.current?.kind === source) this.choose(null);
+  }
+
+  /** After every redraw of the build: a selection the build lost clears, and focus and hints follow the new scene. */
+  refresh(): void {
+    if (this.current !== null && !this.exists(this.current)) {
+      this.choose(null);
+      return;
+    }
+    if (this.hint) this.hint.targets = hintTargets(this.surface.scene, this.hint.step);
+    this.push();
+    this.redraw();
+  }
+
+  /** Run keeps the selection, for the spec card's live readouts; back in Build its handles or bin show again. */
+  modeChanged(): void {
+    this.press?.cancel();
+    this.press = undefined;
+    this.push();
+    this.redraw();
+  }
+
+  destroy(): void {
+    this.destroyed = true;
+    this.press?.cancel();
+    this.stopPulse();
+    this.offZoom();
+    this.surface.canvas.removeEventListener('keydown', this.keyed);
+    this.ring.graphics.destroy();
+    this.propBin.graphics.destroy();
+    this.marks.graphics.destroy();
+    this.label.container.destroy({ children: true });
+  }
+
+  // ---------------------------------------------------------------------------------------------------------
+  // Choosing
+
+  private choose(next: Selection | null): void {
+    if (same(this.current, next)) return;
+    this.current = next;
+    this.push();
+    this.redraw();
+    this.host.selected({ selection: next });
+  }
+
+  /** Passes the selection on to placement and wiring, which show the handles or the bin in Build mode. */
+  private push(): void {
+    if (!this.editable()) return;
+    const current = this.current;
+    this.pushing = true;
+    try {
+      this.surface.placement.selectPart(current?.kind === 'part' ? current.partId : undefined);
+      this.surface.wiring.showBin(current?.kind === 'wire' ? current.wireId : undefined);
+    } finally {
+      this.pushing = false;
+    }
+  }
+
+  private exists(selection: Selection): boolean {
+    switch (selection.kind) {
+      case 'part':
+        return this.surface.scene.partById.has(selection.partId);
+      case 'wire':
+        return wireOf(this.surface.scene, selection.wireId) !== undefined;
+      case 'prop':
+        return this.propOf(selection.propId) !== undefined;
+      default:
+        return false;
+    }
+  }
+
+  // ---------------------------------------------------------------------------------------------------------
+  // Pointers and keys
+
+  /**
+   * Sees every press first and claims only a press on the selected prop's bin. A press on the build (a socket, a
+   * wire, a part) lets a selected prop go, as it lets a selected part go; a pan keeps it.
+   */
+  private pressed(event: PointerEvent, screen: Vec2, hit: Hit | null): PointerClaim | null {
+    if (this.current?.kind !== 'prop') return null;
+    const world = this.surface.camera.screenToWorld(screen);
+    const propId = this.current.propId;
+    if (this.editable() && this.propBin.hit(world) === 'bin') {
+      this.press = new Press(event, this.surface.blueprint, () => DRAG_THRESHOLD_PX / this.sensitivity, this.binGesture(propId));
+      return this.press;
+    }
+    if (hit !== null && this.editable()) this.choose(null);
+    return null;
+  }
+
+  /**
+   * A tap nobody claimed. In Build mode placement and wiring select by tap what they own, and a tap on one of the
+   * child's props comes through placement; what reaches here is empty canvas or a preset's prop, which selects it (to
+   * inspect) or lets a selected prop go. Locked (Run mode, read-only), a tap selects what it lands on, to inspect: a
+   * socket's part, a wire, a part, and in Build mode a prop. In Run mode props move, so a tap does not reach them.
+   */
+  private tapped(screen: Vec2): void {
+    if (!this.surface.blueprint) return;
+    const world = this.surface.camera.screenToWorld(screen);
+    if (this.editable()) {
+      const prop = this.propAt(world);
+      if (prop) this.choose({ kind: 'prop', propId: prop.id });
+      else if (this.current?.kind === 'prop') this.choose(null);
+      return;
+    }
+    const hit = this.surface.hitAt(screen);
+    const prop = hit === null && this.surface.mode === 'build' ? this.propAt(world) : undefined;
+    const next: Selection | null =
+      hit?.kind === 'wire'
+        ? { kind: 'wire', wireId: hit.wire.id }
+        : hit
+          ? { kind: 'part', partId: hit.part.id }
+          : prop
+            ? { kind: 'prop', propId: prop.id }
+            : null;
+    this.choose(next);
+    if (next) this.surface.canvas.focus({ preventScroll: true });
+  }
+
+  /** Delete (and Backspace) removes a selected prop of the child's, as it removes a part or a wire. */
+  private readonly keyed = (event: KeyboardEvent): void => {
+    if (event.key !== 'Delete' && event.key !== 'Backspace') return;
+    if (this.current?.kind !== 'prop' || !this.editable() || !this.childsProp(this.current.propId)) return;
+    event.preventDefault();
+    this.commit({ kind: 'remove-prop', propId: this.current.propId });
+  };
+
+  private binGesture(propId: ArenaFeatureId): Gesture {
+    return {
+      tap: () => {
+        this.press = undefined;
+        this.commit({ kind: 'remove-prop', propId });
+      },
+    };
+  }
+
+  private commit(command: EditCommand): void {
+    this.surface.apply(command);
+  }
+
+  // ---------------------------------------------------------------------------------------------------------
+  // Drawing
+
+  private redraw(): void {
+    if (this.destroyed) return;
+    const scene = this.surface.scene;
+    this.surface.setEmphasis(focusFor(scene, this.current));
+    this.drawProp();
+    this.drawLabel();
+    this.drawHint();
+  }
+
+  /** The ring round a selected prop, and in Build mode its bin when it is the child's (the preset's stay). */
+  private drawProp(): void {
+    const scale = this.surface.camera.scale;
+    const radius = HANDLE_PX / 2 / scale;
+    const current = this.current;
+    const prop = current?.kind === 'prop' ? this.propOf(current.propId) : undefined;
+    const arena = this.surface.arena;
+    if (!prop || !arena) {
+      this.ring.clear();
+      this.propBin.draw(new Map(), radius, this.palette);
+      return;
+    }
+    const corners = propOutline(prop, prop.at).map((corner) => arenaToCanvas(arena.matrix, corner));
+    if (prop.shape === 'cylinder') {
+      this.ring.draw({ kind: 'circle', at: arenaToCanvas(arena.matrix, prop.at), r: prop.size.x / 2 }, this.palette);
+    } else {
+      this.ring.draw({ kind: 'outline', corners }, this.palette);
+    }
+    if (!this.editable() || !this.childsProp(prop.id)) {
+      this.propBin.draw(new Map(), radius, this.palette);
+      return;
+    }
+    const places = layOutHandles({
+      kinds: ['bin'],
+      part: rectOfPoints(corners) as Rect,
+      sockets: this.socketCircles(),
+      radius,
+      gap: HANDLE_GAP_PX / scale,
+      view: this.surface.camera.visible(),
+      leftHanded: this.host.prefs().leftHanded,
+    });
+    this.propBin.draw(places, radius, this.palette);
+    this.surface.requestFrame();
+  }
+
+  /** What flows on the selected wire, in one word beside its middle, clear of every socket and of its bin. */
+  private drawLabel(): void {
+    const current = this.current;
+    const wire = current?.kind === 'wire' ? wireOf(this.surface.scene, current.wireId) : undefined;
+    if (!wire) {
+      this.label.hide();
+      this.surface.requestFrame();
+      return;
+    }
+    const scale = this.surface.camera.scale;
+    const size = this.label.measure(flowLine(wire.kind), this.host.drawContext(), scale);
+    const middle = { x: (wire.from.at.x + wire.to.at.x) / 2, y: (wire.from.at.y + wire.to.at.y) / 2 };
+    const half = WIRE_HIT_MM / 2;
+    const over: Rect = { minX: middle.x - half, minY: middle.y - half, maxX: middle.x + half, maxY: middle.y + half };
+    const bin = this.surface.wiring.binPlace;
+    const avoid: Circle[] = [...this.socketCircles(), ...(bin ? [{ ...bin, r: HANDLE_PX / 2 / scale }] : [])];
+    const at = layOutCallout(size, over, avoid, this.surface.camera.visible(), CALLOUT_GAP_PX / scale);
+    this.label.place(at, size, this.palette, scale);
+    this.surface.requestFrame();
+  }
+
+  /** The hint rung, pulsing; still with reduced motion. Hidden in Run mode. */
+  private drawHint(): void {
+    if (this.destroyed) return;
+    const hint = this.hint;
+    if (!hint || !drawsAnything(hint.targets) || this.surface.mode === 'run') {
+      this.stopPulse();
+      this.marks.clear();
+      this.surface.requestFrame();
+      return;
+    }
+    this.marks.draw(hint.targets, this.palette, this.everySocket());
+    if (reducedMotion()) {
+      this.stopPulse();
+      this.marks.graphics.alpha = 1;
+      this.surface.requestFrame();
+      return;
+    }
+    if (!this.pulse) this.pulse = { started: performance.now(), frame: undefined };
+    this.stepPulse(performance.now());
+  }
+
+  /** A pulse changes only how strongly the rung shows, a frame at a time, until the rung goes. */
+  private stepPulse(now: number): void {
+    const pulse = this.pulse;
+    if (!pulse || this.destroyed) return;
+    this.marks.graphics.alpha = pulseAt(now - pulse.started);
+    this.surface.requestFrame();
+    if (pulse.frame === undefined) {
+      pulse.frame = requestAnimationFrame((next) => {
+        pulse.frame = undefined;
+        this.stepPulse(next);
+      });
+    }
+  }
+
+  private stopPulse(): void {
+    if (this.pulse?.frame !== undefined) cancelAnimationFrame(this.pulse.frame);
+    this.pulse = undefined;
+  }
+
+  /**
+   * After every rebuild, before wiring and placement raise theirs: the prop's ring in the chassis layer, its bin in the
+   * ports layer, the label and the hints in the hints layer.
+   */
+  layer(): void {
+    const layers = this.surface.layers;
+    if (!layers) return;
+    for (const [object, layer] of [
+      [this.ring.graphics, layers.chassis],
+      [this.propBin.graphics, layers.ports],
+      [this.marks.graphics, layers.hints],
+      [this.label.container, layers.hints],
+    ] as const) {
+      object.parentRenderLayer?.detach(object);
+      layer.attach(object);
+    }
+  }
+
+  // ---------------------------------------------------------------------------------------------------------
+  // Small helpers
+
+  private propOf(id: ArenaFeatureId): Prop | undefined {
+    return this.surface.arena?.props.find((prop) => prop.id === id);
+  }
+
+  private childsProp(id: ArenaFeatureId): boolean {
+    return this.surface.blueprint?.arena.props.some((prop) => prop.id === id) === true;
+  }
+
+  /** The topmost prop of the arena's, the preset's or the child's, under a canvas point. */
+  private propAt(world: Vec2): Prop | undefined {
+    const arena = this.surface.arena;
+    if (!arena) return undefined;
+    const point = canvasToArena(arena.matrix, world);
+    return [...arena.props].reverse().find((prop) => onProp(prop, point));
+  }
+
+  private socketCircles(): Circle[] {
+    return drawnSockets(this.surface.scene).map((port) => ({ ...port.at, r: SOCKET_REACH_MM }));
+  }
+
+  /** Every socket the canvas draws, a frame's mount points too: a hint covers none of them. */
+  private everySocket(): Circle[] {
+    return this.surface.scene.parts.flatMap((part) => part.ports.filter((port) => port.layer !== 'none').map((port) => ({ ...port.at, r: SOCKET_REACH_MM })));
+  }
+
+  private editable(): boolean {
+    return !this.host.readOnly && this.surface.mode === 'build' && this.surface.blueprint !== undefined;
+  }
+
+  private get sensitivity(): number {
+    return Math.max(this.host.prefs().dragSensitivity, MIN_SENSITIVITY);
+  }
+
+  private get palette(): Palette {
+    return paletteFor(this.host.prefs());
+  }
+}

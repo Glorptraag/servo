@@ -67,7 +67,7 @@ Where parts sit close on a chassis, sockets of neighbouring parts overlap, at ev
 - **Drag** a wire by its 24 px hit area onto a remove target (the tray): it comes off its sockets, rides under the finger and fades over the tray, and letting go there removes it (`disconnect`). Let go anywhere else, it goes back.
 - **Tap** a wire and its bin shows: the bin handle a selected part has (D44), 44 px on screen at every zoom, laid out as the part's handles are (`layOutHandles`), beside the wire's middle on its right (its left for left-handed use), then further along, clear of every socket and of the wire's own hit area, inside the view where it fits. A tap on the bin removes the wire, as Delete or Backspace does. A tap anywhere else hides it.
 - A drive linkage whose part does not sit on its shaft (a wheel joined to a servo motor's arm) is grabbed the same way; one that does is zero length, under the sockets, and comes off when its part is moved (D34).
-- For task 3.4: `wiring.selectedWire` is the wire whose bin shows, set by the same tap that will select it, and a tap on a socket or a wire hides the part's handles (`placement.selectPart(undefined)`).
+- Selection (task 3.4, [selection.md](selection.md)): `wiring.selectedWire` is the wire whose bin shows. Wiring reports every change to it through `surface.selectionShown('wire', id)`; the handle's `select` sets it with `wiring.showBin(id)` (a mount has no bin). A tap on a socket or a wire hides the part's handles (`placement.selectPart(undefined)`).
 
 ## Wires follow their ports
 
@@ -104,7 +104,7 @@ Taken here, conservatively, and listed for Drew:
 4. Tapped on a socket that refuses it, a waiting wire keeps waiting (the right colour glowing), rather than going.
 5. The refusal cue is the push-away and the right colour glowing, until the next touch. Nothing marks the refusing socket itself.
 6. Mount points are not wiring targets: a wire neither lands on nor is pushed away by one, so `wire.mechanical_mismatch` never arises from a canvas gesture (mounts are placed, task 3.2).
-7. Removing a wire: drag it onto the tray, or tap it and its bin, or Delete. The bin is wiring's until task 3.4's selection takes it over.
+7. Removing a wire: drag it onto the tray, or tap it and its bin, or Delete. The bin is wiring's; it shows for the selected wire (task 3.4).
 8. A wire dragged off to be removed rides under the finger whole, off its sockets.
 9. Polarity marks on power sockets (review R-3.1, question 4) are not drawn: this task's notes do not name them.
 10. The reach scales with drag sensitivity as placement's 48 px does, and never falls below a socket's own radius (22 px).

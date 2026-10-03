@@ -324,6 +324,10 @@ export class WireView {
     if (glowChanged && this.palette && this.ends) this.draw(this.wire, this.palette, this.ends[0], this.ends[1]);
   }
 
+  get currentEmphasis(): Emphasis {
+    return this.emphasis;
+  }
+
   destroy(): void {
     this.graphics.destroy();
   }

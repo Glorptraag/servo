@@ -62,7 +62,7 @@ Kept to what placement needs:
 
 - `src/renderer/input.ts`: `taps` (an unclaimed pointer that lifts without panning or pinching is a tap), the second-finger rule above with `PointerClaim.yieldsToPinch`, and `busy` counting claimed pointers too, so the grid stays up while a part is dragged.
 - `src/renderer/surface.ts`: the `placement` controller; `apply`, `beginPlacement`, `beginPropPlacement`, `cancelPlacement` and `setRemoveTargets`; `placement.refresh()` at the end of every rebuild, `modeChanged()` in `setMode` and `destroy()` in `destroy`.
-- For task 3.4: `placement.selectedPart` is the part whose handles show, set by the same tap that will select it, and `placement.selectPart(id)` sets it. Task 3.4 joins them to `select` and the `select` event.
+- Selection (task 3.4, [selection.md](selection.md)): `placement.selectedPart` is the part whose handles show. Placement reports every change to it through `surface.selectionShown('part', id)`, and a tap on one of the child's props as `('prop', id)`; the handle's `select` sets it with `placement.selectPart(id)`.
 
 ## Tests
 
@@ -89,6 +89,6 @@ Left from review R-3.2, one line each:
 
 - A wheel moved off its shaft re-snaps onto mount points only; putting it back on another shaft needs `connect`, so task 3.3 adds free shafts to the move targets (finding 5).
 - The line reaches the app only through `placement.notice`; the interface has no field for it, so tasks 3.6 and 4.x add one for read-aloud (finding 8).
-- The child's props are moved and removed only by dragging: a prop selection, its bin and Delete come with task 3.4's prop selection (finding 10).
+- The child's props are moved by dragging and removed by dragging, or by the bin and Delete once a tap selects them (task 3.4, finding 10).
 - The choices above are not in the decision queue: queueing them is the orchestrator's (finding 12).
 - Content's fixture blueprints are not in this package's e2e, which cannot import content; task 3.8's harness carries them (finding 13).

@@ -1,6 +1,6 @@
 # @servo/canvas
 
-The build surface: renderer, placement, wiring, selection, list view and Run animation. It depends on `@servo/schema` and reaches sim-core only through `@servo/sim-core/interface` (ground rule 6). It never imports content: the app passes the catalogue and the art resolver in. Task 0.4 owns this interface, typed in [src/interface.ts](src/interface.ts); `@servo/canvas` exports those types, `mountCanvas` (task 3.1, [docs/renderer.md](docs/renderer.md)), and `applyEdit` for every command (tasks 3.2 and 3.3, [docs/placement.md](docs/placement.md) and [docs/wiring.md](docs/wiring.md)). Handle members of later tasks throw an error naming the task.
+The build surface: renderer, placement, wiring, selection, list view and Run animation. It depends on `@servo/schema` and reaches sim-core only through `@servo/sim-core/interface` (ground rule 6). It never imports content: the app passes the catalogue and the art resolver in. Task 0.4 owns this interface, typed in [src/interface.ts](src/interface.ts); `@servo/canvas` exports those types, `mountCanvas` (task 3.1, [docs/renderer.md](docs/renderer.md)), and `applyEdit` for every command (tasks 3.2 and 3.3, [docs/placement.md](docs/placement.md) and [docs/wiring.md](docs/wiring.md)). Selection, focus states and hint rungs: task 3.4, [docs/selection.md](docs/selection.md). Handle members of later tasks throw an error naming the task.
 
 ```ts
 import { applyEdit, mountCanvas } from '@servo/canvas';
@@ -18,7 +18,7 @@ Every canvas responsibility belongs to a Phase 3 task, so no app task writes can
 | 3.1 | `mountCanvas` (fills and follows its host), `load`, `blueprint`, `setMode`, read-only, `fit`, `zoom`, `setZoom` and `zoom`, `setLevel`, `setPrefs` (theme, typeface), `on`, `destroy`; the layers, pan, zoom and art |
 | 3.2 | `applyEdit` for every command but wiring: place, move, rotate, remove, mount, unmount, settings, arena and props, rename, `batch`; `apply` and `edit`; `beginPlacement`, `beginPropPlacement`, `cancelPlacement`, `setRemoveTargets` and `placement`; drag sensitivity |
 | 3.3 | `applyEdit` for `connect` and `disconnect`; wiring by drag and tap-then-tap, the glow on approach, the push-away on a wrong type, the spring back, crowded sockets fanning out, removing wires |
-| 3.4 | `select`, `selection` and `select`; focus states; `showHint` and `clearHints` |
+| 3.4 | `select`, `selection` and the `select` event; focus states; prop selection, its bin and Delete; `showHint` and `clearHints`; the testing entry |
 | 3.5 | `applyRunFrame`; Run-mode drawing; switch flips and `control` |
 | 3.6 | `listView` and its DOM |
 | 3.7 | `tidyWires`, zoom limits |
@@ -37,3 +37,7 @@ Touch, pointer and the list view only ever emit an `EditCommand`: `place-part`, 
 ## Drawing, Run mode and the list view
 
 Canvas units are millimetres (the schema's geometry), drawn in the layer order of brief Section 9. Art comes from the injected `resolveArt`; a key with no picture gets a neutral tile, and a part on a mirrored mount point is drawn mirrored. In Run mode the canvas draws each frame it is given (dots along wires from `frame.flows`, wheels, servo arms, light, sounds' visual twins, stalls, tipping, the robot in the arena) and never writes to the blueprint. The list view is DOM beside the surface, offers the same legal actions as touch and pointer (including move and turn), lists the arena's props, and in Run mode flips switches. Details: [docs/surface.md](docs/surface.md). How task 3.1 draws, its scale, socket layout, layers, view and tests: [docs/renderer.md](docs/renderer.md).
+
+## Testing entry (task 3.4)
+
+`@servo/canvas/testing` exports `probeCanvas(handle)`, for packages/tools' e2e harness (task 3.8) and this package's tests only. Lint keeps it out of every other package's `src/` (`toolsOnly` in eslint.config.js): the app reaches the canvas through `@servo/canvas` alone, and the entry is not part of `interface.ts`. A probe gives, at the current view, both on the canvas plane (mm) and on the page (CSS pixels, as `clientX`): where each part, its tile's corners, each socket (and where it takes a press now, fanned out or not), each wire and its middle, and the shown handles and bins sit. It also gives `ready`, `settled`, `gridOpacity`, the canvas element, the view and `setView(centre, zoom)` (without the limits), `requestFrame`, `pageOf`/`worldOf`, how a part or wire is emphasised, and the selected wire's label. The harness can read these instead of the renderer's members.
