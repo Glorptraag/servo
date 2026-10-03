@@ -209,3 +209,9 @@
 .home-parent-entry:empty {
   display: none;
 }
+
+.home-parent-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}

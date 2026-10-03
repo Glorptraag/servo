@@ -7,7 +7,7 @@ import { mountCanvas } from '@servo/canvas';
 import type { CanvasHandle, ResolveArt } from '@servo/canvas';
 import type { Content } from '@servo/content';
 import type { Blueprint, Challenge, Level } from '@servo/schema';
-import { ArenaStrip, GoalLine, Home } from './challenges/index.ts';
+import { ArenaStrip, CHALLENGE_TEXT, GoalLine, Home, PARENT_PAGE } from './challenges/index.ts';
 import { deviceFlags } from './flags/index.ts';
 import type { Flags } from './flags/index.ts';
 import { ProgramView, programFor, slotSetting } from './program-view/index.ts';
@@ -71,7 +71,20 @@ export const App = ({ content, child = null, start, saving, onReady, flags: give
   const slots = useMemo<ShellSlots>(
     () => ({
       ...PLACEHOLDER_SLOTS,
-      home: <Home challenge={challenge} onChallenge={setChallenge} sandboxLevel={START_LEVEL} loop={loop} saving={saving} />,
+      home: (
+        <Home
+          challenge={challenge}
+          onChallenge={setChallenge}
+          sandboxLevel={START_LEVEL}
+          loop={loop}
+          saving={saving}
+          parentEntry={
+            <a className="shell-button home-parent-link" href={`${import.meta.env.BASE_URL}${PARENT_PAGE}`}>
+              {CHALLENGE_TEXT.forAdults}
+            </a>
+          }
+        />
+      ),
       goal: <GoalLine challenge={challenge} loop={loop} />,
       arenaStrip: <ArenaStrip challenge={challenge} />,
       specCard: (

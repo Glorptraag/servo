@@ -133,8 +133,13 @@ describe('Home', () => {
     expect([...home.querySelectorAll('h4')].map((heading) => heading.textContent)).toEqual(['Level 1 · Parts', 'Level 2 · Circuits']);
     expect(homeButton(app, 'Cross and stop').textContent).toContain('Unscripted build');
     expect(homeButton(app, 'Meet the switch').textContent).toContain('Part introduction');
-    // The named spot task 5.2 fills with the gated parent entry (D91): there, and empty.
-    expect(home.querySelector('[data-slot="parent-entry"]')?.childElementCount).toBe(0);
+    // The gated parent entry (D91, task 5.2): a plain link to the parent page, whose parental gate asks first (D28).
+    const entry = home.querySelector('[data-slot="parent-entry"]');
+    expect(entry?.childElementCount).toBe(1);
+    const link = entry?.querySelector('a');
+    expect(link?.textContent).toBe(CHALLENGE_TEXT.forAdults);
+    expect(new URL(link?.href ?? '').pathname).toBe('/parent.html');
+    expect(link?.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
     // Space never reaches the Run bar from Home.
     await userEvent.keyboard(' ');
     expect(runToggle(app).dataset.run).toBe('run');
