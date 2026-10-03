@@ -180,6 +180,44 @@ Taken conservatively, for Drew and the orchestrator:
 7. The replay starts on opening and runs until Stop, as a Run does; with reduced motion it waits for Run. Whether it should stop by itself is for Drew (and task 5.7).
 8. A link opened in a tester build still meets the invite gate first.
 
+## Feature flags
+
+Task 6.6, in [src/flags/](src/flags/) and [src/program-view/](src/program-view/). Flags are per device and every one is off by default. The app reads them once as it mounts (`deviceFlags()`) and never writes them; a flag is on only when the device's localStorage lists it under `servo.flags`, a JSON list of names. Anything missing, unreadable, blocked or unknown is off. An adult turns one on from the browser's developer tools and reloads:
+
+```js
+localStorage.setItem('servo.flags', JSON.stringify(['level-3-slot'])); // on
+localStorage.removeItem('servo.flags'); // off again
+```
+
+### `level-3-slot`: the Level 3 slot
+
+**The content has no microcontroller yet**, and no Level 1–2 part gives a signal, so in the app today a child cannot place a brain and nothing carries the servo motor's angle. The slot is exercised only with the schema's example microcontroller (`@servo/schema/fixtures`), in the tests below.
+
+Off, the app is exactly as before. On:
+
+- **One setting unlocks (rule 10).** `slotSetting(record, setting)` ([rules.ts](src/program-view/rules.ts)) names the one setting the slot opens before its unlock level: a number setting bound to a position actuator's `target`, which is the servo motor's angle and nothing else in the content. App.tsx passes it to the spec card (`unlocked`) and to the canvas (`unlockSettings`, an additive mount option, packages/canvas README), so the angle shows on the servo motor's card at the child's level as its native slider (touch, pointer, keyboard) and the canvas's list view offers it a step at a time (rule 8), each change one `set-setting`. The DC motor's speed and the LED's colour stay at Level 3. The card's text layers, the header and the canvas keep the child's level.
+- **The program view.** Under the spec card of a selected brain (a part with a `program` primitive), a section headed "Program" lists its rules as plain lines, such as "Always set out 1 to the servo motor’s angle, 45°." It is read-only: a rule changes when the setting it follows changes. With no rule it says "No output is wired to a part it can set."
+- **The rule.** `programsOf(blueprint, catalogue)` ([rules.ts](src/program-view/rules.ts)) gives each brain one rule per output wired to a position actuator's command port (the servo motor's signal in) whose part has a number setting bound to the actuator's `target` (the angle): always drive that output at the level that turns the actuator there. sim-core turns a position actuator commanded at level l to minDeg + l × (maxDeg − minDeg), so the level is (angle − minDeg) / (maxDeg − minDeg): 45° is 0.25. It reads only the records and the build (rule 1). An output reaching several such parts takes the first signal line's, in wire id order.
+- **The runtime.** `programFor(flags, blueprint, catalogue)` ([runtime.ts](src/program-view/runtime.ts)) is the `program` a Run passes to `createSimulation`: with the flag off it is `undefined`, so every brain stays the no-op brain (D41); on, it is a pure `ProgramRuntime` written against sim-core's interface (packages/sim-core/docs/program.md) that drives each brain's outputs at its rules' levels every tick the brain is on, and keeps no state. sim-core is unchanged: the slot turns the brain off below `onVolts` and the servo motor sweeps at its own `degPerSecond`.
+- **The Run loop.** App.tsx gives the Run bar `program`, which the run loop calls for each new Simulation and passes to `createSimulation` (task 4.4's loop gained this optional `program` option); with the flag off the Run bar gets none. The Run key covers the settings, so a new angle makes a new Simulation.
+
+### Tests
+
+- **Unit, Node** ([test/flags/](test/flags/), [test/program-view/](test/program-view/)). Flags: off by default, off for anything unreadable, unknown or a storage that throws, on when listed. What the slot unlocks: only the servo motor's angle among the content's three Level 3 settings, on the card at Level 1. The rules and the runtime on the real sim-core, with the schema's example microcontroller added to the real content, because no brain is authored yet ([fixtures.ts](test/program-view/fixtures.ts): the servo motor on two 2-cell battery packs, as broken-servo-without-signal, D50, with a microcontroller on the same packs and its out 1 on the servo motor's signal in). The angle is set with the canvas's own `applyEdit`. Flag off: the servo motor holds at 90° and hums (no-signal). Flag on: for 45°, 0°, 135° and 180° it sweeps there through the angles between, never going back, and holds; the signal line carries the level; a new angle is the next Run's; the same build gives the same events tick for tick; a microcontroller without power drives nothing. The level for the default, the ends of the range, an output reaching two servo motors, a renamed microcontroller (rule 1).
+- **Browser, Chromium** ([test/browser/program-view.test.tsx](test/browser/program-view.test.tsx)). The real app with the real canvas and Run bar at 1180 × 820, on the bench plus a loose DC motor and LED. With nothing stored: no angle on the card or in the list view, no program view, and Run on the Run bar leaves the servo motor at 90° with its no-signal line. With `servo.flags` set on the device: the DC motor's speed and the LED's colour stay locked on the card and in the list view; the program view's line at 90°; the angle by keyboard, mouse drag, finger drag (CDP touch) and the list view's action; the program view following it; the list view's step and the slider's step from the same build give byte-identical blueprints on the real canvas; Run on the real Run bar sweeps the servo motor's live angle from 90° down to 45°, never going back, with no failure line, and Stop returns to Build with the angle kept; no dialog.
+
+### Decisions and open questions (task 6.6)
+
+Taken conservatively, for Drew and the orchestrator:
+
+1. With the flag on, only the servo motor's angle unlocks early (rule 10), picked out by its data (a position actuator's target), not by the part's name.
+2. **No brain is in the content** (above). Authoring the microcontroller (a Level 3 part, packages/content) is for Drew and the content tasks (D64 is pending).
+3. The flag lives in localStorage, set from developer tools; no Settings row (task 6.3's `/settings`) turns it on. A row there is for Drew.
+4. The rule is fixed: "always set the output to the angle of the servo motor it reaches". Where a brain's rules are stored is open (packages/sim-core/docs/program.md: a schema minor bump), so nothing about the program is saved; it is worked out from the build each time.
+5. An output carries one level, so one wired to two servo motors takes the first line's angle, in wire id order.
+6. The program view sits under the brain's spec card in the card's panel, with no speak-it of its own; the card's speak-it reads only the card.
+7. The canvas gained one optional mount option, `unlockSettings`, fixed at mount: the flag is read once as the app mounts, so nothing needs to change it later.
+
 ## Areas and owners
 
 | Folder | Task | Does |
@@ -197,4 +235,4 @@ Taken conservatively, for Drew and the orchestrator:
 | `a11y/`, `theme/` | 5.7 | WCAG 2.2 AA chrome, high contrast, dyslexia-friendly type, left-handed mirror |
 | `telemetry/` | 6.2 | Only the events the success measures need |
 | `release/` | 6.3 | What a release bakes in (`build-info.ts`), the page's start (`start.ts`: the invite gate first in a tester build, then Settings at `/settings` or the app), the invite gate, Settings, and the invite code's hash (`@servo/app/invite-code`) |
-| `flags/`, `program-view/` | 6.6 | The Level 3 slot, off by default |
+| `flags/`, `program-view/` | 6.6 | Feature flags, per device and off by default; the Level 3 slot's program view and program runtime ([above](#feature-flags)) |

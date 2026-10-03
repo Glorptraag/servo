@@ -24,7 +24,7 @@ In this order. Layers follow the schema's `SPEC_CARD_LAYERS`, so the level decid
 | What it does | Level 1 | `card.does` |
 | Needs, gives | Level 2 | `card.needs`, `card.gives` |
 | Ports, each with its socket shape and colour (round red power, square yellow signal, hexagon grey mechanical) | Every level | `ports[].label`, `ports[].type` |
-| Settings | Each from its own `unlockLevel` (D15: driver channels at Level 2) | `settings`, the placed part's `settings` or the default |
+| Settings | Each from its own `unlockLevel` (D15: driver channels at Level 2), or earlier when the card's `unlocked` prop names it (the Level 3 slot names the servo motor's angle, task 6.6) | `settings`, the placed part's `settings` or the default |
 | Spec line | Level 4 | `card.specLine` |
 | Popular mechanics, with the real-world picture where the registry has one | Level 2 | `card.popularMechanics`, `card.realWorldArt` |
 | Safety note | With the popular-mechanics line | `card.safetyNote` |

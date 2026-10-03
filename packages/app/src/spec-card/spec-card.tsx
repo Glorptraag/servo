@@ -8,6 +8,7 @@ import type { RunFrame } from '@servo/sim-core';
 import { useShell } from '../shell/index.ts';
 import type { RunFrames } from './frames.ts';
 import { cardModel, failureNotes } from './model.ts';
+import type { UnlockedSetting } from './model.ts';
 import { PartPicture, RealWorldPicture } from './picture.tsx';
 import { readoutsOf } from './readouts.ts';
 import { SettingControl } from './settings.tsx';
@@ -20,6 +21,8 @@ export interface SpecCardProps {
   readonly frames?: RunFrames;
   /** Speak-it's voice. Default: the page's speechSynthesis; null (or a browser without one) hides the button. */
   readonly speech?: SpeechPort | null;
+  /** Settings to show before their unlock level. Default none; the Level 3 slot names the servo motor's angle (task 6.6). */
+  readonly unlocked?: UnlockedSetting;
 }
 
 const NO_FRAMES = { subscribe: () => () => {}, frame: null };
@@ -53,7 +56,7 @@ const useShownPart = (): PlacedPartId | null => {
   return last.current;
 };
 
-export const SpecCard = ({ frames, speech = pageSpeech() }: SpecCardProps) => {
+export const SpecCard = ({ frames, speech = pageSpeech(), unlocked }: SpecCardProps) => {
   const { content, level, canvas, mode, blueprint } = useShell();
   const partId = useShownPart();
   const frame = useFrame(frames);
@@ -64,7 +67,7 @@ export const SpecCard = ({ frames, speech = pageSpeech() }: SpecCardProps) => {
   const record = placed && content.catalogue.parts.get(placed.part);
   if (!placed || !record) return null;
 
-  const model = cardModel(record, placed, level);
+  const model = cardModel(record, placed, level, unlocked);
   const { text } = model;
   const running = mode === 'run';
   const live = running ? frame?.live.get(placed.id) : undefined;

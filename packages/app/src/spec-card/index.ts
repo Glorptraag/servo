@@ -4,7 +4,7 @@ export type { SpecCardProps } from './spec-card.tsx';
 export { createRunFrames } from './frames.ts';
 export type { RunFrames } from './frames.ts';
 export { cardModel, failureNotes, layerShows, settingValue, titleOf, withUnit } from './model.ts';
-export type { CardModel, CardPort, CardSetting, CardText } from './model.ts';
+export type { CardModel, CardPort, CardSetting, CardText, UnlockedSetting } from './model.ts';
 export { READOUT_SPECS, SWITCH_WORDS, formatReadout, readoutsOf } from './readouts.ts';
 export type { Readout, ReadoutKey } from './readouts.ts';
 export { SPEAK_RATE, pageSpeech, speak, spokenLines } from './speech.ts';
