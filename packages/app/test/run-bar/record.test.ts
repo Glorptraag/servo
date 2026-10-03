@@ -10,6 +10,8 @@ import { loadContent } from '@servo/content';
 import { loadFixtures } from '@servo/content/fixtures';
 import { validateChallenge } from '@servo/schema';
 import type { Blueprint, Challenge } from '@servo/schema';
+import { HintLog } from '../../src/hints/log.ts';
+import type { HintUses } from '../../src/hints/log.ts';
 import { RunRecorder } from '../../src/run-bar/record.ts';
 import { RunLoop, SPIN_UP_MS } from '../../src/run-bar/run-loop.ts';
 import type { RunClock } from '../../src/run-bar/run-loop.ts';
@@ -62,8 +64,8 @@ const times = (): (() => string) => {
   };
 };
 
-const setUp = async (child: () => ProfileStore | null, wait = true, challenge: () => Challenge | null = () => null) => {
-  const recorder = new RunRecorder({ child, now: times(), challenge, catalogue: loaded.content.catalogue });
+const setUp = async (child: () => ProfileStore | null, wait = true, challenge: () => Challenge | null = () => null, hints?: HintUses) => {
+  const recorder = new RunRecorder({ child, now: times(), challenge, catalogue: loaded.content.catalogue, ...(hints ? { hints } : {}) });
   const clock = new TestClock();
   const loop = new RunLoop({
     canvas: new StandIn() as unknown as CanvasHandle,
@@ -272,6 +274,31 @@ describe('a challenge’s Runs (task 4.5)', { timeout: 30_000 }, () => {
     expect('goal' in (sandbox[0] ?? {})).toBe(false);
     expect(await child.runs.get(sandbox[0]?.id ?? '')).toEqual(sandbox[0]);
     expect(await child.runs.list({ challenge: 'drive-forward-5' })).toHaveLength(1);
+    loop.dispose();
+    store.close();
+  });
+
+  it('keeps the hint steps used since the last Run kept (task 4.6), and leaves them for the next when a Run is not kept', async () => {
+    const { store, child } = await openChild();
+    const challenge = driveForward(5);
+    const log = new HintLog();
+    const { loop, runFor } = await setUp(() => child, true, () => challenge, log);
+    log.add({ at: '2026-10-03T09:00:01.000Z', step: 'pulse-part', trigger: 'asked', partId: 'motor-left' });
+    // Stopped in its spin-up, a Run is not kept: its hints wait for the next one.
+    await loop.run();
+    loop.stop();
+    log.add({ at: '2026-10-03T09:00:02.000Z', step: 'pulse-port', trigger: 'offered', partId: 'gone' });
+    await runFor(6);
+    await runFor(6);
+    const runs = await child.runs.list({ challenge: challenge.id });
+    expect(runs.map((run) => run.hints)).toEqual([
+      [
+        { at: '2026-10-03T09:00:01.000Z', step: 'pulse-part', trigger: 'asked', partId: 'motor-left' },
+        // A part the build that ran does not have is left out of its use, so the record still validates.
+        { at: '2026-10-03T09:00:02.000Z', step: 'pulse-port', trigger: 'offered' },
+      ],
+      [],
+    ]);
     loop.dispose();
     store.close();
   });

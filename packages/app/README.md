@@ -68,7 +68,7 @@ Taken conservatively, for Drew and the orchestrator:
 3. "Place a part first." is the reason line. It and a failed Run's line take the clock's place, so the bar never grows.
 4. Undo and Reset arena stay in place and turn off during a Run. Undo keeps 100 steps for the visit, starts again for another build, and has no Redo.
 5. Space never activates a focused button anywhere in the app (Enter does), so Space is always Run and Stop.
-6. Every Run that stepped at least once is kept, one cut short by the app closing too; a Run stopped in its spin-up is not (R-4.4 Q1). A Run that ends before the store has answered for its build's earlier Runs is not kept (only a stalled store does that). Hint use (task 4.6) is not in the record yet; a challenge Run keeps its challenge and verdict (task 4.5, "Challenges").
+6. Every Run that stepped at least once is kept, one cut short by the app closing too; a Run stopped in its spin-up is not (R-4.4 Q1). A Run that ends before the store has answered for its build's earlier Runs is not kept (only a stalled store does that). A Run keeps the hint steps used since the last Run kept (task 4.6, "Hints"); a challenge Run keeps its challenge and verdict (task 4.5, "Challenges").
 7. packages/tools/src/gate/run.ts still has its own copy of the loop: `RunLoop` is not exported from `@servo/app`, and tools is not this task's to change.
 8. Run with nothing placed is `aria-disabled`, not `disabled`, so keyboard and screen-reader users reach it and hear its reason. A build emptied while the first Run loads is not run.
 
@@ -101,6 +101,33 @@ Taken conservatively, for Drew and the orchestrator:
 6. **The prop palette** is the bump-props preset's two props. A box in D52's 143–178 g window for the gearbox lesson is for the content tasks to ask for.
 7. **Changing preset drops the child's props**, as Reset arena does (Undo brings them back); in a challenge the preset stays and props may still be added.
 8. **The strip is a remove target** for dragged props, while it shows: the shell sets the tray and the strip, whichever show, in its one `canvas.setRemoveTargets` call (shell.tsx, review R-4.2).
+
+## Hints
+
+Task 4.6, in [src/hints/](src/hints/). The hint ladder (brief Sections 5, 10 and 12): pulse the part → pulse the port → ghost wire → do it for me, each step a tap on one button beside the goal (the header's `hints` slot). Hints are drawn on the canvas, never said first; there are no dialogs, points or praise.
+
+- **Which ladder** ([ladder.ts](src/hints/ladder.ts), pure). The challenge's first ladder whose trigger holds: `fault` for a part the last Run showed that fault on, still on the canvas; `missing` while the build has no part of the type; `unwired` for a part with that port unwired; no trigger, always. The same ladder about the same part keeps its place on the ladder; another one starts at its first step, and the rung drawn before is cleared. Ladders and lines are content (ground rule 1).
+- **Drawn rungs** go to `canvas.showHint`, with every target given by type narrowed to `{ placed }` when it is the type of the part the trigger found (the LED with the unwired port, the motor that ran backwards). The canvas draws the rung above everything and clear of every port, hides it in Run mode and shows it on Stop (packages/canvas/docs/selection.md). A rung it cannot draw (nothing matches) is passed over for the next.
+- **Do it for me** is one `batch` through `canvas.apply`: one Undo step, heard by the list view, Save and the sound layer's click. Each change resolves against the build as the changes before it leave it, through the canvas's own pure `applyEdit`, so every wire is one the schema's wiring rules allow (rule 3) and a part do-it places can be wired by type. A change that fits nothing (the wire is already there) makes the step unusable, never half done. Its line, saying what it did, shows beside the button until the build changes again or a Run starts.
+- **Two Runs that miss the goal** in a row (judged by the challenge's GoalWatch over the run loop's frames, the judge the goal line and the recorder use; a Run stopped in its spin-up does not count) offer the ladder's next drawn rung and pulse the button gently (held still with reduced motion). An offer never does do-it: with only do-it left the button pulses and the child decides. A Run that meets the goal clears the rung and the count.
+- **Every path at once** (rule 8): one native button, so pointer, touch, Enter (Space stays Run and Stop, D42) and a screen reader take the same path; the canvas's list view reads the rung drawn now, and the button's polite status says each step's line. The button rests (`aria-disabled`) in Run mode and when nothing is left to show. None in the sandbox, or for a challenge with no ladder (an unscripted build).
+- **Hint use is recorded** ([log.ts](src/hints/log.ts)): each step shown or done goes to a `HintLog` as the schema's `HintUse` (`at`, `step`, `trigger` asked or offered, `partId`). The Run bar's recorder takes the uses as Run is pressed and keeps them in that Run's record `hints`, letting them go once it is recorded; a Run stopped in its spin-up leaves them for the next. A part the build that ran no longer has is left out of its use, so the record validates. Another challenge clears the log. No store shape change ([docs/store.md](docs/store.md)).
+
+### Tests
+
+- **Unit, Node** ([test/hints/](test/hints/)): the ladder rules on the schema's example challenges against the real content (each trigger kind; narrowing; do-it batches for meet the switch, the swapped motor, an LED by type, a part placed on a mount point and wired by type, each giving a build `validateBlueprint` accepts and equal to the canvas's own `applyEdit`; a step that fits nothing). The controller on a stand-in canvas and the real run loop: each rung in order, do-it, the next ladder, a rung passed over, place kept and reset, Run mode, the offer after two missed Runs and not for a spin-up stop, no offered do-it, a breakdown's ladder after the Run that shows its fault, and a met Run clearing it. The recorder keeps the hint uses ([test/run-bar/record.test.ts](test/run-bar/record.test.ts)).
+- **Browser, Chromium** ([test/browser/hints.test.tsx](test/browser/hints.test.tsx)), the shell with the real canvas, sim-core and IndexedDB: each rung by pointer, touch (CDP) and Enter, with every socket's middle the same in a real screenshot before and after (a rung covers no port) and the rung drawn; the list view's and the status's lines; do-it's wire, valid build and line; the next ladder; the offer and pulse after two missed Runs; the stored Runs' `hints`. No dialog.
+
+### Decisions and open questions (task 4.6)
+
+Taken conservatively, for Drew and the orchestrator:
+
+1. **What an offer does.** After two missed Runs the ladder draws its next drawn rung itself and the button pulses; the count starts again after any step. It never offers do-it, which changes the build. Whether an offer should only pulse the button, or only ever draw the first rung, is open.
+2. **Do-it's line shows** as quiet text beside the button (brief Section 12: "does the action and says what it did"), while drawn rungs' lines are only the text twin. Whether it should be spoken only is open.
+3. **Where the ladder starts again.** A ladder keeps its place while it applies; a finished ladder starts again once the build changes from what do-it left. A `fault` trigger waits for a Run that shows the fault, and once do-it fixes it the ladder stays retired, through any edit, until a Run shows that fault again (R-4.6 finding 1).
+4. **A type target do-it cannot narrow** (no trigger part of that type) uses the first part of the type, in id order, that the change fits.
+5. **Missed Runs are judged from the run loop's frames** by the same GoalWatch the recorder's `judgeRun` uses, rather than read from the stored records, so the ladder works on a device that keeps nothing.
+6. **The button's word is "Hint"**, with no reason line when it rests.
 
 ## Sound
 

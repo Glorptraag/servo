@@ -1,7 +1,7 @@
 // The child's app: the shell round the canvas, with the content's catalogue and art injected into the canvas
 // (README, "How the packages meet"). Each slot holds its placeholder until the task that owns it lands; swap a
 // placeholder for the real part here. A challenge chosen on Home lays its goal line, kit, level and arena over the
-// same canvas (task 4.5).
+// same canvas (task 4.5), with the hint button beside the goal (task 4.6).
 import { useEffect, useMemo, useState } from 'react';
 import { mountCanvas } from '@servo/canvas';
 import type { CanvasHandle, ResolveArt } from '@servo/canvas';
@@ -10,6 +10,7 @@ import type { Blueprint, Challenge, Level } from '@servo/schema';
 import { ArenaStrip, GoalLine, Home } from './challenges/index.ts';
 import { deviceFlags } from './flags/index.ts';
 import type { Flags } from './flags/index.ts';
+import { HintButton, HintLog } from './hints/index.ts';
 import { ProgramView, programFor, slotSetting } from './program-view/index.ts';
 import { RunBar } from './run-bar/index.ts';
 import type { RunLoop } from './run-bar/index.ts';
@@ -64,6 +65,8 @@ export const App = ({ content, child = null, start, saving, onReady, flags: give
   }, [runFrames, sound]);
   // A challenge chosen on Home lays its goal line, kit, level and arena over the same canvas (task 4.5); none is the sandbox.
   const [challenge, setChallenge] = useState<Challenge | null>(null);
+  // The hint steps used (task 4.6): the hint button adds them, and the Run bar keeps them in the next Run's record.
+  const [hints] = useState(() => new HintLog());
   // The Level 3 slot (task 6.6, README "Feature flags"): with the flag on, the servo motor's angle unlocks on its card,
   // a brain's card shows its program, and each Run drives the brains by it.
   const slot = flags['level-3-slot'];
@@ -77,6 +80,7 @@ export const App = ({ content, child = null, start, saving, onReady, flags: give
       tray: <Tray />,
       home: <Home challenge={challenge} onChallenge={setChallenge} sandboxLevel={START_LEVEL} loop={loop} saving={saving} />,
       goal: <GoalLine challenge={challenge} loop={loop} />,
+      hints: <HintButton challenge={challenge} loop={loop} log={hints} />,
       arenaStrip: <ArenaStrip challenge={challenge} />,
       specCard: (
         <>
@@ -86,9 +90,9 @@ export const App = ({ content, child = null, start, saving, onReady, flags: give
       ),
       sound: <SoundControl layer={sound} />,
       save: <SaveControl saving={saving} />,
-      runBar: <RunBar onLoop={joinRunLoop} challenge={challenge} {...(program ? { program } : {})} />,
+      runBar: <RunBar onLoop={joinRunLoop} challenge={challenge} hints={hints} {...(program ? { program } : {})} />,
     }),
-    [saving, runFrames, joinRunLoop, sound, slot, program, challenge, loop],
+    [saving, runFrames, joinRunLoop, sound, slot, program, challenge, loop, hints],
   );
   // The swap registry: a key with no picture gives undefined, and the canvas draws a neutral tile.
   const resolveArt: ResolveArt = (key) => content.art.get(key);
