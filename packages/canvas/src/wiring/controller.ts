@@ -170,9 +170,23 @@ export class WiringController {
     return [...hints.map((port) => port.key), ...(target ? [target.key] : [])].sort();
   }
 
-  /** The wire whose bin shows: set by the tap that will select it (task 3.4 joins it to `select`). */
+  /** The wire whose bin shows: the handle's selection when it is a wire, in Build mode (task 3.4). */
   get selectedWire(): WireId | undefined {
     return this.selected;
+  }
+
+  /** Shows the bin beside a wire, or none: the handle's `select` does this (task 3.4). A mount has no bin. */
+  showBin(id: WireId | undefined): void {
+    const scene = this.surface.scene;
+    const removable = id !== undefined && this.editable() && [...scene.wires, ...scene.linkages].some((wire) => wire.id === id && wire.kind !== 'mount');
+    if (!removable) {
+      this.clearSelection();
+      return;
+    }
+    if (this.selected === id) return;
+    this.selected = id;
+    this.letGo();
+    this.redraw();
   }
 
   /** Where the bin of the tapped wire sits, mm. */
@@ -612,6 +626,8 @@ export class WiringController {
   private selectWire(id: WireId): void {
     this.selected = id;
     this.letGo();
+    // Selection first: it lets the part go itself, so the change is one `select`.
+    this.surface.selectionShown('wire', id);
     this.surface.placement.selectPart(undefined);
     this.surface.canvas.focus({ preventScroll: true });
     this.redraw();
@@ -622,6 +638,7 @@ export class WiringController {
     this.selected = undefined;
     this.bin.draw(new Map(), 0, this.palette);
     this.surface.requestFrame();
+    this.surface.selectionShown('wire', undefined);
   }
 
   /** Whether a press lands on one of the selected part's handles, drawn above the wires and parts. */

@@ -1,6 +1,6 @@
 // The canvas handle (task 3.1's part of packages/canvas/src/interface.ts): mounting, `load`, the scene layers, pan,
-// zoom, `fit`, the grid that fades at rest, art, prefs, and the focus and dim hooks task 3.4 drives. Members other
-// tasks build throw until those tasks land, naming the task. See docs/renderer.md.
+// zoom, `fit`, the grid that fades at rest, art, prefs, and the focus and dim hooks task 3.4's selection drives.
+// Members other tasks build throw until those tasks land, naming the task. See docs/renderer.md.
 import { Container, RenderLayer, Ticker, autoDetectRenderer } from 'pixi.js';
 import type { Renderer } from 'pixi.js';
 import { canonicalizeBlueprint, serializeBlueprint, validateBlueprint } from '@servo/schema';
@@ -33,6 +33,8 @@ import { hitTest } from '../scene/hit.ts';
 import type { Hit } from '../scene/hit.ts';
 import { buildScene } from '../scene/scene.ts';
 import type { Scene } from '../scene/scene.ts';
+import { SelectionController } from '../selection/controller.ts';
+import type { SelectionSource } from '../selection/controller.ts';
 import { WiringController } from '../wiring/controller.ts';
 import { ArenaView } from './arena-view.ts';
 import { ArtStore } from './art.ts';
@@ -86,6 +88,8 @@ export class CanvasSurface implements CanvasHandle {
   readonly placement: PlacementController;
   /** Drawing and removing wires by touch and pointer, sockets' glows and crowded sockets fanning out (task 3.3, src/wiring/). */
   readonly wiring: WiringController;
+  /** The one selection, its focus states, and the hint rungs (task 3.4, src/selection/). */
+  readonly selecting: SelectionController;
   /** Run mode's drawing: the frames `applyRunFrame` gives, tweened between ticks (task 3.5, src/run-animation/). */
   readonly run: RunAnimator;
   /** The screen-reader and keyboard path: the list view's model and its DOM beside the canvas (task 3.6, src/list-view/). */
@@ -169,6 +173,15 @@ export class CanvasSurface implements CanvasHandle {
       readOnly: options.readOnly === true,
       prefs: () => this.prefs,
     });
+    // Last, so its pointer handler comes first: it sees every press, and claims only the selected prop's bin.
+    this.selecting = new SelectionController({
+      surface: this,
+      catalogue: options.catalogue,
+      readOnly: options.readOnly === true,
+      prefs: () => this.prefs,
+      drawContext: () => this.drawContext,
+      selected: (event) => this.emitter.emit('select', event),
+    });
     this.run = new RunAnimator({
       scene: () => this.scene,
       arena: () => this.arena,
@@ -191,6 +204,10 @@ export class CanvasSurface implements CanvasHandle {
       apply: (command) => this.apply(command),
       control: (input) => this.emitter.emit('control', { input }),
       select: (selection) => this.select(selection),
+      hint: () => {
+        const step = this.selecting.shownHint;
+        return step && { step: step.step, line: step.line };
+      },
       live: (subject) => (this.currentMode === 'run' ? this.lastFrame?.live.get(subject) : undefined),
     });
     this.listDom = new ListViewDom(host, this.list, { prefs: () => this.prefs });
@@ -243,6 +260,7 @@ export class CanvasSurface implements CanvasHandle {
       this.run.exit();
       this.rebuild();
     }
+    this.selecting.modeChanged();
     this.modeFade.toward(mode === 'run' ? 1 : 0, this.motion(MODE_FADE_MS), performance.now());
     this.loop.request();
     this.list.changed();
@@ -291,6 +309,7 @@ export class CanvasSurface implements CanvasHandle {
     if (this.destroyed) return;
     this.destroyed = true;
     live.delete(this);
+    this.selecting.destroy();
     this.placement.destroy();
     this.wiring.destroy();
     this.canvas.removeEventListener('keydown', this.keyedInRun);
@@ -358,16 +377,38 @@ export class CanvasSurface implements CanvasHandle {
   }
 
   // ---------------------------------------------------------------------------------------------------------
-  // CanvasHandle: later tasks
+  // CanvasHandle: task 3.4 (src/selection/, docs/selection.md)
 
   get selection(): Selection | null {
-    return null;
+    return this.selecting.selection;
   }
 
   select(selection: Selection | null): void {
-    void selection;
-    throw notYet('select', '3.4');
+    this.alive('select');
+    this.selecting.select(selection);
   }
+
+  showHint(step: DrawnHintStep): boolean {
+    this.alive('showHint');
+    const drawn = this.selecting.showHint(step);
+    this.list.changed();
+    return drawn;
+  }
+
+  clearHints(): void {
+    this.alive('clearHints');
+    this.selecting.clearHints();
+    this.list.changed();
+  }
+
+  /** Placement, wiring and a tapped prop say what they now show; selection makes it the canvas's one selection. */
+  selectionShown(source: SelectionSource, id: string | undefined): void {
+    // Placement and wiring are made before selection, and may report while it is being made.
+    (this.selecting as SelectionController | undefined)?.shown(source, id);
+  }
+
+  // ---------------------------------------------------------------------------------------------------------
+  // CanvasHandle: later tasks
 
   /**
    * Run mode: draws one tick (task 3.5, docs/run-animation.md). The canvas draws only the frames it is given, tweening
@@ -384,15 +425,6 @@ export class CanvasSurface implements CanvasHandle {
       this.listedTick = frame.tick;
       this.list.changed();
     }
-  }
-
-  showHint(step: DrawnHintStep): boolean {
-    void step;
-    throw notYet('showHint', '3.4');
-  }
-
-  clearHints(): void {
-    throw notYet('clearHints', '3.4');
   }
 
   tidyWires(): void {
@@ -613,6 +645,7 @@ export class CanvasSurface implements CanvasHandle {
     if (!layers || !renderer) {
       this.wiring.refresh();
       this.placement.refresh();
+      this.selecting.refresh();
       return;
     }
     const context = this.drawContext;
@@ -662,8 +695,11 @@ export class CanvasSurface implements CanvasHandle {
     this.arenaView.draw(this.arena, context.palette);
     this.applyEmphasis();
     this.grid.invalidate();
+    // Selection's own drawings first, so wiring's and placement's go on top of them in each layer.
+    this.selecting.layer();
     this.wiring.refresh();
     this.placement.refresh();
+    this.selecting.refresh();
     this.run.rebuilt();
     this.loop.request();
   }
@@ -720,6 +756,8 @@ export class CanvasSurface implements CanvasHandle {
     const renderer = this.renderer;
     if (!renderer || this.destroyed) return false;
     const fading = [this.gridFade.step(now), this.modeFade.step(now), this.run.step(now)].some(Boolean);
+    // Selection's own drawings (a wire's label, a prop's ring) follow the Run's geometry, frame by frame (task 3.4).
+    if (this.currentMode === 'run') this.selecting.followRun();
     const { camera } = this;
     const scale = camera.scale;
     const x = camera.width / 2 - camera.centreX * scale;
