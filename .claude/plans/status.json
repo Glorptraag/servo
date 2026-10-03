@@ -2017,6 +2017,14 @@
       "confidence": "medium",
       "blocks": [],
       "resolved": false
+    },
+    {
+      "id": "D101",
+      "question": "R-4.4 Q5: a Run that ends while the store has stalled >1 s before reading earlier Runs is dropped (with a console warning). Keep it instead, without its D31 'fixed'?",
+      "recommendation": "Drop for launch (rare); revisit if G5 offline week shows stalls",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
     }
   ]
 }
