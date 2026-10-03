@@ -15,6 +15,7 @@ import type { Blueprint, BlueprintId, ProfileId, Timestamp } from '@servo/schema
 import { contentHashOf, keptCopyOf } from '../store/blueprints.ts';
 import type { UnsavedNote } from '../store/blueprints.ts';
 import { isRecord, isTimestamp } from '../store/context.ts';
+import { UNSAVED_PREFIX } from '../store/device.ts';
 import type { BlueprintSummary, ProfileStore, ServoStore } from '../store/index.ts';
 import { replayForOpening } from '../store/open.ts';
 import { uuidV4 } from '../store/uuid.ts';
@@ -26,7 +27,7 @@ export const AUTOSAVE_MS = 1000;
 export const RETRY_MAX_MS = 30_000;
 
 /** The start of every journal item's key: then the database's name, the page and the build. */
-export const UNSAVED_PREFIX = 'servo.unsaved:';
+export { UNSAVED_PREFIX };
 
 export type SaveOutcome =
   | {

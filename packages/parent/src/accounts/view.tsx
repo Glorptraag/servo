@@ -1,0 +1,302 @@
+// The parent view's first screen (task 5.1): the parental gate (D28), then the children on this device with the
+// profile switch, adding, renaming and removing a child, and the builds of the child in use. Every control is a native
+// button, radio or text field, so touch, pointer, keyboard and screen reader each have the same path. Nothing is a
+// dialog: a removal is confirmed inline, and anything that goes wrong is one plain line. The view has no routes and
+// writes nothing to the address, so no address can open one child's records, and no profile id reaches the page.
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { CSSProperties, FormEvent, KeyboardEvent } from 'react';
+import type { Profile, ServoStore } from '@servo/app/store';
+import { answers, gateQuestion } from './gate.ts';
+import { NameRefused, addChild, readAccounts, removeChild, renameChild, switchChild } from './model.ts';
+import type { Accounts } from './model.ts';
+
+/** Every line of system text, for the copy pass. None has an exclamation mark or praise (ground rule 7). */
+export const PARENT_TEXT = {
+  gateTitle: 'For adults',
+  gateIntro: 'Answer this to open the parent view.',
+  gateAnswer: 'Answer',
+  gateContinue: 'Continue',
+  gateWrong: 'That is not the answer. Here is another question.',
+  title: 'Parent view',
+  intro: 'The children who use Servo on this device. A profile has no email, no chat and nothing public.',
+  children: 'Children',
+  switchLegend: 'Who is using Servo on this device',
+  noneInUse: 'No one is chosen, so builds are not being kept. Choose who is using Servo on this device.',
+  rename: 'Rename',
+  newName: 'New name',
+  saveName: 'Save name',
+  cancel: 'Cancel',
+  remove: 'Remove',
+  removeConfirm: 'Remove profile',
+  keep: 'Keep profile',
+  addLabel: 'Add a child',
+  add: 'Add',
+  builds: 'Builds',
+  noBuilds: 'No builds yet.',
+  loading: 'Loading',
+  noSwitch: 'This device cannot keep who is using Servo, so the switch did not change.',
+  failed: 'That could not be done. Nothing was changed.',
+} as const;
+
+const removeWarning = (name: string): string =>
+  `Remove ${name} from this device? Their builds, runs and card-game results are deleted too, and cannot be brought back.`;
+
+/** Big enough to tap. */
+const TARGET: CSSProperties = { minHeight: 44, minWidth: 44, fontSize: '1rem' };
+const ROW: CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginBlock: 8 };
+
+const levelText = (level: number): string => `Level ${level}`;
+
+const dateText = (at: string): string => {
+  const date = new Date(at);
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString(undefined, { dateStyle: 'medium' });
+};
+
+export interface ParentViewProps {
+  readonly store: ServoStore;
+  /** Where the gate's questions come from. Tests pass a fixed one. */
+  readonly random: () => number;
+}
+
+export const ParentView = ({ store, random }: ParentViewProps) => {
+  const [open, setOpen] = useState(false);
+  return open ? <AccountsView store={store} /> : <Gate random={random} onPass={() => setOpen(true)} />;
+};
+
+const Gate = ({ random, onPass }: { readonly random: () => number; readonly onPass: () => void }) => {
+  const [question, setQuestion] = useState(() => gateQuestion(random));
+  const [text, setText] = useState('');
+  const [wrong, setWrong] = useState(false);
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (answers(question, text)) {
+      onPass();
+      return;
+    }
+    setQuestion(gateQuestion(random));
+    setText('');
+    setWrong(true);
+  };
+  return (
+    <main aria-labelledby="servo-parent-gate">
+      <h1 id="servo-parent-gate">{PARENT_TEXT.gateTitle}</h1>
+      <p>{PARENT_TEXT.gateIntro}</p>
+      <form onSubmit={submit} style={ROW}>
+        <label>
+          {question.text} <span>{PARENT_TEXT.gateAnswer}</span>{' '}
+          <input
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            inputMode="numeric"
+            autoComplete="off"
+            style={TARGET}
+          />
+        </label>
+        <button type="submit" style={TARGET}>
+          {PARENT_TEXT.gateContinue}
+        </button>
+      </form>
+      <p role="status">{wrong ? PARENT_TEXT.gateWrong : ''}</p>
+    </main>
+  );
+};
+
+type Editing = { readonly kind: 'rename' | 'remove'; readonly profile: Profile } | undefined;
+
+const lineFor = (error: unknown): string => (error instanceof NameRefused ? error.message : PARENT_TEXT.failed);
+
+const AccountsView = ({ store }: { readonly store: ServoStore }) => {
+  const [accounts, setAccounts] = useState<Accounts | undefined>(undefined);
+  const [editing, setEditing] = useState<Editing>(undefined);
+  const [line, setLine] = useState('');
+  const live = useRef(true);
+
+  const refresh = useCallback(async () => {
+    const next = await readAccounts(store);
+    if (live.current) setAccounts(next);
+  }, [store]);
+
+  useEffect(() => {
+    live.current = true;
+    refresh().catch(() => {
+      if (live.current) setLine(PARENT_TEXT.failed);
+    });
+    return () => {
+      live.current = false;
+    };
+  }, [refresh]);
+
+  /**
+   * Runs changes one after another, each followed by a fresh read, so the screen is always what the store holds.
+   * Controls stay enabled meanwhile, so focus stays where the adult left it.
+   */
+  const chain = useRef<Promise<unknown>>(Promise.resolve());
+  const act = (change: () => Promise<unknown>, failure: (error: unknown) => string = lineFor): Promise<boolean> => {
+    const run = chain.current.then(async () => {
+      if (live.current) setLine('');
+      let done = true;
+      try {
+        await change();
+      } catch (error) {
+        done = false;
+        if (live.current) setLine(failure(error));
+      }
+      await refresh().catch(() => undefined);
+      return done;
+    });
+    chain.current = run;
+    return run;
+  };
+
+  if (!accounts) return <p role="status">{PARENT_TEXT.loading}</p>;
+  const { profiles, current, builds } = accounts;
+
+  return (
+    <main aria-labelledby="servo-parent-title">
+      <h1 id="servo-parent-title">{PARENT_TEXT.title}</h1>
+      <p>{PARENT_TEXT.intro}</p>
+
+      <section aria-labelledby="servo-parent-children">
+        <h2 id="servo-parent-children">{PARENT_TEXT.children}</h2>
+        {profiles.length > 0 && (
+          <fieldset>
+            <legend>{PARENT_TEXT.switchLegend}</legend>
+            {!current && <p>{PARENT_TEXT.noneInUse}</p>}
+            {profiles.map((profile, index) => (
+              <ChildRow
+                key={profile.id}
+                index={index}
+                profile={profile}
+                inUse={profile.id === current?.id}
+                editing={editing?.profile.id === profile.id ? editing.kind : undefined}
+                onSwitch={() => void act(() => switchChild(store, profile.id), () => PARENT_TEXT.noSwitch)}
+                onEdit={(kind) => setEditing(kind ? { kind, profile } : undefined)}
+                onRename={(name) =>
+                  void act(() => renameChild(store, profile.id, name)).then((done) => {
+                    if (done) setEditing(undefined);
+                  })
+                }
+                onRemove={() => {
+                  setEditing(undefined);
+                  void act(() => removeChild(store, profile.id));
+                }}
+              />
+            ))}
+          </fieldset>
+        )}
+        <AddChild onAdd={(name) => act(() => addChild(store, name))} />
+      </section>
+
+      {current && (
+        <section aria-labelledby="servo-parent-builds">
+          <h2 id="servo-parent-builds">
+            {PARENT_TEXT.builds}: {current.name}
+          </h2>
+          {builds.length === 0 ? (
+            <p>{PARENT_TEXT.noBuilds}</p>
+          ) : (
+            <ul>
+              {builds.map((build) => (
+                <li key={build.id}>
+                  {build.name}, {levelText(build.level)}, {dateText(build.updatedAt)}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
+      <p role="status">{line}</p>
+    </main>
+  );
+};
+
+interface ChildRowProps {
+  readonly index: number;
+  readonly profile: Profile;
+  readonly inUse: boolean;
+  readonly editing: 'rename' | 'remove' | undefined;
+  readonly onSwitch: () => void;
+  readonly onEdit: (kind: 'rename' | 'remove' | undefined) => void;
+  readonly onRename: (name: string) => void;
+  readonly onRemove: () => void;
+}
+
+const ChildRow = ({ index, profile, inUse, editing, onSwitch, onEdit, onRename, onRemove }: ChildRowProps) => {
+  const [name, setName] = useState(profile.name);
+  const inputId = `servo-parent-name-${index}`;
+  const rename = (event: FormEvent) => {
+    event.preventDefault();
+    onRename(name);
+  };
+  const escape = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') onEdit(undefined);
+  };
+
+  return (
+    <div style={ROW}>
+      <label style={{ ...ROW, marginBlock: 0 }}>
+        <input type="radio" name="servo-parent-in-use" checked={inUse} onChange={onSwitch} style={TARGET} />
+        {profile.name}
+      </label>
+      {editing === 'rename' ? (
+        <form onSubmit={rename} onKeyDown={escape} style={{ ...ROW, marginBlock: 0 }}>
+          <label htmlFor={inputId}>{PARENT_TEXT.newName}</label>
+          <input id={inputId} value={name} onChange={(event) => setName(event.target.value)} autoFocus autoComplete="off" style={TARGET} />
+          <button type="submit" style={TARGET}>
+            {PARENT_TEXT.saveName}
+          </button>
+          <button type="button" onClick={() => onEdit(undefined)} style={TARGET}>
+            {PARENT_TEXT.cancel}
+          </button>
+        </form>
+      ) : editing === 'remove' ? (
+        <div role="group" aria-label={`${PARENT_TEXT.remove} ${profile.name}`} onKeyDown={escape} style={{ ...ROW, marginBlock: 0 }}>
+          <p>{removeWarning(profile.name)}</p>
+          <button type="button" onClick={onRemove} style={TARGET}>
+            {PARENT_TEXT.removeConfirm}
+          </button>
+          <button type="button" onClick={() => onEdit(undefined)} autoFocus style={TARGET}>
+            {PARENT_TEXT.keep}
+          </button>
+        </div>
+      ) : (
+        <>
+          <button
+            type="button"
+            aria-label={`${PARENT_TEXT.rename} ${profile.name}`}
+            onClick={() => {
+              setName(profile.name);
+              onEdit('rename');
+            }}
+            style={TARGET}
+          >
+            {PARENT_TEXT.rename}
+          </button>
+          <button type="button" aria-label={`${PARENT_TEXT.remove} ${profile.name}`} onClick={() => onEdit('remove')} style={TARGET}>
+            {PARENT_TEXT.remove}
+          </button>
+        </>
+      )}
+    </div>
+  );
+};
+
+const AddChild = ({ onAdd }: { readonly onAdd: (name: string) => Promise<boolean> }) => {
+  const [name, setName] = useState('');
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    void onAdd(name).then((done) => {
+      if (done) setName('');
+    });
+  };
+  return (
+    <form onSubmit={submit} style={ROW}>
+      <label htmlFor="servo-parent-add">{PARENT_TEXT.addLabel}</label>
+      <input id="servo-parent-add" value={name} onChange={(event) => setName(event.target.value)} autoComplete="off" style={TARGET} />
+      <button type="submit" style={TARGET}>
+        {PARENT_TEXT.add}
+      </button>
+    </form>
+  );
+};

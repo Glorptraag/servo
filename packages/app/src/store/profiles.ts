@@ -1,10 +1,12 @@
 // Child profiles under the one adult account on this device (docs/store.md, "Profiles"): an opaque id, the adult's name
-// for the profile, and when it was made. Removing one removes everything it owns (D38); the parent view asks the adult
-// first, and the app never removes anything on its own.
+// for the profile, and when it was made. Removing one removes everything it owns (D38), with what this device noted for
+// it outside the database (device.ts); the parent view asks the adult first, and the app never removes anything on its
+// own. The profile in use on this device (task 5.1) is kept beside the database, in device.ts, since it never syncs.
 import type { ProfileId } from '@servo/schema';
 import { recordChange } from './changes.ts';
 import type { Change } from './changes.ts';
 import { compareText, isName, refusal } from './context.ts';
+import { chooseProfile, chosenProfile, deviceStorage, forgetProfileOnDevice } from './device.ts';
 import type { StoreContext } from './context.ts';
 import type { ProfileRow } from './database.ts';
 import type { Profile, Profiles } from './index.ts';
@@ -62,6 +64,26 @@ export const profilesOf = ({ db, now }: StoreContext): Profiles => ({
     });
   },
 
+  inUse: async () => {
+    const rows = await db.profiles.toArray();
+    const chosen = chosenProfile(deviceStorage(), db.name);
+    const row = rows.find((profile) => profile.id === chosen) ?? (rows.length === 1 ? rows[0] : undefined);
+    return row ? profileOf(row) : undefined;
+  },
+
+  use: async (id) => {
+    const row = typeof id === 'string' ? await db.profiles.get({ id }) : undefined;
+    if (!row) throw noProfile(id);
+    const storage = deviceStorage();
+    try {
+      if (!storage) throw new Error('The page has no localStorage.');
+      chooseProfile(storage, db.name, id);
+    } catch (error) {
+      throw new Error('This device cannot keep which profile is in use.', { cause: error });
+    }
+    return profileOf(row);
+  },
+
   remove: async (id) => {
     await db.transaction('rw', [db.profiles, db.blueprints, db.runs, db.cardGames, db.changes], async () => {
       const row = typeof id === 'string' ? await db.profiles.get({ id }) : undefined;
@@ -81,5 +103,6 @@ export const profilesOf = ({ db, now }: StoreContext): Profiles => ({
       for (const change of owned) await recordChange(db, change);
       await recordChange(db, { collection: 'profiles', id, updatedAt: at, removed: true });
     });
+    forgetProfileOnDevice(deviceStorage(), db.name, id);
   },
 });

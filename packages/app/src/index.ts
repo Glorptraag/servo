@@ -62,19 +62,19 @@ const unsavedBuild = (content: Content): Blueprint | undefined => {
 };
 
 /**
- * Whose records the app opens, and the build it opens with, until the profile switch (task 5.1) and Home (task 4.5)
- * choose them. On a device with no profile it makes one, "Builder 1", which the parent view can rename later. It opens
- * the one profile, with its newest build that loads, or a new empty "Build 1" when none does, so the child always has
- * a build to work on. Each step is one transaction in the store, so two tabs opening at once never make two of either.
- * With several profiles, before the profile switch exists, none is in use.
+ * Whose records the app opens, and the build it opens with, until Home (task 4.5) chooses the build. On a device with
+ * no profile it makes one, "Builder 1", which the parent view can rename later. It opens the profile in use on this
+ * device (the parent view's profile switch, task 5.1, or the only profile), with its newest build that loads, or a new
+ * empty "Build 1" when none does, so the child always has a build to work on. Each step is one transaction in the
+ * store, so two tabs opening at once never make two of either. With several profiles and none chosen, none is in use.
  */
 const openingOf = async (store: ServoStore): Promise<Opening> => {
-  const profiles = await profilesForOpening(store, FIRST_PROFILE_NAME);
-  const [only] = profiles;
+  await profilesForOpening(store, FIRST_PROFILE_NAME);
+  const inUse = await store.profiles.inUse();
   const arena = firstArena(store.content);
-  if (!only || profiles.length > 1 || !arena) return NO_ONE;
-  const start = await buildForOpening(store, only.id, { name: FIRST_BUILD_NAME, level: START_LEVEL, arena });
-  return { child: store.forProfile(only.id), start };
+  if (!inUse || !arena) return NO_ONE;
+  const start = await buildForOpening(store, inUse.id, { name: FIRST_BUILD_NAME, level: START_LEVEL, arena });
+  return { child: store.forProfile(inUse.id), start };
 };
 
 /**
