@@ -125,3 +125,8 @@
 {"ts": "2026-10-02T23:08:58+00:00", "event": "done", "tasks": ["G1"], "by": "orchestrator"}
 {"ts": "2026-10-02T23:27:15+00:00", "event": "decision_add", "id": "D80", "blocks": []}
 {"ts": "2026-10-03T00:08:55+00:00", "event": "done", "tasks": ["4.9"], "by": "W-4.9"}
+{"ts": "2026-10-03T00:09:42+00:00", "event": "dispatch", "tasks": ["5.1"]}
+{"ts": "2026-10-03T00:09:43+00:00", "event": "dispatch", "tasks": ["5.5"]}
+{"ts": "2026-10-03T00:10:21+00:00", "event": "decision_add", "id": "D81", "blocks": []}
+{"ts": "2026-10-03T00:10:22+00:00", "event": "decision_add", "id": "D82", "blocks": []}
+{"ts": "2026-10-03T00:10:23+00:00", "event": "decision_add", "id": "D83", "blocks": []}
