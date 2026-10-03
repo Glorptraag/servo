@@ -9,11 +9,20 @@ import type { BrowserCommand } from 'vitest/node';
 //   scale factor 2. It renders on SwiftShader, the same software GPU on every machine, so screenshots and pixel
 //   probes match between a laptop and CI.
 // - `performance` runs the frame-time test in the same profile on the machine's own GPU where it has one (SwiftShader
-//   where it has none, as on CI). The test slows the CPU 4× itself, through CDP.
+//   where it has none, as on CI). The test slows the CPU 4× itself, through CDP. `pnpm test` leaves it out; `pnpm perf`
+//   runs it alone, and CI in a job of its own, so a busy machine's frame times never fail the correctness run.
 // - `hands` runs the list view by tap and click in Chromium and in WebKit, Safari's engine: Safari does not focus a
 //   button it is pressing, which Chromium does. Playwright's own input, no CDP, in a touchscreen context.
 // Task 3.8 generalises this into the e2e harness.
 const IPAD = { width: 1180, height: 820, deviceScaleFactor: 2 };
+// Builders and reviewers run this at load 200–350 beside many agents' browsers. There a browser can take minutes to
+// start and connect (Vitest's default is 60 s), and a beforeAll that mounts a canvas on SwiftShader far longer than
+// the 10 s default hook timeout. Generous for both, in every browser project.
+const CONNECT_TIMEOUT = 300_000;
+const HOOK_TIMEOUT = 300_000;
+// The canvas's one third-party package, optimised before any page loads: one Vite found late would reload a running
+// test page, which then may never load again.
+const OPTIMIZE_DEPS = { include: ['pixi.js'] };
 
 const chromium = (args: string[]) =>
   playwright({
@@ -30,17 +39,20 @@ const browserProject = (
   testTimeout: number,
   groupOrder: number,
 ): TestProjectInlineConfiguration => ({
+  optimizeDeps: OPTIMIZE_DEPS,
   test: {
     name,
     include,
     exclude,
     testTimeout,
+    hookTimeout: HOOK_TIMEOUT,
     sequence: { groupOrder },
     browser: {
       enabled: true,
       headless: true,
       provider: chromium(args),
       instances: [{ browser: 'chromium' }],
+      connectTimeout: CONNECT_TIMEOUT,
       viewport: { width: IPAD.width, height: IPAD.height },
       screenshotFailures: false,
       expect: {
@@ -93,17 +105,21 @@ export default defineConfig({
           sequence: { groupOrder: 0 },
         },
       },
-      // Generous: a software GPU on a busy machine (CI, other agents' browsers) can take a minute to mount a canvas.
-      browserProject('browser', ['test/browser/**/*.test.ts'], [FRAME_TIME, HANDS], ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'], 120_000, 0),
+      // Generous: a software GPU on a busy machine (CI, other agents' browsers) can take a minute to mount a canvas, and
+      // at load 45 and above a placement or art test has run past two minutes (every file here mounts one), so five.
+      browserProject('browser', ['test/browser/**/*.test.ts'], [FRAME_TIME, HANDS], ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'], 300_000, 0),
       {
+        optimizeDeps: OPTIMIZE_DEPS,
         test: {
           name: 'hands',
           include: [HANDS],
           testTimeout: 120_000,
+          hookTimeout: HOOK_TIMEOUT,
           sequence: { groupOrder: 0 },
           browser: {
             enabled: true,
             headless: true,
+            connectTimeout: CONNECT_TIMEOUT,
             commands: { tap, tapAt, clickAt },
             instances: [
               { browser: 'chromium', provider: touchscreen('chromium') },
@@ -114,8 +130,9 @@ export default defineConfig({
           },
         },
       },
-      // Last and alone, so no other test competes for the CPU while frames are timed.
-      browserProject('performance', [FRAME_TIME], [], ['--enable-unsafe-swiftshader'], 240_000, 1),
+      // Last and alone, so no other test competes for the CPU while frames are timed. Each test runs its gestures five
+      // times (frame-time.test.ts), about three minutes on CI's software GPU, so fifteen minutes allows a slow runner.
+      browserProject('performance', [FRAME_TIME], [], ['--enable-unsafe-swiftshader'], 900_000, 1),
     ],
   },
 });

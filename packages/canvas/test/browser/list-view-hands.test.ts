@@ -24,9 +24,10 @@ type Hand = 'click' | 'tap';
 
 let bench: Mounted;
 
+// Five minutes: at load 200–350 with many agents running, mounting can run past two.
 beforeAll(async () => {
   bench = await mount({}, { width: 820, height: 600 });
-}, 120_000);
+}, 300_000);
 
 afterAll(() => {
   unmountAll();

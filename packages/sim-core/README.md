@@ -71,3 +71,5 @@ The solvers are internal: they import each other by relative path, and the packa
 ## Tests
 
 sim-core's own tests use `@servo/schema/fixtures`, so they do not move when content does. Behaviour tests against the real content records and `@servo/content/fixtures` live in packages/tools, beside the golden-run harness (task 1.7), whose references live in `golden/`. `test/loop.test.ts` covers the tick loop and the recorder. `packages/tools/test/sim-determinism.test.ts` replays every valid schema blueprint and every content fixture 10 times (three content fixtures 100 times), compares the run records byte for byte and reports each fixture's `expect`. `pnpm --filter @servo/tools test:determinism` runs every one of them 100 times; it is not part of `pnpm check`.
+
+Timing tests are named `test/*.perf.ts` and run apart, under `vitest.perf.config.ts`: `pnpm --filter @servo/sim-core perf`, or `pnpm perf` at the root with every package's. `test/electrical.perf.ts` holds the 25-part per-tick cost. `pnpm test` leaves them out, so a busy machine's timing never fails it.

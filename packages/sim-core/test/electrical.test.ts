@@ -1,45 +1,17 @@
-import { describe, expect, it } from 'vitest';
-import { TICK_RATE, makeCatalogue, validateArenaPreset, validatePartRecord } from '@servo/schema';
-import type { Blueprint, PartRecord, PortRef, SourcePrimitive, SpeedActuator, ValidationResult } from '@servo/schema';
-import { exampleArenas, exampleParts, validBlueprints } from '@servo/schema/fixtures';
+import { describe, expect, it, vi } from 'vitest';
+import { TICK_RATE } from '@servo/schema';
+import type { Blueprint, PartRecord, SourcePrimitive, SpeedActuator } from '@servo/schema';
+import { validBlueprints } from '@servo/schema/fixtures';
 import { buildGraph } from '../src/graph/index.ts';
 import type { SimGraph } from '../src/graph/index.ts';
 import { electricalModel, initialElectricalState, solveElectrical, stepElectrical, steadyRpm } from '../src/electrical/index.ts';
 import type { ActuatorState, ElectricalModel, ElectricalSolution, ElectricalState } from '../src/electrical/index.ts';
 import type { Model } from '../src/electrical/model.ts';
+import { catalogue, fixture, parts, workbench } from './electrical-support.ts';
 
-declare const performance: { now(): number };
-declare const console: { log(...args: unknown[]): void };
-
-const unwrap = <T>(result: ValidationResult<T>): T => {
-  if (!result.ok) throw new Error(`Expected valid data:\n${JSON.stringify(result.issues, null, 2)}`);
-  return result.value;
-};
-
-const parts: readonly PartRecord[] = exampleParts.map((part) => unwrap(validatePartRecord(part)));
-const catalogue = makeCatalogue({ parts, arenas: exampleArenas.map((arena) => unwrap(validateArenaPreset(arena))) });
-const fixture = (name: string): Blueprint => {
-  const found = validBlueprints.find((entry) => entry.name === name)?.data;
-  if (!found) throw new Error(`No schema fixture ${name}`);
-  return found as Blueprint;
-};
-
-type Placed = readonly [id: string, type: string, settings?: Readonly<Record<string, string>>];
-
-/** A small build on the workbench: parts as [id, type, settings], power wires as ['part.port', 'part.port']. */
-const workbench = (placed: readonly Placed[], wires: readonly (readonly [string, string])[]): Blueprint => {
-  const base = fixture('led-circuit');
-  const ref = (end: string): PortRef => {
-    const [part = '', port = ''] = end.split('.');
-    return { part, port };
-  };
-  return {
-    ...base,
-    parts: placed.map(([id, type, settings = {}], index) => ({ id, part: type, position: { x: index * 80, y: 0 }, rotation: 0, settings })),
-    wires: wires.map(([from, to], index) => ({ id: `w${index + 1}`, from: ref(from), to: ref(to) })),
-    meta: { ...base.meta, level: 2, highWater: { parts: 0, wires: wires.length } },
-  };
-};
+// Circuits settled and stepped over many ticks take seconds on a machine running many agents' tests; generous for that.
+// The per-tick cost test is electrical.perf.ts, run by `pnpm perf`.
+vi.setConfig({ testTimeout: 120_000 });
 
 /** A blueprint with one part's type swapped, its wires and place kept. */
 const swapped = (blueprint: Blueprint, id: string, type: string): Blueprint => ({
@@ -371,7 +343,7 @@ describe('what flows', () => {
   });
 });
 
-describe('determinism and cost', () => {
+describe('determinism', () => {
   it('gives the same answer, bit for bit, whatever order the wires are listed in and however often it is asked', () => {
     for (const entry of validBlueprints) {
       const blueprint = entry.data as Blueprint;
@@ -393,72 +365,4 @@ describe('determinism and cost', () => {
     }
     expect([...(model as Model).wired.keys()]).toEqual(['closed,1,1', 'open,1,1']);
   });
-
-  it('keeps a 25-part build well under 1 ms a tick', () => {
-    const graph = buildGraph(twentyFive(), catalogue);
-    expect(graph.parts.size).toBe(25);
-    const model = electricalModel(graph);
-    const motors = graph.uses.flatMap((use, index) => (use.spec.kind === 'actuator' && use.spec.mode === 'speed' ? [{ index, spec: use.spec }] : []));
-    let state = initialElectricalState(model);
-    let actuators: ActuatorState[] = graph.uses.map(() => ({}));
-    const tick = (): void => {
-      const result = stepElectrical(model, state, { actuators });
-      state = result.state;
-      const next: ActuatorState[] = graph.uses.map(() => ({}));
-      for (const motor of motors) next[motor.index] = { rpm: steadyRpm(motor.spec, result.solution.uses[motor.index]?.volts ?? 0) };
-      actuators = next;
-    };
-    for (let warm = 0; warm < 200; warm += 1) tick();
-    // The fastest of 15 batches of 100 ticks: what the code costs when it has the processor, so a busy machine
-    // does not decide it (review R-1.2, finding 8). The median is printed beside it.
-    const batches = Array.from({ length: 15 }, () => {
-      const begin = performance.now();
-      for (let count = 0; count < 100; count += 1) tick();
-      return (performance.now() - begin) / 100;
-    }).sort((p, q) => p - q);
-    const perTick = batches[0] ?? Number.POSITIVE_INFINITY;
-    console.log(`electrical: ${perTick.toFixed(3)} ms a tick for a 25-part build (fastest of 15 batches; median ${(batches[7] ?? 0).toFixed(3)} ms)`);
-    expect(perTick).toBeLessThan(1);
-  });
 });
-
-/**
- * 25 parts on two 2-cell packs side by side: a switch and a bumper switch in the power line, a motor driver
- * with two DC motors, four more DC motors, six LEDs, four buzzers, two servo motors, and a microcontroller with
- * a DC motor on its 3V pin.
- */
-const twentyFive = (): Blueprint => {
-  const placed: Placed[] = [
-    ['pack-a', 'battery-pack-2-cell'],
-    ['pack-b', 'battery-pack-2-cell'],
-    ['switch', 'switch'],
-    ['bumper', 'bumper-switch'],
-    ['driver', 'motor-driver'],
-    ['brain', 'microcontroller'],
-  ];
-  const wires: [string, string][] = [
-    ['pack-a.plus', 'pack-b.plus'],
-    ['pack-a.minus', 'pack-b.minus'],
-    ['pack-a.plus', 'switch.a'],
-    ['switch.b', 'bumper.a'],
-    ['bumper.b', 'driver.plus'],
-    ['driver.minus', 'pack-a.minus'],
-    ['bumper.b', 'brain.plus'],
-    ['brain.minus', 'pack-a.minus'],
-  ];
-  const bus = (id: string, type: string): void => {
-    placed.push([id, type]);
-    wires.push(['bumper.b', `${id}.plus`], [`${id}.minus`, 'pack-a.minus']);
-  };
-  for (const channel of ['a', 'b']) {
-    placed.push([`driven-${channel}`, 'dc-motor']);
-    wires.push([`driver.${channel}-plus`, `driven-${channel}.plus`], [`driver.${channel}-minus`, `driven-${channel}.minus`]);
-  }
-  for (let index = 1; index <= 4; index += 1) bus(`motor-${index}`, 'dc-motor');
-  for (let index = 1; index <= 6; index += 1) bus(`led-${index}`, 'led');
-  for (let index = 1; index <= 4; index += 1) bus(`buzzer-${index}`, 'buzzer');
-  for (let index = 1; index <= 2; index += 1) bus(`servo-${index}`, 'servo-motor');
-  placed.push(['pin-motor', 'dc-motor']);
-  wires.push(['brain.pin-3v', 'pin-motor.plus'], ['pin-motor.minus', 'pack-a.minus']);
-  return workbench(placed, wires);
-};
