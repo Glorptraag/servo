@@ -4,10 +4,10 @@
 // dialog: a removal is confirmed inline, and anything that goes wrong is one plain line. The view has no routes and
 // writes nothing to the address, so no address can open one child's records, and no profile id reaches the page.
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { CSSProperties, FormEvent, KeyboardEvent } from 'react';
+import type { CSSProperties, FormEvent, KeyboardEvent, RefObject } from 'react';
 import type { Profile, ServoStore } from '@servo/app/store';
 import { answers, gateQuestion } from './gate.ts';
-import { NameRefused, addChild, readAccounts, removeChild, renameChild, switchChild } from './model.ts';
+import { ChoiceNotKept, NameRefused, addChild, readAccounts, removeChild, renameChild, switchChild } from './model.ts';
 import type { Accounts } from './model.ts';
 
 /** Every line of system text, for the copy pass. None has an exclamation mark or praise (ground rule 7). */
@@ -60,6 +60,15 @@ export interface ParentViewProps {
 
 export const ParentView = ({ store, random }: ParentViewProps) => {
   const [open, setOpen] = useState(false);
+  // A parent page left open must not let a child in later (R-5.1 Q4): once the page is hidden, the view closes, and
+  // when it is shown again the gate asks a new question.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') setOpen(false);
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
   return open ? <AccountsView store={store} /> : <Gate random={random} onPass={() => setOpen(true)} />;
 };
 
@@ -103,13 +112,23 @@ const Gate = ({ random, onPass }: { readonly random: () => number; readonly onPa
 
 type Editing = { readonly kind: 'rename' | 'remove'; readonly profile: Profile } | undefined;
 
-const lineFor = (error: unknown): string => (error instanceof NameRefused ? error.message : PARENT_TEXT.failed);
+const lineFor = (error: unknown): string => (error instanceof NameRefused || error instanceof ChoiceNotKept ? error.message : PARENT_TEXT.failed);
 
 const AccountsView = ({ store }: { readonly store: ServoStore }) => {
   const [accounts, setAccounts] = useState<Accounts | undefined>(undefined);
   const [editing, setEditing] = useState<Editing>(undefined);
   const [line, setLine] = useState('');
   const live = useRef(true);
+  const switchRef = useRef<HTMLFieldSetElement>(null);
+  const addRef = useRef<HTMLInputElement>(null);
+  // After a removal the focused row is gone: focus moves to the child in use, or the first child, or adding one.
+  const [refocus, setRefocus] = useState(0);
+  useEffect(() => {
+    if (refocus === 0) return;
+    const radios = switchRef.current?.querySelectorAll<HTMLInputElement>('input[type="radio"]');
+    const target = [...(radios ?? [])].find((radio) => radio.checked) ?? radios?.[0] ?? addRef.current;
+    target?.focus();
+  }, [refocus]);
 
   const refresh = useCallback(async () => {
     const next = await readAccounts(store);
@@ -159,7 +178,7 @@ const AccountsView = ({ store }: { readonly store: ServoStore }) => {
       <section aria-labelledby="servo-parent-children">
         <h2 id="servo-parent-children">{PARENT_TEXT.children}</h2>
         {profiles.length > 0 && (
-          <fieldset>
+          <fieldset ref={switchRef}>
             <legend>{PARENT_TEXT.switchLegend}</legend>
             {!current && <p>{PARENT_TEXT.noneInUse}</p>}
             {profiles.map((profile, index) => (
@@ -178,13 +197,15 @@ const AccountsView = ({ store }: { readonly store: ServoStore }) => {
                 }
                 onRemove={() => {
                   setEditing(undefined);
-                  void act(() => removeChild(store, profile.id));
+                  void act(() => removeChild(store, profile.id)).then(() => {
+                    if (live.current) setRefocus((count) => count + 1);
+                  });
                 }}
               />
             ))}
           </fieldset>
         )}
-        <AddChild onAdd={(name) => act(() => addChild(store, name))} />
+        <AddChild inputRef={addRef} onAdd={(name) => act(() => addChild(store, name))} />
       </section>
 
       {current && (
@@ -225,6 +246,16 @@ interface ChildRowProps {
 const ChildRow = ({ index, profile, inUse, editing, onSwitch, onEdit, onRename, onRemove }: ChildRowProps) => {
   const [name, setName] = useState(profile.name);
   const inputId = `servo-parent-name-${index}`;
+  const warningId = `servo-parent-remove-${index}`;
+  const renameButton = useRef<HTMLButtonElement>(null);
+  const removeButton = useRef<HTMLButtonElement>(null);
+  // When a rename or a removal ends without the row going, focus goes back to the button that started it.
+  const was = useRef(editing);
+  useEffect(() => {
+    if (was.current === 'rename' && editing === undefined) renameButton.current?.focus();
+    if (was.current === 'remove' && editing === undefined) removeButton.current?.focus();
+    was.current = editing;
+  }, [editing]);
   const rename = (event: FormEvent) => {
     event.preventDefault();
     onRename(name);
@@ -251,8 +282,14 @@ const ChildRow = ({ index, profile, inUse, editing, onSwitch, onEdit, onRename, 
           </button>
         </form>
       ) : editing === 'remove' ? (
-        <div role="group" aria-label={`${PARENT_TEXT.remove} ${profile.name}`} onKeyDown={escape} style={{ ...ROW, marginBlock: 0 }}>
-          <p>{removeWarning(profile.name)}</p>
+        <div
+          role="group"
+          aria-label={`${PARENT_TEXT.remove} ${profile.name}`}
+          aria-describedby={warningId}
+          onKeyDown={escape}
+          style={{ ...ROW, marginBlock: 0 }}
+        >
+          <p id={warningId}>{removeWarning(profile.name)}</p>
           <button type="button" onClick={onRemove} style={TARGET}>
             {PARENT_TEXT.removeConfirm}
           </button>
@@ -263,6 +300,7 @@ const ChildRow = ({ index, profile, inUse, editing, onSwitch, onEdit, onRename, 
       ) : (
         <>
           <button
+            ref={renameButton}
             type="button"
             aria-label={`${PARENT_TEXT.rename} ${profile.name}`}
             onClick={() => {
@@ -273,7 +311,7 @@ const ChildRow = ({ index, profile, inUse, editing, onSwitch, onEdit, onRename, 
           >
             {PARENT_TEXT.rename}
           </button>
-          <button type="button" aria-label={`${PARENT_TEXT.remove} ${profile.name}`} onClick={() => onEdit('remove')} style={TARGET}>
+          <button ref={removeButton} type="button" aria-label={`${PARENT_TEXT.remove} ${profile.name}`} onClick={() => onEdit('remove')} style={TARGET}>
             {PARENT_TEXT.remove}
           </button>
         </>
@@ -282,7 +320,12 @@ const ChildRow = ({ index, profile, inUse, editing, onSwitch, onEdit, onRename, 
   );
 };
 
-const AddChild = ({ onAdd }: { readonly onAdd: (name: string) => Promise<boolean> }) => {
+interface AddChildProps {
+  readonly inputRef: RefObject<HTMLInputElement | null>;
+  readonly onAdd: (name: string) => Promise<boolean>;
+}
+
+const AddChild = ({ inputRef, onAdd }: AddChildProps) => {
   const [name, setName] = useState('');
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -293,7 +336,7 @@ const AddChild = ({ onAdd }: { readonly onAdd: (name: string) => Promise<boolean
   return (
     <form onSubmit={submit} style={ROW}>
       <label htmlFor="servo-parent-add">{PARENT_TEXT.addLabel}</label>
-      <input id="servo-parent-add" value={name} onChange={(event) => setName(event.target.value)} autoComplete="off" style={TARGET} />
+      <input ref={inputRef} id="servo-parent-add" value={name} onChange={(event) => setName(event.target.value)} autoComplete="off" style={TARGET} />
       <button type="submit" style={TARGET}>
         {PARENT_TEXT.add}
       </button>

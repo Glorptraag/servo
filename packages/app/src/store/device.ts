@@ -37,6 +37,53 @@ export const chooseProfile = (storage: Storage, scope: string, profile: ProfileI
   storage.setItem(`${IN_USE_PREFIX}${scope}`, profile);
 };
 
+/** The start of the BroadcastChannel's name on which a store says its profiles changed: then the database's name. */
+export const PROFILES_CHANNEL_PREFIX = 'servo.profiles:';
+
+/**
+ * Tells this device's other pages on the same database that the profiles, or the one in use, may have changed: the
+ * parent view's switch, a child added or removed. A page with no BroadcastChannel says nothing, and its listeners still
+ * hear the in-use key change through the `storage` event.
+ */
+export const announceProfiles = (scope: string): void => {
+  try {
+    if (typeof BroadcastChannel === 'undefined') return;
+    const channel = new BroadcastChannel(`${PROFILES_CHANNEL_PREFIX}${scope}`);
+    channel.postMessage('changed');
+    channel.close();
+  } catch {
+    // Another page then learns of the change when it next opens.
+  }
+};
+
+/**
+ * Calls `listener` whenever another page of this device may have changed the profiles of the database `scope`: the
+ * in-use key changed (`storage` event, which also fires when the page's storage is cleared), or a store announced a
+ * change. It may be called when nothing changed for this page, so the listener reads the store again. Returns the
+ * unsubscribe function.
+ */
+export const onProfilesChanged = (scope: string, listener: () => void): (() => void) => {
+  const key = `${IN_USE_PREFIX}${scope}`;
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === key || event.key === null) listener();
+  };
+  const target = typeof window === 'undefined' ? undefined : window;
+  target?.addEventListener('storage', onStorage);
+  let channel: BroadcastChannel | undefined;
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      channel = new BroadcastChannel(`${PROFILES_CHANNEL_PREFIX}${scope}`);
+      channel.onmessage = () => listener();
+    }
+  } catch {
+    channel = undefined;
+  }
+  return () => {
+    target?.removeEventListener('storage', onStorage);
+    channel?.close();
+  };
+};
+
 /** The profile a journal note belongs to, or undefined for a note that cannot be read. */
 const profileOfNote = (text: string | null): unknown => {
   try {

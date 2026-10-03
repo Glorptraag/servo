@@ -102,6 +102,37 @@ describe('the parental gate (D28)', () => {
   });
 });
 
+describe('a parent page left open', () => {
+  it('asks the gate again once the page has been hidden and shown again (R-5.1 Q4)', async () => {
+    const { store, robin } = await family();
+    let random = 0;
+    const host = mount(store, () => random);
+    await passGate(host);
+    await expect.poll(() => buildsShown(host)).toEqual(['Robin rocket']);
+
+    const visibility = Object.getOwnPropertyDescriptor(Document.prototype, 'visibilityState');
+    let state: DocumentVisibilityState = 'hidden';
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
+    try {
+      random = 0.99;
+      document.dispatchEvent(new Event('visibilitychange'));
+      state = 'visible';
+      document.dispatchEvent(new Event('visibilitychange'));
+    } finally {
+      delete (document as { visibilityState?: unknown }).visibilityState;
+    }
+    expect(Object.getOwnPropertyDescriptor(Document.prototype, 'visibilityState')).toEqual(visibility);
+
+    // Shown again: a new question, and nothing of any child.
+    await expect.poll(() => host.querySelector('h1')?.textContent).toBe(PARENT_TEXT.gateTitle);
+    expect(host.textContent).toContain('What is 9 × 19?');
+    for (const text of ['Robin', 'Robin rocket', robin.id]) expect(host.innerHTML).not.toContain(text);
+    await userEvent.fill(host.querySelector('input') as HTMLInputElement, '171');
+    await userEvent.keyboard('{Enter}');
+    await expect.poll(() => buildsShown(host)).toEqual(['Robin rocket']);
+  });
+});
+
 describe('the profile switch', () => {
   it('shows only the chosen child’s builds, makes that child the one in use, and writes nothing to the address', async () => {
     const { store, robin, sam, rocket, sorter } = await family();
@@ -160,12 +191,15 @@ describe('the profile switch', () => {
     await userEvent.keyboard('{Enter}');
     await expect.poll(async () => (await store.profiles.list()).map((profile) => profile.name)).toEqual(['Robin', 'Samira', 'Ari']);
     await expect.poll(() => host.querySelector('#servo-parent-name-1')).toBeNull();
+    // Focus goes back to the row's Rename button (R-5.1 finding 5).
+    await expect.poll(() => document.activeElement?.getAttribute('aria-label')).toBe('Rename Samira');
 
     // Escape leaves the name as it was.
     await userEvent.click(host.querySelector('button[aria-label="Rename Ari"]') as HTMLElement);
     await userEvent.fill(host.querySelector('#servo-parent-name-2') as HTMLInputElement, 'Nobody');
     await userEvent.keyboard('{Escape}');
     await expect.poll(() => host.querySelector('#servo-parent-name-2')).toBeNull();
+    await expect.poll(() => document.activeElement?.getAttribute('aria-label')).toBe('Rename Ari');
     expect((await store.profiles.list()).map((profile) => profile.name)).toEqual(['Robin', 'Samira', 'Ari']);
   });
 
@@ -182,9 +216,13 @@ describe('the profile switch', () => {
     await userEvent.click(host.querySelector('button[aria-label="Remove Robin"]') as HTMLElement);
     await expect.poll(() => host.textContent).toContain('Remove Robin from this device?');
     expect(document.querySelector('dialog, [role="dialog"], [role="alertdialog"]')).toBeNull();
+    // The confirm group is described by what it deletes, for a screen reader.
+    const group = host.querySelector('[role="group"]');
+    expect(document.getElementById(group?.getAttribute('aria-describedby') ?? '')?.textContent).toContain('cannot be brought back');
     await userEvent.click(byText(host, 'button', PARENT_TEXT.keep));
     await expect.poll(() => host.textContent).not.toContain('Remove Robin from this device?');
     expect(await store.profiles.list()).toHaveLength(2);
+    await expect.poll(() => document.activeElement?.getAttribute('aria-label')).toBe('Remove Robin');
 
     // Builds the app's journal noted for Robin go with Robin; Sam's, and another database's, stay.
     for (const item of [robinsNote, samsNote, otherDatabase]) localStorage.setItem(...item);
@@ -196,6 +234,8 @@ describe('the profile switch', () => {
     // Sam is the only child now, so Sam is in use, and only Sam's build shows.
     expect(radioFor(host, 'Sam').checked).toBe(true);
     await expect.poll(() => buildsShown(host)).toEqual(['Sam sorter']);
+    // The removed row is gone, so focus moves to the child in use.
+    await expect.poll(() => document.activeElement).toBe(radioFor(host, 'Sam'));
     expect(await store.forProfile(robin.id).blueprints.list()).toEqual([]);
     await expect(store.forProfile(robin.id).blueprints.load(rocket.meta.id)).rejects.toThrow();
     expect((await store.forProfile(sam.id).blueprints.load(sorter.meta.id)).ok).toBe(true);

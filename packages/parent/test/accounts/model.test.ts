@@ -6,7 +6,7 @@ import { openStore } from '@servo/app/store';
 import type { ServoStore } from '@servo/app/store';
 import type { Blueprint, RunRecord } from '@servo/schema';
 import { exampleRunRecords } from '@servo/schema/fixtures';
-import { NameRefused, addChild, nameOf, readAccounts, removeChild, renameChild, switchChild } from '../../src/accounts/index.ts';
+import { ChoiceNotKept, NameRefused, addChild, nameOf, readAccounts, removeChild, renameChild, switchChild } from '../../src/accounts/index.ts';
 import { answers, gateQuestion } from '../../src/accounts/gate.ts';
 import { databaseOf, memoryStorage, open, plainFloor } from './support.ts';
 
@@ -173,16 +173,16 @@ describe('the accounts', () => {
 });
 
 describe('a device whose page keeps nothing', () => {
-  it('cannot switch, and then uses only a lone child', async () => {
+  it('cannot switch, and refuses a second child rather than leave no one in use (R-5.1 finding 3)', async () => {
     vi.stubGlobal('localStorage', undefined);
     const store = await openStore({ name: `servo-parent-${crypto.randomUUID()}` });
     const robin = await addChild(store, 'Robin');
     await expect(switchChild(store, robin.id)).rejects.toThrow(/cannot keep/);
     expect((await readAccounts(store)).current?.id).toBe(robin.id);
-    await addChild(store, 'Sam');
+    await expect(addChild(store, 'Sam')).rejects.toBeInstanceOf(ChoiceNotKept);
     const accounts = await readAccounts(store);
-    expect(accounts.current).toBeUndefined();
-    expect(accounts.builds).toEqual([]);
+    expect(accounts.profiles.map((profile) => profile.name)).toEqual(['Robin']);
+    expect(accounts.current?.id).toBe(robin.id);
     store.close();
   });
 });

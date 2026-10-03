@@ -16,7 +16,11 @@ export default defineConfig({
         },
       },
       {
-        optimizeDeps: { include: ['react', 'react/jsx-runtime', 'react/jsx-dev-runtime', 'react-dom', 'react-dom/client'] },
+        // The two-page test loads the child's app in a frame; optimising its dependencies up front keeps Vite from
+        // reloading the page mid-test. The canvas renders on SwiftShader, as in packages/app.
+        optimizeDeps: {
+          include: ['react', 'react/jsx-runtime', 'react/jsx-dev-runtime', 'react-dom', 'react-dom/client', '@servo/app > @servo/canvas > pixi.js'],
+        },
         test: {
           name: 'browser',
           include: ['test/browser/**/*.test.{ts,tsx}'],
@@ -24,7 +28,11 @@ export default defineConfig({
           browser: {
             enabled: true,
             headless: true,
-            provider: playwright({ launchOptions: { channel: 'chromium' } }),
+            provider: playwright({
+              launchOptions: { channel: 'chromium', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] },
+              contextOptions: { viewport: { width: 1180, height: 820 } },
+            }),
+            viewport: { width: 1180, height: 820 },
             instances: [{ browser: 'chromium' }],
             screenshotFailures: false,
           },

@@ -6,7 +6,7 @@ import type { ProfileId } from '@servo/schema';
 import { recordChange } from './changes.ts';
 import type { Change } from './changes.ts';
 import { compareText, isName, refusal } from './context.ts';
-import { chooseProfile, chosenProfile, deviceStorage, forgetProfileOnDevice } from './device.ts';
+import { announceProfiles, chooseProfile, chosenProfile, deviceStorage, forgetProfileOnDevice } from './device.ts';
 import type { StoreContext } from './context.ts';
 import type { ProfileRow } from './database.ts';
 import type { Profile, Profiles } from './index.ts';
@@ -50,6 +50,7 @@ export const profilesOf = ({ db, now }: StoreContext): Profiles => ({
       await db.profiles.add({ ...profile });
       await recordChange(db, { collection: 'profiles', id: profile.id, updatedAt: profile.createdAt, removed: false });
     });
+    announceProfiles(db.name);
     return profile;
   },
 
@@ -81,6 +82,7 @@ export const profilesOf = ({ db, now }: StoreContext): Profiles => ({
     } catch (error) {
       throw new Error('This device cannot keep which profile is in use.', { cause: error });
     }
+    announceProfiles(db.name);
     return profileOf(row);
   },
 
@@ -104,5 +106,6 @@ export const profilesOf = ({ db, now }: StoreContext): Profiles => ({
       await recordChange(db, { collection: 'profiles', id, updatedAt: at, removed: true });
     });
     forgetProfileOnDevice(deviceStorage(), db.name, id);
+    announceProfiles(db.name);
   },
 });

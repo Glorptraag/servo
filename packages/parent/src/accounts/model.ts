@@ -36,6 +36,14 @@ export class NameRefused extends Error {
   }
 }
 
+/** Thrown when this device cannot keep who is in use, so a child is not added: the child in use would be lost. */
+export class ChoiceNotKept extends Error {
+  constructor(cause?: unknown) {
+    super('This device cannot keep who is using Servo, so another child cannot be added.', { cause });
+    this.name = 'ChoiceNotKept';
+  }
+}
+
 const checked = (text: string): string => {
   const name = nameOf(text);
   if (name === undefined) throw new NameRefused();
@@ -58,7 +66,12 @@ export const readAccounts = async (store: ServoStore): Promise<Accounts> => {
 export const addChild = async (store: ServoStore, text: string): Promise<Profile> => {
   const name = checked(text);
   const current = await store.profiles.inUse();
-  if (current) await store.profiles.use(current.id).catch(() => undefined);
+  if (current) {
+    // A page that cannot keep the choice would leave no one in use once a second child is added (R-5.1 finding 3).
+    await store.profiles.use(current.id).catch((error: unknown) => {
+      throw new ChoiceNotKept(error);
+    });
+  }
   return store.profiles.create(name);
 };
 
