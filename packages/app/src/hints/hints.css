@@ -1,0 +1,70 @@
+/*
+ * The hint button beside the goal (task 4.6): a 44 px target in the shell's tokens. An offer after two missed Runs
+ * pulses a soft ring round it, gently (brief Section 10); with reduced motion the ring holds still. The rungs
+ * themselves are drawn on the canvas, never here.
+ */
+
+.hint-ladder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.hint-button {
+  min-width: var(--shell-target, 44px);
+  min-height: var(--shell-target, 44px);
+  padding: 0 14px;
+  border: 1px solid var(--shell-line, #d6d0c6);
+  border-radius: 12px;
+  background: var(--shell-panel, #fbfaf7);
+  color: var(--shell-ink, #2b2926);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hint-button[aria-disabled='true'] {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.hint-button[data-offered='true'] {
+  box-shadow: 0 0 0 3px var(--shell-line, #d6d0c6);
+  animation: hint-offer 1.6s ease-in-out infinite;
+}
+
+@keyframes hint-offer {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--shell-line, #d6d0c6);
+  }
+
+  50% {
+    box-shadow: 0 0 0 5px var(--shell-line, #d6d0c6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hint-button[data-offered='true'] {
+    animation: none;
+  }
+}
+
+/* What do-it did, in one quiet line beside the button, cut short when the header is narrow. */
+.hint-said {
+  max-width: 220px;
+  overflow: hidden;
+  font-size: 0.875em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hint-spoken {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
