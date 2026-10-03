@@ -12,6 +12,7 @@ import { HINT_GAP_MM, HINT_RING_MM, PROP_RING_MM, SOCKET_REACH_MM } from '../../
 import { distanceToSegment } from '../../src/scene/geometry.ts';
 import { hitTest } from '../../src/scene/hit.ts';
 import { BESIDE_STEPS } from '../../src/selection/label.ts';
+import { LABEL_HEIGHT_PX, LABEL_STEP_PX } from '../../src/selection/controller.ts';
 import { probeCanvas } from '../../src/testing.ts';
 import type { CanvasProbe } from '../../src/testing.ts';
 import { blueprintOf, fixture } from '../helpers/catalogue.ts';
@@ -393,13 +394,17 @@ const socket = (key: string): Vec2 => {
 
 const FILE = 'selection.test.ts';
 
-/** The label's glyphs, in CSS pixels from the canvas's top left: the device draws them in its own fonts, so they are masked from the strict rule and probed instead. */
+/**
+ * The inside of the label's pill, in CSS pixels from the canvas's top left: where its word is drawn, in the device's own
+ * fonts (the canvas loads none), so the strict rule leaves it out and probes check it. The pill's outline and ends, its
+ * size (it steps, LABEL_STEP_PX) and its place stay under the rule.
+ */
 const textBox = (): Box => {
   const box = probe.wireLabelBox;
   if (!box) throw new Error('no label');
   const centre = screenOf(box.centre.world);
-  const width = box.width - 2 * 20 + 6;
-  const height = box.height - 20 + 6;
+  const width = box.width - 16;
+  const height = box.height - 10;
   return { x: centre.x - width / 2, y: centre.y - height / 2, width, height };
 };
 
@@ -421,6 +426,8 @@ const expectLabelOn = (id: WireId, shot: Shot, where: 'on' | 'beside' = 'on'): v
     const actual = shot.at(at);
     expect(colourDistance(actual, pill), `the pill’s ${side < 0 ? 'left' : 'right'} end: ${describeRgb(actual)}`).toBeLessThanOrEqual(12);
   }
+  expect(box.height, 'the pill’s fixed height').toBeCloseTo(LABEL_HEIGHT_PX, 6);
+  expect(box.width / LABEL_STEP_PX - Math.round(box.width / LABEL_STEP_PX), 'the pill’s width in steps').toBeCloseTo(0, 6);
   const text = textBox();
   let ink = 0;
   for (let x = text.x; x < text.x + text.width; x += 1) {
