@@ -72,7 +72,13 @@ export interface EmphasisRequest {
 /** Surfaces alive now: global GPU pools are released only when the last one goes. */
 const live = new Set<CanvasSurface>();
 
-const reducedMotion = (): boolean => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+/** The device's reduced-motion setting: one live query, read on every view change, not a new one each time. */
+let motionQuery: MediaQueryList | undefined;
+const reducedMotion = (): boolean => {
+  if (typeof matchMedia !== 'function') return false;
+  motionQuery ??= matchMedia('(prefers-reduced-motion: reduce)');
+  return motionQuery.matches;
+};
 
 export class CanvasSurface implements CanvasHandle {
   readonly canvas: HTMLCanvasElement;
@@ -128,6 +134,9 @@ export class CanvasSurface implements CanvasHandle {
   private prefs: CanvasPrefs;
   private emphasis: EmphasisRequest | null = null;
   private restTimer: ReturnType<typeof setTimeout> | undefined;
+  private limitsCache:
+    | { readonly scene: Scene; readonly mode: CanvasMode; readonly arena: SceneArena | undefined; readonly width: number; readonly height: number; readonly limits: ViewLimits }
+    | undefined;
   private destroyed = false;
 
   constructor(host: HTMLElement, options: CanvasOptions) {
@@ -494,7 +503,14 @@ export class CanvasSurface implements CanvasHandle {
   /** The current limits on zoom and pan, for the uncovered canvas. */
   limits(): ViewLimits {
     const view = this.camera.uncovered();
-    return limitsFor(this.targets(), view.width, view.height);
+    // The same while the build, the mode and the view's size are: a pan or a pinch asks on every step.
+    const cached = this.limitsCache;
+    if (cached && cached.scene === this.scene && cached.mode === this.currentMode && cached.arena === this.arena && cached.width === view.width && cached.height === view.height) {
+      return cached.limits;
+    }
+    const limits = limitsFor(this.targets(), view.width, view.height);
+    this.limitsCache = { scene: this.scene, mode: this.currentMode, arena: this.arena, width: view.width, height: view.height, limits };
+    return limits;
   }
 
   /** True when nothing is loading, fading or waiting to be drawn: the picture on screen is final. */

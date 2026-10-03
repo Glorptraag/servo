@@ -43,6 +43,7 @@ export class Camera {
   height = 1;
   /** How far in from each edge the canvas the child can see begins (D70). */
   safeArea: CanvasSafeArea = NO_SAFE_AREA;
+  private areas: { readonly targets: readonly Polygon[]; readonly byKey: Map<string, Polygon[]> } | undefined;
 
   /** Screen pixels per millimetre. */
   get scale(): number {
@@ -126,11 +127,29 @@ export class Camera {
   /** Keeps some of the content in the uncovered view, without jumping (`holdFocus`). */
   private hold(previous: Vec2, previousScale: number, limits: ViewLimits): void {
     const view = this.uncovered();
-    const area = focusArea(limits.targets, view, this.scale);
-    const before = previousScale === this.scale ? area : focusArea(limits.targets, view, previousScale);
+    const area = this.areaFor(limits.targets, view, this.scale);
+    const before = previousScale === this.scale ? area : this.areaFor(limits.targets, view, previousScale);
     this.setFocus(holdFocus(this.focus(), previous, area, before));
   }
+
+  /**
+   * `focusArea`, remembered for the last few scales on the same targets and view: a pan keeps its scale, and each step
+   * of a pinch or a wheel needs the area at the scale the step before it had, so a gesture works each one out once.
+   */
+  private areaFor(targets: readonly Polygon[], view: ScreenRect, scale: number): Polygon[] {
+    const key = `${view.x},${view.y},${view.width},${view.height},${scale}`;
+    if (this.areas?.targets !== targets) this.areas = { targets, byKey: new Map() };
+    const known = this.areas.byKey.get(key);
+    if (known) return known;
+    const area = focusArea(targets, view, scale);
+    if (this.areas.byKey.size >= AREAS_KEPT) this.areas.byKey.delete(this.areas.byKey.keys().next().value as string);
+    this.areas.byKey.set(key, area);
+    return area;
+  }
 }
+
+/** How many scales' focus areas a camera keeps. */
+const AREAS_KEPT = 4;
 
 /** `next` held in [min, max], widened to include `previous`, so a limit never pulls a value across it. */
 const holdWithin = (next: number, previous: number, min: number, max: number): number =>
