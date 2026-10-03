@@ -1,0 +1,171 @@
+/*
+ * The Parts Library (task 4.2): a large overlay over the canvas, opened from the tray. The filters stay at the top
+ * and the shelves scroll beneath them. Browse-only: nothing in it drags.
+ */
+/*
+ * Only vertical scrolling is the browser's, here and on the shelves (a scroll container sets its own): a sideways
+ * swipe in the overlay must never reach the page, where a touch browser (Chrome on Android, ChromeOS and Linux) can
+ * read it as Back and leave the app.
+ */
+.library {
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  /* Chromium gives a modal dialog selectable text whatever its ancestors say; a selection here would drag natively. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  width: min(1040px, calc(100vw - 32px));
+  max-width: none;
+  height: min(760px, calc(100vh - 32px));
+  max-height: none;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--shell-line);
+  border-radius: 16px;
+  background: var(--shell-panel);
+  color: var(--shell-ink);
+  box-shadow: var(--shell-shadow);
+}
+
+.library[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.library::backdrop {
+  background: rgb(43 41 38 / 30%);
+}
+
+.library img {
+  -webkit-user-drag: none;
+}
+
+.library-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px 0;
+}
+
+.library-head h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.library-filters {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px 0;
+}
+
+.library-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.library-filter legend {
+  float: left;
+  min-width: 72px;
+  margin-right: 4px;
+  color: var(--shell-muted);
+}
+
+/* A chip: a 44 px target round a native radio button, which keeps its keyboard and screen-reader behaviour. */
+.library-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--shell-target);
+  padding: 0 14px;
+  border: 1px solid var(--shell-line);
+  border-radius: 22px;
+  background: var(--shell-panel);
+  cursor: pointer;
+}
+
+.library-chip input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.library-chip:has(input:checked) {
+  border: 2px solid var(--shell-focus);
+  padding: 0 13px;
+  font-weight: 700;
+}
+
+.library-chip:has(input:focus-visible) {
+  outline: 3px solid var(--shell-focus);
+  outline-offset: 2px;
+}
+
+.library-count {
+  flex: none;
+  margin: 8px 16px 0;
+  color: var(--shell-muted);
+}
+
+.library-shelves {
+  touch-action: pan-y;
+  flex: 1;
+  min-height: 0;
+  padding: 4px 16px 16px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.library-shelf h3 {
+  margin: 12px 0 8px;
+  font-size: 16px;
+}
+
+.library-shelf ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.library-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 8px;
+  border: 1px solid var(--shell-line);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.library-card .tray-picture {
+  width: 64px;
+  height: 64px;
+}
+
+.library-card .tray-swatch {
+  width: 56px;
+  height: 40px;
+}
+
+.library-name {
+  font-weight: 700;
+}
+
+.library-about {
+  color: var(--shell-muted);
+  font-size: 13px;
+}
