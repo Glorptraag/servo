@@ -733,7 +733,7 @@
       "dispatched_at": "2026-10-03T05:36:05+00:00"
     },
     "4.4": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -749,8 +749,8 @@
       ],
       "done_when": "Stop restores the build exactly; slow-motion shows per-tick steps with the tick's visual twin; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-03T07:50:56+00:00",
+      "completed_by": "W-4.4",
       "dispatched_at": "2026-10-03T05:36:05+00:00"
     },
     "4.5": {
