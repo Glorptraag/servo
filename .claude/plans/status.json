@@ -917,7 +917,7 @@
       "dispatched_at": "2026-10-03T00:09:42+00:00"
     },
     "5.2": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -932,8 +932,8 @@
       ],
       "done_when": "Figures reconcile to run records for all fixtures; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-03T15:13:11+00:00",
+      "completed_by": "W-5.2",
       "dispatched_at": "2026-10-03T10:39:21+00:00"
     },
     "5.3": {
@@ -956,7 +956,7 @@
       "dispatched_at": "2026-10-03T02:19:54+00:00"
     },
     "5.4": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -971,7 +971,8 @@
       "done_when": "Draws from Level 1\u20132 parts only; records a result per child; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-03T15:13:19+00:00"
     },
     "5.5": {
       "status": "done",
@@ -1078,7 +1079,7 @@
       "completed_by": null
     },
     "6.2": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1094,7 +1095,8 @@
       "done_when": "Every emitted event is listed in the data note and nothing else is emitted (test enumerates emitters); tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-03T15:13:20+00:00"
     },
     "6.3": {
       "status": "done",
