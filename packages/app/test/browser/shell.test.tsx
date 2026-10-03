@@ -450,9 +450,17 @@ describe('the shell', () => {
     expect(seen).toHaveLength(calls);
   });
 
-  it('gives the canvas the tray and the arena strip as its remove targets, in one call (R-4.2)', async () => {
+  it('gives the canvas the tray and the arena strip as its remove targets, in one call, while each shows (R-4.2)', async () => {
     const app = await mountShell();
     expect(app.canvas.removeTargets).toEqual([[app.region('tray'), app.region('arenaStrip')]]);
+    // A tucked arena strip lies behind the header, so a drop there must not remove a part.
+    await tap(app.tab('arenaStrip'));
+    expect(app.canvas.removeTargets.at(-1)).toEqual([app.region('tray')]);
+    await tap(app.tab('tray'));
+    expect(app.canvas.removeTargets.at(-1)).toEqual([]);
+    await tap(app.tab('arenaStrip'));
+    await tap(app.tab('tray'));
+    expect(app.canvas.removeTargets.at(-1)).toEqual([app.region('tray'), app.region('arenaStrip')]);
   });
 
   it('zooms along its ladder and re-centres with Fit', async () => {

@@ -28,7 +28,7 @@ The exit status is 0 when every Run matches its golden file (with `--accept`, wh
    - `faults`: exactly the run record's faults, by part and failure mode. A fault the Run shows that `expect` does not list is reported with its first tick, how many ticks it was active and the part's readouts there;
    - `namedFault`: one of the faults the Run shows;
    - `refused`: the schema's `planWire` refuses that wire on the fixture's blueprint, with that code;
-   - `goal`, for a fixture that names a challenge: the challenge runner's verdict (`GoalJudge`). That runner is task 4.5, so until it lands, a fixture that expects a goal fails, saying so. No fixture has one yet.
+   - `goal`, for a fixture that names a challenge: the challenge runner's verdict (`GoalJudge`): task 4.5's `goalJudgeFor` from `@servo/app/goal`, which `main.ts` passes as `env.judge`. No fixture has one yet.
 2. **Each Run against its golden file**, byte for byte. When they differ, the diff says:
    - which of the Run's inputs changed: the blueprint, the arena, a part record (by id), the seed, the ticks or the switch presses. When none did, the simulation changed;
    - how many ticks differ, the first one, and each summarized field there, old → new (12 at most, then a count);

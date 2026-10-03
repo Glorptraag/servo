@@ -190,7 +190,8 @@ describe('the Run bar', () => {
     expect(run.textContent).toBe(RUN_BAR_TEXT.run);
     // Off, but focusable, so a keyboard or screen reader reaches it and hears why (rule 8).
     expect(run.getAttribute('aria-disabled')).toBe('true');
-    expect(run.disabled).toBe(false);
+    // The toggle turns on in the render after the loop is handed out (onLoop runs in the same effect as setLoop).
+    await vi.waitFor(() => expect(run.disabled).toBe(false), SOON);
     // A press does nothing. (Playwright will not click what is aria-disabled, so this is the DOM's click.)
     run.click();
     await new Promise((resolve) => setTimeout(resolve, 50));

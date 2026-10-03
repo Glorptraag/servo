@@ -5,7 +5,7 @@
 // pointer, keyboard and screen readers all take the same path (ground rule 8); Space is Run and Stop too (D42).
 // The run loop itself is run-loop.ts, which the shared build's replay shares.
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import type { Blueprint, Timestamp } from '@servo/schema';
+import type { Blueprint, Challenge, Timestamp } from '@servo/schema';
 import type { ProgramRuntime } from '@servo/sim-core';
 import { useShell } from '../shell/context.ts';
 import { UndoHistory } from './history.ts';
@@ -40,15 +40,17 @@ export interface RunBarProps {
   readonly seed?: (blueprint: Blueprint) => number;
   /** Wall-clock times for the run records. Default now, as toISOString writes it. */
   readonly now?: () => Timestamp;
-  /** Hands out the run loop once the canvas is mounted, and null as it goes: the spec card, sound and challenges listen to it. */
+  /** Hands out the run loop once the bar shows it, and null as it goes: the spec card, sound and challenges listen to it. */
   readonly onLoop?: (loop: RunLoop | null) => void;
+  /** The challenge on the canvas (task 4.5): its Runs are kept with its id and the goal's verdict. None in the sandbox. */
+  readonly challenge?: Challenge | null;
   /** The brains' program for each new Simulation (the Level 3 slot, task 6.6). Default none: the no-op brain (D41). */
   readonly program?: (blueprint: Blueprint) => ProgramRuntime | undefined;
 }
 
 const BUILD: RunState = { phase: 'build', tick: 0, rate: NORMAL_RATE };
 
-export const RunBar = ({ clock, seed, now, onLoop, program }: RunBarProps) => {
+export const RunBar = ({ clock, seed, now, onLoop, challenge = null, program }: RunBarProps) => {
   const { canvas, content, child, blueprint, mode, setMode, load } = useShell();
   const reasonId = useId();
   const barRef = useRef<HTMLDivElement>(null);
@@ -57,15 +59,20 @@ export const RunBar = ({ clock, seed, now, onLoop, program }: RunBarProps) => {
   const [history] = useState(() => new UndoHistory());
   const [undoSteps, setUndoSteps] = useState(0);
   const recorderRef = useRef<RunRecorder | null>(null);
-  const latest = useRef({ setMode, child, clock, seed, now, onLoop, program, rate: run.rate });
-  latest.current = { setMode, child, clock, seed, now, onLoop, program, rate: run.rate };
+  const latest = useRef({ setMode, child, clock, seed, now, onLoop, challenge, program, rate: run.rate });
+  latest.current = { setMode, child, clock, seed, now, onLoop, challenge, program, rate: run.rate };
 
   // One loop per canvas. Frames at normal speed redraw nothing here, so the bar re-renders only for what it shows.
   useEffect(() => {
     const view = barRef.current?.ownerDocument.defaultView;
     if (!canvas || !view) return undefined;
     const given = latest.current;
-    const recorder = new RunRecorder({ child: () => latest.current.child, ...(given.now ? { now: given.now } : {}) });
+    const recorder = new RunRecorder({
+      child: () => latest.current.child,
+      challenge: () => latest.current.challenge,
+      catalogue: content.catalogue,
+      ...(given.now ? { now: given.now } : {}),
+    });
     recorderRef.current = recorder;
     if (canvas.blueprint) recorder.prepare(canvas.blueprint);
     const made = new RunLoop({
@@ -86,7 +93,6 @@ export const RunBar = ({ clock, seed, now, onLoop, program }: RunBarProps) => {
     });
     setLoop(made);
     setRun(made.state);
-    given.onLoop?.(made);
     return () => {
       off();
       made.dispose();
@@ -95,6 +101,11 @@ export const RunBar = ({ clock, seed, now, onLoop, program }: RunBarProps) => {
       latest.current.onLoop?.(null);
     };
   }, [canvas, content]);
+
+  // Handed out once the bar shows it, so whoever holds the loop finds Run ready to take a press.
+  useEffect(() => {
+    if (loop) latest.current.onLoop?.(loop);
+  }, [loop]);
 
   // Undo's history hears every edit as it happens, in the commit that shows the build, as Save does.
   useLayoutEffect(() => {

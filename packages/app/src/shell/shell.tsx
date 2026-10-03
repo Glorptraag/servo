@@ -198,14 +198,6 @@ export const Shell = ({
     };
   }, [measured]);
 
-  // The tray and the arena strip are where a part, wire or prop dragged off the canvas goes back to, as the bin
-  // (brief Section 10, D36). `setRemoveTargets` replaces the whole list, so the shell, which holds both regions, is its
-  // one caller (review R-4.2). Both are in the page whenever the canvas is.
-  useEffect(() => {
-    const targets = [trayRef.current, arenaStripRef.current].filter((each): each is HTMLElement => each !== null);
-    canvas?.setRemoveTargets(targets);
-  }, [canvas]);
-
   // The tuck states are written when the child changes them, never just for reading them.
   const unchanged = useRef(true);
   useEffect(() => {
@@ -263,6 +255,17 @@ export const Shell = ({
       }),
     [size, tucked, mode, prefs.leftHanded, specCardWanted, specCardAside],
   );
+
+  // The tray and the arena strip are where a part, wire or prop dragged off the canvas goes back to, as the bin
+  // (brief Section 10, D36). `setRemoveTargets` replaces the whole list, so the shell, which holds both regions, is its
+  // one caller (review R-4.2). Only a region that shows counts: the canvas tests the box alone, and a tucked arena
+  // strip lies behind the header, where a drop would otherwise remove a part.
+  const trayShown = layout.shown.tray;
+  const arenaStripShown = layout.shown.arenaStrip;
+  useEffect(() => {
+    const targets = [trayShown && trayRef.current, arenaStripShown && arenaStripRef.current].filter((each): each is HTMLElement => !!each);
+    canvas?.setRemoveTargets(targets);
+  }, [canvas, trayShown, arenaStripShown]);
 
   // The safe area goes out whenever it changes, compared by value, so a re-render alone never repeats it.
   const { top, right, bottom, left } = layout.safeArea;

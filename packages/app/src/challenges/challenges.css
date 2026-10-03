@@ -1,0 +1,211 @@
+/*
+ * The challenge runner (task 4.5): the goal line and its check mark in the header, the arena strip, and Home. Neutral
+ * chrome in the shell's tokens (shell.css); every target is 44 px or more. The check mark is a plain mark, no colour
+ * burst or motion beyond its fade (ground rule 7).
+ */
+
+.challenge-spoken {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The goal line: one line, cut short with an ellipsis when the header is narrow; the whole line is still read aloud. */
+.challenge-goal {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+}
+
+.challenge-goal-line {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.challenge-tick {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: var(--shell-ink, #2b2926);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transition: opacity var(--shell-motion, 160ms) var(--shell-ease, ease);
+}
+
+.challenge-tick[data-shown='true'] {
+  opacity: 1;
+}
+
+/* The arena strip: the preset picker, then the props, in one row that scrolls sideways when the strip is narrow. */
+.arena-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  overflow-x: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.arena-strip-group {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+}
+
+.arena-strip-group + .arena-strip-group {
+  padding-left: 12px;
+  border-left: 1px solid var(--shell-line, #d6d0c6);
+}
+
+.arena-strip-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-width: var(--shell-target, 44px);
+  min-height: var(--shell-target, 44px);
+  padding: 0 12px;
+  border: 1px solid var(--shell-line, #d6d0c6);
+  border-radius: 12px;
+  background: var(--shell-panel, #fbfaf7);
+  color: var(--shell-ink, #2b2926);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.arena-strip-button[aria-pressed='true'] {
+  border-color: var(--shell-ink, #2b2926);
+  box-shadow: inset 0 0 0 1px var(--shell-ink, #2b2926);
+  font-weight: 700;
+}
+
+.arena-strip-button:disabled,
+.arena-strip-button[aria-disabled='true'] {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* A prop is dragged from here onto the canvas, so the browser must not scroll the strip under the finger. */
+.arena-strip-prop {
+  touch-action: none;
+}
+
+.arena-strip-shape {
+  width: 20px;
+  height: 20px;
+  fill: var(--shell-muted, #5e584f);
+}
+
+/* Home: a layer over the whole shell, the shell resting under it. */
+.servo-home {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 24px 24px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--shell-workbench, #ebe8e3);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.home-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.home-title {
+  margin: 0;
+  font-size: 24px;
+}
+
+.home-line,
+.home-note {
+  margin: 0;
+  color: var(--shell-muted, #5e584f);
+}
+
+.home-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.home-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--shell-panel, #fbfaf7);
+  box-shadow: var(--shell-shadow, none);
+}
+
+.home-column h3,
+.home-level h4 {
+  margin: 8px 0 0;
+}
+
+.home-column h3:first-child {
+  margin-top: 0;
+}
+
+.home-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  text-align: left;
+}
+
+.home-choice[aria-current='true'] {
+  border-color: var(--shell-ink, #2b2926);
+}
+
+.home-choice-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.home-choice-detail {
+  flex: none;
+  color: var(--shell-muted, #5e584f);
+  font-weight: 400;
+}
+
+.home-parent-entry:empty {
+  display: none;
+}
