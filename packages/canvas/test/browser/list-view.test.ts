@@ -19,7 +19,8 @@ import { handsOf } from './wiring-hands.ts';
 
 const CANVAS = { width: 420, height: 320 };
 const ZOOM = 0.5;
-const MOUNT_MS = 120_000;
+// Five minutes: at load 200–350 with many agents running, mounting has run past two (review: list-view hook timeout).
+const MOUNT_MS = 300_000;
 const BUILD_MS = 360_000;
 
 let bench: Workbench;

@@ -99,8 +99,9 @@ const numbers = (solution: ElectricalSolution): number[] => [
 ];
 
 describe('the solver on random circuits', () => {
-  // A bulk property test: it takes a few seconds, more on a busy machine.
-  it('settles, keeps current, and agrees with the schema on the wiring, on 300 circuits at 900 states', { timeout: 60_000 }, () => {
+  // A bulk property test: it takes a few seconds, and twenty times that on a machine at load 200–350 with many agents
+  // running, so five minutes.
+  it('settles, keeps current, and agrees with the schema on the wiring, on 300 circuits at 900 states', { timeout: 300_000 }, () => {
     const next = generator(20261002);
     const seen = { states: 0, shorts: 0, outputs: 0, limited: 0, reversed: 0, low: 0, browned: 0, reversedDriver: 0, controls: 0, short: 0, feeder: 0, solves: 0, most: 0 };
     for (let circuit = 0; circuit < 300; circuit += 1) {
@@ -196,7 +197,8 @@ describe('the solver on random circuits', () => {
     expect(seen.most).toBeLessThanOrEqual(64);
   });
 
-  it('never raises a battery’s charge, and drains one only while current flows through it', { timeout: 60_000 }, () => {
+  // As above: seconds alone, minutes under heavy load.
+  it('never raises a battery’s charge, and drains one only while current flows through it', { timeout: 300_000 }, () => {
     const next = generator(7);
     for (let circuit = 0; circuit < 100; circuit += 1) {
       const graph = buildGraph(randomCircuit(next), catalogue);

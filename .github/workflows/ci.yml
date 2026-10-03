@@ -35,9 +35,10 @@ jobs:
 
   e2e:
     # The canvas e2e harness (packages/tools/src/e2e/README.md) in five shards that run side by side, each within the
-    # ten-minute budget: the screenshots, their mutation test, the gestures and frame time; Run mode's recorded fixture
+    # ten-minute budget: the screenshots, their mutation test and the gestures; Run mode's recorded fixture
     # Runs (task 3.5), which take about five minutes on a software GPU and so have their own; and the parity check's
-    # three fixture groups. The e2e-report job prints one parity report from the shards' reports.
+    # three fixture groups. The e2e-report job prints one parity report from the shards' reports. Frame time is the perf
+    # job's.
     name: e2e (${{ matrix.shard }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -46,7 +47,7 @@ jobs:
       matrix:
         include:
           - shard: views
-            files: test/e2e/screenshots.e2e.ts test/e2e/screenshot-mutations.e2e.ts test/e2e/gestures.e2e.ts test/e2e/performance.e2e.ts
+            files: test/e2e/screenshots.e2e.ts test/e2e/screenshot-mutations.e2e.ts test/e2e/gestures.e2e.ts
           - shard: run-animation
             files: test/e2e/run-animation.e2e.ts
           - shard: parity-1
@@ -94,6 +95,34 @@ jobs:
           name: e2e-screenshot-diffs-${{ matrix.shard }}
           path: packages/tools/node_modules/e2e-screenshots/
           if-no-files-found: warn
+
+  perf:
+    # Every timing budget, apart from the correctness jobs so that a slow runner reads as a perf result on its own:
+    # sim-core's per-tick cost, the canvas's frame time, and the e2e harness's and Run mode's frame time (pnpm perf).
+    # Each frame-time test takes five samples, prints every one, and holds the best (lowest p95) to the 16 ms budget.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0, version from packageManager
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # One Playwright for canvas and tools; Chromium cached by its version, as in the e2e job.
+      - id: playwright
+        run: echo "version=$(pnpm --filter @servo/tools exec playwright --version | cut -d' ' -f2)" >> "$GITHUB_OUTPUT"
+      - id: browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      - if: steps.browsers.outputs.cache-hit != 'true'
+        run: pnpm --filter @servo/tools exec playwright install --with-deps chromium
+      - if: steps.browsers.outputs.cache-hit == 'true'
+        run: pnpm --filter @servo/tools exec playwright install-deps chromium
+      - run: pnpm perf
 
   e2e-report:
     # One per-fixture parity report, merged from the parity shards' reports.

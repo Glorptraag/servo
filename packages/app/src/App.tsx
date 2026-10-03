@@ -2,7 +2,7 @@
 // (README, "How the packages meet"). Each slot holds its placeholder until the task that owns it lands; swap a
 // placeholder for the real part here. A challenge chosen on Home lays its goal line, kit, level and arena over the
 // same canvas (task 4.5).
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { mountCanvas } from '@servo/canvas';
 import type { CanvasHandle, ResolveArt } from '@servo/canvas';
 import type { Content } from '@servo/content';
@@ -10,8 +10,9 @@ import type { Blueprint, Challenge, Level } from '@servo/schema';
 import { ArenaStrip, GoalLine, Home } from './challenges/index.ts';
 import { RunBar } from './run-bar/index.ts';
 import type { RunLoop } from './run-bar/index.ts';
-import { PLACEHOLDER_SLOTS, SaveControl, Shell } from './shell/index.ts';
+import { PLACEHOLDER_SLOTS, SaveControl, Shell, pageStorage } from './shell/index.ts';
 import type { Autosaver, CanvasSetup, ShellSlots } from './shell/index.ts';
+import { SoundControl, SoundLayer, WebAudioSink } from './sound/index.ts';
 import { SpecCard, createRunFrames } from './spec-card/index.ts';
 import type { ProfileStore } from './store/index.ts';
 
@@ -36,18 +37,22 @@ export const App = ({ content, child = null, start, saving, onReady }: AppProps)
   // The goal line judges the same loop's frames (task 4.5).
   const runFrames = useMemo(createRunFrames, []);
   const [loop, setLoop] = useState<RunLoop | null>(null);
+  // The sound layer (task 4.10) hears the same loop, and the canvas's edits through its control in the header.
+  const [sound] = useState(() => new SoundLayer({ sink: new WebAudioSink(), storage: pageStorage() }));
+  useEffect(() => () => sound.dispose(), [sound]);
   const joinRunLoop = useMemo(() => {
     let off: (() => void) | undefined;
     return (joined: RunLoop | null): void => {
       off?.();
       runFrames.clear();
       setLoop(joined);
+      sound.follow(joined);
       off = joined?.subscribe((state, frame) => {
         if (frame) runFrames.push(frame);
         else if (state.phase !== 'spin-up' && state.phase !== 'running') runFrames.clear();
       });
     };
-  }, [runFrames]);
+  }, [runFrames, sound]);
   // A challenge chosen on Home lays its goal line, kit, level and arena over the same canvas (task 4.5); none is the sandbox.
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const slots = useMemo<ShellSlots>(
@@ -57,10 +62,11 @@ export const App = ({ content, child = null, start, saving, onReady }: AppProps)
       goal: <GoalLine challenge={challenge} loop={loop} />,
       arenaStrip: <ArenaStrip challenge={challenge} />,
       specCard: <SpecCard frames={runFrames} />,
+      sound: <SoundControl layer={sound} />,
       save: <SaveControl saving={saving} />,
       runBar: <RunBar onLoop={joinRunLoop} />,
     }),
-    [saving, runFrames, joinRunLoop, challenge, loop],
+    [saving, runFrames, joinRunLoop, sound, challenge, loop],
   );
   // The swap registry: a key with no picture gives undefined, and the canvas draws a neutral tile.
   const resolveArt: ResolveArt = (key) => content.art.get(key);

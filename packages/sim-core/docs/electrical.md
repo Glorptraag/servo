@@ -130,7 +130,7 @@ The rule is the schema's: a fault is what the child's controls cannot fix ([part
 ## Cost
 
 - A 25-part build takes about 0.1 ms a tick under plain Node, measured on an M1 Max under Node 26.
-  - `test/electrical.test.ts` asserts that the fastest of 15 batches is under 1 ms.
+  - `test/electrical.perf.ts` asserts that the fastest of 15 batches is under 1 ms. It runs in `pnpm perf`, not `pnpm test`.
   - Under Vitest on a busy machine, the median is 0.2–0.3 ms.
 - Per situation (control state), the solver keeps its branches, the switch forest and the wiring verdicts. Per model, it keeps the power-line forest and each need's ports.
 - What costs more:

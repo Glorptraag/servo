@@ -754,7 +754,7 @@
       "dispatched_at": "2026-10-03T05:36:05+00:00"
     },
     "4.5": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -770,7 +770,8 @@
       "done_when": "All Level 1\u20132 challenge fixtures detect success and non-success correctly; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-03T07:51:08+00:00"
     },
     "4.6": {
       "status": "pending",
@@ -848,7 +849,7 @@
       "dispatched_at": "2026-10-01T09:05:09+00:00"
     },
     "4.10": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -863,7 +864,8 @@
       "done_when": "Audio events map one-to-one to run events in a recorded run; mute persists across reload; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-03T07:51:08+00:00"
     },
     "G4": {
       "status": "pending",
@@ -2022,6 +2024,22 @@
       "id": "D101",
       "question": "R-4.4 Q5: a Run that ends while the store has stalled >1 s before reading earlier Runs is dropped (with a console warning). Keep it instead, without its D31 'fixed'?",
       "recommendation": "Drop for launch (rare); revisit if G5 offline week shows stalls",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D102",
+      "question": "Level 3 slot (6.6): content has no microcontroller part yet, so with the flag on nothing in a real kit can signal the servo; the slot is exercised with the schema's example microcontroller build. Accept for v1?",
+      "recommendation": "Accept; Level 3 content (microcontroller record) is out of launch scope (rule 10)",
+      "confidence": "high",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D103",
+      "question": "Make the new CI 'perf' job a required status check in GitHub branch protection for main? (repo settings change, Drew's call)",
+      "recommendation": "Yes, once it stays green for a week; until then it runs on every push and is read by the orchestrator",
       "confidence": "medium",
       "blocks": [],
       "resolved": false

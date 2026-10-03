@@ -67,8 +67,20 @@ Needs Node 24 or newer and pnpm 12 (the exact version is pinned in `package.json
 | `pnpm --filter @servo/sim-core test` | One package's tests; `pnpm --filter @servo/sim-core exec vitest` watches |
 | `pnpm typecheck` | `tsc --noEmit` in every package |
 | `pnpm lint` | ESLint over the repo with the root config, failing on any warning. Includes the package-map, `.ts`-import and sim-core purity rules |
-| `pnpm check` | Lint, typecheck, then test: the same steps CI runs on every push (`.github/workflows/ci.yml`) |
+| `pnpm check` | Lint, typecheck, then test, as CI's `check` job does on every push; that job adds `validate-content` and `golden`, and the `e2e` and `perf` jobs run beside it (`.github/workflows/ci.yml`) |
+| `pnpm perf` | `pnpm art`, then every package's timing tests one package at a time: sim-core's tick cost, canvas and e2e frame time. Not in `pnpm test`; CI's `perf` job |
 | `pnpm validate-content <path>…` | Checks content records against the schema and the terminology lists; `--catalogue <dir>`, `--terminology <dir>` |
+| `pnpm golden` | Runs every content fixture and valid schema blueprint, checks each fixture's `expect`, and diffs each Run against `packages/sim-core/golden/` |
+| `pnpm golden --accept [<case>…]` | Rewrites the golden files from the Runs as they are now; for intended changes only, with an orchestrator note |
+| `pnpm --filter @servo/tools test:determinism` | Every fixture and valid blueprint run 100 times, run records compared byte for byte (`pnpm test` runs a lighter sweep) |
+| `pnpm art` | Writes the placeholder SVGs and the swap registry to `packages/content/art/generated/` (gitignored) |
+| `pnpm e2e [<file>…]` | `pnpm art`, then the canvas e2e harness in Chromium (parity, screenshots, gestures); CI runs it in shards |
+| `pnpm dev` | `pnpm art`, then the app's Vite dev server |
+| `pnpm build` | `pnpm art`, then the app's production build into `packages/app/dist` |
+| `pnpm release:dry` | Makes a tester release locally in `dist/release`: checks content, builds the app, writes the content bundle (and invite codes with `SERVO_INVITE_SEED`) |
+| `pnpm release:preview` | Serves the release's web build from `dist/release/web` with `vite preview` |
+| `pnpm gate:g3` | `pnpm art`, then gate G3's dev-only page on every interface, for an iPad on the same Wi-Fi (`docs/gates/G3-howto.md`) |
+| `pnpm gate:g3:test` | `pnpm art`, then the G3 page's own test: builds and runs the Rolling Start robot by mouse |
 
 Lint and tsc catch every ordinary way of breaking these:
 - Relative imports name the source file (`./part.ts`, never `.js` or extensionless) and stay inside their package.

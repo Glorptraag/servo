@@ -35,7 +35,8 @@ interface Path {
 const CANVAS = { width: 420, height: 320 };
 const ZOOM = 0.5;
 /** A software GPU on a busy machine can take a minute to mount a canvas, and minutes to build the bumper robot by hand. */
-const MOUNT_MS = 120_000;
+// Five minutes: at load 200–350 with many agents running, mounting has run past two (review: list-view hook timeout).
+const MOUNT_MS = 300_000;
 const BUILD_MS = 360_000;
 
 const PATHS: readonly Path[] = [
