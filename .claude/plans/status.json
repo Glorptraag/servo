@@ -2027,6 +2027,22 @@
       "confidence": "medium",
       "blocks": [],
       "resolved": false
+    },
+    {
+      "id": "D102",
+      "question": "Level 3 slot (6.6): content has no microcontroller part yet, so with the flag on nothing in a real kit can signal the servo; the slot is exercised with the schema's example microcontroller build. Accept for v1?",
+      "recommendation": "Accept; Level 3 content (microcontroller record) is out of launch scope (rule 10)",
+      "confidence": "high",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D103",
+      "question": "Make the new CI 'perf' job a required status check in GitHub branch protection for main? (repo settings change, Drew's call)",
+      "recommendation": "Yes, once it stays green for a week; until then it runs on every push and is read by the orchestrator",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
     }
   ]
 }
