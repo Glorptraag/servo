@@ -219,11 +219,20 @@ export const Shell = ({
     [canvas],
   );
 
+  // The first build the canvas shows is framed in the canvas the panels leave uncovered (D70): the canvas's own load
+  // keeps the view, so Undo never moves it.
+  const framed = useRef<CanvasHandle | null>(null);
   const load = useCallback(
     (build: Blueprint): ValidationResult<Blueprint> => {
       if (!canvas) throw new Error('load: the canvas is not mounted yet.');
       const result = canvas.load(build);
-      if (result.ok) setBlueprint(result.value);
+      if (result.ok) {
+        setBlueprint(result.value);
+        if (framed.current !== canvas) {
+          framed.current = canvas;
+          canvas.fit();
+        }
+      }
       return result;
     },
     [canvas],

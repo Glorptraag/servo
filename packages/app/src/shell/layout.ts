@@ -22,8 +22,8 @@ export const SPEC_CARD_PX = 320;
 export const RUN_BAR_PX = { width: 440, height: 64 } as const;
 /** Tabs and the zoom control's buttons: 44 px targets. */
 export const TAB_PX = 44;
-/** The zoom control: three 44 px buttons, 4 px apart. */
-export const ZOOM_PX = { width: 44, height: 140 } as const;
+/** The zoom control: four 44 px buttons (zoom in, Fit, Tidy wires, zoom out), 4 px apart. */
+export const ZOOM_PX = { width: 44, height: 188 } as const;
 /** Brief Section 9: the canvas takes at least 70% of the screen in every state. */
 export const MIN_CANVAS_SHARE = 0.7;
 

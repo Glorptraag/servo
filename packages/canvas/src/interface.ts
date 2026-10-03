@@ -86,6 +86,14 @@ export interface CanvasPrefs {
 
 export type CanvasMode = 'build' | 'run';
 
+/** Screen pixels (CSS) in from each edge of the canvas element. The same shape as the app shell's `SafeArea`. */
+export interface CanvasSafeArea {
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+  readonly left: number;
+}
+
 /** What a tap or click selects. A part selection opens its spec card in the app. */
 export type Selection =
   | { readonly kind: 'part'; readonly partId: PlacedPartId }
@@ -158,11 +166,28 @@ export interface CanvasHandle {
    */
   showHint(step: DrawnHintStep): boolean;
   clearHints(): void;
-  /** Re-centres and zooms to show the whole build, and in Run mode the arena. Task 3.1. */
+  /**
+   * Re-centres and zooms to show the whole build, and in Run mode the arena, in the canvas the safe area leaves
+   * uncovered. Task 3.1; the safe area, task 3.7.
+   */
   fit(): void;
-  /** Zooms about the centre of the view, held within the zoom limits (task 3.7), up to 4 (400%, brief Section 13). Fires `zoom`. Task 3.1. */
+  /**
+   * Zooms about the centre of the uncovered canvas, held within the zoom limits, up to 4 (400%, brief Section 13).
+   * The limits keep some of the build on screen there however the child zooms and pans (task 3.7). Fires `zoom`.
+   * Task 3.1.
+   */
   setZoom(zoom: number): void;
-  /** Re-routes wires around part bodies. Routes are view state, not part of the blueprint. Task 3.7. */
+  /**
+   * How far in from each edge of the canvas the part the child can see begins: the app's panels where they overlap
+   * the canvas (D66) and the device's safe-area insets (D70). `fit`, `setZoom` and the zoom limits work in what is
+   * left. A view the new safe area leaves outside the zoom limits comes back within them; otherwise nothing moves. Throws a RangeError for an inset that is not a finite number from 0.
+   * Task 3.7.
+   */
+  setSafeArea(safeArea: CanvasSafeArea): void;
+  /**
+   * Re-routes the power and signal lines that cross a part body around the bodies: `apply({ kind: 'tidy-wires' })`,
+   * the same command the list view offers. Routes are view state, not part of the blueprint. Task 3.7.
+   */
   tidyWires(): void;
   setLevel(level: Level): void;
   setPrefs(prefs: CanvasPrefs): void;
@@ -268,7 +293,8 @@ export type SingleEdit =
   | PlaceProp
   | MoveProp
   | RemoveProp
-  | Rename;
+  | Rename
+  | TidyWires;
 
 /** Places a new part from the tray with the next `p<n>` id. */
 export interface PlacePart {
@@ -403,6 +429,16 @@ export interface RemoveProp {
 export interface Rename {
   readonly kind: 'rename';
   readonly name: string;
+}
+
+/**
+ * Re-routes the power and signal lines that cross a part body around the bodies (task 3.7). Routes are view state,
+ * so the build is unchanged: `applyEdit` gives it back as it was, and the handle fires no `edit` and adds no undo step.
+ * It is a command so touch, pointer (the app's tidy wires button) and the list view all tidy by one path (ground rule
+ * 8). Refused like any command in Run mode and on a read-only canvas.
+ */
+export interface TidyWires {
+  readonly kind: 'tidy-wires';
 }
 
 /**

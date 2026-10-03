@@ -5,12 +5,16 @@
 import { canonicalizeBlueprint, validateBlueprint } from '@servo/schema';
 import type { Blueprint, Catalogue } from '@servo/schema';
 import type { ApplyEdit, EditBatch, EditResult, SingleEdit } from '../interface.ts';
+import { ROUTING_REDUCERS } from '../routing/commands.ts';
 import { WIRING_REDUCERS } from '../wiring/commands.ts';
 import { PLACEMENT_REDUCERS } from './commands.ts';
 import type { Draft, Reducer, Reducers } from './commands.ts';
 
-/** Every command's reducer, by kind: task 3.2's placement commands and task 3.3's wiring commands (src/wiring/). */
-const REDUCERS: Reducers = { ...PLACEMENT_REDUCERS, ...WIRING_REDUCERS };
+/**
+ * Every command's reducer, by kind: task 3.2's placement commands, task 3.3's wiring commands (src/wiring/) and task
+ * 3.7's tidy-wires (src/routing/).
+ */
+const REDUCERS: Reducers = { ...PLACEMENT_REDUCERS, ...WIRING_REDUCERS, ...ROUTING_REDUCERS };
 
 const refusal = (code: 'value.wrong_type' | 'value.not_allowed', message: string): EditResult => ({ ok: false, refusal: { code, message } });
 

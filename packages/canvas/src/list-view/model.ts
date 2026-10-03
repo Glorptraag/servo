@@ -40,6 +40,8 @@ export interface ListHost {
   live?(subject: string): LiveState | undefined;
   /** The hint rung drawn on the canvas now, as its text twin. */
   hint?(): ListView['hint'];
+  /** The wires' routes (task 3.7): a tidy changes them, not the build. Any value that changes when they do. */
+  routes?(): unknown;
 }
 
 interface Snapshot {
@@ -121,8 +123,9 @@ export class ListViewModel implements ListView {
     const does = action.does;
     if (does.kind === 'edit') {
       const before = this.host.blueprint();
+      const routes = this.host.routes?.();
       const result = this.host.apply(does.command);
-      return result.ok && this.host.blueprint() !== before;
+      return result.ok && (this.host.blueprint() !== before || this.host.routes?.() !== routes);
     }
     if (does.kind === 'control') {
       if (this.host.readOnly || this.host.mode() !== 'run') return false;

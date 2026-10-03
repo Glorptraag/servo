@@ -46,7 +46,7 @@ Back to the [README](../README.md). The contract is [src/interface.ts](../src/in
 
 ## Wires
 
-- A wire is a straight line between the centres of its two sockets, under them. Power lines are solid, signal lines dashed and mechanical linkages thick, each in its colour over a darker edge (brief Section 13). Task 3.7 routes them.
+- A wire is a straight line between the centres of its two sockets, under them, or its route once tidied (task 3.7, [routing.md](routing.md)). Power lines are solid, signal lines dashed and mechanical linkages thick, each in its colour over a darker edge (brief Section 13).
 - Power and signal lines draw above parts. Drive linkages and mounts draw below parts, in the linkages layer; on a built robot they are almost always zero length.
 
 ## Layers
@@ -75,7 +75,7 @@ A Run starts the robot's root at the preset's start pose, and every other part k
 ## Pictures
 
 - Only through the injected `resolveArt(identity.art)`. A key with no entry, or a picture that fails to load, gets the neutral tile with the part's real name, in bold, upright whatever the part's turn. While a picture loads the tile stays plain.
-- A picture is fitted inside the tile, keeping its proportions. SVG placeholders are rasterised at 4× their 160 px (sharp on a 2× screen to about 200% zoom for a part tile). A frame's tile is bigger, so the chassis picture is already soft at 200%, and every picture and name blurs towards 400%. Rasterising by tile size and zoom is left for later (review R-3.1, finding 8).
+- A picture is fitted inside the tile less its 2 mm padding, keeping its proportions (`drawnPictureSize`, src/renderer/picture.ts: the one sizing tidy wires also routes round, D85). SVG placeholders are rasterised at 4× their 160 px (sharp on a 2× screen to about 200% zoom for a part tile). A frame's tile is bigger, so the chassis picture is already soft at 200%, and every picture and name blurs towards 400%. Rasterising by tile size and zoom is left for later (review R-3.1, finding 8).
 - A frame's name sits in its top-left corner, clear of the parts on it.
 
 ## The view
@@ -83,8 +83,8 @@ A Run starts the robot's root at the preset's start pose, and every other part k
 - The canvas element fills its host and follows its size. Resizing the drawing buffer clears it, and the browser does that in the same frame it paints, so the canvas draws straight away after a resize: a tray or spec card sliding in never shows a blank canvas.
 
 - `zoom` 1 is the default. The view starts with the canvas origin in the middle. `load` keeps the view, so Undo moves nothing; the app calls `fit` when it wants the build framed.
-- `fit` centres the build, and in Run mode the arena too, with 48 px to spare, at the zoom that shows it all, never above 1.
-- **Limits** (task 3.7 extends them): zoom from half the fitting zoom (half the default for a small build) up to 4 (400%, brief Section 13), and the view's centre stays over the content, so part of the build is always on screen. A view that is already outside the limits (after a `load`, say) may move back but never further out, so a limit never makes the view jump.
+- `fit` centres the build, and in Run mode the arena too, in the canvas the safe area leaves uncovered (`setSafeArea`, task 3.7), with 48 px to spare, at the zoom that shows it all, never above 1.
+- **Limits** (task 3.7 extended them, [routing.md](routing.md)): zoom from half the fitting zoom (half the default for a small build) up to 4 (400%, brief Section 13), and at least 96 px of one part always on screen in the canvas the safe area leaves uncovered. A view that is already outside the limits (after a `load`, say) may move back but never further out, so a limit never makes the view jump.
 - `zoom` fires whenever the zoom changes: pinch, wheel, `fit` or `setZoom`.
 
 ## Input

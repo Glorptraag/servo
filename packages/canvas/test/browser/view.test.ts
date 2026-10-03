@@ -132,15 +132,18 @@ describe('pan', () => {
     }
   });
 
-  it('stops with the view centre still over the build', () => {
+  it('stops with 96 px of the build still on screen (task 3.7)', () => {
     surface.load(fixture('rolling-start'));
     pointer(surface.canvas, 'pointerdown', EMPTY);
     pointer(surface.canvas, 'pointermove', { x: EMPTY.x + 5000, y: EMPTY.y + 5000 });
     pointer(surface.canvas, 'pointerup', { x: EMPTY.x + 5000, y: EMPTY.y + 5000 });
-    const bounds = surface.scene.bounds;
-    if (!bounds) throw new Error('no bounds');
-    expect(surface.camera.centreX).toBe(bounds.minX);
-    expect(surface.camera.centreY).toBe(bounds.minY);
+    expect(surface.camera.centreX).toBeLessThan(-200);
+    const shown = surface.scene.parts.map((part) => {
+      const a = surface.camera.worldToScreen({ x: part.bounds.minX, y: part.bounds.minY });
+      const b = surface.camera.worldToScreen({ x: part.bounds.maxX, y: part.bounds.maxY });
+      return Math.min(Math.min(b.x, 1180) - Math.max(a.x, 0), Math.min(b.y, 820) - Math.max(a.y, 0));
+    });
+    expect(Math.max(...shown)).toBeCloseTo(96, 6);
   });
 });
 
