@@ -104,20 +104,20 @@ A setting goes through `apply` on the touch and pointer paths, as the spec card 
 - `mismatch` when a path's bytes differ or it could not take a step it said it could;
 - `pending` when no step could be compared on two paths yet.
 
-Only a mismatch fails, unless `SERVO_PARITY_STRICT=1` (for gate G3), which fails a partial or pending fixture too. A failure shows the canonical JSON diff, and the report line names the parts and wires that differ. A fixture's test has six minutes, a guard against a hang rather than a budget; once it times out, its paths stop between steps (Vitest's `signal`), so an abandoned build never sends input into the next fixture.
+Only a mismatch fails, unless `SERVO_PARITY_STRICT=1` (gate G3, and CI's parity shards), which fails a partial or pending fixture too. A failure shows the canonical JSON diff, and the report line names the parts and wires that differ. A fixture's test has six minutes, a guard against a hang rather than a budget; once it times out, its paths stop between steps (Vitest's `signal`), so an abandoned build never sends input into the next fixture.
 
 **Files.** The fixtures are split between `parity-1.e2e.ts`, `parity-2.e2e.ts` and `parity-3.e2e.ts` by `fixtureGroups`: heaviest first, each to the group with the fewest plan steps so far. Each file mounts its own bench, so CI runs them as separate shards; a new fixture joins a group by itself.
 
 **The report.** One line per fixture, sorted, then the summary, printed when a run ends; the lines also go to `packages/tools/node_modules/e2e-report/parity.json`, which CI merges across shards:
 
 ```
-broken-wrong-type-wire: pending: needs task 3.2 (3 placements), needs tasks 3.2 and 3.3 (4 wires and 1 refused drop); list view needs task 3.6
+busy-workbench: identical on commands, touch drag, touch tap-then-tap, pointer drag, pointer click-click and list view (25 placements, 1 setting and 32 wires)
 kit-rolling-start: partial: identical on commands, touch drag, touch tap-then-tap, pointer drag and pointer click-click (8 placements); pending: needs task 3.3 (5 wires); list view needs task 3.6
 kit-rolling-start: MISMATCH: touch drag: p3 position (40, -53) here, (40, -52.9) in commands; identical on commands, …
-19 fixtures: 0 identical, 19 partial, 0 mismatched, 0 pending
+5 fixtures: 5 identical, 0 partial, 0 mismatched, 0 pending
 ```
 
-The second line is the check on main with task 3.2's placement merged. Against task 3.3's work in progress, every wire and the refused drop were identical too, crowded sockets included. When task 3.6 lands, the list view joins by itself, and a fixture can then read `identical`. Plain commands stay the reference: the command layer every path ends in.
+The first line is the check on main with placement (3.2), wiring (3.3) and the list view (3.6) merged: every step compared on all six paths, crowded sockets included, with no change to the harness, and the summary is parity-1's shard. The second is how a fixture read while a canvas task was still to come. Plain commands stay the reference: the command layer every path ends in.
 
 **Not covered yet.** Plans build fixtures, so they never move, turn or remove a part, and never place a prop or flip a switch in Run mode: no content fixture needs it, and rule 8 for those rests on tasks 3.2's and 3.6's own tests (review R-3.8, Question 2). A loose part always lands unturned, which every content fixture's loose parts are.
 
@@ -130,7 +130,7 @@ The `e2e` job in `.github/workflows/ci.yml` is a matrix of four shards that run 
 | `views` | screenshots, their mutation test, gestures, frame time |
 | `parity-1`, `parity-2`, `parity-3` | one parity group each |
 
-The `e2e-report` job then prints one report from the shards' lines with plain Node (`node packages/tools/src/e2e/merge-report.ts <folder>`). Within a shard the projects run one after the other: the runner has two cores, and SwiftShader would use both for each. The parity check runs on a 480 × 360 canvas with reduced motion, and the gestures on a 640 × 480 one, so a software GPU has few pixels to draw for each event. Every gesture step is real input, and a touch press waits for a frame with the canvas on the page (about 120 ms on a laptop), so parity's time grows with each canvas task; when it outgrows a shard, raise `PARITY_GROUPS` and add the files and shards.
+The parity shards run with `SERVO_PARITY_STRICT=1`, so a fixture left partial or pending fails CI. `test/e2e-ci-shards.test.ts` checks that every `test/e2e/*.e2e.ts` file is in exactly one shard. The `e2e-report` job then prints one report from the shards' lines with plain Node (`node packages/tools/src/e2e/merge-report.ts <folder>`). Within a shard the projects run one after the other: the runner has two cores, and SwiftShader would use both for each. The parity check runs on a 480 × 360 canvas with reduced motion, and the gestures on a 640 × 480 one, so a software GPU has few pixels to draw for each event. Every gesture step is real input, and a touch press waits for a frame with the canvas on the page (about 120 ms on a laptop), so parity's time grows with each canvas task; when it outgrows a shard, raise `PARITY_GROUPS` and add the files and shards.
 
 ## Decisions and open questions
 
