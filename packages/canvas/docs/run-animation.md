@@ -61,7 +61,7 @@ Hooks added to the renderer for this task: `PartView.run` (a container above eac
 
 - `test/run-animation/state.test.ts` (unit): the cast, the state and blend, transforms, dot, tread and scrape placement.
 - `test/browser/run-animation.test.ts` (browser, hand-built frames): the robot moving as one, the lock, switch flips and read-only, the shudder, a fall, the spin-up, the tween, Stop.
-- `packages/tools/test/e2e/run-animation.e2e.ts`: the eight broken content fixtures and `led-and-buzzer-robot` run through `createSimulation` and screenshotted, each tell probed in the pixels, every pair of screenshots different. References in `packages/tools/test/e2e/__screenshots__/run-animation.e2e.ts/`. `run-animation-performance.e2e.ts` times the 25-part `busy-workbench` in Run mode. Run both with `pnpm art && pnpm --filter @servo/tools e2e:run-animation`.
+- `packages/tools/test/e2e/run-animation.e2e.ts`: the eight broken content fixtures and `led-and-buzzer-robot` run through `createSimulation` and screenshotted, each tell probed in the pixels, each broken Run compared with the same build with its fault fixed (or, where none can be built, in Build mode) in the same camera, so a Run that drew none of its tells fails. It also runs in task 3.8's harness (`pnpm e2e`), which takes every `*.e2e.ts`. References in `packages/tools/test/e2e/__screenshots__/run-animation.e2e.ts/`. `run-animation.timing.ts` times the 25-part `busy-workbench` in Run mode. Run both with `pnpm art && pnpm --filter @servo/tools e2e:run-animation`.
 
 ## Decisions and open questions
 
@@ -75,3 +75,5 @@ Taken here conservatively, for Drew:
 6. Sound twins are drawn in the label colour, not a status colour.
 7. Open: tipping is drawn as foreshortening and a shadow from above; no Level 1–2 build tips (D49), so no content fixture shows it yet.
 8. Open: the short in `broken-short-circuit` is a wire between two adjacent sockets, so its dots sit under them; its tell is the draining gauge and every other wire dead.
+9. A stalled part shudders under `prefers-reduced-motion` too: it is the fault's signal, with a physical cause, not decoration (review R-3.5, question 3).
+10. The run loop's contract (each frame once, in tick order; the spin-up is tick 0 given once and held) is also in `applyRunFrame`'s doc comment in `src/interface.ts`: a doc-only interface change (review R-3.5, finding 4).

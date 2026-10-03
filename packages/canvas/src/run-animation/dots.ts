@@ -30,6 +30,7 @@ export class DotField {
   private used = 0;
   private readonly placed = new Map<WireId, Vec2[]>();
   private readonly fills = new Map<PortType, number>();
+  private readonly colours = new Map<PortType, number>();
 
   setPalette(palette: Palette): void {
     for (const context of this.contexts.values()) context.destroy();
@@ -37,6 +38,7 @@ export class DotField {
     for (const type of ['power', 'signal', 'mechanical'] as const) {
       const colours = palette.types[type];
       this.fills.set(type, lighten(colours.colour, DOT_LIGHTEN));
+      this.colours.set(type, colours.colour);
       this.contexts.set(
         type,
         new GraphicsContext()
@@ -82,6 +84,11 @@ export class DotField {
   /** A dot's fill colour on a line of this type (0xrrggbb): for tests and the harness. */
   fillOf(type: PortType): number | undefined {
     return this.fills.get(type);
+  }
+
+  /** A line's own colour in the current palette (0xrrggbb): what a draining gauge fills with. For tests and the harness. */
+  colourOf(type: PortType): number | undefined {
+    return this.colours.get(type);
   }
 
   clear(): void {

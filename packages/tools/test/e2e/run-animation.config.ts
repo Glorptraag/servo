@@ -14,7 +14,8 @@ import type { TestProjectInlineConfiguration } from 'vitest/config';
 const root = fileURLToPath(new URL('../..', import.meta.url));
 
 const IPAD = { width: 1180, height: 820, deviceScaleFactor: 2 } as const;
-const PERFORMANCE = 'test/e2e/run-animation-performance.e2e.ts';
+// Named .timing.ts, not .e2e.ts, so task 3.8's harness (`pnpm e2e`) does not time it on a software GPU.
+const PERFORMANCE = 'test/e2e/run-animation.timing.ts';
 
 const project = (name: string, include: string[], args: string[], groupOrder: number): TestProjectInlineConfiguration => ({
   test: {

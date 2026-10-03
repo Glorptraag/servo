@@ -4,16 +4,19 @@
 // tick apart, at tick 60 (or the fixture's last). Pixel probes then find each fixture's tell where the canvas says it
 // drew it: dots on every live wire and none on a dead one, tread marks that move each wheel's way or stay still, the
 // held servo motor arm and its hum, the scrape marks, the drained gauge, the caster left behind, the LED's light, the
-// buzzer's pulse. Last, every pair of screenshots must differ. The screenshots are kept as references in
+// buzzer's pulse. Last, each broken Run is compared with an honest baseline in the same camera: the same build with
+// its fault fixed where one exists, or else the same build in Build mode. It must differ where its tells are drawn,
+// so a Run that drew none of them fails. The screenshots are kept as references in
 // __screenshots__/run-animation.e2e.ts/, one per fixture, so a change to how a Run looks shows in review.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { page } from 'vitest/browser';
 import { loadFixtures } from '@servo/content/fixtures';
 import type { ContentFixture } from '@servo/content/fixtures';
+import { applyEdit } from '@servo/canvas';
 import { serializeBlueprint } from '@servo/schema';
-import type { PlacedPartId, Vec2, WireId } from '@servo/schema';
+import type { Blueprint, PlacedPartId, Vec2, WireId } from '@servo/schema';
 import type { RunFrame } from '@servo/sim-core';
-import { colourDistance, describeRgb, differingShare, frameOn, mountBench, playTo, rgbOf, settle, shoot, simulationOf } from './run-animation-bench.ts';
+import { benchContent, colourDistance, describeRgb, differingShare, frameOn, mountBench, playTo, rgbOf, settle, shoot, simulationOf } from './run-animation-bench.ts';
 import type { Bench, Rgb, Shot } from './run-animation-bench.ts';
 
 const SIZE = { width: 1180, height: 820 } as const;
@@ -38,6 +41,10 @@ interface Recorded {
   readonly shot: Shot;
   readonly frame: RunFrame;
   readonly treadsBefore: ReadonlyMap<PlacedPartId, number>;
+  /** The camera the screenshots were taken with, so a baseline can be taken with it too. */
+  readonly camera: { readonly centreX: number; readonly centreY: number; readonly zoom: number };
+  /** Where the Run's drawing is at the screenshot tick, in CSS pixels: every tell, dot, dead line and scratch. */
+  readonly mask: readonly Vec2[];
 }
 
 let bench: Bench;
@@ -85,9 +92,26 @@ const record = async (fixture: ContentFixture): Promise<Recorded> => {
   expect(handle.apply({ kind: 'rename', name: 'Changed in Run' })).toMatchObject({ ok: false, refusal: { code: 'edit.locked' } });
   expect(serializeBlueprint(handle.blueprint ?? fixture.blueprint)).toBe(built);
   simulation.dispose();
-  const result = { fixture, before, shot, frame, treadsBefore };
+  const { centreX, centreY, zoom } = hooks.camera;
+  const result = { fixture, before, shot, frame, treadsBefore, camera: { centreX, centreY, zoom }, mask: tellMask(fixture) };
   recorded.set(fixture.name, result);
   return result;
+};
+
+/** Every point where the Run's drawing shows now, on screen: where an honest baseline must differ from it. */
+const tellMask = (fixture: ContentFixture): Vec2[] => {
+  const { hooks } = bench;
+  const points: Vec2[] = [];
+  for (const part of fixture.blueprint.parts) {
+    const tells = hooks.run.tellsOf(part.id);
+    points.push(...(tells?.treads ?? []), ...(tells?.glow ?? []), ...Object.values(tells?.sounds ?? {}).flat());
+    if (tells?.arm) points.push(tells.arm);
+    if (tells?.charge) points.push(tells.charge.full, ...(tells.charge.empty ? [tells.charge.empty] : []));
+    for (const scratch of hooks.run.marks.scratches(part.id)) points.push(...scratch);
+  }
+  const dots = hooks.scene.wires.flatMap((wire) => hooks.run.dots.dotsOn(wire.id).map(screen));
+  const dead = hooks.scene.wires.filter((wire) => hooks.run.dots.dotsOn(wire.id).length === 0).flatMap((wire) => alongWire(wire.id, dots));
+  return [...points.map(screen), ...dots, ...dead.filter((_, index) => index % 4 === 0)];
 };
 
 /** The named fault is showing at the screenshot tick. */
@@ -270,6 +294,9 @@ describe('each broken fixture in Run mode shows its own tell', () => {
     const full = run.shot.at(screen(gauge?.full ?? { x: 0, y: 0 }));
     const empty = run.shot.at(screen(gauge?.empty ?? { x: 0, y: 0 }));
     expect(colourDistance(full, empty), `the gauge's fill (${describeRgb(full)}) and its empty end (${describeRgb(empty)})`).toBeGreaterThan(80);
+    // The drain shows in the power colour: the short's fault (`shows: drain`) turns the pack's gauge red.
+    const power = rgbOf(bench.hooks.run.dots.colourOf('power') ?? 0);
+    expect(colourDistance(full, power), `the gauge fills in the power colour (${describeRgb(full)}, not ${describeRgb(power)})`).toBeLessThanOrEqual(40);
     expect(movedBy('chassis'), 'the robot stays put').toBeLessThan(0.5);
   });
 
@@ -319,25 +346,76 @@ describe('a working fixture in Run mode', () => {
     expectTreads(run, ['wheel-left', 'wheel-right']);
     expect(travelledBetween(run, 'wheel-left')).toBeGreaterThan(1);
     expect(travelledBetween(run, 'wheel-right')).toBeGreaterThan(1);
+    // A pack with no fault that shows `drain` keeps a dark gauge, not the power colour.
+    const gauge = bench.hooks.run.tellsOf('battery')?.charge?.full;
+    expect(gauge).toBeDefined();
+    const fill = run.shot.at(screen(gauge ?? { x: 0, y: 0 }));
+    expect(luminance(fill), `the gauge (${describeRgb(fill)}) is dark`).toBeLessThan(90);
   });
 });
 
-describe('every recorded Run looks different', () => {
-  it('no two screenshots match', () => {
-    const runs = [...recorded.values()];
-    expect(runs).toHaveLength(BROKEN.length + 1);
-    const close: string[] = [];
-    for (let i = 0; i < runs.length; i++) {
-      for (let j = i + 1; j < runs.length; j++) {
-        const a = runs[i] as Recorded;
-        const b = runs[j] as Recorded;
-        const share = differingShare(a.shot, b.shot);
-        if (share < 0.02) close.push(`${a.fixture.name} and ${b.fixture.name}: ${(share * 100).toFixed(2)}% of pixels differ`);
-      }
-    }
-    expect(close).toEqual([]);
-  });
+/** Mounts the caster the fixture left loose: the one change that fixes it. */
+const mountCaster = (blueprint: Blueprint): Blueprint => {
+  const result = applyEdit(blueprint, { kind: 'mount', partId: 'caster', port: 'mount', onto: { part: 'chassis', port: 'caster' } }, benchContent().catalogue);
+  if (!result.ok) throw new Error(`Cannot mount the caster: ${result.refusal.message}`);
+  return result.blueprint;
+};
 
+/**
+ * Each broken fixture's honest baseline: the same robot with its fault fixed, where the content has that build
+ * (Rolling Start with every wire right, the motor driver robot on a 2-cell pack, the geared robot with its caster) or
+ * one edit makes it (the caster mounted). The servo motor's missing signal cannot be fixed at Levels 1–2 (no part gives
+ * a signal, D41), and the wrong-type wire's build is already the fixed one, so theirs is the same build in Build mode.
+ */
+const FIXED: Readonly<Record<string, () => Blueprint | 'build-mode'>> = {
+  'broken-reversed-motor': () => named('kit-rolling-start').blueprint,
+  'broken-missing-return-wire': () => named('kit-rolling-start').blueprint,
+  'broken-short-circuit': () => named('kit-rolling-start').blueprint,
+  'broken-underpowered-pack': () => named('motor-driver-robot').blueprint,
+  'broken-chassis-on-the-floor': () => named('geared-robot').blueprint,
+  'broken-loose-caster': () => mountCaster(named('broken-loose-caster').blueprint),
+  'broken-servo-without-signal': () => 'build-mode',
+  'broken-wrong-type-wire': () => 'build-mode',
+};
+
+/** The baseline's screenshot, in the broken Run's camera, at the same tick: run with no inputs, or in Build mode. */
+const baselineShot = async (run: Recorded): Promise<Shot> => {
+  const { handle, hooks } = bench;
+  const fixed = FIXED[run.fixture.name]?.();
+  if (!fixed) throw new Error(`No baseline for ${run.fixture.name}.`);
+  if (handle.mode === 'run') handle.setMode('build');
+  const blueprint = fixed === 'build-mode' ? run.fixture.blueprint : fixed;
+  expect(handle.load(blueprint).ok).toBe(true);
+  if (fixed !== 'build-mode') {
+    handle.setMode('run');
+    const baseline: ContentFixture = { ...run.fixture, blueprint, inputs: [] };
+    const simulation = await simulationOf(baseline);
+    handle.applyRunFrame(simulation.frame);
+    for (const frame of playTo(simulation, baseline, run.frame.tick)) handle.applyRunFrame(frame);
+    simulation.dispose();
+  }
+  Object.assign(hooks.camera, run.camera);
+  hooks.requestFrame();
+  await settle(bench);
+  return shoot(hooks.canvas);
+};
+
+describe('every broken Run differs from its fault fixed', () => {
+  for (const fixture of BROKEN) {
+    it(fixture.name, async () => {
+      const run = recorded.get(fixture.name);
+      expect(run, `${fixture.name} was recorded`).toBeDefined();
+      if (!run) return;
+      const baseline = await baselineShot(run);
+      // Where the Run drew its tells, the baseline shows something else: a Run that drew none of them would match it.
+      const differing = run.mask.filter((point) => colourDistance(run.shot.at(point), baseline.at(point)) > 24);
+      expect(run.mask.length, 'the Run drew something to compare').toBeGreaterThan(5);
+      expect(differing.length / run.mask.length, `${differing.length} of ${run.mask.length} tell points differ from the baseline`).toBeGreaterThanOrEqual(0.25);
+    });
+  }
+});
+
+describe('Stop', () => {
   it('Stop returns to the build exactly as it was', async () => {
     const fixture = named('broken-reversed-motor');
     const { handle } = bench;

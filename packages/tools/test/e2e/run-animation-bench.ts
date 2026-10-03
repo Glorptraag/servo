@@ -50,7 +50,7 @@ export interface Hooks {
     partPoint(id: PlacedPartId, point: Vec2): Vec2;
     endsOf(id: WireId): readonly [Vec2, Vec2] | undefined;
     tellsOf(id: PlacedPartId): Tells | undefined;
-    readonly dots: { dotsOn(id: WireId): readonly Vec2[]; fillOf(type: PortType): number | undefined };
+    readonly dots: { dotsOn(id: WireId): readonly Vec2[]; fillOf(type: PortType): number | undefined; colourOf(type: PortType): number | undefined };
     readonly marks: { scratches(id: PlacedPartId): readonly (readonly Vec2[])[] };
   };
   requestFrame(): void;

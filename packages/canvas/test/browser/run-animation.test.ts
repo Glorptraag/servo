@@ -118,13 +118,14 @@ describe('fault visuals follow debounced faults', () => {
     const stall = { rpm: 0, milliamps: 2400, faults: { 'motor-left': ['overload'] } };
     await run([0, stall], [4, stall]);
     const even = nodePosition('motor-left');
+    const evenOther = nodePosition('motor-right');
     const evenShot = await shoot(surface.canvas);
     surface.applyRunFrame(rollingStartFrame(5, stall));
     await settle(surface);
     const odd = nodePosition('motor-left');
     const oddShot = await shoot(surface.canvas);
     expect(Math.hypot(odd.x - even.x, odd.y - even.y)).toBeCloseTo(2 * SHUDDER_MM, 6);
-    expect(nodePosition('motor-right')).toEqual(nodePosition('motor-right'));
+    expect(nodePosition('motor-right'), 'the motor that is not stalled stays put').toEqual(evenOther);
     // The motor's edge moves on screen between the two ticks: some pixel along its outline changes.
     const scene = surface.scene.partById.get('motor-left');
     const edge = (scene?.corners ?? []).map((corner) => surface.camera.worldToScreen(corner));
