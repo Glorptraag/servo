@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Servo</title>
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #ebe8e3;
+      }
+
+      #app {
+        position: fixed;
+        inset: 0;
+      }
+    </style>
+    <script>
+      // index.html with one addition, for sharing.test.tsx: before the app's entry runs, every IndexedDB open and
+      // page-storage write the page makes is noted in window.__servoWrites.
+      window.__servoWrites = [];
+      const open = IDBFactory.prototype.open;
+      IDBFactory.prototype.open = function (...args) {
+        window.__servoWrites.push(`indexedDB.open ${args[0]}`);
+        return open.apply(this, args);
+      };
+      const setItem = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (...args) {
+        window.__servoWrites.push(`setItem ${args[0]}`);
+        return setItem.apply(this, args);
+      };
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

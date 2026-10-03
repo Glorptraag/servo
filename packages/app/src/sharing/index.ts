@@ -3,20 +3,21 @@
 import { isShareFragment } from './link.ts';
 
 export {
+  FEED_BYTES,
   LINK_FORMAT,
-  MAX_DOCUMENT_BYTES,
-  MAX_FRAGMENT_LENGTH,
   SHARED_BUILD_NAME,
   SHARED_META_KEYS,
   SHARE_KEY,
   fragmentOf,
   isShareFragment,
+  pipeWithin,
   readShareFragment,
   seedOf,
   shareLinkOf,
   sharedCopyOf,
 } from './link.ts';
-export type { ShareOptions, ShareResult, SharedRead } from './link.ts';
+export type { Piped, ShareOptions, ShareResult, SharedRead } from './link.ts';
+export { SHARE_LIMITS } from './limits.ts';
 export { MAX_STEPS_PER_FRAME, Replay, SPIN_UP_MS, pageClock } from './replay.ts';
 export type { ReplayClock, ReplayOptions, ReplayPhase } from './replay.ts';
 export { SHARE_TEXT, mountSharedPage, prefersReducedMotion } from './view.tsx';

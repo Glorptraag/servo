@@ -3,7 +3,8 @@
 // build out. Opening it opens no database and writes nothing: not to IndexedDB, page storage, the address or the
 // history. A refused link is one plain line, never a dialog. The canvas is the real one, drawing every frame (task
 // 3.5), with the frames it is handed counted. With prefers-reduced-motion the replay waits for Run. Last, the real
-// page (index.html with a #share= fragment) opens the link and its canvas really moves.
+// entry (src/main.tsx, in share-page.html: index.html with a script that notes every store open and storage write)
+// opens the link from its #share= fragment, writes nothing, and its canvas really moves.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cdp, userEvent } from 'vitest/browser';
 import { mountCanvas } from '@servo/canvas';
@@ -223,7 +224,8 @@ describe('opening a shared link', () => {
     if (!link.ok) throw new Error('no link');
     const frame = document.createElement('iframe');
     frame.style.cssText = 'position: fixed; left: 0; top: 0; width: 1180px; height: 820px; border: 0';
-    frame.src = `/index.html${link.fragment}`;
+    // The real entry, src/main.tsx, in index.html's page with a script first that notes every store open and write.
+    frame.src = `/test/browser/share-page.html${link.fragment}`;
     document.body.append(frame);
     hosts.push(frame);
     const doc = (): Document | null => frame.contentDocument;
@@ -259,5 +261,7 @@ describe('opening a shared link', () => {
       .poll(async () => differing(first, await shoot()), { timeout: 30_000, interval: 500 })
       .toBeGreaterThan(200);
     expect(statusOf(doc() as Document)).not.toBe(SHARE_TEXT.failed);
+    // The real entry opened no store and wrote nothing to page storage.
+    expect((frame.contentWindow as (Window & { __servoWrites?: string[] }) | null)?.__servoWrites).toEqual([]);
   });
 });

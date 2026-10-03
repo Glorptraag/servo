@@ -8,6 +8,7 @@
 import { canonicalJson, canonicalizeBlueprint, migrateBlueprint, serializeBlueprint, validateBlueprint } from '@servo/schema';
 import type { Blueprint, BlueprintMeta, Catalogue, Issue, Timestamp } from '@servo/schema';
 import { uuidV4 } from '../store/uuid.ts';
+import { SHARE_LIMITS } from './limits.ts';
 
 /** The fragment's key: a shared link ends `#share=<format>.<payload>`. */
 export const SHARE_KEY = 'share';
@@ -17,12 +18,6 @@ export const LINK_FORMAT = 1;
 
 /** The name a shared build carries when the adult leaves the build's own name out (D21, the default). */
 export const SHARED_BUILD_NAME = 'Shared build';
-
-/** The longest fragment read, in characters: far more than any Level 1–2 build needs, so a pasted wall of text is refused. */
-export const MAX_FRAGMENT_LENGTH = 64 * 1024;
-
-/** The most a payload may inflate to, in bytes, so a crafted link cannot fill the device's memory. */
-export const MAX_DOCUMENT_BYTES = 1024 * 1024;
 
 /** The only keys of `meta` a shared build carries. `author` is never among them (D21). */
 export const SHARED_META_KEYS: readonly (keyof BlueprintMeta)[] = ['createdAt', 'highWater', 'id', 'level', 'name', 'updatedAt'];
@@ -80,34 +75,85 @@ export const sharedCopyOf = (blueprint: Blueprint, options: ShareOptions = {}): 
 
 const issue = (path: string, message: string): Issue => ({ code: 'value.unreadable', path, message });
 
+const tooBig = (path: string, message: string): Issue => ({ code: 'value.out_of_range', path, message });
+
+/** The first cap on parts or wires the document passes (SHARE_LIMITS), read before anything else looks at it. */
+const overCaps = (document: unknown): Issue | undefined => {
+  const lengthOf = (key: string): number => {
+    const list = typeof document === 'object' && document !== null ? (document as Record<string, unknown>)[key] : undefined;
+    return Array.isArray(list) ? list.length : 0;
+  };
+  if (lengthOf('parts') > SHARE_LIMITS.parts) return tooBig('$.parts', `A shared build has at most ${SHARE_LIMITS.parts} parts.`);
+  if (lengthOf('wires') > SHARE_LIMITS.wires) return tooBig('$.wires', `A shared build has at most ${SHARE_LIMITS.wires} wires.`);
+  return undefined;
+};
+
 // ---------------------------------------------------------------------------------------------------------
 // Bytes: deflate (zlib, with its Adler-32 check, so a changed or cut-off payload fails to inflate) and base64url.
 
-const through = async (bytes: Uint8Array, stream: CompressionStream | DecompressionStream, limit: number): Promise<Uint8Array | undefined> => {
-  const reader = new Blob([bytes as BlobPart]).stream().pipeThrough(stream).getReader();
+export type Piped = { readonly ok: true; readonly bytes: Uint8Array } | { readonly ok: false; readonly reason: 'too-large' | 'unreadable' };
+
+/** How much input is fed through a stream at a time: deflate turns 256 bytes into at most about 264 KB. */
+export const FEED_BYTES = 256;
+
+const nextTask = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
+
+/**
+ * Feeds `bytes` through `stream` `feed` bytes at a time (FEED_BYTES unless given), collecting what comes out, and stops feeding as soon as the
+ * output passes `limit` (`too-large`): each piece of input is fed only once the output of the one before has been
+ * counted, so a payload is never inflated in full before it is refused. A stream that fails is `unreadable`: a
+ * changed or cut-off payload fails deflate's checksum.
+ */
+export const pipeWithin = async (
+  bytes: Uint8Array,
+  stream: ReadableWritablePair<Uint8Array, Uint8Array<ArrayBuffer>>,
+  limit: number,
+  feed: number = FEED_BYTES,
+): Promise<Piped> => {
+  const writer = stream.writable.getWriter();
+  const reader = stream.readable.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
-  try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      total += value.byteLength;
-      if (total > limit) {
-        await reader.cancel();
-        return undefined;
+  let over = false;
+  let failed = false;
+  const reading = (async () => {
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) return;
+        total += value.byteLength;
+        if (total > limit) {
+          over = true;
+          await reader.cancel().catch(() => undefined);
+          return;
+        }
+        chunks.push(value);
       }
-      chunks.push(value);
+    } catch {
+      failed = true;
     }
+  })();
+  try {
+    for (let at = 0; at < bytes.length && !over && !failed; at += feed) {
+      await writer.write(bytes.slice(at, at + feed));
+      // Let the reader count what that piece gave before the next is fed.
+      await nextTask();
+    }
+    if (!over && !failed) await writer.close();
   } catch {
-    return undefined;
+    if (!over) failed = true;
   }
+  if (over || failed) await writer.abort().catch(() => undefined);
+  await reading;
+  if (over) return { ok: false, reason: 'too-large' };
+  if (failed) return { ok: false, reason: 'unreadable' };
   const out = new Uint8Array(total);
   let offset = 0;
   for (const chunk of chunks) {
     out.set(chunk, offset);
     offset += chunk.byteLength;
   }
-  return out;
+  return { ok: true, bytes: out };
 };
 
 const toBase64Url = (bytes: Uint8Array): string => {
@@ -132,9 +178,9 @@ const fromBase64Url = (text: string): Uint8Array | undefined => {
 /** The fragment for a blueprint, as written: `#share=1.` and the canonical JSON, deflated, in base64url. */
 export const fragmentOf = async (blueprint: Blueprint): Promise<string> => {
   const bytes = new TextEncoder().encode(serializeBlueprint(blueprint));
-  const packed = await through(bytes, new CompressionStream('deflate'), Number.MAX_SAFE_INTEGER);
-  if (!packed) throw new Error('The build could not be compressed.');
-  return `#${SHARE_KEY}=${LINK_FORMAT}.${toBase64Url(packed)}`;
+  const packed = await pipeWithin(bytes, new CompressionStream('deflate'), Number.MAX_SAFE_INTEGER, Math.max(1, bytes.length));
+  if (!packed.ok) throw new Error('The build could not be compressed.');
+  return `#${SHARE_KEY}=${LINK_FORMAT}.${toBase64Url(packed.bytes)}`;
 };
 
 const pageBase = (): string => {
@@ -152,7 +198,10 @@ export const shareLinkOf = async (blueprint: Blueprint, catalogue: Catalogue, op
   const checked = validateBlueprint(sharedCopyOf(blueprint, options), catalogue);
   if (!checked.ok) return { ok: false, issues: checked.issues };
   const shared = canonicalizeBlueprint(checked.value, catalogue);
+  const counted = overCaps(shared);
+  if (counted) return { ok: false, issues: [counted] };
   const fragment = await fragmentOf(shared);
+  if (fragment.length > SHARE_LIMITS.fragmentChars) return { ok: false, issues: [tooBig('$', 'The link would be longer than a shared link may be.')] };
   const base = new URL(options.base ?? pageBase());
   base.hash = '';
   return { ok: true, url: `${base.href}${fragment}`, fragment, blueprint: shared };
@@ -196,7 +245,7 @@ const hasOwn = (value: unknown, key: string): boolean =>
  * `migrateBlueprint` and validate against the catalogue; otherwise it is refused, and the page says so in one line.
  */
 export const readShareFragment = async (hash: string, catalogue: Catalogue): Promise<SharedRead> => {
-  if (hash.length > MAX_FRAGMENT_LENGTH) return refused(issue('$', 'The link is longer than any shared build.'));
+  if (hash.length > SHARE_LIMITS.fragmentChars) return refused(tooBig('$', 'The link is longer than a shared link may be.'));
   const match = FRAGMENT.exec(hash);
   if (!match) return refused(issue('$', 'The link is not a shared build.'));
   const format = Number(match[1]);
@@ -206,14 +255,23 @@ export const readShareFragment = async (hash: string, catalogue: Catalogue): Pro
   if (format !== LINK_FORMAT) return refused(issue('$', `No link format ${format}.`));
   const packed = fromBase64Url(match[2] ?? '');
   if (!packed) return refused(issue('$', 'The link is not base64url.'));
-  const bytes = await through(packed, new DecompressionStream('deflate'), MAX_DOCUMENT_BYTES);
-  if (!bytes) return refused(issue('$', 'The link is incomplete or has been changed: it does not inflate.'));
+  const inflated = await pipeWithin(packed, new DecompressionStream('deflate'), SHARE_LIMITS.documentBytes);
+  if (!inflated.ok) {
+    return refused(
+      inflated.reason === 'too-large'
+        ? tooBig('$', `The link holds more than ${SHARE_LIMITS.documentBytes} bytes.`)
+        : issue('$', 'The link is incomplete or has been changed: it does not inflate.'),
+    );
+  }
   let document: unknown;
   try {
-    document = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+    document = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(inflated.bytes));
   } catch {
     return refused(issue('$', 'The link does not hold JSON.'));
   }
+  // Counted before anything else reads it: a valid build too big to run would freeze the page (SHARE_LIMITS).
+  const counted = overCaps(document);
+  if (counted) return refused(counted);
   // A link Servo made never names a child. One that does was made or changed by hand, and is not opened.
   if (hasOwn(document, 'meta') && hasOwn((document as { meta: unknown }).meta, 'author')) {
     return refused({ code: 'value.not_allowed', path: '$.meta.author', message: 'A shared build never carries an author.' });
@@ -226,6 +284,8 @@ export const readShareFragment = async (hash: string, catalogue: Catalogue): Pro
   if (migrated.value.meta.author !== undefined) {
     return refused({ code: 'value.not_allowed', path: '$.meta.author', message: 'A shared build never carries an author.' });
   }
+  const migratedCount = overCaps(migrated.value);
+  if (migratedCount) return refused(migratedCount);
   const checked = validateBlueprint(migrated.value, catalogue);
   if (!checked.ok) return refused(...checked.issues);
   const blueprint = canonicalizeBlueprint(checked.value, catalogue);

@@ -12,16 +12,16 @@ import { v0Blueprints } from '@servo/schema/fixtures';
 import { createSimulation } from '@servo/sim-core';
 import {
   LINK_FORMAT,
-  MAX_DOCUMENT_BYTES,
-  MAX_FRAGMENT_LENGTH,
   SHARED_BUILD_NAME,
   SHARED_META_KEYS,
   isShareFragment,
+  pipeWithin,
   readShareFragment,
   seedOf,
   shareLinkOf,
   sharedCopyOf,
 } from '../../src/sharing/link.ts';
+import { SHARE_LIMITS } from '../../src/sharing/limits.ts';
 import { openStoreWith } from '../../src/store/open.ts';
 import { SHARED_BUILD_NAME as FROM_STORE, shareLinkOf as shareFromStore } from '../../src/store/index.ts';
 import { freshName, schemaContent } from '../store/support.ts';
@@ -322,13 +322,6 @@ describe('a link that is incomplete, changed or not Servo’s is refused, never 
     await refusedAs(await forge(JSON.stringify(value)), 'newer');
   });
 
-  it('refuses a link longer than any build, and a payload that inflates past the limit', async () => {
-    await refusedAs(`#share=1.${'A'.repeat(MAX_FRAGMENT_LENGTH)}`, 'refused');
-    const bomb = await forge(`{"version":1,"pad":"${' '.repeat(MAX_DOCUMENT_BYTES + 10)}"}`);
-    expect(bomb.length).toBeLessThan(MAX_FRAGMENT_LENGTH);
-    await refusedAs(bomb, 'refused');
-  });
-
   it('never throws, whatever the fragment', async () => {
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
     let state = 12345;
@@ -341,5 +334,95 @@ describe('a link that is incomplete, changed or not Servo’s is refused, never 
       const body = Array.from({ length }, () => alphabet[next() % alphabet.length]).join('');
       await expect(readShareFragment(`#share=1.${body}`, catalogue)).resolves.toMatchObject({ ok: false });
     }
+  });
+});
+
+describe('the caps on a shared link (SHARE_LIMITS)', () => {
+  const busy = fixture('busy-workbench');
+  /** The build with `count` more loose battery packs on the bench, each a valid part of its own. */
+  const withLooseParts = (build: Blueprint, count: number): Blueprint => ({
+    ...build,
+    parts: [
+      ...build.parts,
+      ...Array.from({ length: count }, (_, index) => ({
+        id: `extra-${index}`,
+        part: 'battery-pack-2-cell',
+        position: { x: -600 + (index % 20) * 60, y: 600 + Math.floor(index / 20) * 60 },
+        rotation: 0,
+        settings: {},
+      })),
+    ],
+  });
+  const sharedDocument = (build: Blueprint): Record<string, unknown> =>
+    JSON.parse(serializeBlueprint(sharedCopyOf(build, fixed))) as Record<string, unknown>;
+  const issuesOf = async (fragment: string): Promise<{ path: string; code: string }[]> => {
+    const opened = await readShareFragment(fragment, catalogue);
+    if (opened.ok) throw new Error('opened');
+    return opened.issues.map(({ path, code }) => ({ path, code }));
+  };
+
+  it('are generous for every content fixture', () => {
+    expect(busy.parts.length).toBe(25);
+    expect(busy.wires.length).toBe(43);
+    for (const { blueprint } of fixtures) {
+      expect(blueprint.parts.length).toBeLessThanOrEqual(SHARE_LIMITS.parts);
+      expect(blueprint.wires.length).toBeLessThanOrEqual(SHARE_LIMITS.wires);
+    }
+    expect(SHARE_LIMITS).toEqual({ fragmentChars: 32 * 1024, documentBytes: 256 * 1024, parts: 100, wires: 200 });
+  });
+
+  it('opens a build of exactly 100 parts, and refuses one of 101, when making a link and when opening one', async () => {
+    const hundred = withLooseParts(busy, SHARE_LIMITS.parts - busy.parts.length);
+    const opened = await readShareFragment((await linkOf(hundred)).fragment, catalogue);
+    expect(opened.ok && opened.blueprint.parts.length).toBe(100);
+    const over = withLooseParts(busy, SHARE_LIMITS.parts - busy.parts.length + 1);
+    const made = await shareLinkOf(over, catalogue, fixed);
+    expect(made.ok).toBe(false);
+    if (!made.ok) expect(made.issues).toMatchObject([{ path: '$.parts', code: 'value.out_of_range' }]);
+    expect(await issuesOf(await forge(JSON.stringify(sharedDocument(over))))).toEqual([{ path: '$.parts', code: 'value.out_of_range' }]);
+  });
+
+  it('refuses more than 200 wires before reading the build', async () => {
+    const value = sharedDocument(busy);
+    value.wires = Array.from({ length: SHARE_LIMITS.wires + 1 }, (_, index) => ({ id: `w${index + 1}`, from: { part: 'a', port: 'b' }, to: { part: 'c', port: 'd' } }));
+    expect(await issuesOf(await forge(JSON.stringify(value)))).toEqual([{ path: '$.wires', code: 'value.out_of_range' }]);
+  });
+
+  it('refuses the review’s frozen-tab links fast: 500 parts in a small link, and 8,000 parts', async () => {
+    const started = performance.now();
+    const five = await forge(JSON.stringify(sharedDocument(withLooseParts(busy, 475))));
+    expect(five.length).toBeLessThan(SHARE_LIMITS.fragmentChars);
+    expect(await issuesOf(five)).toEqual([{ path: '$.parts', code: 'value.out_of_range' }]);
+    const eight = await forge(JSON.stringify(sharedDocument(withLooseParts(busy, 7975))));
+    expect((await readShareFragment(eight, catalogue)).ok).toBe(false);
+    expect(performance.now() - started).toBeLessThan(5000);
+  });
+
+  it('refuses a fragment over 32 KB without decoding it', async () => {
+    expect(await issuesOf(`#share=1.${'A'.repeat(SHARE_LIMITS.fragmentChars)}`)).toEqual([{ path: '$', code: 'value.out_of_range' }]);
+  });
+
+  it('refuses a payload that inflates past 256 KB, though its link is small', async () => {
+    const bomb = await forge(`{"version":1,"pad":"${' '.repeat(SHARE_LIMITS.documentBytes)}"}`);
+    expect(bomb.length).toBeLessThan(2048);
+    expect(await issuesOf(bomb)).toEqual([{ path: '$', code: 'value.out_of_range' }]);
+  });
+
+  it('stops inflating as soon as the output passes the cap, never inflating in full first', async () => {
+    // 64 MB of zeros deflate to about 64 KB; the cap is passed after the first few hundred compressed bytes.
+    const zeros = new Uint8Array(64 * 1024 * 1024);
+    const packed = await pipe(zeros, new CompressionStream('deflate'));
+    let fed = 0;
+    const counting = new TransformStream<Uint8Array<ArrayBuffer>, Uint8Array<ArrayBuffer>>({
+      transform: (chunk, controller) => {
+        fed += chunk.byteLength;
+        controller.enqueue(chunk);
+      },
+    });
+    const stream = { writable: counting.writable, readable: counting.readable.pipeThrough(new DecompressionStream('deflate')) };
+    const result = await pipeWithin(packed, stream, SHARE_LIMITS.documentBytes);
+    expect(result).toEqual({ ok: false, reason: 'too-large' });
+    expect(fed).toBeGreaterThan(0);
+    expect(fed).toBeLessThan(packed.length / 10);
   });
 });
