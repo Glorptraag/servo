@@ -4,11 +4,21 @@
 // aside, the safe area, the zoom control, and storage that refuses. layout.test.ts checks the real page with the
 // real canvas; the last test here mounts the real app with mountApp.
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { cdp } from 'vitest/browser';
+import { cdp, userEvent } from 'vitest/browser';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
-import type { CanvasEventMap, CanvasHandle, CanvasMode, CanvasPrefs, EditCommand, EditResult, ListView, Selection } from '@servo/canvas';
+import type {
+  CanvasEventMap,
+  CanvasHandle,
+  CanvasMode,
+  CanvasPrefs,
+  CanvasSafeArea,
+  EditCommand,
+  EditResult,
+  ListView,
+  Selection,
+} from '@servo/canvas';
 import { contentFrom } from '@servo/content';
 import type { Blueprint, Kit, Level, ValidationResult } from '@servo/schema';
 import { validBlueprints } from '@servo/schema/fixtures';
@@ -74,7 +84,13 @@ class StandInCanvas implements CanvasHandle {
     this.zoom = zoom;
     this.calls.push(`setZoom ${zoom.toFixed(4)}`);
   }
-  tidyWires(): void {}
+  tidyWires(): void {
+    this.calls.push('tidyWires');
+  }
+  safeArea: CanvasSafeArea | undefined;
+  setSafeArea(safeArea: CanvasSafeArea): void {
+    this.safeArea = safeArea;
+  }
   setLevel(level: Level): void {
     this.calls.push(`setLevel ${level}`);
   }
@@ -439,6 +455,31 @@ describe('the shell', () => {
     await tap(button('Zoom out'));
     await tap(button('Fit'));
     expect(app.canvas.calls).toEqual([`setZoom ${zoomInFrom(1).toFixed(4)}`, 'setZoom 2.0000', `setZoom ${zoomInFrom(1).toFixed(4)}`, 'fit']);
+  });
+
+  it('tidies the wires from the button beside Fit, by touch and by pointer (task 3.7)', async () => {
+    const app = await mountShell();
+    const button = app.host.querySelector<HTMLButtonElement>('.shell-zoom button[aria-label="Tidy wires"]');
+    if (!button) throw new Error('no Tidy wires button');
+    expect(button.previousElementSibling?.getAttribute('aria-label')).toBe('Fit');
+    expect(button.getAttribute('aria-label')).not.toMatch(/!/);
+    // A finger: a real touch through CDP, which the browser turns into the button's click.
+    const box = button.getBoundingClientRect();
+    const frame = window.frameElement?.getBoundingClientRect();
+    const point = { x: (frame?.left ?? 0) + box.left + box.width / 2, y: (frame?.top ?? 0) + box.top + box.height / 2 };
+    await cdp().send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ ...point, id: 1 }] });
+    await cdp().send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await vi.waitFor(() => expect(app.canvas.calls).toEqual(['tidyWires']));
+    // A mouse.
+    await userEvent.click(button);
+    await vi.waitFor(() => expect(app.canvas.calls).toEqual(['tidyWires', 'tidyWires']));
+  });
+
+  it('fits the first build it loads, and only the first: Undo loads never move the view (D70)', async () => {
+    const app = await mountShell();
+    flushSync(() => app.shell.load(rollingStart));
+    flushSync(() => app.shell.load(rollingStart));
+    expect(app.canvas.calls.filter((call) => call === 'load' || call === 'fit')).toEqual(['load', 'fit', 'load']);
   });
 
   it('tucks edges for the visit when storage refuses, and saves them when it can', async () => {

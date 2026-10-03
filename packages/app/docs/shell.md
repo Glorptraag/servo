@@ -16,7 +16,7 @@ The canvas fills the screen behind the edges. Everything else lies over it, as e
 | Spec card | Right edge, under the header, 320 px wide, while a part is selected | `<aside aria-label="Spec card">`; its text scrolls |
 | Arena strip | Along the top of the canvas, from beside the header's tab to beside where the spec card shows | `<section aria-label="Arena strip">` |
 | Run bar | Bottom centre of the canvas beside the tray; always there, never moving | `<section aria-label="Run bar">`: the room kept for it, with the bar centred in it |
-| Zoom control | Bottom corner on the spec card's side, below the card; never moving | `role="group"`, "Zoom": Zoom in, Fit, Zoom out |
+| Zoom control | Bottom corner on the spec card's side, below the card; never moving | `role="group"`, "Zoom": Zoom in, Fit, Tidy wires, Zoom out |
 
 Portrait means taller than wide. [layout.ts](../src/shell/layout.ts) computes every box from the shell's own size (its host's, followed with a ResizeObserver), so the shell lays out the same in the page and in a test harness. [place.ts](../src/shell/place.ts) puts each box on the page by transform; [shell.css](../src/shell/shell.css) gives the look and the motion.
 
@@ -32,9 +32,9 @@ The spec card is a readable 320 px wide (300–340 px asked). Its height is the 
 
 | Screen (CSS px) | Spec card | Canvas seen, everything open, a part selected | Every edge tucked, nothing selected |
 | --- | --- | --- | --- |
-| 10-inch landscape, 1180 × 820 | 320 × 315 | 70.0% | 95.9% |
-| 13-inch, 1366 × 1024 | 320 × 617 | 70.0% | 97.1% |
-| Tablet portrait, 820 × 1180 | 320 × 355 | 70.0% | 95.9% |
+| 10-inch landscape, 1180 × 820 | 320 × 308 | 70.0% | 95.7% |
+| 13-inch, 1366 × 1024 | 320 × 611 | 70.0% | 97.0% |
+| Tablet portrait, 820 × 1180 | 320 × 348 | 70.0% | 95.7% |
 
 The unit tests check every combination of tucked edges, Build and Run, a part selected or not, the card stepped aside or not, and both hands on these screens, and with everything open every screen whose short side is 744–1440 px and long side 1024–2560 px, either way up.
 
@@ -55,7 +55,7 @@ The unit tests check every combination of tucked edges, Build and Run, a part se
 
 ## The safe area (task 3.7)
 
-`layout.safeArea` says how far in from each side the canvas a child can see begins: past the header, the tray and the card where they show, the Run bar's room at the bottom, and the zoom control's column on the card's side when the card is away. The shell calls `onSafeArea(safeArea, canvas)` with it once the canvas is up and whenever it changes, so that once task 3.7 lets the canvas take safe-area insets, App.tsx passes them on and load and Fit centre the build in the canvas a child can see. Until then App.tsx passes nothing, and the canvas centres the build on the whole screen.
+`layout.safeArea` says how far in from each side the canvas a child can see begins: past the header, the tray and the card where they show, the Run bar's room at the bottom, and the zoom control's column on the card's side when the card is away. The shell calls `onSafeArea(safeArea, canvas)` with it once the canvas is up and whenever it changes, and App.tsx passes it on to `canvas.setSafeArea` (task 3.7), so Fit, the zoom buttons and the canvas's zoom limits work in the canvas a child can see. The shell's `load` calls `canvas.fit()` after the first build it loads into a canvas, so that build starts framed there; later loads (Undo) keep the view.
 
 ## Motion
 
@@ -95,7 +95,7 @@ A component in a slot reads the shell with `useShell()` ([context.ts](../src/she
 
 ## The zoom control
 
-Zoom in and out step along a ladder of zooms a half power of two apart (0.5, 0.71, 1, 1.41, 2, 2.83, 4), so two taps double or halve and both the default and 400% are rungs ([zoom.ts](../src/shell/zoom.ts)). After a pinch the next tap lands on the nearest rung. Fit calls `canvas.fit()`. The canvas holds every zoom inside its limits.
+Zoom in and out step along a ladder of zooms a half power of two apart (0.5, 0.71, 1, 1.41, 2, 2.83, 4), so two taps double or halve and both the default and 400% are rungs ([zoom.ts](../src/shell/zoom.ts)). After a pinch the next tap lands on the nearest rung. Fit calls `canvas.fit()`. Tidy wires, beside Fit, calls `canvas.tidyWires()`: the touch and pointer path to the canvas's `tidy-wires` command, which routes the wires round the parts (task 3.7; the list view offers the same command). The canvas holds every zoom inside its limits.
 
 ## Running it
 
@@ -119,7 +119,7 @@ Rulings applied (orchestrator, 2026-10-01):
 - The spec card is 300–340 px wide, may scroll, and is away at rest, sliding in while a part is selected; its tuck persists.
 - The Run bar never tucks and never moves.
 - The arena strip is part of the canvas; the zoom control and the tabs count as covering it.
-- The canvas takes safe-area insets from task 3.7; the shell has the hook.
+- The canvas takes safe-area insets (task 3.7): App.tsx passes the shell's hook on to `setSafeArea`.
 
 Still open, for Drew and the orchestrator:
 1. The spec card steps aside for every drag on the canvas, pans and pinches included: the simple rule that covers every wire drag. Tap-then-tap wiring needs the canvas to report a wire in progress (task 3.3); `setSpecCardAside` is ready for it.

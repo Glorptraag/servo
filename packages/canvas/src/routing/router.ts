@@ -3,18 +3,19 @@
 // sees the same picture. A route is view state, never part of the blueprint. See docs/routing.md.
 //
 // Only power and signal lines that cross a part body are routed; a line that crosses nothing keeps its straight
-// line. A route leaves each socket straight out from its part's edge, then takes the shortest way round the bodies
-// in the way: a visibility graph over the corners of the bodies grown by a clearance, searched with Dijkstra.
+// line. Where it can, a route leaves each socket straight out from its part's edge, then takes the shortest way round
+// the bodies in the way: a visibility graph over the corners of the bodies grown by a clearance, searched with
+// Dijkstra.
 //
-// A body is the part as drawn: its footprint (`body.size`) at its true size. The rest of its tile, up to the 96 px
-// minimum and round its sockets, is touch padding a wire may pass over. Frames (the chassis) are the deck the parts
-// stand on, so wires run over them as over a real chassis.
+// A body is the part's picture as the renderer draws it (`drawnBodySize`, D85): its footprint box scaled to fill the
+// tile less its padding. The rest of the tile is a hit affordance a wire may pass over. Frames (the chassis) are the
+// deck the parts stand on, so wires run over them as over a real chassis.
 //
 // What counts as crossing: the wire as the child sees it. A socket is drawn over the end of its wire, so the stretch
-// of wire under a wire's own two sockets is hidden; where a socket sits over another part (the motor driver's sockets
-// over the battery pack beside it) a route climbs off that part within the hidden stretch. A socket boxed in on every
-// side by other bodies could not be left without crossing one: its route would cross the least it can, straight out,
-// and be clean from there on. No fixture has one.
+// of wire under a wire's own two sockets is hidden; where a socket sits over another part's picture (the motor
+// driver's sockets over the battery pack beside it) a route climbs off that part within the hidden stretch, and may
+// start back under its own socket. A socket boxed in on every side by other bodies cannot be left without crossing
+// one: its route crosses the least it can, straight out, and is clean from there on.
 import type { Vec2, WireId } from '@servo/schema';
 import { distance } from '../scene/geometry.ts';
 import type { Scene, ScenePort, SceneWire } from '../scene/scene.ts';
@@ -70,7 +71,7 @@ interface Exit {
   readonly length: number;
 }
 
-/** The bodies a wire must not cross: every part's drawn body but a frame's. */
+/** The bodies a wire must not cross: every part's drawn picture but a frame's. */
 export const bodiesOf = (scene: Scene): readonly Shape[] => scene.parts.filter((part) => !part.frame).map((part) => bodyShape(part));
 
 /** The pieces of the segment from `a` to `b` that lie outside every disc, scraps dropped. */

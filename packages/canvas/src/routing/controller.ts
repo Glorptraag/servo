@@ -25,8 +25,9 @@ export const tidies = (command: EditCommand): boolean =>
 export class RoutingController {
   private kept = new Map<WireId, Kept>();
   private view: Map<WireId, Route> = new Map();
+  private published = '[]';
 
-  /** The routes to draw and hit-test, by wire id. */
+  /** The routes to draw and hit-test, by wire id. The same map until they change. */
   get routes(): WireRoutes {
     return this.view;
   }
@@ -67,7 +68,12 @@ export class RoutingController {
     this.publish();
   }
 
+  /** Replaces the routes drawn, as a new map only when they changed, so a caller can tell a tidy that changed nothing. */
   private publish(): void {
-    this.view = new Map([...this.kept].map(([id, kept]) => [id, kept.route]));
+    const next = new Map([...this.kept].map(([id, kept]) => [id, kept.route]));
+    const text = JSON.stringify([...next]);
+    if (text === this.published) return;
+    this.published = text;
+    this.view = next;
   }
 }

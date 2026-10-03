@@ -190,9 +190,9 @@ describe('the Run bar and the zoom control', () => {
 
 describe('the spec card', () => {
   it('is a readable 320 px wide on the target screens, as tall as the 70% floor allows', () => {
-    expect(specCardSize(1180, 820)).toEqual({ width: 320, height: 315 });
-    expect(specCardSize(1366, 1024)).toEqual({ width: 320, height: 617 });
-    expect(specCardSize(820, 1180)).toEqual({ width: 320, height: 355 });
+    expect(specCardSize(1180, 820)).toEqual({ width: 320, height: 308 });
+    expect(specCardSize(1366, 1024)).toEqual({ width: 320, height: 611 });
+    expect(specCardSize(820, 1180)).toEqual({ width: 320, height: 348 });
     // A large monitor: as tall as leaves the zoom control room below it.
     expect(specCardSize(1920, 1080)).toEqual({ width: 320, height: 1080 - HEADER_PX - 12 - ZOOM_PX.height - 12 });
     expect(specCardSize(400, 300)).toEqual({ width: 0, height: 0 });
@@ -269,7 +269,7 @@ describe('where each region goes (brief Section 9)', () => {
     expect(layout.header).toEqual({ x: 0, y: 0, width: 1180, height: HEADER_PX });
     expect(layout.tray).toEqual({ x: 0, y: HEADER_PX, width: TRAY_PX, height: 820 - HEADER_PX });
     expect(layout.work).toEqual({ x: TRAY_PX, y: HEADER_PX, width: 1180 - TRAY_PX, height: 820 - HEADER_PX });
-    expect(layout.specCard).toEqual({ x: 1180 - 320, y: HEADER_PX, width: 320, height: 315 });
+    expect(layout.specCard).toEqual({ x: 1180 - 320, y: HEADER_PX, width: 320, height: 308 });
     expect(layout.arenaStrip.y).toBe(HEADER_PX + 6);
     expect(layout.arenaStrip.x).toBeGreaterThan(TRAY_PX);
     expect(right(layout.arenaStrip)).toBeLessThan(layout.specCard.x);
@@ -280,7 +280,7 @@ describe('where each region goes (brief Section 9)', () => {
     expect(layout.orientation).toBe('landscape');
     expect(layout.tray.x).toBe(0);
     expect(right(layout.specCard)).toBe(1366);
-    expect(layout.specCard.height).toBe(617);
+    expect(layout.specCard.height).toBe(611);
   });
 
   it('tablet portrait: the tray moves to the bottom edge, and the Run bar sits above it', () => {
@@ -288,7 +288,7 @@ describe('where each region goes (brief Section 9)', () => {
     expect(layout.orientation).toBe('portrait');
     expect(layout.tray).toEqual({ x: 0, y: 1180 - TRAY_PX, width: 820, height: TRAY_PX });
     expect(layout.work).toEqual({ x: 0, y: HEADER_PX, width: 820, height: 1180 - HEADER_PX - TRAY_PX });
-    expect(layout.specCard).toEqual({ x: 820 - 320, y: HEADER_PX, width: 320, height: 355 });
+    expect(layout.specCard).toEqual({ x: 820 - 320, y: HEADER_PX, width: 320, height: 348 });
     expect(bottom(layout.runBar)).toBe(layout.tray.y - 12);
   });
 

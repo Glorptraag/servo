@@ -17,6 +17,7 @@ Developer tools and the tests that need the whole system. Dev-only: nothing at r
 
 - Behaviour tests against the real content records and `@servo/content/fixtures` live here, as ruled; sim-core's own tests use `@servo/schema/fixtures`, so they do not move when content does.
 - `test/content-loader.test.ts` holds content's loader to these tools: it reads real `pnpm art` output, and it must give the same verdicts as the content validator on the same trees and on `packages/content` itself.
+- `test/canvas-fixture-copies.test.ts` checks the canvas's test copies of content fixtures (the busy workbench, the Circuit Crew kit robot) still match content, blueprint, part records and arenas. The canvas may not import content, so it carries copies; refresh one when this fails.
 - `test/lint-rules.test.ts` lints sample files through the real ESLint config and proves each rule fires (task 0.1). Extend it whenever a rule changes.
 
 ## Running

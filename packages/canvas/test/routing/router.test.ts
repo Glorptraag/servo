@@ -10,12 +10,13 @@ import type { Blueprint, Catalogue, Vec2 } from '@servo/schema';
 import { canvasToPart, distance } from '../../src/scene/geometry.ts';
 import { buildScene } from '../../src/scene/scene.ts';
 import type { Scene, ScenePart, SceneWire } from '../../src/scene/scene.ts';
+import { TILE_PADDING_MM, drawnBodySize } from '../../src/renderer/picture.ts';
 import { PORT_MM } from '../../src/scene/units.ts';
-import { CLEARANCE_MM, pathOf, routeWires } from '../../src/routing/router.ts';
+import { CLEARANCE_MM, bodiesOf, crossesBodies, crossingCount, pathOf, routeWires } from '../../src/routing/router.ts';
 import type { Route } from '../../src/routing/router.ts';
 import { bodyShape, rayInside, segmentEnters, squareShape, tileShape } from '../../src/routing/shapes.ts';
 import { benchCatalogue, busyWorkbench } from '../helpers/busy-workbench.ts';
-import { catalogue, fixture, twentyFiveParts } from '../helpers/catalogue.ts';
+import { blueprintOf, catalogue, fixture, twentyFiveParts } from '../helpers/catalogue.ts';
 import { crewCatalogue, crewRobot } from '../helpers/circuit-crew.ts';
 
 /** Flood fills and full routings of 25-part builds: generous, for a busy machine. */
@@ -25,10 +26,11 @@ const SLOW_MS = 60_000;
 const STEP_MM = 0.08;
 const HIDDEN_MM = PORT_MM / 2;
 
-/** Strictly inside a part's body as drawn: its footprint (`body.size`) centred on its frame origin, not its touch tile. */
+/** Strictly inside a part's body as the renderer draws it: its picture, sized by the renderer's own `drawnBodySize`. */
 const insideBody = (part: ScenePart, point: Vec2): boolean => {
   const local = canvasToPart(part.pose, point);
-  return Math.abs(local.x) < part.record.body.size.x / 2 - 1e-6 && Math.abs(local.y) < part.record.body.size.y / 2 - 1e-6;
+  const drawn = drawnBodySize(part.record, part.tile);
+  return Math.abs(local.x) < drawn.w / 2 - 1e-6 && Math.abs(local.y) < drawn.h / 2 - 1e-6;
 };
 
 /** The bodies a path passes through where it shows, by sampling it: outside the sockets at `hidden` (its two ends). */
@@ -155,19 +157,19 @@ describe.each(builds)('routing %s', (_name, blueprint, parts) => {
   const scene = buildScene(blueprint, parts);
   const routes = routeWires(scene);
 
-  it('leaves no power or signal line crossing a part body, unless open workbench cannot join its sockets', () => {
-    const joined = openSpace(scene);
-    for (const wire of scene.wires) {
-      if (bodiesCrossed(scene, pathOf(wire, routes)).length === 0) continue;
-      expect(joined(wire), wire.id).toBe(false);
-    }
+  it('after tidying, no wire crosses a drawn part body', () => {
+    for (const wire of [...scene.wires, ...scene.linkages]) expect(bodiesCrossed(scene, pathOf(wire, routes)), wire.id).toEqual([]);
   }, SLOW_MS);
 
-  it('routes the wires that crossed a body, from socket to socket, and leaves the rest straight', () => {
+  it('routes exactly the wires whose straight line crosses a body, from socket to socket, and leaves the rest straight', () => {
+    const bodies = bodiesOf(scene);
     for (const wire of scene.wires) {
       const route = routes.get(wire.id);
-      // The router's own check is exact; sampling every 0.08 mm can miss a graze, so it only finds crossings.
-      if (bodiesCrossed(scene, [wire.from.at, wire.to.at]).length > 0) expect(route, wire.id).toBeDefined();
+      // Exactly the wires the router's exact check finds crossing; the 0.08 mm sampler, which can miss a graze,
+      // finds no crossing among the rest.
+      const straight = [wire.from.at, wire.to.at];
+      expect(route !== undefined, wire.id).toBe(crossesBodies(straight, bodies));
+      if (!route) expect(bodiesCrossed(scene, straight), wire.id).toEqual([]);
       if (!route) continue;
       expect(route[0]).toEqual(wire.from.at);
       expect(route[route.length - 1]).toEqual(wire.to.at);
@@ -181,6 +183,45 @@ describe.each(builds)('routing %s', (_name, blueprint, parts) => {
     const plain = (map: ReadonlyMap<string, Route>) => JSON.stringify([...map].sort(([a], [b]) => (a < b ? -1 : 1)));
     expect(plain(again)).toBe(plain(routes));
     expect(plain(shuffled)).toBe(plain(routes));
+  }, SLOW_MS);
+});
+
+describe('a socket boxed in by other parts', () => {
+  // An LED ringed by four battery packs whose pictures overlap at the corners, and a power line from its plus (+) to a
+  // switch outside the ring. No fixture boxes a socket in, so this one keeps the least-crossing way out tested.
+  const at = (id: string, part: string, x: number, y: number, rotation = 0) => ({ id, part, position: { x, y }, rotation, settings: {} });
+  const ring = blueprintOf(
+    {
+      parts: [
+        at('p1', 'led', 0, 0),
+        at('p2', 'battery-pack-2-cell', 0, -35),
+        at('p3', 'battery-pack-2-cell', 0, 35),
+        at('p4', 'battery-pack-2-cell', -35, 0, 90),
+        at('p5', 'battery-pack-2-cell', 35, 0, 90),
+        at('p6', 'switch', 150, 0),
+      ],
+      wires: [{ id: 'w1', from: { part: 'p1', port: 'plus' }, to: { part: 'p6', port: 'a' } }],
+    },
+    'Boxed in',
+  );
+  const scene = buildScene(ring, catalogue);
+  const wire = scene.wires[0] as SceneWire;
+
+  it('has no clean way out: open workbench does not join the sockets', () => {
+    expect(openSpace(scene)(wire)).toBe(false);
+  }, SLOW_MS);
+
+  it('crosses the least it can, on one straight run out of the box, and is clean from there', () => {
+    const route = routeWires(scene).get(wire.id);
+    if (!route) throw new Error('not routed');
+    expect(route[0]).toEqual(wire.from.at);
+    expect(route[route.length - 1]).toEqual(wire.to.at);
+    expect(crossingCount(route, bodiesOf(scene))).toBe(1);
+    expect(bodiesCrossed(scene, route.slice(1), [wire.from.at, wire.to.at])).toEqual([]);
+    expect(bodiesCrossed(scene, route.slice(0, 2))).toHaveLength(1);
+    // The run out crosses one battery pack's picture, the wall nearest the socket, and no further than it must.
+    const out = distance(route[0] as Vec2, route[1] as Vec2);
+    expect(out).toBeLessThanOrEqual(30 + PORT_MM);
   }, SLOW_MS);
 });
 
@@ -207,7 +248,7 @@ describe('the shapes', () => {
     expect(rayInside(square, { x: 30, y: 0 }, { x: 1, y: 0 })).toBeUndefined();
   });
 
-  it('turns a tile with its part, and draws the body inside it at its true size', () => {
+  it('turns a tile with its part, and draws the body as the renderer draws its picture, inside the tile', () => {
     const scene = buildScene(fixture('bumper-robot'), catalogue);
     for (const part of scene.parts) {
       const shape = tileShape(part);
@@ -218,8 +259,12 @@ describe('the shapes', () => {
       }
       const body = bodyShape(part);
       const [a, b, c] = body.corners as [Vec2, Vec2, Vec2];
-      expect(distance(a, b)).toBeCloseTo(Math.min(part.record.body.size.x, part.tile.w), 9);
-      expect(distance(b, c)).toBeCloseTo(Math.min(part.record.body.size.y, part.tile.h), 9);
+      const drawn = drawnBodySize(part.record, part.tile);
+      expect(distance(a, b)).toBeCloseTo(drawn.w, 9);
+      expect(distance(b, c)).toBeCloseTo(drawn.h, 9);
+      // The picture keeps the footprint's proportions and fills the tile less its 2 mm padding on its tighter side.
+      expect(drawn.w / drawn.h).toBeCloseTo(part.record.body.size.x / part.record.body.size.y, 9);
+      expect(Math.min(part.tile.w - drawn.w, part.tile.h - drawn.h)).toBeCloseTo(2 * TILE_PADDING_MM, 9);
       expect(body.box.minX).toBeGreaterThanOrEqual(shape.box.minX - 1e-9);
       expect(body.box.maxX).toBeLessThanOrEqual(shape.box.maxX + 1e-9);
       expect(bodyShape(part, CLEARANCE_MM).box.maxX - body.box.maxX).toBeGreaterThan(0);

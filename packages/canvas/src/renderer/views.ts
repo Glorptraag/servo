@@ -9,6 +9,7 @@ import type { PartPose } from '../scene/geometry.ts';
 import type { ScenePart, SceneWire } from '../scene/scene.ts';
 import { DASH_GAP_MM, DASH_MM, LINKAGE_MM, PX_PER_MM, WIRE_MM, mmOf } from '../scene/units.ts';
 import type { ArtState } from './art.ts';
+import { TILE_PADDING_MM, pictureRoom, pictureSize } from './picture.ts';
 import { drawSocket } from './sockets.ts';
 import { DIM_ALPHA, FONT_STACKS } from './style.ts';
 import type { Palette } from './style.ts';
@@ -35,8 +36,6 @@ export interface DrawContext {
 
 const TILE_RADIUS_MM = mmOf(8);
 const TILE_EDGE_MM = mmOf(1.5);
-/** Space between a tile's edge and its picture or name. */
-const TILE_PADDING_MM = mmOf(5);
 /** The name on a neutral tile, in screen pixels at default zoom (brief Section 11: generous size, real names in bold). */
 const LABEL_PX = 15;
 /** Names are rasterised sharp up to this zoom. */
@@ -139,6 +138,12 @@ export class PartView {
     return { picture: this.picture?.visible === true, name: this.label?.visible ? this.label.text : undefined };
   }
 
+  /** The picture's size as drawn, in the part's frame (mm), when the tile shows one: what tidy wires routes round (task 3.7). */
+  get drawnPicture(): { readonly w: number; readonly h: number } | undefined {
+    const picture = this.picture;
+    return picture?.visible ? { w: picture.width, h: picture.height } : undefined;
+  }
+
   /** The font stack the name is written in, when the tile shows a name. */
   get labelFont(): string | undefined {
     if (!this.label?.visible) return undefined;
@@ -176,8 +181,7 @@ export class PartView {
   }
 
   private drawPicture(part: ScenePart, art: ArtState, context: DrawContext): void {
-    const innerW = Math.max(part.tile.w - 2 * TILE_PADDING_MM, 1);
-    const innerH = Math.max(part.tile.h - 2 * TILE_PADDING_MM, 1);
+    const { w: innerW, h: innerH } = pictureRoom(part.tile);
     if (art.status === 'ready') {
       if (!this.picture) {
         this.picture = new Sprite();
@@ -185,8 +189,7 @@ export class PartView {
         this.body.addChild(this.picture);
       }
       this.picture.texture = art.texture;
-      const fit = Math.min(innerW / art.texture.width, innerH / art.texture.height);
-      this.picture.scale.set(fit);
+      this.picture.scale.set(pictureSize(part.tile, art.texture).w / art.texture.width);
       this.picture.visible = true;
       if (this.label) this.label.visible = false;
       return;

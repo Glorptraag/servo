@@ -20,10 +20,13 @@ import type {
   PropTemplate,
   Selection,
 } from '../interface.ts';
+import { ListViewDom } from '../list-view/dom.ts';
+import { ListViewModel } from '../list-view/model.ts';
 import { applyEdit } from '../placement/apply.ts';
 import { PlacementController } from '../placement/controller.ts';
 import { RoutingController, tidies } from '../routing/controller.ts';
 import { checkSafeArea, screenCentre } from '../routing/view.ts';
+import type { Polygon } from '../routing/view.ts';
 import { layArena } from '../scene/arena.ts';
 import type { SceneArena } from '../scene/arena.ts';
 import { unionRect } from '../scene/geometry.ts';
@@ -87,6 +90,9 @@ export class CanvasSurface implements CanvasHandle {
   readonly wiring: WiringController;
   /** The routes tidy wires gives, kept while they fit the build (task 3.7, src/routing/). */
   readonly routing = new RoutingController();
+  /** The screen-reader and keyboard path: the list view's model and its DOM beside the canvas (task 3.6, src/list-view/). */
+  readonly list: ListViewModel;
+  readonly listDom: ListViewDom;
 
   private readonly options: CanvasOptions;
   private readonly emitter = new Emitter<CanvasEventMap>();
@@ -162,6 +168,18 @@ export class CanvasSurface implements CanvasHandle {
       readOnly: options.readOnly === true,
       prefs: () => this.prefs,
     });
+    this.list = new ListViewModel({
+      catalogue: options.catalogue,
+      readOnly: options.readOnly === true,
+      blueprint: () => this.current,
+      mode: () => this.currentMode,
+      level: () => this.level,
+      apply: (command) => this.apply(command),
+      control: (input) => this.emitter.emit('control', { input }),
+      select: (selection) => this.select(selection),
+      routes: () => this.routing.routes,
+    });
+    this.listDom = new ListViewDom(host, this.list, { prefs: () => this.prefs });
     this.resizeObserver =
       typeof ResizeObserver === 'function' ? new ResizeObserver(() => this.resized()) : undefined;
     this.resizeObserver?.observe(this.canvas);
@@ -204,6 +222,7 @@ export class CanvasSurface implements CanvasHandle {
     this.wiring.modeChanged();
     this.modeFade.toward(mode === 'run' ? 1 : 0, this.motion(MODE_FADE_MS), performance.now());
     this.loop.request();
+    this.list.changed();
   }
 
   fit(): void {
@@ -220,6 +239,8 @@ export class CanvasSurface implements CanvasHandle {
   setSafeArea(safeArea: CanvasSafeArea): void {
     this.alive('setSafeArea');
     this.camera.safeArea = checkSafeArea(safeArea);
+    this.reHold();
+    this.loop.request();
   }
 
   /**
@@ -230,6 +251,7 @@ export class CanvasSurface implements CanvasHandle {
   setLevel(level: Level): void {
     this.alive('setLevel');
     this.level = level;
+    this.list.changed();
   }
 
   /** The child's level, as `mountCanvas` or `setLevel` last gave it. */
@@ -253,6 +275,7 @@ export class CanvasSurface implements CanvasHandle {
     live.delete(this);
     this.placement.destroy();
     this.wiring.destroy();
+    this.listDom.destroy();
     this.loop.stop();
     if (this.restTimer !== undefined) clearTimeout(this.restTimer);
     this.resizeObserver?.disconnect();
@@ -312,14 +335,17 @@ export class CanvasSurface implements CanvasHandle {
   }
 
   // ---------------------------------------------------------------------------------------------------------
+  // CanvasHandle: task 3.6 (src/list-view/)
+
+  get listView(): ListView {
+    return this.list;
+  }
+
+  // ---------------------------------------------------------------------------------------------------------
   // CanvasHandle: later tasks
 
   get selection(): Selection | null {
     return null;
-  }
-
-  get listView(): ListView {
-    throw notYet('listView', '3.6');
   }
 
   select(selection: Selection | null): void {
@@ -438,10 +464,10 @@ export class CanvasSurface implements CanvasHandle {
     return this.currentMode === 'run' ? unionRect(this.scene.bounds, this.arena?.bounds) : this.scene.bounds;
   }
 
-  /** What the limits keep on screen: each part, and in Run mode the arena. */
-  private targets(): Rect[] {
-    const targets = this.scene.parts.map((part) => part.bounds);
-    if (this.currentMode === 'run' && this.arena) targets.push(this.arena.bounds);
+  /** What the limits keep on screen: each part's drawn tile, turned with it, and in Run mode the arena. */
+  private targets(): Polygon[] {
+    const targets: Polygon[] = this.scene.parts.map((part) => part.corners);
+    if (this.currentMode === 'run' && this.arena) targets.push(this.arena.corners);
     return targets;
   }
 
@@ -514,6 +540,7 @@ export class CanvasSurface implements CanvasHandle {
     const height = this.canvas.clientHeight;
     if (width <= 0 || height <= 0) return;
     this.camera.resize(width, height);
+    this.reHold();
     const renderer = this.renderer;
     if (renderer && (renderer.screen.width !== width || renderer.screen.height !== height || renderer.resolution !== this.resolution)) {
       renderer.resize(width, height, this.resolution);
@@ -531,6 +558,7 @@ export class CanvasSurface implements CanvasHandle {
     this.scene = buildScene(this.current, this.options.catalogue);
     this.arena = layArena(this.current, this.options.catalogue, this.scene);
     this.routing.refresh(this.scene);
+    this.list.changed();
     const layers = this.layers;
     const renderer = this.renderer;
     if (!layers || !renderer) {
@@ -618,6 +646,13 @@ export class CanvasSurface implements CanvasHandle {
       if (view.part.record.identity.art === key) view.draw(view.part, this.art.get(key), context);
     }
     this.loop.request();
+  }
+
+  /** Brings a view the limits no longer hold (after a resize or a new safe area) back within them (task 3.7). */
+  private reHold(): void {
+    const before = this.camera.zoom;
+    this.camera.reHold(this.limits());
+    if (this.camera.zoom !== before) this.emitter.emit('zoom', { zoom: this.camera.zoom });
   }
 
   /** A change to the view: redraw, wake the grid, and tell the app when the zoom moved. */

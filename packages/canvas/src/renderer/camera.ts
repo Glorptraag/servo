@@ -4,9 +4,9 @@
 // Section 10, task 3.7: src/routing/view.ts).
 import type { Vec2 } from '@servo/schema';
 import type { CanvasSafeArea } from '../interface.ts';
-import { NO_SAFE_AREA, focusArea, holdFocus, screenCentre, uncovered } from '../routing/view.ts';
-import type { ScreenRect } from '../routing/view.ts';
-import { rectCentre, rectHeight, rectWidth, unionRect } from '../scene/geometry.ts';
+import { NO_SAFE_AREA, backInside, focusArea, holdFocus, screenCentre, uncovered } from '../routing/view.ts';
+import type { Polygon, ScreenRect } from '../routing/view.ts';
+import { rectCentre, rectHeight, rectOfPoints, rectWidth, unionRect } from '../scene/geometry.ts';
 import type { Rect } from '../scene/geometry.ts';
 import { MAX_ZOOM, PX_PER_MM } from '../scene/units.ts';
 
@@ -18,12 +18,21 @@ export const ZOOM_OUT_BEYOND_FIT = 2;
 
 /** With nothing placed, the view stays near the canvas origin, where the first part lands. */
 const EMPTY_AREA: Rect = { minX: -100, minY: -100, maxX: 100, maxY: 100 };
+const EMPTY_TARGET: Polygon = [
+  { x: EMPTY_AREA.minX, y: EMPTY_AREA.minY },
+  { x: EMPTY_AREA.maxX, y: EMPTY_AREA.minY },
+  { x: EMPTY_AREA.maxX, y: EMPTY_AREA.maxY },
+  { x: EMPTY_AREA.minX, y: EMPTY_AREA.maxY },
+];
 
 export interface ViewLimits {
   readonly minZoom: number;
   readonly maxZoom: number;
-  /** What stays on screen: some of one of these (each part's tile and sockets, and in Run mode the arena) is always in view. */
-  readonly targets: readonly Rect[];
+  /**
+   * What stays on screen: a 96 px piece of one of these (each part's drawn tile, turned with it, and in Run mode the
+   * arena) is always in view. Each is a rectangle's four corners in order.
+   */
+  readonly targets: readonly Polygon[];
 }
 
 export class Camera {
@@ -98,6 +107,16 @@ export class Camera {
     this.setFocus(rectCentre(target));
   }
 
+  /**
+   * After a resize or a new safe area: zoom back within the limits, and a view that has left them comes back to the
+   * nearest place within them, so the build is never left covered or off screen.
+   */
+  reHold(limits: ViewLimits): void {
+    const focus = this.focus();
+    this.zoom = Math.min(Math.max(this.zoom, limits.minZoom), limits.maxZoom);
+    this.setFocus(backInside(focus, focusArea(limits.targets, this.uncovered(), this.scale)));
+  }
+
   private setFocus(point: Vec2): void {
     const centre = screenCentre(this.uncovered());
     this.centreX = point.x - (centre.x - this.width / 2) / this.scale;
@@ -130,10 +149,10 @@ export const fittingZoom = (content: Rect, width: number, height: number): numbe
  * The limits for an uncovered view of `width` × `height` pixels onto `targets`: zoom from half the fitting zoom
  * (or half the default, for a small build) up to 400%, and a view that always shows some of one target.
  */
-export const limitsFor = (targets: readonly Rect[], width: number, height: number): ViewLimits => {
-  const kept = targets.length > 0 ? targets : [EMPTY_AREA];
+export const limitsFor = (targets: readonly Polygon[], width: number, height: number): ViewLimits => {
+  const kept = targets.length > 0 ? targets : [EMPTY_TARGET];
   let bounds: Rect | undefined;
-  for (const target of kept) bounds = unionRect(bounds, target);
+  for (const target of kept) bounds = unionRect(bounds, rectOfPoints(target));
   const fit = fittingZoom(bounds as Rect, Math.max(1, width), Math.max(1, height));
   return { minZoom: Math.min(1, fit) / ZOOM_OUT_BEYOND_FIT, maxZoom: MAX_ZOOM, targets: kept };
 };

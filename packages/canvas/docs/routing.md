@@ -1,6 +1,11 @@
 # Tidy wires and zoom limits (task 3.7)
 
-Back to the [README](../README.md). The contract is [src/interface.ts](../src/interface.ts) and [commands.md](commands.md); this page says how task 3.7 meets its part: `tidyWires` and the `tidy-wires` command, the router, `setSafeArea`, and zoom limits that keep the build on screen (brief Sections 9 and 10, D66, D70).
+Back to the [README](../README.md). The contract is [src/interface.ts](../src/interface.ts) and [commands.md](commands.md). This page covers task 3.7's part:
+
+- `tidyWires` and the `tidy-wires` command;
+- the router;
+- `setSafeArea`;
+- zoom limits that keep the build on screen (brief Sections 9 and 10, D66, D70, D85).
 
 ## Files
 
@@ -8,59 +13,149 @@ Back to the [README](../README.md). The contract is [src/interface.ts](../src/in
 | --- | --- |
 | `src/routing/commands.ts` | `tidy-wires`, one more reducer in `applyEdit`'s table, and `TIDY_WIRES_ACTION`, the list view's twin of the button |
 | `src/routing/router.ts` | `routeWires(scene)`: a route for every power and signal line that crosses a part body. Pure and deterministic |
-| `src/routing/shapes.ts` | Drawn bodies (true size), grown bodies, tiles and socket squares as convex shapes; entering one's inside, and rays through them. Pure |
+| `src/routing/shapes.ts` | Drawn bodies, grown bodies, tiles and socket squares as convex shapes; entering one's inside, and rays through them. Pure |
 | `src/routing/controller.ts` | The routes the canvas draws: set by `tidy-wires`, kept while they fit the build |
 | `src/routing/view.ts` | The safe area, the uncovered canvas, and where the view may go so the build stays on screen. Pure |
+| `src/renderer/picture.ts` | The renderer's own picture sizing, free of Pixi: `views.ts` draws with it, and the router and its tests measure with it |
 
-Outside `src/routing/`, kept small: `TidyWires`, `CanvasSafeArea` and `setSafeArea` in the interface (additive); `applyEdit` registers the reducer; the camera works in the uncovered canvas; `WireView` draws a route and `hitTest` follows one; the surface wires them together.
+Outside `src/routing/`, kept small:
+
+- the interface: `TidyWires`, `CanvasSafeArea` and `setSafeArea`;
+- `applyEdit` registers the reducer;
+- the camera works in the uncovered canvas;
+- `WireView` draws a route, `PartView.drawnPicture` says how big the picture is drawn, and `hitTest` follows a route;
+- the surface wires them together;
+- the list view (task 3.6) offers the action;
+- the app (packages/app) has the button, passes the safe area on, and fits the first load.
+
+`setSafeArea` is a new required member of `CanvasHandle`. It is additive for callers. Implementers, such as the app's test stand-in, add it.
 
 ## One path for every hand (ground rule 8)
 
-- Tidying is the command `{ kind: 'tidy-wires' }`, through the same `applyEdit` as every edit. Routes are view state and the blueprint is frozen at v1, so its reducer gives the build back as it was: the handle fires no `edit` and adds no undo step, then routes the wires.
-- Touch and pointer: the app's tidy wires button (beside Fit in its zoom control) calls `tidyWires()`, which is `apply({ kind: 'tidy-wires' })`. The canvas draws no button of its own.
-- The list view (task 3.6) offers `TIDY_WIRES_ACTION`, whose `does` is the same command.
-- Like every command it is refused with `edit.locked` in Run mode and on a read-only canvas, and with `edit.no_build` before a load.
+- **The command.** Tidying is the command `{ kind: 'tidy-wires' }`, through the same `applyEdit` as every edit.
+  - Routes are view state and the blueprint is frozen at v1, so its reducer gives the build back as it was.
+  - The handle fires no `edit` and adds no undo step, then routes the wires.
+- **Touch and pointer.** The app's Tidy wires button, beside Fit in its zoom control, calls `tidyWires()`, which is `apply({ kind: 'tidy-wires' })`. The canvas draws no button of its own.
+- **The list view.** It offers the same command with every power and signal line, as `tidy-wires:<wire>` (`TIDY_WIRES_ACTION` with an id of the wire's own, so buttons stay unique).
+  - `perform` counts it as a change when the routes changed. The routes map is replaced only then, and the list view's host compares it.
+  - The list says "Tidied the wires round the parts".
+- **Parity.** The browser tests show that the app's path, and the list view's button by finger, by mouse and by Enter, give identical routes. The app's test taps and clicks the real button.
+- **Refusals.** Like every command it is refused with `edit.locked` in Run mode and on a read-only canvas, and with `edit.no_build` before a load.
 
 ## The router
 
-- **What is routed.** Power and signal lines whose straight line crosses a part body. A line that crosses nothing keeps its straight line, so tidying changes as little as it can. Mechanical linkages and mounts are never routed: they lie under the parts and are almost always zero long.
-- **What a body is.** The part as drawn: its footprint (`body.size`, x by y, centred on its frame origin) at its true size, turned with the part. The rest of its tile, scaled up to the 96 px minimum and round its sockets, is touch padding: a hit affordance a wire may pass over, never the drawn part (coordinator ruling, task 3.7). Frames (the chassis) are not bodies: they are the deck the parts stand on, and wires run over them as over a real chassis.
-- **What crossing means.** The wire as the child sees it. A socket is drawn over its wire's end (44 px, above the wires), so the stretch under a wire's own two sockets does not count. That matters where a socket sits over another part: on the bumper robot the motor driver's sockets sit over the battery pack beside it, and the route climbs off the battery pack within that hidden stretch. Running along an edge or touching a corner is not crossing.
-- **The way round.** A route leaves its socket straight out from its part's edge (a stub just past the socket and the clearance), then takes the shortest way round: a visibility graph over the corners of the bodies, searched with Dijkstra. Three passes from the roomiest: bodies grown by a 10 px clearance with the other sockets kept clear too; bodies grown by 10 px; bodies only, where the gap is too narrow for the clearance. The first that joins the sockets cleanly wins. A socket whose stub is blocked by a neighbour goes straight to the corners.
-- **Boxed-in sockets.** A socket closed in on every side by other drawn bodies could not be left without crossing one; its route would cross the least it can, by one straight run out, and be clean from there. No fixture has one: on the busy workbench a flood fill of the open workbench in the tests finds a clean way between the sockets of all 43 wires, and after tidying none of them crosses a body.
+- **What is routed.** Power and signal lines whose straight line crosses a part body.
+  - A line that crosses nothing keeps its straight line, so tidying changes as little as it can.
+  - Mechanical linkages and mounts are never routed: they lie under the parts and are almost always zero long.
+- **What a body is (D85).** The picture as the renderer draws it: the footprint box (`body.size`, x by y) scaled the way `views.ts` scales a picture to fit its tile less its 2 mm padding (`drawnBodySize`, renderer/picture.ts), centred on the tile and turned with the part.
+  - Placeholder art fills the footprint box in true proportions, so for small parts the drawn body is about the tile less its padding.
+  - The rest of the tile is a hit affordance a wire may pass over.
+  - Frames (the chassis) are not bodies: they are the deck the parts stand on, and wires run over them as over a real chassis.
+- **What crossing means.** The wire as the child sees it. A socket is drawn over its wire's end (44 px, above the wires), so the stretch under a wire's own two sockets does not count.
+  - That matters where a socket sits over another part's picture: on the bumper robot the motor driver's sockets sit over the battery pack beside it.
+  - There the route climbs off the battery pack within that hidden stretch, and may start back under its own socket.
+  - Running along an edge or touching a corner is not crossing.
+- **The way round.** Where it can, a route leaves its socket straight out from its part's edge, on a stub just past the socket and the clearance. It then takes the shortest way round: a visibility graph over the corners of the bodies, searched with Dijkstra.
+  - It tries three passes, from the roomiest:
+    1. bodies grown by a 10 px clearance, with the other sockets kept clear too;
+    2. bodies grown by 10 px;
+    3. bodies only, where a gap is too narrow for the clearance.
+  - The first pass that joins the sockets cleanly wins.
+  - A socket whose stub is blocked by a neighbour goes straight to the corners. A socket over another part's picture leaves along its edge, inside the hidden stretch.
+- **Boxed-in sockets.** A socket closed in on every side by other drawn bodies cannot be left without crossing one.
+  - Its route crosses the least it can, on one straight run out, and is clean from there.
+  - A synthetic build in the tests keeps this tested: an LED ringed by four battery packs.
+  - No fixture has a boxed-in socket.
 - **Deterministic.** Only arithmetic, `Math.sqrt` and `hypot`, the scene's own order, a stable sort and first-wins ties. The same scene gives the same routes byte for byte, whatever order the blueprint lists things in.
-- **Cost.** On the busy workbench (25 parts, 43 wires: 32 power and signal lines and 11 drive linkages and mounts) a tidy took 0.06–0.3 s of CPU on an M1 Max, measured while the machine was heavily shared; the work is one visibility graph per pass, shared by every wire. A 2020 iPad will be slower: not yet measured there, and a candidate for a worker if it shows.
+- **Cost.** `routeWires`, three runs each, on an M1 Max shared with other agents (load average about 310):
+
+  | Build | Wall time | CPU time |
+  | --- | --- | --- |
+  | Busy workbench (25 parts, 32 power and signal lines) | 0.93–1.27 s | 0.16–0.29 s |
+  | 25-part performance fixture | 0.49–0.67 s | 0.065–0.083 s |
+
+  It runs synchronously in `apply`, and the work is one visibility graph per pass, shared by every wire. It has not been timed on a 2020 iPad. It should be measured there before G3, and moved to a worker if it shows.
+
+## The fixtures
+
+Zero crossings after tidying are asserted on five builds: the busy workbench, the 25-part performance fixture, the bumper robot, the Circuit Crew kit robot and Rolling Start.
+
+- **Overlapping pictures.** Drawn pictures overlap only between parts mounted on a chassis, never between loose parts:
+  - busy workbench: caster and battery pack, battery pack and motor driver, bumper switch and LED, buzzer with the motor driver, the LED and a DC motor;
+  - 25-part fixture: casters and battery packs, battery pack and motor driver, bumper switch and servo motor.
+- **Why they are kept.** Mounting places a part where its mount point puts it, so a child reaches these layouts. Placement's free-spot rule (free-spot.ts) keeps only loose parts clear of other tiles.
+- **Nothing spread.** No fixture copy was changed: every wire on every fixture has a clean way round, which a flood fill in the tests confirms on the busy workbench.
+- **The copy.** The canvas carries a copy of the busy workbench (`test/fixtures/busy-workbench.json`), because it may not import content. `packages/tools/test/canvas-fixture-copies.test.ts` fails if the copy drifts from content.
 
 ## Routes as the build changes
 
-Routes are kept in the canvas, never in the blueprint. After any change to the build, including `load` (Undo), a route stays while both its sockets are exactly where they were and it crosses no more parts than when it was tidied. Otherwise its wire goes back to a straight line, like any new wire, until the child tidies again. A drag draws the wires on a moving part straight, as before; dropping it ends their routes. Tidying routes every wire afresh.
+Routes are kept in the canvas, never in the blueprint.
+
+- After any change to the build, including `load` (Undo), a route stays while both its sockets are exactly where they were and it crosses no more parts than when it was tidied.
+- Otherwise its wire goes back to a straight line, like any new wire, until the child tidies again (D85, Q4: kept as built).
+- A drag draws the wires on a moving part straight, as before; dropping it ends their routes.
+- Tidying routes every wire afresh.
 
 `surface.routing` exposes `routes`, `routeOf(id)` and `pathOf(wire)`, the path a wire is drawn along. Run mode (task 3.5) should run its flow dots along `pathOf`.
 
 ## Zoom limits and the safe area
 
-- **`setSafeArea({ top, right, bottom, left })`**, in CSS pixels from each edge of the canvas: the app's panels where they overlap the canvas (D66: at most 30% of it) and the device's insets (D70). It is the shape of the app shell's `SafeArea`, so `onSafeArea` can pass it straight on. It moves nothing on screen; `fit`, `setZoom` and the limits use it from then on. An inset that is not a finite number from 0 throws a RangeError, and however much is said to be covered, at least half the canvas's width and height stays uncovered.
-- **`fit`** centres the build (and in Run mode the arena) in the uncovered canvas, at the zoom that shows it all there with 48 px to spare, never above the default zoom.
+- **`setSafeArea({ top, right, bottom, left })`**, in CSS pixels from each edge of the canvas: the app's panels where they overlap the canvas (D66: at most 30% of it) and the device's insets (D70).
+  - It has the shape of the app shell's `SafeArea`; App.tsx passes `onSafeArea` straight on.
+  - An inset that is not a finite number from 0 throws a RangeError.
+  - However much is said to be covered, at least half the canvas's width and height stays uncovered.
+- **`fit`** centres the build (and in Run mode the arena) in the uncovered canvas, at the zoom that shows it all there with 48 px to spare, never above the default zoom. The app calls it after the first load.
 - **`setZoom`** zooms about the centre of the uncovered canvas.
-- **Zoom** stays from half the fitting zoom of the uncovered canvas (half the default for a small build) up to 400%.
-- **Pan and zoom never lose the build.** After every pan, pinch, wheel turn or `setZoom`, at least 96 px of one part (all of a smaller one) is on screen across and down, in the uncovered canvas; in Run mode the arena counts as well. Each part is its own target, so zooming in on empty workbench between two parts slides the view onto one of them. The limits slide the view along their edge rather than stopping it dead. A view already outside them (after a `load`, a resize or a new safe area) may move back, or keep its distance, but never further out, so a limit never makes the view jump.
+- **Zoom** stays between half the fitting zoom of the uncovered canvas (half the default for a small build) and 400%.
+- **Pan and zoom never lose the build (D85).** After every pan, pinch, wheel turn or `setZoom`, a 96 px square piece of one part's drawn tile is wholly on screen in the uncovered canvas.
+  - The piece is turned with the part. Across a side shorter than 96 px, it covers all of that side.
+  - In Run mode the arena counts as well.
+  - The limits measure the turned tile itself, not its bounding box, so a lone chassis at 400% panned into a corner, or a part at 45 degrees, stays in view.
+  - Each part is its own target, so zooming in on empty workbench between two parts slides the view onto one of them.
+  - The limits slide the view along their edge rather than stopping it dead.
+- **Resize and safe area.** A resize of the canvas or a new safe area re-holds the view: a build left covered or off screen comes back to the nearest place within the limits, and the zoom comes back within them.
+- **Load.** A view already outside the limits after a `load` may move back, or keep its distance, but never further out, so a limit never makes the view jump.
 
 ## Tests
 
-- `test/routing/router.test.ts` (unit): on the busy workbench (a copy of packages/content's fixture, `test/fixtures/busy-workbench.json`) all 43 wires (power and signal lines as routed, linkages and mounts as drawn) cross no drawn body after tidying, and a flood fill shows every one has a clean way. On the busy workbench, the 25-part performance fixture, the bumper robot, the Circuit Crew kit robot and Rolling Start: no wire crosses a body unless the flood fill shows a socket boxed in; crossing wires are routed, socket to socket; the same routes every time and in any order. The crossing check samples each route every 0.08 mm against every body, apart from the router's own maths.
-- `test/routing/commands.test.ts` (unit): the command gives the build back unchanged, alone and in a batch; the list view's action; routes kept through a rename and dropped when a socket moves or a part lands on the route; hit testing along a route.
-- `test/camera.test.ts` (unit): fit, zoom about the uncovered centre, the safe area's guard, 96 px kept however far the child pans, sliding onto a part when zooming into empty workbench, and 2000 pseudo-random pans, flings, pinches and wheel turns on the busy workbench with panels covering the canvas, the build findable after every one.
-- `test/browser/routing.test.ts` (browser): tidying by `tidyWires`, `apply` and the list view's action gives the same routes and no `edit`; a routed wire drawn (by pixels) and hit along its route; refused in Run mode; routes kept and dropped as the build changes; fit and `setZoom` in the uncovered canvas; flings that keep the build beside the panels.
+- **`test/routing/router.test.ts`** (unit):
+  - Five builds (the busy workbench, the 25-part fixture, the bumper robot, the Circuit Crew kit robot and Rolling Start) cross no drawn body after tidying. On the busy workbench that is all 43 wires: power and signal lines as routed, linkages and mounts as drawn.
+  - A wire is routed exactly when its straight line crosses: the router's exact check in one direction, the sampler in the other.
+  - The same routes come out every time, in any order.
+  - On the boxed-in synthetic build, the route crosses the least it can and is clean from there.
+  - The crossing check samples every path every 0.08 mm against the renderer's own `drawnBodySize`, not the router's shapes.
+  - A flood fill of the open workbench shows which sockets have a clean way.
+  - The earlier "leaves each socket away from its own part" test is gone. With bodies now pictures, a route may start back under its own socket where the socket hides it, so the property no longer holds or matters.
+- **`test/routing/commands.test.ts`** (unit):
+  - the command gives the build back unchanged, alone and in a batch;
+  - the list view's action;
+  - routes kept through a rename and dropped when a socket moves or a part lands on the route;
+  - hit testing along a route.
+- **`test/camera.test.ts`** (unit):
+  - fit and zoom about the uncovered centre, and the safe area's guard;
+  - the reviewer's repro: a lone chassis, fit, zoom 4, `panBy(-1e6, 1e6)`;
+  - turned parts in every corner;
+  - re-holding after a new safe area;
+  - 2000 pseudo-random gestures on the busy workbench with panels covering the canvas.
+  - "Findable" is measured independently (test/helpers/findable.ts): it counts the turned tile's square pixels in the uncovered view, on a 2 px grid.
+- **`test/browser/routing.test.ts`** (browser):
+  - identical routes by every hand, and the list view counting route changes;
+  - a routed wire drawn (by pixels) and hit along its route;
+  - the drawn picture's size matching `pictureSize`;
+  - refused in Run mode;
+  - routes kept and dropped as the build changes;
+  - fit and `setZoom` in the uncovered canvas;
+  - re-holding on a new safe area and on a resize;
+  - flings that keep the build beside the panels.
 
 ## Decisions
 
-Settled by the coordinator for task 3.7, as defaults until Drew says otherwise:
+Settled by the coordinator for task 3.7 (D80 as superseded by D85), as defaults until Drew says otherwise:
 
-1. A part body is its drawn outline, from its schema proportions at true size (`body.size`), not the 96 px minimum touch tile; the tile's padding is a hit affordance a wire may pass over. Frames (the chassis) are not bodies: wires run over the deck.
+1. A part body is the picture as the renderer draws it (`drawnBodySize`), not its tile's padding; wires keep a clearance where one fits. Frames (the chassis) are not bodies: wires run over the deck.
 2. The stretch of wire under its own two sockets is exempt: it is hidden, so it does not count as crossing.
 3. Only crossing wires are routed; a wire that crosses nothing stays straight.
-4. Tidying makes no undo step: routes are view state, kept while their sockets stay put and dropped back to straight otherwise. Saving routes with the build would need a blueprint field, a schema question for after v1.
-5. The app owns the tidy wires button (beside Fit in its zoom control); the canvas draws none. Tidying is refused in Run mode and on a read-only canvas, like every command.
-6. The app calls `fit` after the first load: `load` keeps the view (interface), and `setSafeArea` moves nothing itself.
-
-Taken here, conservatively: "lost" means less than 96 px of every part on screen in the uncovered canvas, and each part is a target, not the build's bounding box.
+4. Tidying makes no undo step. Routes are view state: kept while their sockets stay put, and dropped back to straight when a socket moves. Saving routes with the build would need a blueprint field, a schema question for after v1.
+5. The app owns the Tidy wires button, beside Fit in its zoom control; the canvas draws none. Tidying is refused in Run mode and on a read-only canvas, like every command.
+6. The app calls `fit` after the first load: `load` keeps the view (interface).
+7. "Lost" means no 96 px square piece of any part's drawn tile, turned with it, is wholly in the uncovered view, or all of it across a side shorter than that.

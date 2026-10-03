@@ -22,5 +22,15 @@ export const App = ({ content, onReady }: AppProps) => {
   const resolveArt: ResolveArt = (key) => content.art.get(key);
   const drawCanvas = (host: HTMLElement, setup: CanvasSetup): CanvasHandle =>
     mountCanvas(host, { catalogue: content.catalogue, resolveArt, level: setup.level, prefs: setup.prefs });
-  return <Shell content={content} level={START_LEVEL} slots={PLACEHOLDER_SLOTS} mountCanvas={drawCanvas} onReady={onReady} />;
+  // The canvas fits and zooms in the part of it the panels leave uncovered (D70, task 3.7).
+  return (
+    <Shell
+      content={content}
+      level={START_LEVEL}
+      slots={PLACEHOLDER_SLOTS}
+      mountCanvas={drawCanvas}
+      onReady={onReady}
+      onSafeArea={(safeArea, canvas) => canvas.setSafeArea(safeArea)}
+    />
+  );
 };
