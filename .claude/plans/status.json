@@ -774,7 +774,7 @@
       "dispatched_at": "2026-10-03T07:51:08+00:00"
     },
     "4.6": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -788,8 +788,8 @@
       ],
       "done_when": "Each step renders without covering a port; 'do it for me' produces a valid wire; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-03T14:50:08+00:00",
+      "completed_by": "W-4.6",
       "dispatched_at": "2026-10-03T10:39:20+00:00"
     },
     "4.7": {
