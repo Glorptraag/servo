@@ -58,8 +58,20 @@ export interface Profiles {
   create(name: string): Promise<Profile>;
   rename(id: ProfileId, name: string): Promise<Profile>;
   /**
-   * Deletes the profile and everything it owns: its blueprints, runs and card-game results (D38). The parent view
-   * asks the adult to confirm first. The app never deletes anything on its own.
+   * The profile in use on this device, whose records the child's app opens (task 5.1): the one chosen with `use`, or
+   * the only one when the device has one. Undefined when several are on the device and none of them is chosen.
+   */
+  inUse(): Promise<Profile | undefined>;
+  /**
+   * Chooses the profile in use on this device: the parent view's profile switch (task 5.1). The choice is this
+   * device's alone and never syncs. Refuses a profile that is not on the device, and a device whose page storage is
+   * blocked.
+   */
+  use(id: ProfileId): Promise<Profile>;
+  /**
+   * Deletes the profile and everything it owns: its blueprints, runs and card-game results (D38), and what this device
+   * noted for it outside the database: builds the autosave journal holds, and the choice of it as the profile in use.
+   * The parent view asks the adult to confirm first. The app never deletes anything on its own.
    */
   remove(id: ProfileId): Promise<void>;
 }

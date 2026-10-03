@@ -12,9 +12,16 @@
   },
   "dependencies": {
     "@servo/app": "workspace:*",
-    "@servo/schema": "workspace:*"
+    "@servo/schema": "workspace:*",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitest/browser-playwright": "5.0.2",
+    "fake-indexeddb": "^6.2.5",
+    "playwright": "1.63.0",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

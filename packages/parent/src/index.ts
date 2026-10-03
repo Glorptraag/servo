@@ -1,4 +1,5 @@
 // @servo/parent: the adult's side of Servo (tasks 5.1–5.4). Typed stubs until those tasks land; each throws.
+// Task 5.1 has landed: the account and child profiles, in accounts/.
 // Imports only @servo/schema and @servo/app/store (the package map). See README.md.
 
 import type { CardGameResult, Content, ServoStore } from '@servo/app/store';
@@ -16,6 +17,7 @@ import type {
   Text,
   Timestamp,
 } from '@servo/schema';
+import { mountParentWith } from './accounts/index.ts';
 
 /** What the progress view reads for one child: nothing the child has to do (brief Section 7). */
 export interface ProgressInput {
@@ -105,10 +107,11 @@ export interface ParentHandle {
 
 /**
  * The parent view on its own page of the web build, behind the parental gate (D28): the profile list and switch,
- * then progress, exports and the card game per child (task 5.1).
+ * then progress, exports and the card game per child (task 5.1). The caller opens the store and closes it.
  */
 export type MountParent = (host: HTMLElement, store: ServoStore) => ParentHandle;
 
-export const mountParent: MountParent = () => {
-  throw new Error('mountParent is not implemented yet (task 5.1).');
-};
+export const mountParent: MountParent = (host, store) => mountParentWith(host, store);
+
+export { ChoiceNotKept, NAME_MAX, NameRefused, PARENT_TEXT, addChild, mountParentWith, nameOf, readAccounts, removeChild, renameChild, switchChild } from './accounts/index.ts';
+export type { Accounts, ParentOptions } from './accounts/index.ts';
