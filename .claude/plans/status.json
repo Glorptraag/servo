@@ -624,7 +624,7 @@
       "dispatched_at": "2026-10-02T01:56:16+00:00"
     },
     "3.8": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -638,8 +638,8 @@
       ],
       "done_when": "Harness runs in CI in under 10 minutes on the fixtures available at the time; parity check reports per fixture.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-03T02:19:46+00:00",
+      "completed_by": "W-3.8",
       "dispatched_at": "2026-10-01T08:38:56+00:00"
     },
     "G3": {
@@ -891,7 +891,7 @@
       "completed_by": null
     },
     "5.1": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -905,8 +905,8 @@
       ],
       "done_when": "Profile switch isolates builds; no route or store query exposes another child's data (negative tests); tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-03T02:19:46+00:00",
+      "completed_by": "W-5.1",
       "dispatched_at": "2026-10-03T00:09:42+00:00"
     },
     "5.2": {
@@ -929,7 +929,7 @@
       "completed_by": null
     },
     "5.3": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -944,7 +944,8 @@
       "done_when": "Export of each kit fixture lists every part once with its family; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-03T02:19:54+00:00"
     },
     "5.4": {
       "status": "pending",
@@ -985,7 +986,7 @@
       "dispatched_at": "2026-10-03T00:09:43+00:00"
     },
     "5.6": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1000,7 +1001,8 @@
       "done_when": "A shared link opens the build in replay; profile data is absent from the payload (test); tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-03T02:19:55+00:00"
     },
     "5.7": {
       "status": "pending",
