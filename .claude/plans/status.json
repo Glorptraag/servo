@@ -754,7 +754,7 @@
       "dispatched_at": "2026-10-03T05:36:05+00:00"
     },
     "4.5": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -770,7 +770,8 @@
       "done_when": "All Level 1\u20132 challenge fixtures detect success and non-success correctly; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-03T07:51:08+00:00"
     },
     "4.6": {
       "status": "pending",
@@ -848,7 +849,7 @@
       "dispatched_at": "2026-10-01T09:05:09+00:00"
     },
     "4.10": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -863,7 +864,8 @@
       "done_when": "Audio events map one-to-one to run events in a recorded run; mute persists across reload; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-03T07:51:08+00:00"
     },
     "G4": {
       "status": "pending",
