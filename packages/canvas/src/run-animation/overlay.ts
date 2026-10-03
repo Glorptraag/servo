@@ -125,15 +125,19 @@ export class PartOverlay {
     }
     for (const sound of RUN_SOUNDS) this.twins.set(sound, this.makeTwin(sound));
     this.hideTwins();
+    // Nothing shows until the first frame: Run mode draws the build as it stands until then.
+    container.visible = false;
   }
 
   destroy(): void {
     this.container.removeChildren().forEach((child) => child.destroy({ children: true }));
+    this.container.visible = true;
     this.treadShape?.destroy();
   }
 
   /** Draws the part as the display has it. */
   update(display: RunDisplay): void {
+    this.container.visible = true;
     const id = this.part.id;
     if (this.glow) {
       const level = display.lights.get(id) ?? 0;
