@@ -1957,6 +1957,14 @@
       "confidence": "medium",
       "blocks": [],
       "resolved": false
+    },
+    {
+      "id": "D94",
+      "question": "Share-link size caps (R-5.6): refuse links over 32 KB compressed, 256 KB decompressed, more than 100 parts or 200 wires (busy-workbench is 25 parts / 43 wires). Acceptable limits for Levels 1-2 and the ladder to ~12?",
+      "recommendation": "Accept for launch; revisit when Level 3+ kits exceed 50 parts",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
     }
   ]
 }
