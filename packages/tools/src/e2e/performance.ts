@@ -107,6 +107,24 @@ export const measureFrames = async (gestures: readonly Gesture[], framesPerGestu
   };
 };
 
+/**
+ * Independent runs of a timing per test. On a shared CI runner with SwiftShader one run's p95 is one noisy sample
+ * (8 to 38 ms for the same test, the first run after mounting the slowest), so a test takes this many and holds the
+ * best to the budget.
+ */
+export const FRAME_SAMPLES = 5;
+
+/**
+ * The best sample, the one with the lowest p95, as sim-core's tick cost takes the fastest of its batches: a busy runner
+ * only ever adds time, so the best run is the nearest to what the code costs. A change that slows every frame slows
+ * every sample, the best one too.
+ */
+export const bestSample = (samples: readonly FrameStats[]): FrameStats => {
+  const first = samples[0];
+  if (!first) throw new Error('No frame-time samples.');
+  return samples.reduce((best, stats) => (stats.p95 < best.p95 ? stats : best), first);
+};
+
 export const describeStats = (label: string, stats: FrameStats): string =>
   `[frame time] ${label}: median ${stats.median.toFixed(2)} ms, p95 ${stats.p95.toFixed(2)} ms, worst ${stats.worst.toFixed(2)} ms ` +
   `over ${stats.frames} frames at ${stats.slowdown}× CPU slowdown; GPU ${stats.gpu}, drawn at ${stats.fps.toFixed(0)} fps`;

@@ -10,6 +10,11 @@ import { openDatabase } from '../../src/store/database.ts';
 import type { BlueprintRow, ProfileRow, ServoDatabase } from '../../src/store/database.ts';
 import { openStoreWith } from '../../src/store/open.ts';
 import type { ServoStore, StoreOptions } from '../../src/store/index.ts';
+import { vi } from 'vitest';
+
+// Every store test file imports this, so this sets their timeout: a test opens and fills a database, up to a second
+// alone, and far past Vitest's 5 s default on a machine at load 200–350 with many agents running.
+vi.setConfig({ testTimeout: 120_000 });
 
 let opened = 0;
 
