@@ -2,8 +2,9 @@
 // password and no server (D10): the adult account is this device, and its children are the store's profiles, each an
 // opaque id and a name the adult gives, with no email, no chat and nothing public. The profile switch chooses the
 // child in use on this device, whose builds the child's app opens; the parent view shows that child's records only.
+import { shareLinkOf } from '@servo/app/store';
 import type { BlueprintSummary, Profile, ServoStore } from '@servo/app/store';
-import type { ProfileId } from '@servo/schema';
+import type { BlueprintId, ProfileId } from '@servo/schema';
 
 /** What the parent view shows. */
 export interface Accounts {
@@ -85,3 +86,32 @@ export const switchChild = (store: ServoStore, id: ProfileId): Promise<Profile> 
  * calls it only once the adult has confirmed.
  */
 export const removeChild = (store: ServoStore, id: ProfileId): Promise<void> => store.profiles.remove(id);
+
+/** Thrown when a build cannot be shared: it is not the child in use's, or it does not load or validate. */
+export class ShareRefused extends Error {
+  constructor(cause?: unknown) {
+    super('That build cannot be shared, so no link was made.', { cause });
+    this.name = 'ShareRefused';
+  }
+}
+
+/**
+ * A read-only link to one of the child in use's builds (task 5.6), read through that child's scope alone. The link
+ * holds the build and nothing of the child; the build's name only when `includeName` is true (D21, default off).
+ * `base` is the app's address; default this page's origin and the build's base path.
+ */
+export const shareLinkFor = async (store: ServoStore, id: BlueprintId, includeName: boolean, base?: string): Promise<string> => {
+  const current = await store.profiles.inUse();
+  if (!current) throw new ShareRefused();
+  // The store refuses a build this child does not hold, so another child's build is never read.
+  const loaded = await store
+    .forProfile(current.id)
+    .blueprints.load(id)
+    .catch((error: unknown) => {
+      throw new ShareRefused(error);
+    });
+  if (!loaded.ok) throw new ShareRefused(loaded.issues);
+  const link = await shareLinkOf(loaded.blueprint, store.content.catalogue, { includeName, ...(base === undefined ? {} : { base }) });
+  if (!link.ok) throw new ShareRefused(link.issues);
+  return link.url;
+};

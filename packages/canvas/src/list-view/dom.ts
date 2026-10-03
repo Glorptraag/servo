@@ -385,6 +385,7 @@ export class ListViewDom {
     for (const prop of this.model.props) if (!before.props.has(prop.propId)) lines.push(`Placed ${prop.description}`);
     if (command.kind === 'move-prop') lines.push(`Moved the prop`);
     if (command.kind === 'remove-prop') lines.push('Removed the prop');
+    if (command.kind === 'tidy-wires') lines.push('Tidied the wires round the parts');
     const names = loose.map(nameOf);
     if (names.length > 0) lines.push(`${listOf(names)} ${names.length === 1 ? 'is' : 'are'} loose now`);
     return lines.map((line) => (line[0]?.toUpperCase() ?? '') + line.slice(1)).join('. ');

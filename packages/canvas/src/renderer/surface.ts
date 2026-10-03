@@ -1,6 +1,6 @@
 // The canvas handle (task 3.1's part of packages/canvas/src/interface.ts): mounting, `load`, the scene layers, pan,
 // zoom, `fit`, the grid that fades at rest, art, prefs, and the focus and dim hooks task 3.4's selection drives.
-// Members other tasks build throw until those tasks land, naming the task. See docs/renderer.md.
+// The members later tasks built are wired in here from their own folders. See docs/renderer.md.
 import { Container, RenderLayer, Ticker, autoDetectRenderer } from 'pixi.js';
 import type { Renderer } from 'pixi.js';
 import { canonicalizeBlueprint, serializeBlueprint, validateBlueprint } from '@servo/schema';
@@ -12,6 +12,7 @@ import type {
   CanvasMode,
   CanvasOptions,
   CanvasPrefs,
+  CanvasSafeArea,
   DrawnHintStep,
   EditCommand,
   EditResult,
@@ -22,7 +23,11 @@ import type {
 import { ListViewDom } from '../list-view/dom.ts';
 import { ListViewModel } from '../list-view/model.ts';
 import { applyEdit } from '../placement/apply.ts';
+import type { Proportions } from './picture.ts';
 import { PlacementController } from '../placement/controller.ts';
+import { RoutingController, tidies } from '../routing/controller.ts';
+import { checkSafeArea, screenCentre } from '../routing/view.ts';
+import type { Polygon } from '../routing/view.ts';
 import { RunAnimator } from '../run-animation/animator.ts';
 import { readoutsDue } from '../run-animation/readouts.ts';
 import { layArena } from '../scene/arena.ts';
@@ -32,7 +37,7 @@ import type { Rect } from '../scene/geometry.ts';
 import { hitTest } from '../scene/hit.ts';
 import type { Hit } from '../scene/hit.ts';
 import { buildScene } from '../scene/scene.ts';
-import type { Scene } from '../scene/scene.ts';
+import type { Scene, ScenePart } from '../scene/scene.ts';
 import { SelectionController } from '../selection/controller.ts';
 import type { SelectionSource } from '../selection/controller.ts';
 import { WiringController } from '../wiring/controller.ts';
@@ -64,8 +69,6 @@ export interface EmphasisRequest {
   readonly ports?: ReadonlySet<string>;
 }
 
-const notYet = (member: string, task: string): Error => new Error(`${member} is not implemented yet (task ${task}).`);
-
 /** Surfaces alive now: global GPU pools are released only when the last one goes. */
 const live = new Set<CanvasSurface>();
 
@@ -88,6 +91,8 @@ export class CanvasSurface implements CanvasHandle {
   readonly placement: PlacementController;
   /** Drawing and removing wires by touch and pointer, sockets' glows and crowded sockets fanning out (task 3.3, src/wiring/). */
   readonly wiring: WiringController;
+  /** The routes tidy wires gives, kept while they fit the build (task 3.7, src/routing/). */
+  readonly routing = new RoutingController();
   /** The one selection, its focus states, and the hint rungs (task 3.4, src/selection/). */
   readonly selecting: SelectionController;
   /** Run mode's drawing: the frames `applyRunFrame` gives, tweened between ticks (task 3.5, src/run-animation/). */
@@ -204,6 +209,7 @@ export class CanvasSurface implements CanvasHandle {
       apply: (command) => this.apply(command),
       control: (input) => this.emitter.emit('control', { input }),
       select: (selection) => this.select(selection),
+      routes: () => this.routing.routes,
       hint: () => {
         const step = this.selecting.shownHint;
         return step && { step: step.step, line: step.line };
@@ -274,9 +280,14 @@ export class CanvasSurface implements CanvasHandle {
   setZoom(zoom: number): void {
     this.alive('setZoom');
     if (!Number.isFinite(zoom)) throw new RangeError(`setZoom needs a finite number, not ${zoom}.`);
-    this.viewChange(() =>
-      this.camera.zoomAbout({ x: this.camera.width / 2, y: this.camera.height / 2 }, zoom, this.limits()),
-    );
+    this.viewChange(() => this.camera.zoomAbout(screenCentre(this.camera.uncovered()), zoom, this.limits()));
+  }
+
+  setSafeArea(safeArea: CanvasSafeArea): void {
+    this.alive('setSafeArea');
+    this.camera.safeArea = checkSafeArea(safeArea);
+    this.reHold();
+    this.loop.request();
   }
 
   /**
@@ -344,6 +355,10 @@ export class CanvasSurface implements CanvasHandle {
       this.current = result.blueprint;
       this.rebuild();
       this.emitter.emit('edit', { command, blueprint: result.blueprint });
+    }
+    if (result.ok && tidies(command)) {
+      this.routing.tidy(this.scene, this.artOf);
+      this.redrawWires();
     }
     return result;
   }
@@ -428,7 +443,8 @@ export class CanvasSurface implements CanvasHandle {
   }
 
   tidyWires(): void {
-    throw notYet('tidyWires', '3.7');
+    this.alive('tidyWires');
+    this.apply({ kind: 'tidy-wires' });
   }
 
   // ---------------------------------------------------------------------------------------------------------
@@ -463,7 +479,7 @@ export class CanvasSurface implements CanvasHandle {
       const part = this.run.partAt(world);
       return part ? { kind: 'part', part } : null;
     }
-    return hitTest(this.scene, world);
+    return hitTest(this.scene, world, this.routing.routes);
   }
 
   /** The part's display objects, for the tasks that move and animate them. */
@@ -475,9 +491,10 @@ export class CanvasSurface implements CanvasHandle {
     return this.wireViews.get(id);
   }
 
-  /** The current limits on zoom and pan. */
+  /** The current limits on zoom and pan, for the uncovered canvas. */
   limits(): ViewLimits {
-    return limitsFor(this.content(), this.camera.width, this.camera.height);
+    const view = this.camera.uncovered();
+    return limitsFor(this.targets(), view.width, view.height);
   }
 
   /** True when nothing is loading, fading or waiting to be drawn: the picture on screen is final. */
@@ -559,9 +576,33 @@ export class CanvasSurface implements CanvasHandle {
     return { palette: this.palette, typeface: this.prefs.typeface, resolution: this.resolution };
   }
 
-  /** What fit and the limits look at: the build, and in Run mode the arena around it. */
+  /** What fit frames: the build, and in Run mode the arena around it. */
   private content(): Rect | undefined {
     return this.currentMode === 'run' ? unionRect(this.scene.bounds, this.arena?.bounds) : this.scene.bounds;
+  }
+
+  /** What the limits keep on screen: each part's drawn tile, turned with it, and in Run mode the arena. */
+  private targets(): Polygon[] {
+    const targets: Polygon[] = this.scene.parts.map((part) => part.corners);
+    if (this.currentMode === 'run' && this.arena) targets.push(this.arena.corners);
+    return targets;
+  }
+
+  /** Each part's picture as this canvas draws it (its texture), for tidy wires to route round (task 3.7, D85). */
+  readonly artOf = (part: ScenePart): Proportions | undefined => {
+    const state = this.art.get(part.record.identity.art);
+    return state.status === 'ready' ? state.texture : undefined;
+  };
+
+  /** Draws every wire again along its route or straight, after tidying, and the selected wire's label with it. */
+  private redrawWires(): void {
+    const palette = this.palette;
+    for (const [id, view] of this.wireViews) {
+      view.setRoute(this.routing.routeOf(id));
+      view.draw(view.wire, palette);
+    }
+    this.selecting.refresh();
+    this.loop.request();
   }
 
   private async start(): Promise<void> {
@@ -623,6 +664,7 @@ export class CanvasSurface implements CanvasHandle {
     const height = this.canvas.clientHeight;
     if (width <= 0 || height <= 0) return;
     this.camera.resize(width, height);
+    this.reHold();
     const renderer = this.renderer;
     if (renderer && (renderer.screen.width !== width || renderer.screen.height !== height || renderer.resolution !== this.resolution)) {
       renderer.resize(width, height, this.resolution);
@@ -639,6 +681,7 @@ export class CanvasSurface implements CanvasHandle {
     if (this.destroyed) return;
     this.scene = buildScene(this.current, this.options.catalogue);
     this.arena = layArena(this.current, this.options.catalogue, this.scene);
+    this.routing.refresh(this.scene, this.artOf);
     this.list.changed();
     const layers = this.layers;
     const renderer = this.renderer;
@@ -683,6 +726,7 @@ export class CanvasSurface implements CanvasHandle {
         view = new WireView(wire, this.lineNodes);
         this.wireViews.set(wire.id, view);
       }
+      view.setRoute(this.routing.routeOf(wire.id));
       view.draw(wire, context.palette);
     }
     for (const [id, view] of this.wireViews) {
@@ -731,6 +775,13 @@ export class CanvasSurface implements CanvasHandle {
       if (view.part.record.identity.art === key) view.draw(view.part, this.art.get(key), context);
     }
     this.loop.request();
+  }
+
+  /** Brings a view the limits no longer hold (after a resize or a new safe area) back within them (task 3.7). */
+  private reHold(): void {
+    const before = this.camera.zoom;
+    this.camera.reHold(this.limits());
+    if (this.camera.zoom !== before) this.emitter.emit('zoom', { zoom: this.camera.zoom });
   }
 
   /** A change to the view: redraw, wake the grid, and tell the app when the zoom moved. */

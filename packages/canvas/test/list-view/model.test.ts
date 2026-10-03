@@ -79,7 +79,7 @@ const subjectsOf = (bench: Bench): ListSubject[] => [
 const BOX: PropTemplate = { shape: 'box', size: { x: 80, y: 80, z: 80 }, grams: 200, fixed: false };
 
 describe('only legal actions (it never meets an impossible drop)', () => {
-  it.each(fixtureNames)('%s: every edit it offers applies through applyEdit and changes the build', (name) => {
+  it.each(fixtureNames)('%s: every edit it offers applies through applyEdit and changes the build, but tidy wires', (name) => {
     const build = fixture(name);
     const bench = benchOf(build);
     const edits: ListAction[] = [
@@ -92,7 +92,10 @@ describe('only legal actions (it never meets an impossible drop)', () => {
       if (action.does.kind !== 'edit') continue;
       const result = applyEdit(build, action.does.command, catalogue);
       expect(result.ok, `${action.id}: ${result.ok ? '' : result.refusal.code}`).toBe(true);
-      if (result.ok) expect(serializeBlueprint(result.blueprint), action.id).not.toBe(serializeBlueprint(build));
+      // Tidy wires changes the routes, view state, and never the build (task 3.7).
+      if (!result.ok) continue;
+      if (action.does.command.kind === 'tidy-wires') expect(serializeBlueprint(result.blueprint), action.id).toBe(serializeBlueprint(build));
+      else expect(serializeBlueprint(result.blueprint), action.id).not.toBe(serializeBlueprint(build));
     }
     // Ids are unique within a subject's actions.
     for (const subject of subjectsOf(bench)) {

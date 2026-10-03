@@ -230,6 +230,5 @@ describe('members later tasks build', () => {
   it('say which task builds them', () => {
     expect(surface.selection).toBeNull();
     expect(surface.listView).toBe(surface.list);
-    expect(() => surface.tidyWires()).toThrow(/task 3\.7/);
   });
 });

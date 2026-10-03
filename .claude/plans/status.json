@@ -986,7 +986,7 @@
       "dispatched_at": "2026-10-03T00:09:43+00:00"
     },
     "5.6": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1000,8 +1000,8 @@
       ],
       "done_when": "A shared link opens the build in replay; profile data is absent from the payload (test); tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-03T04:38:12+00:00",
+      "completed_by": "W-5.6",
       "dispatched_at": "2026-10-03T02:19:55+00:00"
     },
     "5.7": {
@@ -1954,6 +1954,14 @@
       "id": "D93",
       "question": "5.5 Q2-Q6: sync copy line, sync timing (open/reconnect/manual + retry once a host exists), keep runs of a profile removed elsewhere, wire format base hash + device id (D13), no web app manifest. Accept defaults?",
       "recommendation": "Accept all defaults in docs/reviews/tasks/5.5.md; revisit manifest before G5 because of Safari storage eviction",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D94",
+      "question": "Share-link size caps (R-5.6): refuse links over 32 KB compressed, 256 KB decompressed, more than 100 parts or 200 wires (busy-workbench is 25 parts / 43 wires). Acceptable limits for Levels 1-2 and the ladder to ~12?",
+      "recommendation": "Accept for launch; revisit when Level 3+ kits exceed 50 parts",
       "confidence": "medium",
       "blocks": [],
       "resolved": false

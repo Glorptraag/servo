@@ -18,7 +18,7 @@ Raw values drive motion; debounced faults (`LiveState.faults`, 3 ticks) drive fa
 
 | Drawn | From | How |
 | --- | --- | --- |
-| Dots along a power line | `frame.flows` milliamps | In the wire's colour, lit (mixed 60% towards white, with the wire's dark edge), 36 px apart, moving from `from` to `to` for positive current at 4 mm/s per √mA (a 1 mA trickle crawls, a short races), capped at 300 mm/s. Below 0.1 mA the line is dead: no dots |
+| Dots along a power line | `frame.flows` milliamps | Along the line as drawn (its route once tidied, task 3.7, `WireView.path`). In the wire's colour, lit (mixed 60% towards white, with the wire's dark edge), 36 px apart, moving from `from` to `to` for positive current at 4 mm/s per √mA (a 1 mA trickle crawls, a short races), capped at 300 mm/s. Below 0.1 mA the line is dead: no dots |
 | Dots along a signal line | `frame.flows` signal | Yellow, at 60 mm/s × level; dead below 0.01. The line keeps its dashes (D20), so colour is never the only cue |
 | Robot pose | each body's `motion` | The robot's root, loose parts and props move from where the build has them to where the frame puts them, through the arena's placement on the canvas. Every part on a body takes the same transform |
 | Tilting and tipping | `motion.pitch`, `motion.roll` | The body is foreshortened along its own axes (cos of the tilt, never under 20%), and casts a shadow towards its low side. The fall's weight is the mechanics' own: the canvas tweens the poses it is given |

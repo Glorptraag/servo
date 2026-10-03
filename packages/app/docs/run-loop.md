@@ -23,7 +23,7 @@ Wall-clock time lives only here. sim-core never reads it, and the canvas draws w
 
 ## Shared links and replay
 
-A shared link (task 5.6) and replay on a phone open a read-only canvas (D43). The app re-simulates the run from the blueprint, seed and inputs, shows it, and offers "keep a copy", which stores the build in one of the adult's child profiles with `blueprints.copy`. The original is never edited.
+A shared link (task 5.6) and replay on a phone open a read-only canvas (D43). The app re-simulates the run from the blueprint, seed and inputs, and shows it. A shared link's replay has no inputs and a seed from the build (README, "Shared links"). "Keep a copy", storing the build in one of the adult's child profiles with `blueprints.copy`, waits on where that action lives: opening a link never writes into a child's store. The original is never edited.
 
 ## Challenges and hints
 

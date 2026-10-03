@@ -1,14 +1,15 @@
 // The parent view's first screen (task 5.1): the parental gate (D28), then the children on this device with the
 // profile switch, adding, renaming and removing a child, and the builds of the child in use, each with its parts list
-// (task 5.3, ../export/). Every control is a native button, radio or text field, so touch, pointer, keyboard and screen
-// reader each have the same path. Nothing is a dialog: a removal is confirmed inline, and anything that goes wrong is
-// one plain line. The view has no routes and
+// (task 5.3, ../export/) and a "Copy link" that shares it read-only with another adult (task 5.6, D21: the build's name
+// only when ticked). Every control is a native button, radio, checkbox or text field, so touch, pointer, keyboard and
+// screen reader each have the same path. Nothing is a dialog: a removal is confirmed inline, and anything that goes
+// wrong is one plain line. The view has no routes and
 // writes nothing to the address, so no address can open one child's records, and no profile id reaches the page.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, FormEvent, KeyboardEvent, RefObject } from 'react';
 import type { Profile, ServoStore } from '@servo/app/store';
 import { answers, gateQuestion } from './gate.ts';
-import { ChoiceNotKept, NameRefused, addChild, readAccounts, removeChild, renameChild, switchChild } from './model.ts';
+import { ChoiceNotKept, NameRefused, addChild, readAccounts, removeChild, renameChild, shareLinkFor, switchChild } from './model.ts';
 import type { Accounts } from './model.ts';
 import { PartsListExport } from '../export/index.ts';
 
@@ -35,6 +36,14 @@ export const PARENT_TEXT = {
   add: 'Add',
   builds: 'Builds',
   noBuilds: 'No builds yet.',
+  shareIntro:
+    'A link lets another adult watch a build on their own device. It cannot change the build, and never holds a child’s profile. The build’s name is included only if you tick the box below.',
+  includeName: 'Include the build’s name in links',
+  copyLink: 'Copy link',
+  copied: 'Link copied.',
+  copyByHand: 'This device did not copy the link. Copy it from the field.',
+  link: 'Link',
+  shareFailed: 'That build cannot be shared, so no link was made.',
   loading: 'Loading',
   noSwitch: 'This device cannot keep who is using Servo, so the switch did not change.',
   failed: 'That could not be done. Nothing was changed.',
@@ -120,6 +129,9 @@ const AccountsView = ({ store }: { readonly store: ServoStore }) => {
   const [accounts, setAccounts] = useState<Accounts | undefined>(undefined);
   const [editing, setEditing] = useState<Editing>(undefined);
   const [line, setLine] = useState('');
+  // D21: off each time the view opens.
+  const [includeName, setIncludeName] = useState(false);
+  const [shown, setShown] = useState<{ readonly id: string; readonly url: string } | undefined>(undefined);
   const live = useRef(true);
   const switchRef = useRef<HTMLFieldSetElement>(null);
   const addRef = useRef<HTMLInputElement>(null);
@@ -167,6 +179,27 @@ const AccountsView = ({ store }: { readonly store: ServoStore }) => {
     });
     chain.current = run;
     return run;
+  };
+
+  /** Makes the link and puts it on the clipboard; where the device will not, shows it in a field to copy by hand. */
+  const copyLink = async (id: string): Promise<void> => {
+    setLine('');
+    setShown(undefined);
+    let url: string;
+    try {
+      url = await shareLinkFor(store, id, includeName);
+    } catch {
+      if (live.current) setLine(PARENT_TEXT.shareFailed);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      if (live.current) setLine(PARENT_TEXT.copied);
+    } catch {
+      if (!live.current) return;
+      setShown({ id, url });
+      setLine(PARENT_TEXT.copyByHand);
+    }
   };
 
   if (!accounts) return <p role="status">{PARENT_TEXT.loading}</p>;
@@ -218,13 +251,33 @@ const AccountsView = ({ store }: { readonly store: ServoStore }) => {
           {builds.length === 0 ? (
             <p>{PARENT_TEXT.noBuilds}</p>
           ) : (
-            <PartsListExport
-              key={current.id}
-              store={store}
-              profile={current.id}
-              builds={builds}
-              describe={(build) => `${build.name}, ${levelText(build.level)}, ${dateText(build.updatedAt)}`}
-            />
+            <>
+              <p>{PARENT_TEXT.shareIntro}</p>
+              <label style={ROW}>
+                <input type="checkbox" checked={includeName} onChange={(event) => setIncludeName(event.target.checked)} style={TARGET} />
+                {PARENT_TEXT.includeName}
+              </label>
+              <PartsListExport
+                key={current.id}
+                store={store}
+                profile={current.id}
+                builds={builds}
+                describe={(build) => `${build.name}, ${levelText(build.level)}, ${dateText(build.updatedAt)}`}
+                actions={(build) => (
+                  <>
+                    <button type="button" aria-label={`${PARENT_TEXT.copyLink}: ${build.name}`} onClick={() => void copyLink(build.id)} style={TARGET}>
+                      {PARENT_TEXT.copyLink}
+                    </button>
+                    {shown?.id === build.id && (
+                      <label style={{ ...ROW, marginBlock: 0 }}>
+                        {PARENT_TEXT.link}{' '}
+                        <input readOnly value={shown.url} autoFocus onFocus={(event) => event.target.select()} style={TARGET} />
+                      </label>
+                    )}
+                  </>
+                )}
+              />
+            </>
           )}
         </section>
       )}

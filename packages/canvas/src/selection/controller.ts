@@ -545,8 +545,8 @@ export class SelectionController {
   /** A line's path as drawn now: in Run mode where the Run draws it (it moves with the robot), else its view's path. */
   private drawnPath(wire: SceneWire): readonly Vec2[] {
     if (this.surface.mode === 'run') {
-      const ends = this.surface.run.endsOf(wire.id);
-      if (ends) return ends;
+      const path = this.surface.run.pathOf(wire.id);
+      if (path) return path;
     }
     return this.surface.wireView(wire.id)?.path ?? [wire.from.at, wire.to.at];
   }
@@ -556,8 +556,8 @@ export class SelectionController {
     const wires = this.surface.scene.wires;
     for (let i = wires.length - 1; i >= 0; i--) {
       const wire = wires[i] as SceneWire;
-      const [a, b] = this.drawnPath(wire) as [Vec2, Vec2];
-      if (distanceToSegment(world, a, b) <= WIRE_HIT_MM / 2) return wire;
+      const path = this.drawnPath(wire);
+      if (path.slice(1).some((b, k) => distanceToSegment(world, path[k] as Vec2, b) <= WIRE_HIT_MM / 2)) return wire;
     }
     return undefined;
   }

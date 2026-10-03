@@ -164,7 +164,7 @@ describe.each(SCREENS)('$name ($width × $height)', (screen) => {
     const tabs = visibleButtons(app).filter((button) => button.matches('.shell-tab'));
     expect(tabs.map((button) => button.dataset.edge)).toEqual([...TABBED]);
     const zoom = doc.querySelector('[role="group"][aria-label="Zoom"]');
-    expect([...(zoom?.querySelectorAll('button') ?? [])].map((button) => button.getAttribute('aria-label'))).toEqual(['Zoom in', 'Fit', 'Zoom out']);
+    expect([...(zoom?.querySelectorAll('button') ?? [])].map((button) => button.getAttribute('aria-label'))).toEqual(['Zoom in', 'Fit', 'Tidy wires', 'Zoom out']);
     const buttons = visibleButtons(app);
     expect(buttons.length).toBeGreaterThanOrEqual(TABBED.length + 3);
     for (const button of buttons) {

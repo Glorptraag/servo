@@ -46,6 +46,7 @@ export class StandInCanvas implements CanvasHandle {
     this.zoom = zoom;
   }
   tidyWires(): void {}
+  setSafeArea(): void {}
   setLevel(): void {}
   setPrefs(): void {}
   on<K extends keyof CanvasEventMap>(type: K, listener: (event: CanvasEventMap[K]) => void): () => void {

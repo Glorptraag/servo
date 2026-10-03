@@ -8,6 +8,7 @@ import type { CanvasMode, EditCommand, ListAction, ListSubject, PropTemplate, Se
 import { posesOf, readHolding, subtreeOf, takeOff } from '../placement/holding.ts';
 import { propSpot } from '../placement/props.ts';
 import { moveTargets, movedPartSpot, placeTargets, tileOutline } from '../placement/rules.ts';
+import { TIDY_WIRES_ACTION } from '../routing/commands.ts';
 import { wireKindOf } from '../wiring/commands.ts';
 import { heldPhrase, listOf, midSentence, namesOf, wireDescription, withUnit } from './words.ts';
 import type { Names } from './words.ts';
@@ -289,6 +290,9 @@ export const actionsFor = (state: ListState, subject: ListSubject): ListAction[]
       } else {
         actions.push(edit(`disconnect:${wire.id}`, `Remove ${description}`, { kind: 'disconnect', wireId: wire.id }));
       }
+      // Tidying routes every power and signal line round the parts (task 3.7): offered with each of them, the one
+      // command under an id of the wire's own, so every button stays unique.
+      if (kind === 'power' || kind === 'signal') actions.push({ ...TIDY_WIRES_ACTION, id: `${TIDY_WIRES_ACTION.id}:${wire.id}` });
       return actions;
     }
     case 'prop': {
