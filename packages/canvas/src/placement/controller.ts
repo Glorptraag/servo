@@ -199,7 +199,7 @@ export class PlacementController {
     ];
   }
 
-  /** The part whose handles show. Task 3.4 joins this to the handle's selection. */
+  /** The part whose handles show: the handle's selection when it is a part, in Build mode (task 3.4). */
   get selectedPart(): PlacedPartId | undefined {
     return this.selected;
   }
@@ -229,7 +229,7 @@ export class PlacementController {
     return this.callout.covers(world);
   }
 
-  /** Shows the handles beside a part, or none: the tap on a part does this, and task 3.4's `select` will. */
+  /** Shows the handles beside a part, or none: the tap on a part does this, and so does the handle's `select` (task 3.4). */
   selectPart(id: PlacedPartId | undefined): void {
     this.select(id !== undefined && this.surface.scene.partById.has(id) ? id : undefined);
   }
@@ -726,7 +726,12 @@ export class PlacementController {
       this.surface.requestFrame();
     };
     return {
-      tap: (event) => this.tapped(event),
+      tap: (event) => {
+        // A tap that lands a waiting part, or a part the Move handle moves, is where it goes, not a selection.
+        const landing = (this.incoming !== undefined && this.carrying === undefined) || this.relocating !== undefined;
+        this.tapped(event);
+        if (!landing) this.surface.selectionShown('prop', prop.id);
+      },
       start: () => {
         const point = arenaPoint(start);
         if (point) grab = { x: point.x - prop.at.x, y: point.y - prop.at.y };
@@ -887,6 +892,7 @@ export class PlacementController {
     if (this.said?.kind === 'held') this.hideNotice();
     if (this.relocating && this.relocating.id !== id) this.endRelocation();
     this.drawHandles();
+    this.surface.selectionShown('part', id);
   }
 
   private showNotice(kind: Notice['kind'], line: string, over: Rect): void {
