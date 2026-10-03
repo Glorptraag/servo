@@ -184,3 +184,19 @@ Notes for later tasks:
 - 1.5/1.7 merged (bbf79e4, b4208bc). D75-D77 from R-1.5 (D31 'fixed' reading, fixed counts feeder parts, debounce timing); D78-D79 from R-1.7 (wire flows in goldens -> 3.5; Circuit Crew one-tick bumper flash -> sim-core release-margin follow-up).
 - R-1.5 minors for 6.4 sweep: warm.ts counts driver channels as controls (busy-workbench not warmed; count switches only); interface.ts restore comment vs twin snapshots; trailing inputs at tick=ticks dropped on replay (document replay rule); speed rule / setting binding duplicated (primitives.ts vs behaviour/params.ts).
 - R-1.7: 4.5 must pass GoalJudge to golden-runs main.ts env.judge (fixtures with expect.goal fail pnpm golden until then; 4.7/4.8 add them). No golden exercises wheel slip (add slip fixture in 4.8). Golden comment golden-cli.test.ts:218 misplaced.
+- 4.9 merged 33074a3. D81-D83 store decisions (Runs kept on build removal; Firefox persist prompt -> parent view; Web Lock for two-tab copies).
+- 3.6 PASS (merge after 3.3). D84: 4.2 builder prompt MUST make the tray offer listView.placementsFor to keyboard/screen-reader users (R-3.6 major 1); check at 4.2 review. List-view Select buttons throw until 3.4; live readouts need 3.5.
+- 3.7 rulings D80 (body = drawn outline, not touch tile). 5.1 / 5.5 dispatched 2026-10-03.
+
+## Audit 2026-10-03 (after reboot)
+- ERROR: 4.9 was marked done before its merge check finished; CI run 37080816120 on main is red (app test/browser/store.test.tsx:455). The 4.9 builder is fixing it on task/4.9 (merge main first); merge that fix as a follow-up and confirm CI green before G3. Rule from now on: pharao done only after the merge check and CI are green.
+- ERROR: merge autostash dropped uncommitted state once (recovered from a dangling WIP commit). Commit .claude/plans and review files before every merge.
+- 3.3: the first reviewer lost its FAIL report; a fresh reviewer is running (draft docs/reviews/tasks/3.3.md, no major yet). 3.4-3.7 all merge task/3.3, so merge order is 3.3 -> 3.6 -> 3.7 (it merges 3.6) -> 3.4 -> 3.5 -> 3.8.
+- 3.7 FAIL (R-3.7): D80 superseded by D85; the builder is fixing it, with app edits allowed (tidy button, onSafeArea, fit after load, StandInCanvas.setSafeArea).
+- G3 is a human gate: close it PROVISIONAL after all 3.x merge (like G2), write docs/gates/G3.md, and queue Drew's sign-off.
+- After 3.x merges, run one hardening worker:
+  - raise per-test timeouts for heavy tests;
+  - move perf and timing assertions to a separate CI perf job;
+  - fix the canvas handle/placement browser timeouts;
+  - add the CLAUDE.md "How to run" rows for golden, e2e, art, release:dry/release:preview, test:determinism, dev and build. A worker's initial prompt must carry these rows.
+- Removed merged worktrees (1.5, 1.7, 6.3) and the merged task branches.

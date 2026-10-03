@@ -461,11 +461,6 @@ describe('what applyEdit refuses outright', () => {
     expect(refused(fixture('led-circuit'), rename, {} as Catalogue).code).toBe('value.unreadable');
   });
 
-  it('leaves connect and disconnect to task 3.3, naming it', () => {
-    const build = fixture('led-circuit');
-    expect(() => applyEdit(build, { kind: 'connect', from: { part: 'led', port: 'plus' }, to: { part: 'battery', port: 'plus' } }, catalogue)).toThrow(/task 3\.3/);
-  });
-
   it('stores a held part where its holder puts it, by canvasPoseOf', () => {
     const turned = ok(fixture('rolling-start'), { kind: 'move-part', partId: 'chassis', position: { x: 7.5, y: -3.2 } });
     const chassis = part(turned, 'chassis');

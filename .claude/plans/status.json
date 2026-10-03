@@ -891,7 +891,7 @@
       "completed_by": null
     },
     "5.1": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -906,7 +906,8 @@
       "done_when": "Profile switch isolates builds; no route or store query exposes another child's data (negative tests); tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-03T00:09:42+00:00"
     },
     "5.2": {
       "status": "pending",
@@ -964,7 +965,7 @@
       "completed_by": null
     },
     "5.5": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -980,7 +981,8 @@
       "done_when": "Airplane-mode e2e passes; the conflict fixture keeps both versions; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-03T00:09:43+00:00"
     },
     "5.6": {
       "status": "pending",
@@ -1845,6 +1847,47 @@
       "id": "D80",
       "question": "Tidy wires (3.7): a part body is its drawn outline, not the 96 px minimum touch tile, so wires may pass through touch padding. Also: tidy makes no undo step, routes drop when a socket moves, the chassis is not a body, and the app owns the tidy button and calls fit after first load. Accept?",
       "recommendation": "Accept as ruled by the orchestrator",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": true,
+      "answer": "Superseded by D85 (R-3.7: drawn outline means the renderer's scaled picture, not body.size)"
+    },
+    {
+      "id": "D81",
+      "question": "Store (4.9 decision 7): removing a build keeps its Runs as the child's progress. Accept?",
+      "recommendation": "Accept as built",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D82",
+      "question": "Store (4.9 decision 13): on Firefox persist() prompts the person at the screen; the store asks only while storage is not yet kept. Ask from the parent view instead?",
+      "recommendation": "Move the persist() request to the parent view (task 5.2) so a child never sees the browser prompt; keep the current behaviour until then",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D83",
+      "question": "Store (4.9 decision 15, R-4.9 finding 11): two tabs editing one build keep a copy at every crossing save, so copies pile up. Add a per-build Web Lock or BroadcastChannel refresh?",
+      "recommendation": "Yes, later: a per-build Web Lock in a 6.x hardening task; nothing is lost meanwhile",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D84",
+      "question": "R-3.6 major 1: placing a new part by keyboard or screen reader only works through listView.placementsFor, which no task yet requires the app tray to offer. Add it to task 4.2's done-when before G3?",
+      "recommendation": "Yes: the orchestrator puts it in 4.2's builder prompt and checks it at 4.2 review",
+      "confidence": "high",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D85",
+      "question": "Supersedes D80 wording (R-3.7 Q1-Q4): tidy-wires 'part body' = the picture as the renderer draws it (scaled to fill the tile less padding); zoom 'build lost' = <96 px of any part's drawn tile/picture/sockets in the uncovered view, on the turned shape; tidy button + onSafeArea->setSafeArea + fit-after-load built in the app by task 3.7 (rule 8 paths together); moved socket drops its route to straight for launch (brief Sec 10 says re-route). Accept?",
+      "recommendation": "Accept; revisit auto re-route after iPad timing",
       "confidence": "medium",
       "blocks": [],
       "resolved": false

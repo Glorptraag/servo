@@ -39,8 +39,11 @@ export const QUARTER_TURN = 90;
 export const SLIDE_MS = 160;
 /** Drag sensitivity is held at or above this, as the view's pan threshold holds it. */
 const MIN_SENSITIVITY = 0.05;
-/** How far a socket reaches from its centre: a hexagon's corner reaches furthest (scene/scene.ts). */
-const SOCKET_REACH_MM = (PORT_MM / 2) * (2 / Math.sqrt(3));
+/**
+ * How far a socket reaches from its centre: a hexagon's corner reaches furthest (scene/scene.ts). The handles keep
+ * clear of it, and so does a wire's bin (task 3.3).
+ */
+export const SOCKET_REACH_MM = (PORT_MM / 2) * (2 / Math.sqrt(3));
 
 export interface PlacementHost {
   readonly surface: CanvasSurface;
@@ -73,8 +76,8 @@ interface Notice {
   readonly over: Rect;
 }
 
-/** What a pressed pointer does: a tap until it travels the drag threshold, then a drag. */
-interface Gesture {
+/** What a pressed pointer does: a tap until it travels the drag threshold, then a drag. Wiring (task 3.3) shares it. */
+export interface Gesture {
   tap(event: PointerEvent): void;
   start?(event: PointerEvent): void;
   drag?(event: PointerEvent): void;
@@ -84,7 +87,7 @@ interface Gesture {
 }
 
 /** A pointer the canvas claimed: a tap or a drag, with no long-press and no timing in it. */
-class Press implements PointerClaim {
+export class Press implements PointerClaim {
   dragging = false;
   done = false;
   readonly build: Blueprint | undefined;
@@ -219,6 +222,11 @@ export class PlacementController {
   /** The one plain line the canvas shows (D35, removals, held parts), for the list view to read out (task 3.6). */
   get notice(): string | undefined {
     return this.callout.line;
+  }
+
+  /** Whether the line lies over a canvas point: drawn above everything, it takes a press first (wiring, task 3.3). */
+  noticeCovers(world: Vec2): boolean {
+    return this.callout.covers(world);
   }
 
   /** Shows the handles beside a part, or none: the tap on a part does this, and task 3.4's `select` will. */
