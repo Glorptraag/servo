@@ -1,11 +1,13 @@
 // The child's app: the shell round the canvas, with the content's catalogue and art injected into the canvas
 // (README, "How the packages meet"). Each slot holds its placeholder until the task that owns it lands; swap a
-// placeholder for the real part here.
-import { useMemo } from 'react';
+// placeholder for the real part here. A challenge chosen on Home lays its goal line, kit, level and arena over the
+// same canvas (task 4.5).
+import { useMemo, useState } from 'react';
 import { mountCanvas } from '@servo/canvas';
 import type { CanvasHandle, ResolveArt } from '@servo/canvas';
 import type { Content } from '@servo/content';
-import type { Blueprint, Level } from '@servo/schema';
+import type { Blueprint, Challenge, Level } from '@servo/schema';
+import { ArenaStrip, GoalLine, Home } from './challenges/index.ts';
 import { RunBar } from './run-bar/index.ts';
 import type { RunLoop } from './run-bar/index.ts';
 import { PLACEHOLDER_SLOTS, SaveControl, Shell } from './shell/index.ts';
@@ -31,26 +33,34 @@ export interface AppProps {
 export const App = ({ content, child = null, start, saving, onReady }: AppProps) => {
   // The run loop (task 4.4) gives each Run frame to the spec card's live readouts, which clear whenever no Run plays:
   // on Stop, on a failed Run, and while the next one loads.
+  // The goal line judges the same loop's frames (task 4.5).
   const runFrames = useMemo(createRunFrames, []);
+  const [loop, setLoop] = useState<RunLoop | null>(null);
   const joinRunLoop = useMemo(() => {
     let off: (() => void) | undefined;
-    return (loop: RunLoop | null): void => {
+    return (joined: RunLoop | null): void => {
       off?.();
       runFrames.clear();
-      off = loop?.subscribe((state, frame) => {
+      setLoop(joined);
+      off = joined?.subscribe((state, frame) => {
         if (frame) runFrames.push(frame);
         else if (state.phase !== 'spin-up' && state.phase !== 'running') runFrames.clear();
       });
     };
   }, [runFrames]);
+  // A challenge chosen on Home lays its goal line, kit, level and arena over the same canvas (task 4.5); none is the sandbox.
+  const [challenge, setChallenge] = useState<Challenge | null>(null);
   const slots = useMemo<ShellSlots>(
     () => ({
       ...PLACEHOLDER_SLOTS,
+      home: <Home challenge={challenge} onChallenge={setChallenge} sandboxLevel={START_LEVEL} loop={loop} saving={saving} />,
+      goal: <GoalLine challenge={challenge} loop={loop} />,
+      arenaStrip: <ArenaStrip challenge={challenge} />,
       specCard: <SpecCard frames={runFrames} />,
       save: <SaveControl saving={saving} />,
       runBar: <RunBar onLoop={joinRunLoop} />,
     }),
-    [saving, runFrames, joinRunLoop],
+    [saving, runFrames, joinRunLoop, challenge, loop],
   );
   // The swap registry: a key with no picture gives undefined, and the canvas draws a neutral tile.
   const resolveArt: ResolveArt = (key) => content.art.get(key);
@@ -60,7 +70,8 @@ export const App = ({ content, child = null, start, saving, onReady }: AppProps)
   return (
     <Shell
       content={content}
-      level={START_LEVEL}
+      level={challenge?.level ?? START_LEVEL}
+      kit={challenge ? content.catalogue.kits?.get(challenge.kit) : undefined}
       slots={slots}
       mountCanvas={drawCanvas}
       child={child}

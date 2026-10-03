@@ -6,6 +6,7 @@ The child's app: shell, tray, library, spec card, Run bar, arena strip, challeng
 | --- | --- | --- |
 | `@servo/app` | 4.1 | `mountApp(host, options?)`, started by the web build ([src/main.tsx](src/main.tsx)) and the e2e harness: the shell round the canvas. It opens the store from task 4.9 |
 | `@servo/app/store` | 0.4 types, 4.9, 5.5, 5.6 | `openStore(options)`, the store's types and content's types ([src/store/index.ts](src/store/index.ts)); `shareLinkOf` and `SHARED_BUILD_NAME` for the parent view's shared links (task 5.6) |
+| `@servo/app/goal` | 4.5 | The goal judge: `GoalWatch`, `judgeRun` and `goalJudgeFor`, the golden harness's `env.judge` ([src/challenges/goal.ts](src/challenges/goal.ts)). Pure: no DOM, React or Vite, so `pnpm golden` runs it under plain Node |
 | `@servo/app/invite-code` | 6.3 | The tester invite code's reduction and hash, `normalizeInviteCode` and `hashInviteCode` ([src/release/invite-code.ts](src/release/invite-code.ts)). Pure: no DOM, React or Node. The release in packages/tools imports it, so the hashes it bakes in are the ones the invite gate makes |
 
 ## The shell (brief Section 9)
@@ -57,6 +58,35 @@ Taken conservatively, for Drew and the orchestrator:
 6. Every Run that stepped at least once is kept, one cut short by the app closing too; a Run stopped in its spin-up is not (R-4.4 Q1). A Run that ends before the store has answered for its build's earlier Runs is not kept (only a stalled store does that). Hint use (task 4.6) and the challenge's verdict (task 4.5) are not in the record yet.
 7. packages/tools/src/gate/run.ts still has its own copy of the loop: `RunLoop` is not exported from `@servo/app`, and tools is not this task's to change.
 8. Run with nothing placed is `aria-disabled`, not `disabled`, so keyboard and screen-reader users reach it and hear its reason. A build emptied while the first Run loads is not run.
+
+## Challenges
+
+Task 4.5, in [src/challenges/](src/challenges/). A challenge is a goal line and an arena preset laid over the same canvas (brief Section 9); there is no lesson screen.
+
+- **The goal judge** ([goal.ts](src/challenges/goal.ts), [world.ts](src/challenges/world.ts)) reads a Run's events alone, tick by tick: `RunWorld` folds each tick's events into every subject's readouts, sounds, faults and pose, and places each part on its body as the schema's `placeParts` does, so a goal on a motor or the chassis measures where that part really is. `holds` counts ticks in a row; `all` is met at the last of its parts, `any` at the first; each step of a `sequence` starts the tick after the one before is met; `uses` reads the build that ran. A condition on a type holds when it holds for any part of that type. The app's `GoalWatch` is fed each frame as the Run plays; `judgeRun` feeds it a run record's events, so the live check and the golden harness give the same verdict. A summary record with no events keeps its own verdict.
+- **Thresholds** (world.ts), for the schema's measures: `powered` from 0.05 V either way; `turning` from 0.5 rpm, or an arm moving 0.1° in a tick; `lit` from a light of 0.01; `sounding` while any sound plays; `closed`/`open` only for a part with a switch; `tipped` from 45° of pitch or roll (a fallen robot reads ±90). Speeds and turn rates are over the last tick, 0 at tick 0. `near-wall` is the gap from the nearest point of the part's footprint (its body box from above) to the wall's face (its line less half its thickness).
+- **Breakdowns (D48)** are met only while their named fault is gone: the fault in their hint ladders' `fault` triggers (every fault, when a breakdown names none). A named fault shown at any tick up to the goal's keeps that Run from meeting it, so flipping a DC motor's Direction setting does not pass a motor wired backwards.
+- **The goal line** ([goal-line.tsx](src/challenges/goal-line.tsx)), in the header's goal slot: the challenge's `goalLine` from content, one line, and a plain check mark when a Run meets the goal, with "Goal met" read aloud. No points, praise or celebration, no dialog. The check stays after Stop and clears when the next Run starts or the build changes, so it always describes the build on the canvas. Empty in the sandbox.
+- **The arena strip** ([arena-strip.tsx](src/challenges/arena-strip.tsx)), Build mode only (D36): a button for each arena preset, pressed for the build's, which applies `set-arena` and drops the child's props as Reset arena does (D29); a challenge keeps its own preset and the others rest. Two props from the bump-props preset, a 50 g box and a fixed post, each by a pointer or finger drag onto the canvas (`beginPropPlacement` with the pointer, past the drag threshold), tap-then-tap (the tile stays pressed until the canvas places it or a second tap cancels), or Enter (`place-prop` on the nearest free spot, as the list view does). Each is one Undo step and Save hears it.
+- **Home** ([home.tsx](src/challenges/home.tsx)) opens from the header over the whole shell, which rests under it (inert): New build (a sandbox "Build n" on the open floor), the saved builds from the store, newest first, and the challenges by level with their kind. A challenge starts from a copy of its `start` kept as the child's own build, or a new build in its arena, named after it; the shell then shows its kit and level. A Run stops as Home opens, and what waits is saved before another build comes in. Escape or "Back to the build" closes it, and focus returns to Home. A device that keeps no builds still opens builds and challenges in the page. `data-slot="parent-entry"` is the spot task 5.2 fills with the gated parent entry (D91); nothing is built there.
+
+### Tests
+
+- **Unit, Node** ([test/challenges/](test/challenges/)): every Level 1–2 challenge fixture on real Runs through sim-core, met and not met, judged live and from the record alike. Meet the switch (Level 1) not met as it starts, met wired and pressed, not met unpressed or pressed too early; one motor backwards (D48) not met as it starts or with the Direction setting flipped, met with its wires swapped; drive and light met by the LED-and-buzzer robot, not by the roller, an LED on the workbench or the lit robot reversing; cross and stop met by the bumper robot and the Circuit Crew kit robot, not by the roller grinding at the wall or a robot stopped short; a Level 1 stand-in for "Cross the arena to the far side" (D26). Every content fixture with a goal, as `pnpm golden` judges it (none yet). The rules on hand-written events: `holds`, `sequence`, `all`, `any`, `uses`, conditions on types, states, poses, speeds, tipping and walls, breakdown faults and summaries. Home's helpers.
+- **Browser, Chromium** ([test/browser/challenges.test.tsx](test/browser/challenges.test.tsx)), the real App with the canvas, content, sim-core and IndexedDB: Home over the resting shell, its sections and the empty parent-entry spot, Space kept from the Run bar, Escape back to the Home button; a new build by touch and a saved build by keyboard; a challenge's goal line, kit, level and arena; the check mark for the bumper robot's Run, kept on Stop and cleared by an edit; none for a Run that misses; presets, and props by drag, tap-then-tap and Enter; the strip resting in a Run.
+
+### Decisions and open questions (task 4.5)
+
+Taken conservatively, for Drew and the orchestrator:
+
+1. **The breakdown's named fault** (D48) is read from its hint ladders' `fault` triggers, since a challenge has no field for it; a breakdown with none counts every fault. A schema field or a validator rule that every breakdown names its fault would make this explicit.
+2. **Run records do not carry the verdict yet.** The recorder (`run-bar/record.ts`) still keeps Runs as sandbox Runs: `challenge`, `goal` and challenge numbering for `runNumber` wait for a change there, with the hint use of task 4.6. The judge is ready for it (`judgeRun` on the record).
+3. **Choosing a challenge always starts a new build** for it; reopening the child's last build for that challenge needs the link above. Saved builds open in the sandbox, with no challenge.
+4. **Home shows every level's challenges, ungated**, until progress (task 5.2) says which level the child has reached. The app still opens on the newest build, not on Home.
+5. **The check clears on an edit or the next Run**, and stays after Stop.
+6. **The prop palette** is the bump-props preset's two props. A box in D52's 143–178 g window for the gearbox lesson is for the content tasks to ask for.
+7. **Changing preset drops the child's props**, as Reset arena does (Undo brings them back); in a challenge the preset stays and props may still be added.
+8. **The strip is not yet a remove target** for dragged props: `canvas.setRemoveTargets` takes one list, which the tray (task 4.2) also sets, so one owner should set both.
 
 ## Running it
 
@@ -154,7 +184,7 @@ Taken conservatively, for Drew and the orchestrator:
 | `tray/`, `library/` | 4.2 | Kit tiles by family; the catalogue overlay, browse-only before Level 3 |
 | `spec-card/` | 4.3 | Layers by level, settings with child-sized steps and real units, live readouts, speak-it ([README](src/spec-card/README.md)) |
 | `run-bar/` | 4.4 | Run and Stop, the clock, Undo, Reset arena, the spin-up |
-| `challenges/` | 4.5 | Goal line, arena preset, goal detection over the Run, the tick |
+| `challenges/` | 4.5 | Goal line, goal detection over the Run, the tick, the arena strip, Home |
 | `hints/` | 4.6 | Which ladder and rung; the canvas draws them, and do-it is one `batch` |
 | `store/` | 4.9, 5.5 | Persistence, and the changes sync pushes |
 | `offline/`, `sync/` | 5.5 | The service worker and its build step; sync through a `SyncRemote` with the conflict rule |
