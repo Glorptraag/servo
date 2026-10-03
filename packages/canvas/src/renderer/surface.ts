@@ -4,7 +4,7 @@
 import { Container, RenderLayer, Ticker, autoDetectRenderer } from 'pixi.js';
 import type { Renderer } from 'pixi.js';
 import { canonicalizeBlueprint, serializeBlueprint, validateBlueprint } from '@servo/schema';
-import type { AssetKey, Blueprint, Level, PartTypeId, PlacedPartId, ValidationResult, Vec2, WireId } from '@servo/schema';
+import type { ArenaFeatureId, AssetKey, Blueprint, Level, PartTypeId, PlacedPartId, Pose, ValidationResult, Vec2, WireId } from '@servo/schema';
 import type { RunFrame } from '@servo/sim-core/interface';
 import type {
   CanvasEventMap,
@@ -21,6 +21,7 @@ import type {
 } from '../interface.ts';
 import { applyEdit } from '../placement/apply.ts';
 import { PlacementController } from '../placement/controller.ts';
+import { RunAnimator } from '../run-animation/animator.ts';
 import { layArena } from '../scene/arena.ts';
 import type { SceneArena } from '../scene/arena.ts';
 import { unionRect } from '../scene/geometry.ts';
@@ -82,6 +83,8 @@ export class CanvasSurface implements CanvasHandle {
   readonly placement: PlacementController;
   /** Drawing and removing wires by touch and pointer, sockets' glows and crowded sockets fanning out (task 3.3, src/wiring/). */
   readonly wiring: WiringController;
+  /** Run mode's drawing: the frames `applyRunFrame` gives, tweened between ticks (task 3.5, src/run-animation/). */
+  readonly run: RunAnimator;
 
   private readonly options: CanvasOptions;
   private readonly emitter = new Emitter<CanvasEventMap>();
@@ -157,6 +160,19 @@ export class CanvasSurface implements CanvasHandle {
       readOnly: options.readOnly === true,
       prefs: () => this.prefs,
     });
+    this.run = new RunAnimator({
+      scene: () => this.scene,
+      arena: () => this.arena,
+      layers: () => this.layers,
+      palette: () => this.palette,
+      partView: (id) => this.partViews.get(id),
+      wireView: (id) => this.wireViews.get(id),
+      drawProps: (moved) => this.drawProps(moved),
+      reducedMotion,
+    });
+    // A tap or click on a manual switch in Run mode flips it; Enter flips a selected one (D42).
+    this.input.taps.push((_event, screen) => this.tappedInRun(screen));
+    this.canvas.addEventListener('keydown', this.keyedInRun);
     this.resizeObserver =
       typeof ResizeObserver === 'function' ? new ResizeObserver(() => this.resized()) : undefined;
     this.resizeObserver?.observe(this.canvas);
@@ -197,6 +213,13 @@ export class CanvasSurface implements CanvasHandle {
     this.currentMode = mode;
     this.placement.modeChanged();
     this.wiring.modeChanged();
+    if (mode === 'run') {
+      this.run.enter();
+    } else {
+      // Stop: every node and line goes back to the build exactly as it was (ground rule 4).
+      this.run.exit();
+      this.rebuild();
+    }
     this.modeFade.toward(mode === 'run' ? 1 : 0, this.motion(MODE_FADE_MS), performance.now());
     this.loop.request();
   }
@@ -245,6 +268,8 @@ export class CanvasSurface implements CanvasHandle {
     live.delete(this);
     this.placement.destroy();
     this.wiring.destroy();
+    this.canvas.removeEventListener('keydown', this.keyedInRun);
+    this.run.destroy();
     this.loop.stop();
     if (this.restTimer !== undefined) clearTimeout(this.restTimer);
     this.resizeObserver?.disconnect();
@@ -315,9 +340,15 @@ export class CanvasSurface implements CanvasHandle {
     throw notYet('select', '3.4');
   }
 
+  /**
+   * Run mode: draws one tick (task 3.5, docs/run-animation.md). The canvas draws only the frames it is given, tweening
+   * between them; it never steps the simulation. Ignored in Build mode.
+   */
   applyRunFrame(frame: RunFrame): void {
-    void frame;
-    throw notYet('applyRunFrame', '3.5');
+    this.alive('applyRunFrame');
+    if (this.currentMode !== 'run') return;
+    this.run.apply(frame, performance.now());
+    this.loop.request();
   }
 
   showHint(step: DrawnHintStep): boolean {
@@ -359,7 +390,13 @@ export class CanvasSurface implements CanvasHandle {
 
   /** The topmost thing under a screen point (CSS pixels from the canvas's top left), or null for empty canvas. */
   hitAt(screen: Vec2): Hit | null {
-    return hitTest(this.scene, this.camera.screenToWorld(screen));
+    const world = this.camera.screenToWorld(screen);
+    if (this.currentMode === 'run') {
+      // Parts are where the Run draws them, not where the build has them.
+      const part = this.run.partAt(world);
+      return part ? { kind: 'part', part } : null;
+    }
+    return hitTest(this.scene, world);
   }
 
   /** The part's display objects, for the tasks that move and animate them. */
@@ -378,7 +415,14 @@ export class CanvasSurface implements CanvasHandle {
 
   /** True when nothing is loading, fading or waiting to be drawn: the picture on screen is final. */
   get settled(): boolean {
-    return this.renderer !== undefined && this.art.pending === 0 && !this.loop.pending && !this.gridFade.moving && !this.modeFade.moving;
+    return (
+      this.renderer !== undefined &&
+      this.art.pending === 0 &&
+      !this.loop.pending &&
+      !this.gridFade.moving &&
+      !this.modeFade.moving &&
+      !this.run.moving
+    );
   }
 
   /** The workbench colour the renderer clears to (follows `highContrast`). */
@@ -398,6 +442,35 @@ export class CanvasSurface implements CanvasHandle {
 
   // ---------------------------------------------------------------------------------------------------------
   // Internals
+
+  /** Run mode: a tap or click on a manual switch flips it, through `control` (never when read-only). */
+  private tappedInRun(screen: Vec2): void {
+    if (this.currentMode !== 'run' || this.options.readOnly) return;
+    const partId = this.run.switchAt(this.camera.screenToWorld(screen));
+    if (partId !== undefined) this.flip(partId);
+  }
+
+  /** Run mode: Enter flips the selected manual switch (D42: Space stays the app's Run and Stop). */
+  private readonly keyedInRun = (event: KeyboardEvent): void => {
+    if (event.key !== 'Enter' || this.currentMode !== 'run' || this.options.readOnly) return;
+    const selected = this.selection;
+    if (selected?.kind !== 'part' || !this.run.isManualSwitch(selected.partId)) return;
+    event.preventDefault();
+    this.flip(selected.partId);
+  };
+
+  /** Asks the app to flip a manual switch the other way from the latest frame's. */
+  flip(partId: PlacedPartId): boolean {
+    if (this.currentMode !== 'run' || this.options.readOnly || !this.run.isManualSwitch(partId)) return false;
+    const closed = this.run.state?.closed.get(partId);
+    if (closed === undefined) return false;
+    this.emitter.emit('control', { input: { partId, kind: 'switch', closed: !closed } });
+    return true;
+  }
+
+  private drawProps(moved: ReadonlyMap<ArenaFeatureId, Pose> | undefined): void {
+    this.arenaView.drawProps(this.arena, this.palette, moved);
+  }
 
   private alive(member: string): void {
     if (this.destroyed) throw new Error(`${member}: the canvas was destroyed.`);
@@ -456,9 +529,9 @@ export class CanvasSurface implements CanvasHandle {
       hints: new RenderLayer(),
     };
     this.layers = layers;
-    this.arenaGroup.addChild(this.arenaView.floor, this.arenaView.features, this.arenaView.props);
+    this.arenaGroup.addChild(this.arenaView.floor, this.arenaView.features, this.run.marks.container, this.arenaView.props);
     this.world.addChild(layers.chassis, layers.linkages, layers.parts, layers.wires, layers.ports, layers.hints);
-    this.world.addChild(this.partNodes, this.lineNodes, this.overlays);
+    this.world.addChild(this.partNodes, this.lineNodes, this.run.dots.container, this.overlays);
     // The grid sits on the arena's floor and under the build: last in the arena's group, before the world's layers.
     this.grid.graphics.visible = false;
     this.arenaGroup.addChild(this.grid.graphics);
@@ -555,6 +628,7 @@ export class CanvasSurface implements CanvasHandle {
     this.grid.invalidate();
     this.wiring.refresh();
     this.placement.refresh();
+    this.run.rebuilt();
     this.loop.request();
   }
 
@@ -609,7 +683,7 @@ export class CanvasSurface implements CanvasHandle {
   private frame(now: number): boolean {
     const renderer = this.renderer;
     if (!renderer || this.destroyed) return false;
-    const fading = [this.gridFade.step(now), this.modeFade.step(now)].some(Boolean);
+    const fading = [this.gridFade.step(now), this.modeFade.step(now), this.run.step(now)].some(Boolean);
     const { camera } = this;
     const scale = camera.scale;
     const x = camera.width / 2 - camera.centreX * scale;
@@ -623,6 +697,7 @@ export class CanvasSurface implements CanvasHandle {
     this.arenaView.floor.visible = run > 0;
     this.arenaView.features.alpha = ARENA_BUILD_ALPHA + (1 - ARENA_BUILD_ALPHA) * run;
     this.arenaView.props.alpha = this.arenaView.features.alpha;
+    this.run.marks.container.alpha = run;
     this.grid.graphics.alpha = this.gridFade.value;
     this.grid.graphics.visible = this.gridFade.value > 0;
     if (this.grid.graphics.visible) this.grid.cover(camera, this.palette);
