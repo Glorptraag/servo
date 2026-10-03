@@ -4,7 +4,7 @@
 // no lesson screen. A Run in progress stops first, and Save stores what waits before another build comes in. Native
 // buttons throughout, so touch, pointer, keyboard and screen readers take one path (ground rule 8); Escape and "Back to
 // the build" close it. Home leaves a named spot for the gated parent entry, which task 5.2 fills (D91). A build Home
-// opens starts the child's session, if a Run has not already (telemetry, task 6.2).
+// opens names the mode the child's session started in, if no Run has yet (telemetry, task 6.2).
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';

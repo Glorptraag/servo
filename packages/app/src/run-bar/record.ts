@@ -9,6 +9,8 @@
 // them, as the schema says, and keeps the challenge's id and the goal judge's verdict (`goal`), judged from its own
 // record by the same judge as the goal line and `pnpm golden`. A sandbox Run keeps neither. The hint steps used since
 // the last Run kept (task 4.6) join the record as its `hints`, taken as Run is pressed and let go once it is recorded.
+// Telemetry (task 6.2): pressing Run settles the session's start (named by Home, or else the app's opening), and a
+// challenge Run, once kept, is a `run` event.
 import type { Blueprint, BlueprintId, Catalogue, Challenge, HintUse, RunId, RunRecord, Timestamp } from '@servo/schema';
 import type { Simulation } from '@servo/sim-core';
 import { judgeRun } from '../challenges/goal.ts';

@@ -1,13 +1,13 @@
 # What Servo keeps
 
-Servo keeps each child's builds, Runs and card-game results so they can carry on where they left off. Besides those, it notes four kinds of event, to check whether Servo works: whether children pass the open builds, come back to build on their own, fix faults, and build the real kit. Nothing else is noted.
+Servo keeps each child's builds, Runs and card-game results so they can carry on where they left off. Besides those, it notes four kinds of event, to check whether Servo works: whether children pass the unscripted builds, which hints they needed, whether they come back to build on their own, how they fix faults, and whether they build the real kit. Nothing else is noted.
 
 ## The events
 
-- `session-start`, the first start each time Servo opens for a child: `mode`, the sandbox or a challenge.
+- `session-start`, each time Servo opens for a child: `mode`, the sandbox, or a challenge when one is chosen before the first Run.
 - `run`, a Run of a challenge, once it is kept: `challenge`, which one; `runNumber`, how many Runs of it so far; `goalMet`, whether it met the goal.
 - `hint`, a hint step shown or done: `challenge`, which one; `step`, which step of the hint ladder.
-- `export`, in this parent view: `what`, a parts list made or a link copied.
+- `export`, in this parent view: `what`, a parts list made or a link made.
 
 Each event also keeps the time it happened and which child it is about.
 
@@ -17,7 +17,7 @@ No names, no text the child or you type, no build or its name, no device details
 
 ## Where and for how long
 
-On this device only, beside the child's builds. Nothing is sent anywhere. The events stay until the child's profile is removed.
+The events are kept on this device only, beside the child's builds, and are never sent anywhere. The events stay until the child's profile is removed.
 
 ## How to delete it
 

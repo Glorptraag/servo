@@ -9,7 +9,7 @@ import type { ChallengeId, HintStepKind, Timestamp } from '@servo/schema';
 
 /** What each kind of event keeps besides its kind and time. */
 export interface TelemetryFields {
-  /** The first start of a session: a build chosen on Home, or the first Run on the build the app opened with. */
+  /** A session's start: the app opening for a child, its mode named by a Home choice made before the first Run. */
   readonly 'session-start': { readonly mode: 'sandbox' | 'challenge' };
   /** A Run of a challenge, once it is kept in the child's run records. Sandbox Runs feed no measure and emit nothing. */
   readonly run: { readonly challenge: ChallengeId; readonly runNumber: number; readonly goalMet: boolean };
@@ -36,7 +36,7 @@ const challengeId: Check = (value, content) => typeof value === 'string' && cont
 
 interface Spec<K extends TelemetryKind> {
   readonly fields: { readonly [F in keyof TelemetryFields[K]]-?: Check };
-  /** Emitted at most once for each child's session (each opening of the app for them). */
+  /** Kept at most once for each child's session (each opening of the app for them); see emit.ts's `provisional`. */
   readonly once?: true;
 }
 
@@ -65,8 +65,10 @@ export const eventOf = <K extends TelemetryKind>(kind: K, at: Timestamp, fields:
   if (Object.keys(given).some((name) => !Object.hasOwn(checks, name))) return undefined;
   const kept: Record<string, unknown> = {};
   for (const [name, check] of Object.entries(checks)) {
-    if (!check(given[name], content)) return undefined;
-    kept[name] = given[name];
+    // Read once, so what is checked is what is kept.
+    const value = given[name];
+    if (!check(value, content)) return undefined;
+    kept[name] = value;
   }
   return { kind, at, ...kept } as TelemetryEvent;
 };

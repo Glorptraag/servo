@@ -113,6 +113,27 @@ describe('keeping events on this device', { timeout: 60_000 }, () => {
     store.close();
   });
 
+  it('counts a session as the app opens, which a Home choice before any Run may name, and nothing after (R-6.2 F3)', async () => {
+    const { store, time, sam, ali } = await openChildren();
+    // Sam only builds: the opening's start stands.
+    emitTelemetry(sam, 'session-start', { mode: 'sandbox' }, { provisional: true });
+    // Ali opens, then picks a challenge on Home a minute later, then Runs it and goes back to the sandbox.
+    emitTelemetry(ali, 'session-start', { mode: 'sandbox' }, { provisional: true });
+    time.set('2026-10-04T09:01:00.000Z');
+    emitTelemetry(ali, 'session-start', { mode: 'challenge' });
+    emitTelemetry(ali, 'session-start', { mode: 'challenge' });
+    emitTelemetry(ali, 'session-start', { mode: 'sandbox' });
+    expect(await telemetryOf(sam)).toEqual([{ kind: 'session-start', at: T0, mode: 'sandbox' }]);
+    expect(await telemetryOf(ali)).toEqual([{ kind: 'session-start', at: T0, mode: 'challenge' }]);
+    // Opened again: a Run first settles the start, so a later Home choice changes nothing.
+    const again = store.forProfile(ali.profile);
+    emitTelemetry(again, 'session-start', { mode: 'sandbox' }, { provisional: true });
+    emitTelemetry(again, 'session-start', { mode: 'sandbox' });
+    emitTelemetry(again, 'session-start', { mode: 'challenge' });
+    expect((await telemetryOf(again)).map((event) => ('mode' in event ? event.mode : ''))).toEqual(['challenge', 'sandbox']);
+    store.close();
+  });
+
   it('keeps nothing for no child, for a scope the store did not open, or for a removed child', async () => {
     const { store, name, sam } = await openChildren();
     emitTelemetry(null, 'export', { what: 'parts-list' });
