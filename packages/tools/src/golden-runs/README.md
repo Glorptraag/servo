@@ -62,10 +62,10 @@ With the DC motor's speed in `speedRule` (sim-core's behaviour runtime) made 5% 
 | `blueprint`, `arena <id>`, `part <id>` | The first 16 hex digits of the SHA-256 of the canonical blueprint, the arena preset and each part record used, so a diff names the input that changed |
 | `record` | The SHA-256 of the whole run record, as the schema's `canonicalJson` writes it |
 | `fault <part> <failure> first-tick=<n>`, or `faults none` | The run record's faults |
-| `subjects` | Every placed part, then every prop (`arena:<id>`), in `frame.live`'s order |
+| `subjects` | Every placed part, then every prop (`arena:<id>`), in `frame.live`'s order, then every power line, signal line and drive linkage (`wire:<id>`), in `frame.flows`' order |
 | `tick <n> <hash>` | The first 8 hex digits of the SHA-256 of that tick's events, then a line for each subject with a field that changed since the tick before (tick 0: every field) |
 
-A subject's fields are its summary from `frame.live`, in this order: `volts`, `milliamps`, `charge`, `rpm`, `angle`, `light`, `signal`, `closed`, the pose (`x`, `y`, `heading`, `pitch`, `roll`: the robot's root part, loose parts and props), `sound.<name>=<level>` (with `@<hz>hz` where it has a pitch), and `faults`, the debounced failure modes active. `none` marks a sound that stopped or faults that ended.
+A subject's fields are its summary from `frame.live`, in this order: `volts`, `milliamps`, `charge`, `rpm`, `angle`, `light`, `signal`, `closed`, the pose (`x`, `y`, `heading`, `pitch`, `roll`: the robot's root part, loose parts and props), `sound.<name>=<level>` (with `@<hz>hz` where it has a pitch), and `faults`, the debounced failure modes active. `none` marks a sound that stopped or faults that ended. A wire's fields are what flows along it (D78, task 3.5): a power line's `milliamps`, signed from its `from` port to its `to` port; a signal line's `signal`, absent while it carries none; a drive linkage's `rpm`. The canvas's moving dots follow these, so a change that reversed every power line's current shows in a diff.
 
 Numbers are rounded to fixed places (`PRECISION`): volts 3 (millivolts), milliamps 1, charge 4, rpm 1, angle 1, light and signal 3, x and y 1 (a tenth of a millimetre), heading, pitch and roll 2, a sound's level 3. That keeps the files small (about 270 KB for all 26) and their diffs about changes a person can see. Each tick's hash and the record's hash still catch what the rounding hides: the diff then says the events differ below the summary's precision, and where the summary first differs.
 
@@ -75,7 +75,6 @@ Accept only a change you meant: a solver change, a retuned part record, a new fi
 
 ## Not covered
 
-- `frame.flows`, the canvas's moving dots: they are not recorded, so a replay recomputes them (packages/sim-core/docs/runs.md), and plan Section 8 diffs the run recorder.
 - Many runs of one case: that is the determinism sweep, `pnpm --filter @servo/tools test:determinism`.
 
 ## Code and tests

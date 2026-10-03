@@ -123,11 +123,12 @@ The first line is the check on main with placement (3.2), wiring (3.3) and the l
 
 ## CI
 
-The `e2e` job in `.github/workflows/ci.yml` is a matrix of four shards that run side by side, each with a 10-minute timeout, Playwright's Chromium cached by Playwright's version, its parity lines uploaded as `e2e-report-<shard>`, and its screenshot diffs uploaded when it fails:
+The `e2e` job in `.github/workflows/ci.yml` is a matrix of five shards that run side by side, each with a 10-minute timeout, Playwright's Chromium cached by Playwright's version, its parity lines uploaded as `e2e-report-<shard>`, and its screenshot diffs uploaded when it fails:
 
 | Shard | Files |
 | --- | --- |
 | `views` | screenshots, their mutation test, gestures, frame time |
+| `run-animation` | Run mode's recorded fixture Runs (task 3.5, packages/canvas/docs/run-animation.md) |
 | `parity-1`, `parity-2`, `parity-3` | one parity group each |
 
 The parity shards run with `SERVO_PARITY_STRICT=1`, so a fixture left partial or pending fails CI. `test/e2e-ci-shards.test.ts` checks that every `test/e2e/*.e2e.ts` file is in exactly one shard. The `e2e-report` job then prints one report from the shards' lines with plain Node (`node packages/tools/src/e2e/merge-report.ts <folder>`). Within a shard the projects run one after the other: the runner has two cores, and SwiftShader would use both for each. The parity check runs on a 480 × 360 canvas with reduced motion, and the gestures on a 640 × 480 one, so a software GPU has few pixels to draw for each event. Every gesture step is real input, and a touch press waits for a frame with the canvas on the page (about 120 ms on a laptop), so parity's time grows with each canvas task; when it outgrows a shard, raise `PARITY_GROUPS` and add the files and shards.

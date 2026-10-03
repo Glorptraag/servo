@@ -14,12 +14,18 @@ part servo-motor 5d68db52aaa87fc7
 record 9a094ee6277a2a3e9b01a43f187fad018f678b46476e4dabcf51c0e7db63eb92
 fault brain low-voltage first-tick=2
 fault servo low-voltage first-tick=2
-subjects battery brain motor servo
+subjects battery brain motor servo wire:w1 wire:w2 wire:w3 wire:w4 wire:w5 wire:w6 wire:w7
 tick 0 d0eb0985
   battery volts=2.949 milliamps=127.9 charge=1 x=180 y=600 heading=0
   brain volts=2.949 milliamps=119.5 x=300 y=600 heading=0
   motor volts=0.45 milliamps=90 rpm=0 x=420 y=660 heading=0
   servo volts=2.949 milliamps=8.4 angle=90 x=420 y=540 heading=0
+  wire:w1 milliamps=119.5
+  wire:w2 milliamps=-119.5
+  wire:w3 milliamps=90
+  wire:w4 milliamps=-90
+  wire:w5 milliamps=8.4
+  wire:w6 milliamps=-8.4
 tick 1 37517e5f
 tick 2 e1278ec8
   brain faults=low-voltage
