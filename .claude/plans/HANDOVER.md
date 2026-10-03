@@ -200,3 +200,7 @@ Notes for later tasks:
   - fix the canvas handle/placement browser timeouts;
   - add the CLAUDE.md "How to run" rows for golden, e2e, art, release:dry/release:preview, test:determinism, dev and build. A worker's initial prompt must carry these rows.
 - Removed merged worktrees (1.5, 1.7, 6.3) and the merged task branches.
+- 5.2 prompt MUST add the parent page to the web build and link it from Home behind the gate (D91, R-5.1 finding 2).
+- 5.5 PASS (merged after 4.9 fix). 4.4 prompt MUST extend the airplane-mode e2e to press Run offline (Rapier lazy chunk cached; R-5.5 note 4). R-5.5 findings 1 (retry for unreachable host) and 2 (runs of profile removed elsewhere) -> fold into 5.1 merge or 6.4 sweep. D92-D93 queued.
+- CI on main red since 3.3/3.6 merge: canvas placement.test.ts two tests CI-only (pass locally alone). Debug worker on fix/ci-placement. Hold pharao done for 3.3, 3.6 until CI green.
+- 4.9 save-gap fix merged 3240a4b (Save stores canvas.blueprint; layout effects).

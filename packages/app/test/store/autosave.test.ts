@@ -60,6 +60,29 @@ describe('the autosaver', () => {
     again.close();
   });
 
+  it('drops what waits for a profile removed while the page was open, and saves or notes nothing more for it (D38)', async () => {
+    const { store, child, build, journal } = await setUp();
+    const saving = new Autosaver(journal);
+    const failed: SaveOutcome[] = [];
+    saving.subscribe((outcome) => {
+      if (outcome.kind === 'failed') failed.push(outcome);
+    });
+    saving.edited(withMeta(build, { name: 'Edited as the profile went' }), child);
+    saving.leaving();
+    expect(notes(journal)).toHaveLength(1);
+    saving.drop(child.profile);
+    await store.profiles.remove(child.profile);
+    await saving.settled();
+    saving.edited(withMeta(build, { name: 'After it went' }), child);
+    saving.leaving();
+    expect(saving.pending).toBe(false);
+    await saving.settled();
+    expect(notes(journal)).toEqual([]);
+    expect(failed).toEqual([]);
+    saving.dispose();
+    store.close();
+  });
+
   it('notes what waits as the page goes, at once, and forgets each note once its build is saved', async () => {
     const { store, child, build, journal } = await setUp();
     const saving = new Autosaver(journal);

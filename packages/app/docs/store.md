@@ -27,7 +27,8 @@ Back to the [README](../README.md). The types are in [src/store/index.ts](../src
 | [database.ts](../src/store/database.ts) | The Dexie tables and their rows |
 | [blueprints.ts](../src/store/blueprints.ts) | Blueprints: canonical form, migration on every read |
 | [profiles.ts](../src/store/profiles.ts), [records.ts](../src/store/records.ts) | Profiles; run records and card-game results |
-| [changes.ts](../src/store/changes.ts), [sync.ts](../src/store/sync.ts) | The changes sync will push, and the sync seam |
+| [changes.ts](../src/store/changes.ts) | The changes sync will push. Sync itself is task 5.5's, in [src/sync/](../src/sync/) |
+| [device.ts](../src/store/device.ts) | What the store keeps beside the database in localStorage: the profile in use (task 5.1), and forgetting a removed profile's journal notes |
 
 ### Opening
 
@@ -38,7 +39,7 @@ Back to the [README](../README.md). The types are in [src/store/index.ts](../src
 
 ### Tables
 
-Dexie's versions cover the table layout only (version 1 now). A blueprint's own format version and its migrations stay in packages/schema.
+Dexie's versions cover the table layout only (version 2 now: task 5.5 added `sync`). A blueprint's own format version and its migrations stay in packages/schema.
 
 | Table | Key | Holds |
 | --- | --- | --- |
@@ -47,6 +48,7 @@ Dexie's versions cover the table layout only (version 1 now). A blueprint's own 
 | `runs` | `seq`, unique `id` | `{ id, profile, blueprintId, challenge?, record }`: `record` is the RunRecord as given |
 | `cardGames` | `seq`, unique `id` | `{ id, profile, result }` |
 | `changes` | `seq`, unique `[collection+id]` | The changes sync will push: one per record |
+| `sync` | `key` | `{ key, value }`: the remote's `cursor`, and under `blueprints/<id>` the version of each blueprint last synced, as `<updatedAt>#<content hash>` (task 5.5) |
 
 - Nothing derived from a blueprint is stored beside it (ground rule 5). A list's names, levels and times are read from the documents themselves. A run's `blueprintId` and `challenge` are copied out of its record only to find it by them; records never change.
 - `seq` is the order records were added in. Lists sort by their own time first, and two records with the same time keep the order they were added in.
@@ -57,6 +59,8 @@ Dexie's versions cover the table layout only (version 1 now). A blueprint's own 
 - `create(name)` and `rename(id, name)` take a name as the schema reads a blueprint's: 1 to 60 characters on one line, without spaces at either end. Anything else is refused.
 - `list()` is oldest first. A profile's id is a random UUID v4, so it never carries the name.
 - `remove(id)` removes the profile, its blueprints, runs and card-game results, and records each removal for sync, all in one transaction. A profile that is not there is no error: nothing changes.
+- Then `remove(id)` forgets what this device noted for the profile outside the database ([device.ts](../src/store/device.ts), task 5.1): the autosave journal's notes of its builds (`servo.unsaved:` items of this database whose note names the profile, review R-4.9 finding 12), and the choice of it as the profile in use. Other profiles' notes and other databases' stay.
+- **The profile in use** (task 5.1): `inUse()` is the profile the child's app opens: the one chosen with `use(id)`, or the only one when the device has one; with several and none chosen, none. `use(id)` is the parent view's profile switch. It refuses a profile that is not on the device, and a page whose localStorage is missing or blocked. The choice is kept in localStorage under `servo.profile:` and the database's name, so it is this device's alone and never syncs; a choice naming a profile that is not on the device chooses nothing. `create`, `use` and `remove` also post `changed` on the BroadcastChannel `servo.profiles:` and the database's name, so the app's other open pages follow (below). A sync pull (task 5.5) that adds profiles to a device with one must first `use` the profile in use there, or no one is in use afterwards (R-5.1 finding 3).
 - A write for a profile that is not on the device is refused, so nothing is ever kept for a removed profile. Reads for one give nothing.
 
 ### Blueprints
@@ -95,16 +99,17 @@ Dexie's versions cover the table layout only (version 1 now). A blueprint's own 
 ### Sync
 
 - With no `remote`, `sync.state` is `local-only` and `sync.now()` resolves at once.
-- With a remote, `sync.state` is `idle` and `sync.now()` rejects until task 5.5 syncs. The remote is never called.
-- Every write records its change in the same transaction: the record's collection and id, its profile, its time, and whether it was removed. A record has one change, its latest. `pendingChanges(db)` ([changes.ts](../src/store/changes.ts)) gives them oldest first in the contract's `SyncChange` form, each with its record as stored now (a blueprint as `serializeBlueprint` wrote it, parsed), or without one when it was removed. So the changes wait for 5.5 to push them, and no second copy of a blueprint is kept for them.
+- With a remote, task 5.5's sync ([src/sync/](../src/sync/)) pulls, applies the conflict rule and pushes these changes: when, how and the rule in full are in the [README](../README.md), "Offline and sync".
+- Every write records its change in the same transaction: the record's collection and id, its profile, its time, and whether it was removed. A record has one change, its latest. `pendingChanges(db)` ([changes.ts](../src/store/changes.ts)) gives them oldest first in the contract's `SyncChange` form, each with its record as stored now (a blueprint as `serializeBlueprint` wrote it, parsed), or without one when it was removed. So the changes wait for sync to push them, and no second copy of a blueprint is kept for them.
 - A profile's removal records the removal of the profile and of each record it owned. A refused write records nothing.
 - `pendingChanges` reads each record when it is called, so a pushed change carries the record as it is then. A stored document that is not JSON goes as its text.
 
 ## In the app
 
 - `mountApp` opens the store with `options.store`, replays any builds a page of the app left noted in the journal (below), then opens a build.
-- **The first run.** On a device with no profile, the app makes one: "Builder 1", under a random UUID, with no email and nothing personal. The parent view (task 5.1) lets the adult rename it or add others. Until the profile switch (task 5.1) and Home (task 4.5) choose them, the app opens for the one profile, with its newest build that loads and is not a kept copy, or a new empty "Build 1" at the child's level on the plain floor (`open-floor`) when none does. Both are the store's openings above, so two tabs opening at once make one of each. A child never sees another child's builds.
-- **A device that keeps nothing.** When the device's storage cannot be opened (site data blocked, as on some managed classroom devices), or opening a build in it fails (a quota error), or several profiles are there before the profile switch exists, the child still builds: on an empty "Build 1" kept only in the page, with the content from `loadContent()`. Save is not there to press, and the line says "Builds are not being kept on this device".
+- **The first run.** On a device with no profile, the app makes one: "Builder 1", under a random UUID, with no email and nothing personal. The parent view (task 5.1) lets the adult rename it or add others. The app opens for the profile in use (`profiles.inUse()`: the parent view's switch, or the one profile) and, until Home (task 4.5) chooses the build, with its newest build that loads and is not a kept copy, or a new empty "Build 1" at the child's level on the plain floor (`open-floor`) when none does. Both are the store's openings above, so two tabs opening at once make one of each. A child never sees another child's builds.
+- **Following the profile switch** (R-5.1 finding 1). An open app page listens for the parent view's changes in another page: the `storage` event on the in-use key, and the store's BroadcastChannel (`onProfilesChanged`, [device.ts](../src/store/device.ts)). When the profile in use is no longer the one the page opened for, the page saves every build still waiting, to the child who made it, and waits for those saves; a child removed meanwhile has its waiting builds and notes dropped instead (`Autosaver.drop`, D38). Then the app opens again, drawn afresh, for the child in use now. Every save names its own child, so no edit is ever stored under another. A build that was never kept (no one in use) stays unkept.
+- **A device that keeps nothing.** When the device's storage cannot be opened (site data blocked, as on some managed classroom devices), or opening a build in it fails (a quota error), or several profiles are there and none is chosen as the one in use, the child still builds: on an empty "Build 1" kept only in the page, with the content from `loadContent()`. Save is not there to press, and the line says "Builds are not being kept on this device".
 - The slots reach the child's records as `useShell().child` ([shell.md](shell.md)). The Run loop (task 4.4) adds Runs there, and Home (task 4.5) lists, loads, creates and copies builds there, putting the one it opens on the canvas with `useShell().load`.
 - **Autosave** ([src/shell/autosave.ts](../src/shell/autosave.ts), [save.tsx](../src/shell/save.tsx)). Nothing is lost (brief Section 8, principle 5):
   - the build saves itself about a second after the last edit (`AUTOSAVE_MS`, 1000 ms after the canvas's last `edit` event), and at once when Run is pressed (`setMode('run')`), when the page is hidden (`visibilitychange`), when it is left or reloaded (`pagehide`), and when the Save slot goes away;
@@ -140,7 +145,7 @@ Taken here, conservatively, for Drew and the orchestrator:
 8. `list()` shows a build that does not load when its name, level and time can be read; one that cannot be read is left out, and still stored.
 9. `load` of an id the profile does not hold rejects: no issue code fits a missing document.
 10. The changes for sync are kept as references to the records, read when they are pushed, so no copy of a blueprint is kept twice.
-11. With a remote given, `sync.now()` rejects until task 5.5.
+11. With a remote given, `sync.now()` rejected until task 5.5, which now syncs through it.
 12. A card-game round needs at least one card, of parts the content has; the store does not require ten.
 13. On Firefox, `persist()` asks the person at the screen for permission. The store asks only while the store is not yet kept (review R-4.9 Question 3, for Drew: ask from the parent view instead).
 14. Space is Run and Stop (D42). The Run loop (task 4.4) should leave Space alone while the child types in the name field.

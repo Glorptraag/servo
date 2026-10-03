@@ -1,5 +1,6 @@
 import { playwright } from '@vitest/browser-playwright';
 import { defineConfig } from 'vitest/config';
+import { sidePageCommands } from './test/browser/side-page.ts';
 
 // Two projects (docs/shell.md, "Tests"):
 // - `unit` runs in Node: the layout maths, the tuck states' storage, the zoom ladder and the package contracts.
@@ -41,6 +42,8 @@ export default defineConfig({
             instances: [{ browser: 'chromium' }],
             viewport: VIEWPORT,
             screenshotFailures: false,
+            // A page in a browser context of its own, which the offline and sync tests take offline (task 5.5).
+            commands: sidePageCommands,
           },
         },
       },

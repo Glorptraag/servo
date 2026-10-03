@@ -1,9 +1,10 @@
 // Child profiles (task 4.9): everything is profile-scoped, one profile's queries never return another's records, and
 // removing a profile removes everything it owns (D38).
 import 'fake-indexeddb/auto';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Blueprint, RunRecord } from '@servo/schema';
 import { exampleRunRecords } from '@servo/schema/fixtures';
+import { IN_USE_PREFIX, UNSAVED_PREFIX } from '../../src/store/device.ts';
 import type { ProfileStore } from '../../src/store/index.ts';
 import { T0, UUID_V4, openFor, rowsOf, runOf, schemaContent, storedDocument, withMeta } from './support.ts';
 
@@ -126,6 +127,91 @@ describe('profiles', () => {
     expect(await nobody.blueprints.list()).toEqual([]);
     await expect(nobody.blueprints.create({ name: 'Orphan', level: 1, arena: { preset: 'open-floor', props: [] } })).rejects.toThrow(/no profile/);
     await expect(nobody.cardGames.add([{ part: 'led', named: true }])).rejects.toThrow(/no profile/);
+    store.close();
+  });
+});
+
+/** An in-memory Storage, as localStorage behaves. */
+const memoryStorage = (): Storage => {
+  const items = new Map<string, string>();
+  return {
+    get length() {
+      return items.size;
+    },
+    clear: () => items.clear(),
+    getItem: (key) => items.get(key) ?? null,
+    key: (index) => [...items.keys()][index] ?? null,
+    removeItem: (key) => void items.delete(key),
+    setItem: (key, value) => void items.set(key, String(value)),
+  };
+};
+
+const GHOST = '9b2e4c1a-7d3f-4e5a-8b6c-1d2e3f4a5b6c';
+
+describe('the profile in use on this device (task 5.1)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('is the only profile, or the one chosen, and never one that is gone', async () => {
+    const storage = memoryStorage();
+    vi.stubGlobal('localStorage', storage);
+    const { store, name } = await openFor(schemaContent);
+    expect(await store.profiles.inUse()).toBeUndefined();
+    const robin = await store.profiles.create('Robin');
+    expect(await store.profiles.inUse()).toEqual(robin);
+    const sam = await store.profiles.create('Sam');
+    expect(await store.profiles.inUse()).toBeUndefined();
+
+    expect(await store.profiles.use(sam.id)).toEqual(sam);
+    expect(await store.profiles.inUse()).toEqual(sam);
+    expect(storage.getItem(`${IN_USE_PREFIX}${name}`)).toBe(sam.id);
+    await expect(store.profiles.use(GHOST)).rejects.toThrow(/no profile/);
+    expect(await store.profiles.inUse()).toEqual(sam);
+
+    // A choice naming a profile that is not on the device chooses nothing.
+    storage.setItem(`${IN_USE_PREFIX}${name}`, GHOST);
+    expect(await store.profiles.inUse()).toBeUndefined();
+    await store.profiles.use(sam.id);
+
+    await store.profiles.remove(sam.id);
+    expect(storage.getItem(`${IN_USE_PREFIX}${name}`)).toBeNull();
+    expect(await store.profiles.inUse()).toEqual(robin);
+    store.close();
+  });
+
+  it('cannot be chosen where the page keeps nothing, and then is only ever the one profile', async () => {
+    vi.stubGlobal('localStorage', undefined);
+    const { store } = await openFor(schemaContent);
+    const robin = await store.profiles.create('Robin');
+    await expect(store.profiles.use(robin.id)).rejects.toThrow(/cannot keep/);
+    expect(await store.profiles.inUse()).toEqual(robin);
+    await store.profiles.create('Sam');
+    expect(await store.profiles.inUse()).toBeUndefined();
+    await store.profiles.remove(robin.id);
+    store.close();
+  });
+
+  it('forgets the builds the journal noted for a removed profile, and only those (R-4.9 finding 12)', async () => {
+    const storage = memoryStorage();
+    vi.stubGlobal('localStorage', storage);
+    const { store, name } = await openFor(schemaContent);
+    const robin = await store.profiles.create('Robin');
+    const sam = await store.profiles.create('Sam');
+    const noteFor = (profile: string) => JSON.stringify({ profile, base: T0, editedAt: T0, hash: 1, build: rolling });
+    const gone = [`${UNSAVED_PREFIX}${name}:page-a:${robin.id} b1`, `${UNSAVED_PREFIX}${name}:page-b:${robin.id} b2`];
+    for (const item of gone) storage.setItem(item, noteFor(robin.id));
+    const kept: [string, string][] = [
+      [`${UNSAVED_PREFIX}${name}:page-a:${sam.id} b3`, noteFor(sam.id)],
+      [`${UNSAVED_PREFIX}${name}:page-c:unreadable`, '{not json'],
+      [`${UNSAVED_PREFIX}other-db:page-a:${robin.id} b1`, noteFor(robin.id)],
+      ['servo.shell.tucked', '[]'],
+    ];
+    for (const [item, value] of kept) storage.setItem(item, value);
+
+    await store.profiles.remove(robin.id);
+    const left = Array.from({ length: storage.length }, (_, index) => storage.key(index) ?? '');
+    expect(left.sort()).toEqual(kept.map(([item]) => item).sort());
     store.close();
   });
 });
