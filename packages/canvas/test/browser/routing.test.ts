@@ -31,7 +31,8 @@ const PANELS = { top: 64, right: 340, bottom: 96, left: 0 };
 let surface: CanvasSurface;
 
 /** A software GPU on a busy machine can take a minute to mount a canvas, and minutes for many gestures. */
-const MOUNT_MS = 120_000;
+// Five minutes: at load 200–350 with many agents running, mounting has run past two (review: list-view hook timeout).
+const MOUNT_MS = 300_000;
 const LONG_MS = 360_000;
 
 beforeAll(async () => {
