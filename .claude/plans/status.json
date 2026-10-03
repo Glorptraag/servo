@@ -929,7 +929,7 @@
       "completed_by": null
     },
     "5.3": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -943,8 +943,8 @@
       ],
       "done_when": "Export of each kit fixture lists every part once with its family; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-03T03:55:31+00:00",
+      "completed_by": "W-5.3",
       "dispatched_at": "2026-10-03T02:19:54+00:00"
     },
     "5.4": {
