@@ -245,3 +245,4 @@ Notes for later tasks:
 - Builders push their branch and report a CI run id.
 
 **Open decisions.** D1–D106, each with a default the build uses. Drew's sign-offs are D64 (G2 cards) and D95 (G3 hands-on). The settings change is D103 (make perf a required check).
+- CI BLOCKED by GitHub billing from run 37135558516 (D107). Local checks are the authority until fixed; re-run CI on main afterwards.
