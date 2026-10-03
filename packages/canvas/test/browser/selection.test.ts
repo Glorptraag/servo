@@ -418,7 +418,9 @@ const expectLabelOn = (id: WireId, shot: Shot, where: 'on' | 'beside' = 'on'): v
   if (!box || !wire) throw new Error(`no label on ${id}`);
   const scale = probe.view.scale;
   const reach = where === 'on' ? 0.5 : WIRE_HIT_MM / 2 + Math.max(box.width, box.height) / 2 / scale + (BESIDE_STEPS - 1) * (box.height / scale);
-  expect(distanceToSegment(box.centre.world, wire.from.world, wire.to.world), `the label’s middle ${where} the line`).toBeLessThanOrEqual(reach);
+  const path = wire.path.map((point) => point.world);
+  const off = Math.min(...path.slice(1).map((b, k) => distanceToSegment(box.centre.world, path[k] as Vec2, b)));
+  expect(off, `the label’s middle ${where} the line, along its route`).toBeLessThanOrEqual(reach);
   const centre = screenOf(box.centre.world);
   const pill = rgbOf(STANDARD_PALETTE.tile);
   for (const side of [-1, 1]) {
