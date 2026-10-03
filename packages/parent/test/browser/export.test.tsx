@@ -3,7 +3,7 @@
 // list alone, and closes back to the button that opened it.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cdp, userEvent } from 'vitest/browser';
-import { openStore } from '@servo/app/store';
+import { DATA_NOTE, openStore, telemetryOf } from '@servo/app/store';
 import type { ServoStore } from '@servo/app/store';
 import { loadFixtures } from '@servo/content/fixtures';
 import type { Blueprint } from '@servo/schema';
@@ -95,6 +95,25 @@ const passGate = async (host: HTMLElement): Promise<void> => {
   await expect.poll(() => host.querySelector('h1')?.textContent).toBe(PARENT_TEXT.title);
 };
 
+describe('the data note (task 6.2)', () => {
+  it('closes the parent view behind the gate, as headings, paragraphs and lists, with every event it lists', async () => {
+    const { store } = await family();
+    const host = mount(store);
+    await expect.poll(() => host.querySelector('input')).toBeTruthy();
+    expect(host.textContent).not.toContain('What Servo keeps');
+    await passGate(host);
+    await expect.poll(() => host.querySelector('section[aria-labelledby="servo-parent-data-note"]')).toBeTruthy();
+    const section = host.querySelector('section[aria-labelledby="servo-parent-data-note"]') as HTMLElement;
+    expect(section.querySelector('h2')?.textContent).toBe('What Servo keeps');
+    expect([...section.querySelectorAll('li > code:first-child')].map((code) => code.textContent)).toEqual(['session-start', 'run', 'hint', 'export']);
+    // Every word of docs/data-note.md, without its Markdown, in order.
+    const words = (text: string) => text.replace(/^#+ |^- |`/gm, '').split(/\s+/).filter(Boolean);
+    expect(words(section.innerText)).toEqual(words(DATA_NOTE));
+    expect(host.querySelector('main')?.lastElementChild?.previousElementSibling).toBe(section);
+    expect(section.querySelector('button, input, a, [role="dialog"]')).toBeNull();
+  });
+});
+
 describe('the parts list in the parent view', () => {
   it('is offered only behind the gate, and only for the child in use', async () => {
     const { store, roller, samRoller } = await family();
@@ -111,13 +130,18 @@ describe('the parts list in the parent view', () => {
   });
 
   it('opens by pointer with every part once and its family, the wiring and the safety notes, and closes back to its button', async () => {
-    const { store, roller } = await family();
+    const { store, roller, robin, sam } = await family();
     const host = mount(store);
     await passGate(host);
     await expect.poll(() => host.querySelector(`button[aria-label="${EXPORT_TEXT.openFor('Robin roller')}"]`)).toBeTruthy();
 
     await userEvent.click(opener(host, 'Robin roller'));
     await expect.poll(() => heading(host)).toBe(EXPORT_TEXT.title('Robin roller'));
+    // The list made is one export event for Robin (task 6.2), and nothing for Sam.
+    await expect.poll(async () => (await telemetryOf(store.forProfile(robin.id))).map((event) => [event.kind, 'what' in event ? event.what : ''])).toEqual([
+      ['export', 'parts-list'],
+    ]);
+    expect(await telemetryOf(store.forProfile(sam.id))).toEqual([]);
     await expect.poll(() => document.activeElement).toBe(panel(host)?.querySelector('h3'));
     expect(opener(host, 'Robin roller').getAttribute('aria-expanded')).toBe('true');
     expect(rows(host)).toEqual([

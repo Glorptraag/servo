@@ -4,6 +4,7 @@
 import { Dexie } from 'dexie';
 import type { EntityTable, Table } from 'dexie';
 import type { BlueprintId, ChallengeId, ProfileId, RunId, RunRecord, Timestamp } from '@servo/schema';
+import type { TelemetryEvent } from '../telemetry/events.ts';
 import type { CardGameResult, SyncCollection } from './index.ts';
 
 /** The database's name when StoreOptions gives none. */
@@ -72,6 +73,16 @@ export interface SyncRow {
   readonly value: string;
 }
 
+/**
+ * One telemetry event (task 6.2, src/telemetry/), kept on this device for its child only. It never goes to `changes`,
+ * so sync never sends it, and removing the profile removes it.
+ */
+export interface TelemetryRow {
+  readonly seq: number;
+  readonly profile: ProfileId;
+  readonly event: TelemetryEvent;
+}
+
 export type ServoDatabase = Dexie & {
   readonly profiles: EntityTable<ProfileRow, 'seq'>;
   readonly blueprints: Table<BlueprintRow, BlueprintId>;
@@ -79,6 +90,7 @@ export type ServoDatabase = Dexie & {
   readonly cardGames: EntityTable<CardGameRow, 'seq'>;
   readonly changes: EntityTable<ChangeRow, 'seq'>;
   readonly sync: Table<SyncRow, string>;
+  readonly telemetry: EntityTable<TelemetryRow, 'seq'>;
 };
 
 /** Opens the database, creating it on first use. Rejects when the device's storage cannot be opened. */
@@ -92,6 +104,7 @@ export const openDatabase = async (name: string): Promise<ServoDatabase> => {
     changes: '++seq, &[collection+id]',
   });
   db.version(2).stores({ sync: 'key' });
+  db.version(3).stores({ telemetry: '++seq, profile' });
   await db.open();
   return db;
 };

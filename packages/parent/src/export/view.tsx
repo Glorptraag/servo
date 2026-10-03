@@ -4,6 +4,7 @@
 // keyboard take the same path, and the list itself is a table and plain lists a screen reader reads in order.
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
+import { emitTelemetry } from '@servo/app/store';
 import type { BlueprintSummary, ServoStore } from '@servo/app/store';
 import { PART_FAMILIES } from '@servo/schema';
 import type { BlueprintId, ProfileId } from '@servo/schema';
@@ -81,10 +82,14 @@ export const PartsListExport = ({ store, profile, builds, describe, actions }: P
   const open = (build: BlueprintId) => {
     const ticket = (request.current += 1);
     setShown({ build, state: 'loading' });
-    void store
-      .forProfile(profile)
-      .blueprints.load(build)
+    const child = store.forProfile(profile);
+    void child.blueprints
+      .load(build)
       .then((load): Shown => (load.ok ? { build, state: 'ready', list: partsListFrom(load.blueprint, store.content.catalogue) } : { build, state: 'failed' }))
+      .then((next) => {
+        if (next.state === 'ready') emitTelemetry(child, 'export', { what: 'parts-list' });
+        return next;
+      })
       .catch((): Shown => ({ build, state: 'failed' }))
       .then((next) => {
         if (live.current && request.current === ticket) setShown(next);

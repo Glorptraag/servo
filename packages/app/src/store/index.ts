@@ -14,6 +14,9 @@ export { SHARED_BUILD_NAME, shareLinkOf } from '../sharing/link.ts';
 /** A breakdown Run's named faults (D48), read from its record, for the parent view's progress (task 5.2). */
 export { namedFaultsShown } from '../challenges/goal.ts';
 export type { ShareOptions, ShareResult } from '../sharing/link.ts';
+// Telemetry (task 6.2): the parent view emits its export events, and draws the data note, through here.
+export { DATA_NOTE, emitTelemetry, noteBlocks, telemetryOf } from '../telemetry/index.ts';
+export type { NoteBlock, NoteSpan, TelemetryEvent, TelemetryFields, TelemetryKind } from '../telemetry/index.ts';
 
 export interface StoreOptions {
   /** The IndexedDB database name. Tests pass their own. Default 'servo'. */
@@ -43,7 +46,10 @@ export interface ServoStore {
   /** What was wrong with the content as loaded, for a developer's eyes. Empty in a shipped build: CI fails otherwise. */
   readonly contentIssues: readonly ContentIssue[];
   readonly profiles: Profiles;
-  /** One child's records. A scope reads and writes only its own profile's blueprints, runs and card games. */
+  /**
+   * One child's records. A scope reads and writes only its own profile's blueprints, runs and card games. Each call
+   * makes a new scope, which is one session for the child's telemetry (task 6.2, `emitTelemetry`).
+   */
   forProfile(profile: ProfileId): ProfileStore;
   readonly sync: Sync;
   close(): void;

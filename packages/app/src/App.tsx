@@ -2,7 +2,7 @@
 // (README, "How the packages meet"). Each slot holds its placeholder until the task that owns it lands; swap a
 // placeholder for the real part here. A challenge chosen on Home lays its goal line, kit, level and arena over the
 // same canvas (task 4.5), with the hint button beside the goal (task 4.6).
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { mountCanvas } from '@servo/canvas';
 import type { CanvasHandle, ResolveArt } from '@servo/canvas';
 import type { Content } from '@servo/content';
@@ -19,6 +19,7 @@ import type { Autosaver, CanvasSetup, ShellSlots } from './shell/index.ts';
 import { SoundControl, SoundLayer, WebAudioSink } from './sound/index.ts';
 import { SpecCard, createRunFrames } from './spec-card/index.ts';
 import type { ProfileStore } from './store/index.ts';
+import { emitTelemetry } from './telemetry/emit.ts';
 import { Tray, kitForLevel } from './tray/index.ts';
 
 /** A child starts at Level 1 (brief Section 2); the level comes from progress once task 5.2 records it. */
@@ -66,7 +67,16 @@ export const App = ({ content, child = null, start, saving, onReady, flags: give
   // A challenge chosen on Home lays its goal line, kit, level and arena over the same canvas (task 4.5); none is the sandbox.
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   // The hint steps used (task 4.6): the hint button adds them, and the Run bar keeps them in the next Run's record.
-  const [hints] = useState(() => new HintLog());
+  // Each step used is also a `hint` event (telemetry, task 6.2), about the challenge on the canvas as it is used.
+  const onCanvas = useRef({ child, challenge });
+  onCanvas.current = { child, challenge };
+  const [hints] = useState(
+    () =>
+      new HintLog((use) => {
+        const { child: user, challenge: on } = onCanvas.current;
+        if (on) emitTelemetry(user, 'hint', { challenge: on.id, step: use.step });
+      }),
+  );
   // The Level 3 slot (task 6.6, README "Feature flags"): with the flag on, the servo motor's angle unlocks on its card,
   // a brain's card shows its program, and each Run drives the brains by it.
   const slot = flags['level-3-slot'];

@@ -14,6 +14,7 @@ import type { Simulation } from '@servo/sim-core';
 import { judgeRun } from '../challenges/goal.ts';
 import type { HintUses } from '../hints/log.ts';
 import type { ProfileStore } from '../store/index.ts';
+import { emitTelemetry } from '../telemetry/emit.ts';
 import { uuidV4 } from '../store/uuid.ts';
 
 export interface RunRecorderOptions {
@@ -102,6 +103,7 @@ export class RunRecorder {
     const child = this.options.child();
     if (!child) return;
     const series = this.seriesOf(blueprint);
+    emitTelemetry(child, 'session-start', { mode: series.challenge ? 'challenge' : 'sandbox' });
     this.pressed = { child, series, key: keyOf(child, series), startedAt: this.now(), hints: this.options.hints?.pending(blueprint) ?? [] };
     this.read(child, series);
   }
@@ -143,7 +145,12 @@ export class RunRecorder {
     known.last = record;
     const { child, series, key } = pressed;
     this.keeping = this.keeping
-      .then(() => child.runs.add(record))
+      .then(async () => {
+        await child.runs.add(record);
+        if (record.challenge !== undefined) {
+          emitTelemetry(child, 'run', { challenge: record.challenge, runNumber: record.runNumber, goalMet: record.goal?.met === true });
+        }
+      })
       .catch((error: unknown) => {
         // What the store holds is no longer what the recorder counted: read it again.
         console.warn('This Run could not be kept on this device.', error);

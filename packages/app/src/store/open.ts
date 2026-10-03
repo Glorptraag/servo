@@ -11,6 +11,7 @@ import type { Profile, ServoStore, StoreOptions } from './index.ts';
 import { profilesOf, profilesOrFirst } from './profiles.ts';
 import { cardGamesOf, runsOf } from './records.ts';
 import { syncFor } from '../sync/index.ts';
+import { withTelemetry } from '../telemetry/emit.ts';
 import type { SyncOptions } from '../sync/index.ts';
 
 /**
@@ -46,12 +47,13 @@ export const openStoreWith = async (load: ContentLoad, options: StoreOptions = {
     content: load.content,
     contentIssues: load.issues,
     profiles: profilesOf(ctx),
-    forProfile: (profile) => ({
-      profile,
-      blueprints: blueprintsOf(ctx, profile),
-      runs: runsOf(ctx, profile),
-      cardGames: cardGamesOf(ctx, profile),
-    }),
+    forProfile: (profile) =>
+      withTelemetry(ctx, {
+        profile,
+        blueprints: blueprintsOf(ctx, profile),
+        runs: runsOf(ctx, profile),
+        cardGames: cardGamesOf(ctx, profile),
+      }),
     sync: syncing,
     close: () => {
       syncing.dispose();

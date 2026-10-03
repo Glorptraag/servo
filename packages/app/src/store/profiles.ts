@@ -87,7 +87,7 @@ export const profilesOf = ({ db, now }: StoreContext): Profiles => ({
   },
 
   remove: async (id) => {
-    await db.transaction('rw', [db.profiles, db.blueprints, db.runs, db.cardGames, db.changes], async () => {
+    await db.transaction('rw', [db.profiles, db.blueprints, db.runs, db.cardGames, db.changes, db.telemetry], async () => {
       const row = typeof id === 'string' ? await db.profiles.get({ id }) : undefined;
       if (!row) return;
       const at = now();
@@ -101,6 +101,7 @@ export const profilesOf = ({ db, now }: StoreContext): Profiles => ({
       await db.blueprints.where('profile').equals(id).delete();
       await db.runs.where('profile').equals(id).delete();
       await db.cardGames.where('profile').equals(id).delete();
+      await db.telemetry.where('profile').equals(id).delete();
       await db.profiles.delete(row.seq);
       for (const change of owned) await recordChange(db, change);
       await recordChange(db, { collection: 'profiles', id, updatedAt: at, removed: true });

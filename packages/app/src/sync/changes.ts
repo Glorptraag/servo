@@ -51,7 +51,7 @@ const hashOf = (text: string): string => {
 };
 
 /** The store's tables sync reads and writes, every one of them, in one transaction. */
-const tablesOf = (db: ServoDatabase) => [db.profiles, db.blueprints, db.runs, db.cardGames, db.changes, db.sync];
+const tablesOf = (db: ServoDatabase) => [db.profiles, db.blueprints, db.runs, db.cardGames, db.changes, db.sync, db.telemetry];
 
 // ---- Going out ----
 
@@ -249,7 +249,10 @@ export const applyPull = (ctx: StoreContext, pull: SyncPull): Promise<readonly K
           (await db.blueprints.where('profile').equals(change.id).count()) +
           (await db.runs.where('profile').equals(change.id).count()) +
           (await db.cardGames.where('profile').equals(change.id).count());
-        if (left === 0) await db.profiles.delete(local.seq);
+        if (left === 0) {
+          await db.telemetry.where('profile').equals(change.id).delete();
+          await db.profiles.delete(local.seq);
+        }
         return;
       }
       const document = change.document;

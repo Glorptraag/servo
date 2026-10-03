@@ -2,7 +2,7 @@
 // password and no server (D10): the adult account is this device, and its children are the store's profiles, each an
 // opaque id and a name the adult gives, with no email, no chat and nothing public. The profile switch chooses the
 // child in use on this device, whose builds the child's app opens; the parent view shows that child's records only.
-import { shareLinkOf } from '@servo/app/store';
+import { emitTelemetry, shareLinkOf } from '@servo/app/store';
 import type { BlueprintSummary, Profile, ServoStore } from '@servo/app/store';
 import type { BlueprintId, ProfileId } from '@servo/schema';
 
@@ -82,8 +82,8 @@ export const renameChild = async (store: ServoStore, id: ProfileId, text: string
 export const switchChild = (store: ServoStore, id: ProfileId): Promise<Profile> => store.profiles.use(id);
 
 /**
- * Removes a child with their builds, runs and card-game results, and what this device noted for them (D38). The view
- * calls it only once the adult has confirmed.
+ * Removes a child with their builds, runs, card-game results and telemetry events, and what this device noted for them
+ * (D38). The view calls it only once the adult has confirmed.
  */
 export const removeChild = (store: ServoStore, id: ProfileId): Promise<void> => store.profiles.remove(id);
 
@@ -104,14 +104,15 @@ export const shareLinkFor = async (store: ServoStore, id: BlueprintId, includeNa
   const current = await store.profiles.inUse();
   if (!current) throw new ShareRefused();
   // The store refuses a build this child does not hold, so another child's build is never read.
-  const loaded = await store
-    .forProfile(current.id)
-    .blueprints.load(id)
+  const child = store.forProfile(current.id);
+  const loaded = await child.blueprints
+    .load(id)
     .catch((error: unknown) => {
       throw new ShareRefused(error);
     });
   if (!loaded.ok) throw new ShareRefused(loaded.issues);
   const link = await shareLinkOf(loaded.blueprint, store.content.catalogue, { includeName, ...(base === undefined ? {} : { base }) });
   if (!link.ok) throw new ShareRefused(link.issues);
+  emitTelemetry(child, 'export', { what: 'share-link' });
   return link.url;
 };

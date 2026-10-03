@@ -16,7 +16,7 @@ Back to the [README](../README.md). The types are in [src/store/index.ts](../src
 - **Card games** (task 5.4, D40). One result per round: ten cards drawn from Level 1–2 parts, each marked named or not by the adult. `latest()` is the result that counts. The child never sees a score.
 - **Sync.** Through a pluggable `SyncRemote`: an in-memory one for tests, an HTTP one disabled until a host is configured (D10, D13). With none, the store is local-only, which is also the offline path. Profiles, blueprints, runs and card games all sync.
 - **Conflict rule.** When one `meta.id` changed on two devices since the last sync, the copy with the later `updatedAt` keeps the id, and the other is kept as its own blueprint with a fresh id (`keptFrom` names the original). Blueprints are never merged and never dropped. Runs and card-game results are only ever added.
-- **Later.** Telemetry (task 6.2) adds its collection here, noting the interface change. Until then the parent view's telemetry fields are absent (D39).
+- **Telemetry** (task 6.2) is the `telemetry` table below, written only by `emitTelemetry` and read by `telemetryOf`; neither is on `ServoStore`, so its interface is unchanged. The parent view's "Time in the sandbox" stays absent (D39): no Section 14 measure needs it, so no event records it.
 
 ## How task 4.9 keeps them
 
@@ -39,7 +39,7 @@ Back to the [README](../README.md). The types are in [src/store/index.ts](../src
 
 ### Tables
 
-Dexie's versions cover the table layout only (version 2 now: task 5.5 added `sync`). A blueprint's own format version and its migrations stay in packages/schema.
+Dexie's versions cover the table layout only (version 3 now: task 5.5 added `sync`, task 6.2 `telemetry`). A blueprint's own format version and its migrations stay in packages/schema.
 
 | Table | Key | Holds |
 | --- | --- | --- |
@@ -49,6 +49,7 @@ Dexie's versions cover the table layout only (version 2 now: task 5.5 added `syn
 | `cardGames` | `seq`, unique `id` | `{ id, profile, result }` |
 | `changes` | `seq`, unique `[collection+id]` | The changes sync will push: one per record |
 | `sync` | `key` | `{ key, value }`: the remote's `cursor`, and under `blueprints/<id>` the version of each blueprint last synced, as `<updatedAt>#<content hash>` (task 5.5) |
+| `telemetry` | `seq`, index `profile` | `{ profile, event }`: one telemetry event (task 6.2, [README](../README.md#telemetry)). Never in `changes`, so never synced; deleted with its profile |
 
 - Nothing derived from a blueprint is stored beside it (ground rule 5). A list's names, levels and times are read from the documents themselves. A run's `blueprintId` and `challenge` are copied out of its record only to find it by them; records never change.
 - `seq` is the order records were added in. Lists sort by their own time first, and two records with the same time keep the order they were added in.
