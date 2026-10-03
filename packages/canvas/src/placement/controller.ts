@@ -727,8 +727,10 @@ export class PlacementController {
     };
     return {
       tap: (event) => {
+        // A tap that lands a waiting part, or a part the Move handle moves, is where it goes, not a selection.
+        const landing = (this.incoming !== undefined && this.carrying === undefined) || this.relocating !== undefined;
         this.tapped(event);
-        this.surface.selectionShown('prop', prop.id);
+        if (!landing) this.surface.selectionShown('prop', prop.id);
       },
       start: () => {
         const point = arenaPoint(start);

@@ -7,14 +7,18 @@ import { cdp, page } from 'vitest/browser';
 import type { Blueprint, PlacedPartId, Prop, Vec2, WireId } from '@servo/schema';
 import type { CanvasSurface } from '../../src/renderer/surface.ts';
 import { STANDARD_PALETTE } from '../../src/renderer/style.ts';
-import { PORT_MM } from '../../src/scene/units.ts';
+import { PORT_MM, WIRE_HIT_MM } from '../../src/scene/units.ts';
 import { HINT_GAP_MM, HINT_RING_MM, PROP_RING_MM, SOCKET_REACH_MM } from '../../src/selection/views.ts';
+import { distanceToSegment } from '../../src/scene/geometry.ts';
+import { BESIDE_STEPS } from '../../src/selection/label.ts';
 import { probeCanvas } from '../../src/testing.ts';
 import type { CanvasProbe } from '../../src/testing.ts';
 import { blueprintOf, fixture } from '../helpers/catalogue.ts';
 import { PREFS, colourDistance, describeRgb, frames, listen, mount, rgbOf, settle, shoot, unmountAll } from './helpers.ts';
 import type { Shot } from './helpers.ts';
 import { pictures, tap } from './placing.ts';
+import { expectStrictShot } from './strict.ts';
+import type { Box } from './strict.ts';
 
 let surface: CanvasSurface;
 let host: HTMLElement;
@@ -120,10 +124,11 @@ describe('a tap or a click selects, and `select` says so with the right ids', ()
     expect(surface.selection).toEqual({ kind: 'part', partId: 'caster' });
     expect(surface.wiring.selectedWire).toBeUndefined();
     expect(probe.wireLabel).toBeUndefined();
-    expect(selections(events)).toEqual([{ kind: 'wire', wireId: 'w8' }, null, { kind: 'part', partId: 'caster' }]);
+    // One `select` per change, as `select` and the list view give: no `null` between the wire and the part.
+    expect(selections(events)).toEqual([{ kind: 'wire', wireId: 'w8' }, { kind: 'part', partId: 'caster' }]);
   });
 
-  it('a drive linkage says turning', async () => {
+  it('a drive linkage says turning', () => {
     surface.select({ kind: 'wire', wireId: 'w6' });
     expect(probe.wireLabel).toBe('turning');
     expect(surface.wiring.selectedWire).toBe('w6');
@@ -297,6 +302,16 @@ describe('props', () => {
     expect(surface.selection).toBeNull();
   });
 
+  it('does not select a prop under a tap that lands a waiting part', async () => {
+    load(withProps, { x: 100, y: 0 });
+    const events = listen(surface, 'select');
+    const edits = listen(surface, 'edit');
+    surface.beginPlacement('caster');
+    await tap('mouse', probe.pageOf({ x: 190, y: -70 }));
+    expect(edits.map((edit) => edit.command.kind)).toEqual(['place-part']);
+    expect(selections(events).some((selection) => (selection as { kind?: string } | null)?.kind === 'prop')).toBe(false);
+  });
+
   it('selects a preset’s prop to inspect it, with no bin', async () => {
     // The wall stop's box sits at arena (1000, 950): canvas (700, −350).
     const preset = blueprintOf({ parts: rolling.parts, wires: rolling.wires, arena: { preset: 'wall-stop', props: [] } }, 'Wall stop');
@@ -328,6 +343,65 @@ const socket = (key: string): Vec2 => {
   return found.at.world;
 };
 
+const FILE = 'selection.test.ts';
+
+/** The label's glyphs, in CSS pixels from the canvas's top left: the device draws them in its own fonts, so they are masked from the strict rule and probed instead. */
+const textBox = (): Box => {
+  const box = probe.wireLabelBox;
+  if (!box) throw new Error('no label');
+  const centre = screenOf(box.centre.world);
+  const width = box.width - 2 * 20 + 6;
+  const height = box.height - 20 + 6;
+  return { x: centre.x - width / 2, y: centre.y - height / 2, width, height };
+};
+
+/**
+ * The label sits on the wire's line (`beside`: just beside a line too short to hold it, BESIDE_STEPS rows at most), a
+ * pill in the tile colour with dark type in it.
+ */
+const expectLabelOn = (id: WireId, shot: Shot, where: 'on' | 'beside' = 'on'): void => {
+  const box = probe.wireLabelBox;
+  const wire = probe.wire(id);
+  if (!box || !wire) throw new Error(`no label on ${id}`);
+  const scale = probe.view.scale;
+  const reach = where === 'on' ? 0.5 : WIRE_HIT_MM / 2 + Math.max(box.width, box.height) / 2 / scale + (BESIDE_STEPS - 1) * (box.height / scale);
+  expect(distanceToSegment(box.centre.world, wire.from.world, wire.to.world), `the label’s middle ${where} the line`).toBeLessThanOrEqual(reach);
+  const centre = screenOf(box.centre.world);
+  const pill = rgbOf(STANDARD_PALETTE.tile);
+  for (const side of [-1, 1]) {
+    const at = { x: centre.x + side * (box.width / 2 - 8), y: centre.y };
+    const actual = shot.at(at);
+    expect(colourDistance(actual, pill), `the pill’s ${side < 0 ? 'left' : 'right'} end: ${describeRgb(actual)}`).toBeLessThanOrEqual(12);
+  }
+  const text = textBox();
+  let ink = 0;
+  for (let x = text.x; x < text.x + text.width; x += 1) {
+    for (let y = text.y; y < text.y + text.height; y += 1) {
+      if (colourDistance(shot.at({ x, y }), rgbOf(STANDARD_PALETTE.label)) <= 60) ink += 1;
+    }
+  }
+  expect(ink, 'the word’s ink inside the pill').toBeGreaterThan(20);
+};
+
+/** How many points just outside a part's tile outline show the ring's dark colour. */
+const ringPoints = (shot: Shot, id: PlacedPartId): number => {
+  const part = probe.part(id);
+  if (!part) throw new Error(`no part ${id}`);
+  const corners = part.corners.map((corner) => corner.world);
+  const centre = part.centre.world;
+  let hits = 0;
+  corners.forEach((a, i) => {
+    const b = corners[(i + 1) % corners.length] as Vec2;
+    for (const t of [0.3, 0.4, 0.5, 0.6, 0.7]) {
+      const on = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+      const away = Math.hypot(on.x - centre.x, on.y - centre.y);
+      const at = { x: on.x + ((on.x - centre.x) / away) * 0.6, y: on.y + ((on.y - centre.y) / away) * 0.6 };
+      if (colourDistance(shot.at(screenOf(at)), rgbOf(STANDARD_PALETTE.label)) <= 40) hits += 1;
+    }
+  });
+  return hits;
+};
+
 describe('focus states, by pixel probes and screenshots', () => {
   it('a selected part: its neighbours and wires as they are, everything else one step fainter', async () => {
     const before = await show();
@@ -342,7 +416,10 @@ describe('focus states, by pixel probes and screenshots', () => {
     expectChanged(before, after, probe.worldOf(onPart('wheel-left')), 'the dimmed wheel');
     expectSame(before, after, { x: 55, y: 8 }, 'the switch, a neighbour');
     expectNear(after, socket('battery.plus'), rgbOf(STANDARD_PALETTE.types.power.colour), 'its connected socket, undimmed');
+    expect(ringPoints(after, 'battery'), 'the ring round the selected part').toBeGreaterThanOrEqual(8);
+    expect(ringPoints(before, 'battery'), 'no ring before').toBeLessThan(3);
     await expect.element(page.elementLocator(host)).toMatchScreenshot('focus-part');
+    await expectStrictShot(host, FILE, 'focus-part');
   });
 
   it('a selected wire: glowing, both sockets haloed, its label, and nothing dimmed', async () => {
@@ -353,17 +430,22 @@ describe('focus states, by pixel probes and screenshots', () => {
     expect(probe.emphasis({ wire: 'w8' })).toBe('highlighted');
     expect(probe.emphasis({ wire: 'w10' })).toBe('normal');
     expect(probe.wireLabel).toBe('power');
+    expectLabelOn('w8', after);
     const halo = (key: string): Vec2 => ({ x: socket(key).x, y: socket(key).y + PORT_MM / 2 + 1.2 });
     expectChanged(before, after, halo('switch.a'), 'a halo round the switch’s socket', 10);
     expectSame(before, after, probe.worldOf(onPart('caster')), 'the caster, not dimmed');
     await expect.element(page.elementLocator(host)).toMatchScreenshot('focus-wire');
+    await expectStrictShot(host, FILE, 'focus-wire', [textBox()]);
   });
 
   it('a selected drive linkage, labelled turning', async () => {
     surface.select({ kind: 'wire', wireId: 'w6' });
     await show();
     expect(probe.wireLabel).toBe('turning');
+    // A wheel's drive linkage on its motor's shaft is too short to hold the label: it sits just beside it.
+    expectLabelOn('w6', await shoot(surface.canvas), 'beside');
     await expect.element(page.elementLocator(host)).toMatchScreenshot('focus-linkage');
+    await expectStrictShot(host, FILE, 'focus-linkage', [textBox()]);
   });
 
   it('a selected prop: ringed, with its bin', async () => {
@@ -374,6 +456,7 @@ describe('focus states, by pixel probes and screenshots', () => {
     expectChanged(before, after, { x: 190 + 50 + PROP_RING_MM / 2, y: -70 }, 'the ring just outside the box');
     expectSame(before, after, { x: 0, y: 0 }, 'the build, not dimmed');
     await expect.element(page.elementLocator(host)).toMatchScreenshot('focus-prop');
+    await expectStrictShot(host, FILE, 'focus-prop');
   });
 
   it('a part selected in Run mode keeps its focus, with no handles', async () => {
@@ -383,6 +466,7 @@ describe('focus states, by pixel probes and screenshots', () => {
     expect(probe.emphasis({ part: 'caster' })).toBe('dimmed');
     expect(probe.handles().size).toBe(0);
     await expect.element(page.elementLocator(host)).toMatchScreenshot('focus-part-run');
+    await expectStrictShot(host, FILE, 'focus-part-run');
   });
 });
 
@@ -419,6 +503,7 @@ describe('hint rungs, drawn over everything and clear of every socket', () => {
     expect(changed.length, 'the ring below the switch').toBeGreaterThan(0);
     expect(surface.selecting.shownHint?.step).toBe('pulse-part');
     await expect.element(page.elementLocator(host)).toMatchScreenshot('hint-pulse-part');
+    await expectStrictShot(host, FILE, 'hint-pulse-part');
   });
 
   it('pulses a port on every part of a type', async () => {
@@ -433,6 +518,7 @@ describe('hint rungs, drawn over everything and clear of every socket', () => {
       expect(changed.length, `the ring round ${key}`).toBeGreaterThan(3);
     }
     await expect.element(page.elementLocator(host)).toMatchScreenshot('hint-pulse-port');
+    await expectStrictShot(host, FILE, 'hint-pulse-port');
   });
 
   it('draws a ghost wire that stops at both sockets', async () => {
@@ -445,6 +531,7 @@ describe('hint rungs, drawn over everything and clear of every socket', () => {
     everySocketSame(before, after);
     expectChanged(before, after, { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, 'the ghost line between them', 20);
     await expect.element(page.elementLocator(host)).toMatchScreenshot('hint-ghost-wire');
+    await expectStrictShot(host, FILE, 'hint-ghost-wire');
   });
 
   it('returns false and draws nothing when nothing matches, and clears', async () => {
@@ -463,10 +550,17 @@ describe('hint rungs, drawn over everything and clear of every socket', () => {
     await reduceMotion(false);
     try {
       surface.showHint({ step: 'pulse-part', target: { placed: 'battery' }, line: 'The battery pack' });
-      await frames(3);
-      expect(surface.settled).toBe(false);
+      // It redraws a few times a second (PULSE_FPS), so over a second of frames the canvas is caught drawing.
+      const seen: boolean[] = [];
+      const until = performance.now() + 1000;
+      while (performance.now() < until) {
+        await frames(1);
+        seen.push(surface.settled);
+      }
+      expect(seen, 'the canvas still drawing while the rung pulses').toContain(false);
       surface.setMode('run');
-      expect(surface.selecting.shownHint?.step).toBe('pulse-part');
+      expect(surface.selecting.shownHint, 'hidden in Run mode, so not read out').toBeUndefined();
+      expect(surface.listView.hint).toBeUndefined();
       await settle(surface);
       surface.setMode('build');
       surface.clearHints();

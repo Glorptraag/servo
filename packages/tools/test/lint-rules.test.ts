@@ -69,6 +69,10 @@ describe('package map (ground rule 6)', () => {
     ['the behaviour runtime from parent', 'packages/parent/src/probe.ts', "export * from '@servo/sim-core/behaviour';"],
     // Task 3.4: the canvas's testing entry is for the e2e harness, though app's map allows every canvas entry.
     ['the canvas testing entry from app', 'packages/app/src/probe.ts', "export * from '@servo/canvas/testing';"],
+    ['a canvas testing type from app', 'packages/app/src/probe.ts', "import type { CanvasProbe } from '@servo/canvas/testing';\nexport type { CanvasProbe };"],
+    ['a canvas testing import() type from app', 'packages/app/src/probe.ts', "export type Probe = import('@servo/canvas/testing').CanvasProbe;"],
+    ['dynamic import() of the canvas testing entry from app', 'packages/app/src/probe.ts', "export const testing = await import('@servo/canvas/testing');"],
+    ['the canvas testing entry from parent', 'packages/parent/src/probe.ts', "export * from '@servo/canvas/testing';"],
   ];
 
   it.each(bypasses)('reports %s', async (_name, filePath, code) => {
@@ -79,6 +83,13 @@ describe('package map (ground rule 6)', () => {
     const [result] = await eslint.lintText("export * from '@servo/sim-core/behaviour';", { filePath: 'packages/app/src/probe.ts' });
     expect(result?.messages.map((message) => message.message)).toEqual([
       "'@servo/sim-core/behaviour' is for packages/tools only. Run a simulation through createSimulation from @servo/sim-core.",
+    ]);
+  });
+
+  it('names the canvas testing entry as tools-only', async () => {
+    const [result] = await eslint.lintText("export * from '@servo/canvas/testing';", { filePath: 'packages/app/src/probe.ts' });
+    expect(result?.messages.map((message) => message.message)).toEqual([
+      "'@servo/canvas/testing' is for packages/tools only. The app reaches the canvas through @servo/canvas.",
     ]);
   });
 

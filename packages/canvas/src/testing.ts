@@ -77,8 +77,10 @@ export interface CanvasProbe {
   handles(): ReadonlyMap<'move' | 'rotate' | 'bin', Place>;
   /** How a part or wire is drawn now: dimmed or highlighted by a focus state, or normal. */
   emphasis(subject: { readonly part: PlacedPartId } | { readonly wire: WireId }): Emphasis | undefined;
-  /** The label beside the selected wire: what flows on it. */
+  /** The label on the selected wire: what flows on it. */
   readonly wireLabel: string | undefined;
+  /** Where that label's pill is drawn: its centre, and its size in CSS pixels. */
+  readonly wireLabelBox: { readonly centre: Place; readonly width: number; readonly height: number } | undefined;
 }
 
 /** The probe for a canvas `mountCanvas` made. Throws for anything else. */
@@ -143,6 +145,10 @@ export const probeCanvas = (handle: CanvasHandle): CanvasProbe => {
       'part' in subject ? surface.partView(subject.part)?.currentEmphasis : surface.wireView(subject.wire)?.currentEmphasis,
     get wireLabel() {
       return surface.selecting.wireLabel;
+    },
+    get wireLabelBox() {
+      const box = surface.selecting.wireLabelBox;
+      return box && { centre: place(box.at), width: box.w * camera.scale, height: box.h * camera.scale };
     },
   };
 };

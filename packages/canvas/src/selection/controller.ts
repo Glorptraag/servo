@@ -7,10 +7,10 @@ import type { ArenaFeatureId, Catalogue, Prop, Vec2 } from '@servo/schema';
 import type { CanvasPrefs, DrawnHintStep, EditCommand, SelectEvent, Selection } from '../interface.ts';
 import { Press } from '../placement/controller.ts';
 import type { Gesture } from '../placement/controller.ts';
-import { layOutCallout, layOutHandles } from '../placement/overlays.ts';
+import { layOutHandles } from '../placement/overlays.ts';
 import type { Circle } from '../placement/overlays.ts';
 import { canvasToArena, onProp, propOutline } from '../placement/props.ts';
-import { CALLOUT_GAP_PX, Callout, HANDLE_GAP_PX, HANDLE_PX, Handles } from '../placement/views.ts';
+import { Callout, HANDLE_GAP_PX, HANDLE_PX, Handles } from '../placement/views.ts';
 import { DRAG_THRESHOLD_PX } from '../renderer/input.ts';
 import type { PointerClaim } from '../renderer/input.ts';
 import { paletteFor } from '../renderer/style.ts';
@@ -21,14 +21,18 @@ import { arenaToCanvas } from '../scene/arena.ts';
 import { rectOfPoints } from '../scene/geometry.ts';
 import type { Rect } from '../scene/geometry.ts';
 import type { Hit } from '../scene/hit.ts';
+import type { SceneWire } from '../scene/scene.ts';
 import { WIRE_HIT_MM } from '../scene/units.ts';
 import { drawnSockets } from '../wiring/crowds.ts';
-import { flowLine, focusFor, wireOf } from './focus.ts';
+import { allWires, flowLine, focusFor, wireOf } from './focus.ts';
+import { placeLabel } from './label.ts';
 import { drawsAnything, hintTargets } from './hints.ts';
 import type { HintTargets } from './hints.ts';
 import { HintMarks, PropRing, SOCKET_REACH_MM, pulseAt } from './views.ts';
 
 const MIN_SENSITIVITY = 0.05;
+/** How often a pulsing hint is redrawn. */
+export const PULSE_FPS = 20;
 
 export interface SelectionHost {
   readonly surface: CanvasSurface;
@@ -68,8 +72,12 @@ export class SelectionController {
   /** Set while the selection is passed on to placement and wiring, so what they report back is not taken as new. */
   private pushing = false;
   private hint: { readonly step: DrawnHintStep; targets: HintTargets } | undefined;
-  private pulse: { readonly started: number; frame: number | undefined } | undefined;
+  private pulse: { readonly started: number; frame: number | undefined; drawn?: number } | undefined;
+  /** A pointer is down on the canvas: a selection let go during it clears when it lifts, unless something new was chosen. */
+  private pressing = false;
+  private letGoOf: Selection | null = null;
   private press: Press | undefined;
+  private labelBox: { readonly at: Vec2; readonly w: number; readonly h: number } | undefined;
   private destroyed = false;
 
   constructor(host: SelectionHost) {
@@ -81,6 +89,10 @@ export class SelectionController {
     input.handlers.unshift((event, screen, hit) => this.pressed(event, screen, hit));
     input.taps.push((event, screen) => this.tapped(screen));
     canvas.addEventListener('keydown', this.keyed);
+    // Capture, so it runs before the input router's own listener on the canvas; the end runs after it.
+    canvas.addEventListener('pointerdown', this.pressBegan, { capture: true });
+    canvas.addEventListener('pointerup', this.pressEnded);
+    canvas.addEventListener('pointercancel', this.pressEnded);
     // The label and the bin keep their screen size at every zoom.
     this.offZoom = this.surface.on('zoom', () => {
       this.drawProp();
@@ -126,14 +138,19 @@ export class SelectionController {
     this.drawHint();
   }
 
-  /** The rung drawn now, for the list view's text twin (task 3.6). Undefined when none is drawn. */
+  /** The rung drawn now, for the list view's text twin (task 3.6). Undefined when none is drawn, as in Run mode. */
   get shownHint(): DrawnHintStep | undefined {
-    return this.hint && drawsAnything(this.hint.targets) ? this.hint.step : undefined;
+    return this.hint && drawsAnything(this.hint.targets) && this.surface.mode !== 'run' ? this.hint.step : undefined;
   }
 
-  /** The label beside the selected wire: what flows on it. */
+  /** The label on the selected wire: what flows on it. */
   get wireLabel(): string | undefined {
     return this.label.line;
+  }
+
+  /** Where the label's pill sits, mm: its centre and size. */
+  get wireLabelBox(): { readonly at: Vec2; readonly w: number; readonly h: number } | undefined {
+    return this.label.line === undefined ? undefined : this.labelBox;
   }
 
   /** Where the selected prop's bin sits, mm. */
@@ -152,7 +169,7 @@ export class SelectionController {
   shown(source: SelectionSource, id: string | undefined): void {
     if (this.pushing || !this.editable()) return;
     if (id !== undefined) this.choose(selectionOf(source, id));
-    else if (this.current?.kind === source) this.choose(null);
+    else if (this.current?.kind === source) this.letGo();
   }
 
   /** After every redraw of the build: a selection the build lost clears, and focus and hints follow the new scene. */
@@ -180,6 +197,9 @@ export class SelectionController {
     this.stopPulse();
     this.offZoom();
     this.surface.canvas.removeEventListener('keydown', this.keyed);
+    this.surface.canvas.removeEventListener('pointerdown', this.pressBegan, { capture: true });
+    this.surface.canvas.removeEventListener('pointerup', this.pressEnded);
+    this.surface.canvas.removeEventListener('pointercancel', this.pressEnded);
     this.ring.graphics.destroy();
     this.propBin.graphics.destroy();
     this.marks.graphics.destroy();
@@ -188,6 +208,30 @@ export class SelectionController {
 
   // ---------------------------------------------------------------------------------------------------------
   // Choosing
+
+  /**
+   * Clears the selection, or while a pointer is down, once it lifts: so a tap that moves the selection from a wire to
+   * a part (wiring lets the wire go at the press, placement takes the part at the lift) fires one `select`, as `select`
+   * and the list view do.
+   */
+  private letGo(): void {
+    if (!this.pressing) {
+      this.choose(null);
+      return;
+    }
+    this.letGoOf = this.current;
+  }
+
+  private readonly pressBegan = (): void => {
+    this.pressing = true;
+  };
+
+  private readonly pressEnded = (): void => {
+    this.pressing = false;
+    const letGoOf = this.letGoOf;
+    this.letGoOf = null;
+    if (letGoOf !== null && same(this.current, letGoOf)) this.choose(null);
+  };
 
   private choose(next: Selection | null): void {
     if (same(this.current, next)) return;
@@ -238,7 +282,7 @@ export class SelectionController {
       this.press = new Press(event, this.surface.blueprint, () => DRAG_THRESHOLD_PX / this.sensitivity, this.binGesture(propId));
       return this.press;
     }
-    if (hit !== null && this.editable()) this.choose(null);
+    if (hit !== null && this.editable()) this.letGo();
     return null;
   }
 
@@ -339,24 +383,34 @@ export class SelectionController {
     this.surface.requestFrame();
   }
 
-  /** What flows on the selected wire, in one word beside its middle, clear of every socket and of its bin. */
+  /**
+   * What flows on the selected wire, in one word on the wire itself: a pill over the line at the middle of the path it
+   * is drawn along, slid along the line off any socket and the bin, and off other lines where it can (label.ts).
+   */
   private drawLabel(): void {
     const current = this.current;
     const wire = current?.kind === 'wire' ? wireOf(this.surface.scene, current.wireId) : undefined;
     if (!wire) {
       this.label.hide();
+      this.labelBox = undefined;
       this.surface.requestFrame();
       return;
     }
     const scale = this.surface.camera.scale;
     const size = this.label.measure(flowLine(wire.kind), this.host.drawContext(), scale);
-    const middle = { x: (wire.from.at.x + wire.to.at.x) / 2, y: (wire.from.at.y + wire.to.at.y) / 2 };
-    const half = WIRE_HIT_MM / 2;
-    const over: Rect = { minX: middle.x - half, minY: middle.y - half, maxX: middle.x + half, maxY: middle.y + half };
+    const pathOf = (each: SceneWire): readonly Vec2[] => this.surface.wireView(each.id)?.path ?? [each.from.at, each.to.at];
     const bin = this.surface.wiring.binPlace;
-    const avoid: Circle[] = [...this.socketCircles(), ...(bin ? [{ ...bin, r: HANDLE_PX / 2 / scale }] : [])];
-    const at = layOutCallout(size, over, avoid, this.surface.camera.visible(), CALLOUT_GAP_PX / scale);
+    const at = placeLabel({
+      path: pathOf(wire),
+      size,
+      avoid: [...this.socketCircles(), ...(bin ? [{ ...bin, r: HANDLE_PX / 2 / scale }] : [])],
+      others: allWires(this.surface.scene)
+        .filter((other) => other.id !== wire.id && other.kind !== 'mount')
+        .map(pathOf),
+      reach: WIRE_HIT_MM / 2,
+    });
     this.label.place(at, size, this.palette, scale);
+    this.labelBox = { at, ...size };
     this.surface.requestFrame();
   }
 
@@ -385,8 +439,12 @@ export class SelectionController {
   private stepPulse(now: number): void {
     const pulse = this.pulse;
     if (!pulse || this.destroyed) return;
-    this.marks.graphics.alpha = pulseAt(now - pulse.started);
-    this.surface.requestFrame();
+    // A slow pulse needs few frames: the canvas redraws at PULSE_FPS, not the display's rate.
+    if (pulse.drawn === undefined || now - pulse.drawn >= 1000 / PULSE_FPS) {
+      pulse.drawn = now;
+      this.marks.graphics.alpha = pulseAt(now - pulse.started);
+      this.surface.requestFrame();
+    }
     if (pulse.frame === undefined) {
       pulse.frame = requestAnimationFrame((next) => {
         pulse.frame = undefined;
