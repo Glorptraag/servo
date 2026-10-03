@@ -63,12 +63,22 @@ export interface ChangeRow {
   readonly removed: boolean;
 }
 
+/**
+ * What sync keeps between syncs (task 5.5, src/sync/): the remote's cursor under `cursor`, and under
+ * `blueprints/<id>` the `meta.updatedAt` of the version of each blueprint last sent to or taken from the remote.
+ */
+export interface SyncRow {
+  readonly key: string;
+  readonly value: string;
+}
+
 export type ServoDatabase = Dexie & {
   readonly profiles: EntityTable<ProfileRow, 'seq'>;
   readonly blueprints: Table<BlueprintRow, BlueprintId>;
   readonly runs: EntityTable<RunRow, 'seq'>;
   readonly cardGames: EntityTable<CardGameRow, 'seq'>;
   readonly changes: EntityTable<ChangeRow, 'seq'>;
+  readonly sync: Table<SyncRow, string>;
 };
 
 /** Opens the database, creating it on first use. Rejects when the device's storage cannot be opened. */
@@ -81,6 +91,7 @@ export const openDatabase = async (name: string): Promise<ServoDatabase> => {
     cardGames: '++seq, &id, profile',
     changes: '++seq, &[collection+id]',
   });
+  db.version(2).stores({ sync: 'key' });
   await db.open();
   return db;
 };

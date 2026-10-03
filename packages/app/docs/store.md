@@ -27,7 +27,7 @@ Back to the [README](../README.md). The types are in [src/store/index.ts](../src
 | [database.ts](../src/store/database.ts) | The Dexie tables and their rows |
 | [blueprints.ts](../src/store/blueprints.ts) | Blueprints: canonical form, migration on every read |
 | [profiles.ts](../src/store/profiles.ts), [records.ts](../src/store/records.ts) | Profiles; run records and card-game results |
-| [changes.ts](../src/store/changes.ts), [sync.ts](../src/store/sync.ts) | The changes sync will push, and the sync seam |
+| [changes.ts](../src/store/changes.ts) | The changes sync will push. Sync itself is task 5.5's, in [src/sync/](../src/sync/) |
 
 ### Opening
 
@@ -38,7 +38,7 @@ Back to the [README](../README.md). The types are in [src/store/index.ts](../src
 
 ### Tables
 
-Dexie's versions cover the table layout only (version 1 now). A blueprint's own format version and its migrations stay in packages/schema.
+Dexie's versions cover the table layout only (version 2 now: task 5.5 added `sync`). A blueprint's own format version and its migrations stay in packages/schema.
 
 | Table | Key | Holds |
 | --- | --- | --- |
@@ -47,6 +47,7 @@ Dexie's versions cover the table layout only (version 1 now). A blueprint's own 
 | `runs` | `seq`, unique `id` | `{ id, profile, blueprintId, challenge?, record }`: `record` is the RunRecord as given |
 | `cardGames` | `seq`, unique `id` | `{ id, profile, result }` |
 | `changes` | `seq`, unique `[collection+id]` | The changes sync will push: one per record |
+| `sync` | `key` | `{ key, value }`: the remote's `cursor`, and under `blueprints/<id>` the version of each blueprint last synced, as `<updatedAt>#<content hash>` (task 5.5) |
 
 - Nothing derived from a blueprint is stored beside it (ground rule 5). A list's names, levels and times are read from the documents themselves. A run's `blueprintId` and `challenge` are copied out of its record only to find it by them; records never change.
 - `seq` is the order records were added in. Lists sort by their own time first, and two records with the same time keep the order they were added in.
@@ -95,8 +96,8 @@ Dexie's versions cover the table layout only (version 1 now). A blueprint's own 
 ### Sync
 
 - With no `remote`, `sync.state` is `local-only` and `sync.now()` resolves at once.
-- With a remote, `sync.state` is `idle` and `sync.now()` rejects until task 5.5 syncs. The remote is never called.
-- Every write records its change in the same transaction: the record's collection and id, its profile, its time, and whether it was removed. A record has one change, its latest. `pendingChanges(db)` ([changes.ts](../src/store/changes.ts)) gives them oldest first in the contract's `SyncChange` form, each with its record as stored now (a blueprint as `serializeBlueprint` wrote it, parsed), or without one when it was removed. So the changes wait for 5.5 to push them, and no second copy of a blueprint is kept for them.
+- With a remote, task 5.5's sync ([src/sync/](../src/sync/)) pulls, applies the conflict rule and pushes these changes: when, how and the rule in full are in the [README](../README.md), "Offline and sync".
+- Every write records its change in the same transaction: the record's collection and id, its profile, its time, and whether it was removed. A record has one change, its latest. `pendingChanges(db)` ([changes.ts](../src/store/changes.ts)) gives them oldest first in the contract's `SyncChange` form, each with its record as stored now (a blueprint as `serializeBlueprint` wrote it, parsed), or without one when it was removed. So the changes wait for sync to push them, and no second copy of a blueprint is kept for them.
 - A profile's removal records the removal of the profile and of each record it owned. A refused write records nothing.
 - `pendingChanges` reads each record when it is called, so a pushed change carries the record as it is then. A stored document that is not JSON goes as its text.
 
@@ -140,7 +141,7 @@ Taken here, conservatively, for Drew and the orchestrator:
 8. `list()` shows a build that does not load when its name, level and time can be read; one that cannot be read is left out, and still stored.
 9. `load` of an id the profile does not hold rejects: no issue code fits a missing document.
 10. The changes for sync are kept as references to the records, read when they are pushed, so no copy of a blueprint is kept twice.
-11. With a remote given, `sync.now()` rejects until task 5.5.
+11. With a remote given, `sync.now()` rejected until task 5.5, which now syncs through it.
 12. A card-game round needs at least one card, of parts the content has; the store does not require ten.
 13. On Firefox, `persist()` asks the person at the screen for permission. The store asks only while the store is not yet kept (review R-4.9 Question 3, for Drew: ask from the parent view instead).
 14. Space is Run and Stop (D42). The Run loop (task 4.4) should leave Space alone while the child types in the name field.

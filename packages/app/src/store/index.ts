@@ -183,13 +183,24 @@ export interface SyncChange {
   readonly updatedAt: Timestamp;
   /** The record as stored (a blueprint as `serializeBlueprint` writes it, parsed), or absent when it was removed. */
   readonly document?: unknown;
+  /**
+   * A blueprint's only (task 5.5): the `meta.updatedAt` of the version the sending device last synced, which this
+   * change was made from. Absent for a blueprint the device never synced. A device takes a change as a plain update
+   * only when it was made from the version the device holds; otherwise both versions are kept.
+   */
+  readonly base?: Timestamp;
+  /** A blueprint's only (task 5.5): set on a copy the conflict rule kept, naming the blueprint it was kept from. */
+  readonly keptFrom?: BlueprintId;
 }
 
 export type SyncState = 'local-only' | 'idle' | 'syncing' | 'offline' | 'failed';
 
 export interface Sync {
   readonly state: SyncState;
-  /** Pulls, applies the conflict rule, then pushes. Resolves at once when local-only. */
+  /**
+   * Pulls, applies the conflict rule, then pushes. Resolves at once when local-only, and without syncing when the
+   * device is offline (the state says so, and the store syncs on reconnect). Rejects when the remote refuses.
+   */
   now(): Promise<void>;
   /** Called whenever `state` changes. Returns the unsubscribe function. */
   subscribe(listener: (state: SyncState) => void): () => void;

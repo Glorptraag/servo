@@ -25,13 +25,14 @@ describe('sync', () => {
     store.close();
   });
 
-  it('takes a remote through the seam, and leaves syncing with it to task 5.5', async () => {
-    const remote: SyncRemote = { pull: vi.fn(), push: vi.fn() };
+  it('takes a remote through the seam, and syncs through it (task 5.5; test/sync/ has the rest)', async () => {
+    const remote: SyncRemote = { pull: vi.fn(async () => ({ changes: [], cursor: '0' })), push: vi.fn(async () => undefined) };
     const { store } = await openFor(schemaContent, { remote });
+    const robin = await store.profiles.create('Robin');
+    await store.sync.now();
     expect(store.sync.state).toBe('idle');
-    await expect(store.sync.now()).rejects.toThrow(/task 5\.5/);
-    expect(remote.pull).not.toHaveBeenCalled();
-    expect(remote.push).not.toHaveBeenCalled();
+    expect(remote.pull).toHaveBeenCalled();
+    expect(remote.push).toHaveBeenLastCalledWith([{ collection: 'profiles', id: robin.id, updatedAt: T0, document: robin }]);
     store.close();
   });
 
