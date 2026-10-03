@@ -1,6 +1,6 @@
 // The canvas handle (task 3.1's part of packages/canvas/src/interface.ts): mounting, `load`, the scene layers, pan,
 // zoom, `fit`, the grid that fades at rest, art, prefs, and the focus and dim hooks task 3.4's selection drives.
-// Members other tasks build throw until those tasks land, naming the task. See docs/renderer.md.
+// The members later tasks built are wired in here from their own folders. See docs/renderer.md.
 import { Container, RenderLayer, Ticker, autoDetectRenderer } from 'pixi.js';
 import type { Renderer } from 'pixi.js';
 import { canonicalizeBlueprint, serializeBlueprint, validateBlueprint } from '@servo/schema';
@@ -68,8 +68,6 @@ export interface EmphasisRequest {
   /** Port keys (`<part>.<port>`) drawn with a halo. */
   readonly ports?: ReadonlySet<string>;
 }
-
-const notYet = (member: string, task: string): Error => new Error(`${member} is not implemented yet (task ${task}).`);
 
 /** Surfaces alive now: global GPU pools are released only when the last one goes. */
 const live = new Set<CanvasSurface>();

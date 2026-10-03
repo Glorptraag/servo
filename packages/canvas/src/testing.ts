@@ -146,8 +146,24 @@ export const probeCanvas = (handle: CanvasHandle): CanvasProbe => {
     wire: (id) => {
       const wire = wireOf(surface.scene, id);
       if (!wire) return undefined;
-      const [from, to] = (running() ? surface.run.endsOf(id) : undefined) ?? [wire.from.at, wire.to.at];
-      const middle = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
+      // The line as drawn: in Run mode where the Run draws it, along its route once tidied (task 3.7).
+      const path = (running() ? surface.run.pathOf(id) : surface.wireView(id)?.path) ?? [wire.from.at, wire.to.at];
+      const from = path[0] ?? wire.from.at;
+      const to = path[path.length - 1] ?? wire.to.at;
+      // Halfway along the line, which on a route is not halfway between its ends.
+      const lengths = path.slice(1).map((point, k) => Math.hypot(point.x - (path[k] as Vec2).x, point.y - (path[k] as Vec2).y));
+      let left = lengths.reduce((sum, length) => sum + length, 0) / 2;
+      let middle = from;
+      for (const [k, length] of lengths.entries()) {
+        const a = path[k] as Vec2;
+        const b = path[k + 1] as Vec2;
+        if (left <= length) {
+          const t = length === 0 ? 0 : left / length;
+          middle = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+          break;
+        }
+        left -= length;
+      }
       return { from: place(from), to: place(to), middle: place(middle) };
     },
     handles: () => {

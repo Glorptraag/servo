@@ -135,6 +135,37 @@ describe('tidy wires', () => {
   });
 });
 
+describe('the selected wire’s label on a tidied route (task 3.4)', () => {
+  it('sits on the wire’s route, before and after tidying, and moves off the straight line with it', () => {
+    loadFresh('twenty-five');
+    const onPath = (at: Vec2, path: readonly Vec2[]): number =>
+      Math.min(...path.slice(1).map((point, k) => distanceToSegment(at, path[k] as Vec2, point)));
+    let offTheLine = 0;
+    let checked = 0;
+    const routes = routeWires(surface.scene);
+    for (const wire of surface.scene.wires) {
+      const route = routes.get(wire.id);
+      if (!route) continue;
+      surface.select({ kind: 'wire', wireId: wire.id });
+      const straight = surface.selecting.wireLabelBox?.at;
+      surface.tidyWires();
+      const routed = surface.selecting.wireLabelBox?.at;
+      if (!straight || !routed) throw new Error(`${wire.id} has no label`);
+      // Untidied, on the straight line; tidied, on the route, unless no stop on it is clear of the sockets.
+      const besideRoute = onPath(routed, route) > 1e-6;
+      if (!besideRoute) {
+        checked++;
+        if (distanceToSegment(routed, wire.from.at, wire.to.at) > 1) offTheLine++;
+      }
+      expect(surface.wireView(wire.id)?.path, wire.id).toEqual(route);
+      loadFresh('twenty-five');
+    }
+    surface.select(null);
+    expect(checked).toBeGreaterThan(5);
+    expect(offTheLine).toBeGreaterThan(0);
+  }, LONG_MS);
+});
+
 describe('one tidy for every hand (ground rule 8)', () => {
   /** The list view's tidy button on wire `id`, opened as a child opens it. */
   const tidyButton = async (id: string): Promise<HTMLButtonElement> => {

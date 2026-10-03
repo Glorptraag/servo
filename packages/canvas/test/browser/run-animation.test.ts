@@ -235,6 +235,16 @@ describe('flowing dots on a tidied wire (task 3.7, review R-3.7 finding 13)', ()
       }
       // A route bends away from the straight line, and its dots go with it.
       expect(offTheLine).toBeGreaterThan(0);
+      // The selected wire's label rides the route as the Run draws it (task 3.4).
+      const [id] = routed[0] as [string, readonly Vec2[]];
+      surface.select({ kind: 'wire', wireId: id });
+      await frames(2);
+      const label = surface.selecting.wireLabelBox?.at;
+      const drawn = surface.run.pathOf(id);
+      if (!label || !drawn) throw new Error(`no label on ${id}`);
+      expect(drawn.length).toBeGreaterThan(2);
+      expect(Math.min(...drawn.slice(1).map((point, k) => distanceToSegment(label, drawn[k] as Vec2, point)))).toBeLessThan(1e-6);
+      surface.select(null);
     } finally {
       surface.setMode('build');
       // Back to straight wires for the tests after this one: the next load draws every wire without a route.

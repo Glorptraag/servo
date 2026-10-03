@@ -98,7 +98,7 @@ Routes are kept in the canvas, never in the blueprint.
 - A drag draws the wires on a moving part straight, as before; dropping it ends their routes.
 - Tidying routes every wire afresh.
 
-`surface.routing` exposes `routes`, `routeOf(id)` and `pathOf(wire)`, the path a wire is drawn along. Run mode (task 3.5) should run its flow dots along `pathOf`.
+`surface.routing` exposes `routes`, `routeOf(id)` and `pathOf(wire)`. `WireView.path` is the path a line is drawn along now, its route once tidied: the selected wire's label sits on it (task 3.4), and in Run mode the animator carries it with the line's body (`run.pathOf(id)`), so the flowing dots (task 3.5) and the label follow the route too (review R-3.7, finding 13).
 
 ## Zoom limits and the safe area
 

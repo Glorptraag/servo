@@ -68,6 +68,8 @@ export class RunAnimator {
   private lastStep: number | undefined;
   private readonly matrices = new Map<PlacedPartId, Affine>();
   private readonly wireEnds = new Map<WireId, readonly [Vec2, Vec2]>();
+  /** Each line's path as the Run draws it: its route carried by its body, or straight between its ends (task 3.7). */
+  private readonly wirePaths = new Map<WireId, readonly Vec2[]>();
   private drawnProps = '';
   private active = false;
 
@@ -122,6 +124,7 @@ export class RunAnimator {
     this.prepare();
     this.matrices.clear();
     this.wireEnds.clear();
+    this.wirePaths.clear();
   }
 
   /** Takes one frame. `now` is the frame clock, used only to tween towards it. */
@@ -220,6 +223,14 @@ export class RunAnimator {
   }
 
   /** A wire's ends as drawn now. */
+  /** Where a line is drawn now (canvas mm), end to end, along its route once tidied: what its dots and label follow. */
+  pathOf(id: WireId): readonly Vec2[] | undefined {
+    const known = this.wirePaths.get(id);
+    if (known) return known;
+    const ends = this.endsOf(id);
+    return ends ? this.host.wireView(id)?.path ?? ends : undefined;
+  }
+
   endsOf(id: WireId): readonly [Vec2, Vec2] | undefined {
     const known = this.wireEnds.get(id);
     if (known) return known;
@@ -245,6 +256,7 @@ export class RunAnimator {
     this.interval = 0;
     this.matrices.clear();
     this.wireEnds.clear();
+    this.wirePaths.clear();
     this.drawnProps = '';
   }
 
@@ -386,11 +398,12 @@ export class RunAnimator {
         }
       }
       this.wireEnds.set(wire.id, ends);
+      // The line as drawn: one riding on one body keeps its resting path (a tidied route, task 3.7), carried by that
+      // body; one between two bodies is drawn straight between its ends. Its dots and its label follow it.
+      const path = sameAffine(fromBody, toBody) && view ? view.path.map((point) => apply(fromBody, point)) : ends;
+      this.wirePaths.set(wire.id, path);
       const state = display.wires.get(wire.id);
       if (!state || state.speed === 0) continue;
-      // The dots follow the line as drawn: a line riding on one body keeps its resting path (a tidied route, task 3.7),
-      // carried by that body; a line between two bodies is drawn straight between its ends.
-      const path = sameAffine(fromBody, toBody) && view ? view.path.map((point) => apply(fromBody, point)) : ends;
       runs.set(wire.id, { type: wire.type, path, travelled: state.travelled + (this.spin.get(wire.id) ?? 0) });
     }
     this.dots.draw(runs);
