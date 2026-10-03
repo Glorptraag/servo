@@ -64,7 +64,7 @@ export const App = ({ content, child = null, start, saving, onReady }: AppProps)
       specCard: <SpecCard frames={runFrames} />,
       sound: <SoundControl layer={sound} />,
       save: <SaveControl saving={saving} />,
-      runBar: <RunBar onLoop={joinRunLoop} />,
+      runBar: <RunBar onLoop={joinRunLoop} challenge={challenge} />,
     }),
     [saving, runFrames, joinRunLoop, sound, challenge, loop],
   );

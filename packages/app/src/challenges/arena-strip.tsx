@@ -2,7 +2,8 @@
 // in (D36), in Build mode only. In Run mode the controls rest and the canvas shows the arena round the robot. Every
 // change goes through `canvas.apply`, so each is one Undo step and Save hears it.
 // - A preset button sets the arena (`set-arena`), dropping the props the child added, as Reset arena does (D29). While
-//   a challenge is on the canvas its arena stays: the challenge sets it.
+//   a challenge is on the canvas its arena stays: the other presets are `aria-disabled`, so a keyboard or screen reader
+//   still reaches them and hears why.
 // - A prop has the three paths of a tray tile (ground rule 8): drag it onto the canvas; tap it, then tap where it goes;
 //   or press Enter on it (keyboard and screen reader), which puts it on the nearest free spot of the floor, as the
 //   canvas's list view does.
@@ -125,8 +126,11 @@ export const ArenaStrip = ({ challenge }: ArenaStripProps) => {
               type="button"
               className="arena-strip-button"
               aria-pressed={current === preset.id}
-              disabled={!building || kept}
-              onClick={() => choose(preset.id)}
+              aria-disabled={kept || undefined}
+              disabled={!building}
+              onClick={() => {
+                if (!kept) choose(preset.id);
+              }}
             >
               {preset.name}
               {kept ? <span className="challenge-spoken">, {CHALLENGE_TEXT.setByChallenge}</span> : null}

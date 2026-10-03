@@ -11,7 +11,7 @@ import { makeCatalogue, validateArenaPreset, validateChallenge, validateKit, val
 import type { Blueprint, Catalogue, Challenge, RunInput, RunRecord, ValidationResult, Wire } from '@servo/schema';
 import { exampleArenas, exampleChallenges, exampleParts, validBlueprints, validKits } from '@servo/schema/fixtures';
 import { createSimulation } from '@servo/sim-core';
-import { GoalWatch, goalJudgeFor, judgeRun } from '../../src/challenges/goal.ts';
+import { GoalWatch, goalJudgeFor, judgeRun, namedFaultsShown } from '../../src/challenges/goal.ts';
 import type { GoalVerdict } from '../../src/challenges/goal.ts';
 
 const unwrap = <T>(result: ValidationResult<T>): T => {
@@ -144,26 +144,47 @@ describe('one-motor-backwards: breakdown, Level 2 (D48)', () => {
     parts: start.parts.map((part) => (part.id === 'motor-right' ? { ...part, settings: { direction: 'backward' } } : part)),
   };
 
+  /** The backwards motor taken away and a new DC motor put in its place, wired backwards again, its Direction flipped. */
+  const replaced: Blueprint = (() => {
+    const swap = (id: string): string => (id === 'motor-right' ? 'p1' : id);
+    return {
+      ...flipped,
+      parts: flipped.parts.map((part) => (part.id === 'motor-right' ? { ...part, id: 'p1' } : part)),
+      wires: flipped.wires.map((wire) => ({ ...wire, from: { ...wire.from, part: swap(wire.from.part) }, to: { ...wire.to, part: swap(wire.to.part) } })),
+      meta: { ...flipped.meta, highWater: { ...flipped.meta.highWater, parts: 1 } },
+    };
+  })();
+  const named = (record: RunRecord): string[] => namedFaultsShown(challenge, record).map((fault) => `${fault.partId} ${fault.failure}`);
+
   it('is not met by the build it starts from: the robot spins on the spot', async () => {
+    expect(await verdictOf(challenge, start, schemaCatalogue, { ticks: 90 })).toEqual({ met: false });
     const { record } = await runOf(start, schemaCatalogue, { ticks: 90 });
-    expect(record.faults.map((fault) => `${fault.partId} ${fault.failure}`)).toContain('motor-right reversed');
-    expect(judgeRun(challenge, record, schemaCatalogue)).toEqual({ met: false });
+    expect(named(record)).toEqual(['motor-right reversed']);
   });
 
   it('is met once the right motor’s wires are swapped: it drives straight with no fault', async () => {
-    const { record } = await runOf(fixed, schemaCatalogue, { ticks: 90 });
-    expect(record.faults).toEqual([]);
-    const verdict = judgeRun(challenge, record, schemaCatalogue);
+    const verdict = await verdictOf(challenge, fixed, schemaCatalogue, { ticks: 90 });
     expect(verdict.met).toBe(true);
     expect(verdict.tick).toBeLessThan(90);
+    const { record } = await runOf(fixed, schemaCatalogue, { ticks: 90 });
+    expect(record.faults).toEqual([]);
+    expect(named(record)).toEqual([]);
   });
 
   it('is not met by flipping the motor’s Direction setting: it drives straight, but the named fault stays', async () => {
+    expect(await verdictOf(challenge, flipped, schemaCatalogue, { ticks: 90 })).toEqual({ met: false });
     const { record } = await runOf(flipped, schemaCatalogue, { ticks: 90 });
-    expect(record.faults.map((fault) => `${fault.partId} ${fault.failure}`)).toContain('motor-right reversed');
+    expect(named(record)).toEqual(['motor-right reversed']);
     // The motion alone meets the goal; the breakdown's named fault is what keeps it from passing.
     expect(judgeRun({ ...challenge, kind: 'guided' }, record, schemaCatalogue).met).toBe(true);
-    expect(judgeRun(challenge, record, schemaCatalogue)).toEqual({ met: false });
+    expect(namedFaultsShown({ ...challenge, kind: 'guided' }, record)).toEqual([]);
+  });
+
+  it('is not met by a new DC motor wired backwards in the old one’s place, its Direction flipped (R-4.5 finding 2)', async () => {
+    expect(await verdictOf(challenge, replaced, schemaCatalogue, { ticks: 90 })).toEqual({ met: false });
+    const { record } = await runOf(replaced, schemaCatalogue, { ticks: 90 });
+    expect(named(record)).toEqual(['p1 reversed']);
+    expect(judgeRun({ ...challenge, kind: 'guided' }, record, schemaCatalogue).met).toBe(true);
   });
 });
 

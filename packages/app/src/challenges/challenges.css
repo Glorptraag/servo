@@ -95,7 +95,8 @@
   font-weight: 700;
 }
 
-.arena-strip-button:disabled {
+.arena-strip-button:disabled,
+.arena-strip-button[aria-disabled='true'] {
   cursor: default;
   opacity: 0.5;
 }

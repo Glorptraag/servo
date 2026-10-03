@@ -2,7 +2,7 @@
 // alone. One code path serves the app and the golden harness: the app feeds a GoalWatch each frame as the Run plays,
 // and `judgeRun` feeds it a run record's events, so both give the same verdict for the same Run. Pure and
 // framework-free (no DOM, React, clock or Vite): packages/tools imports it as `@servo/app/goal` under plain Node.
-import type { Blueprint, Catalogue, Challenge, ChallengeId, FailureModeId, Goal, PartTarget, RunEvent, RunRecord } from '@servo/schema';
+import type { Blueprint, Catalogue, Challenge, ChallengeId, FailureModeId, FaultSeen, Goal, PartTarget, PlacedPartId, RunEvent, RunRecord } from '@servo/schema';
 import { RunWorld } from './world.ts';
 
 /** A Run's verdict: met, and the tick it was met at, or not met. */
@@ -108,6 +108,44 @@ export const namedFaults = (challenge: Challenge): readonly { readonly target: P
   return named.length > 0 ? named : 'any';
 };
 
+/** A named fault as it applies to one build: the parts it may show on (every part when `parts` is undefined), and the failure. */
+interface NamedOnBuild {
+  readonly parts: ReadonlySet<PlacedPartId> | undefined;
+  readonly failure: FailureModeId;
+}
+
+/**
+ * Where a breakdown's named faults can show in the build that ran. A `placed` target the child has taken away stands
+ * for every part of its type in the challenge's start (review R-4.5 finding 2): a new DC motor wired backwards again is
+ * the same fault. With no start to read the type from, it stands for every part. Undefined when every fault counts.
+ */
+const namedOnBuild = (challenge: Challenge, blueprint: Blueprint): readonly NamedOnBuild[] | undefined => {
+  const named = namedFaults(challenge);
+  if (named === 'any') return undefined;
+  const typeOf = (id: PlacedPartId, build: Blueprint | undefined): string | undefined => build?.parts.find((part) => part.id === id)?.part;
+  const ofType = (type: string): ReadonlySet<PlacedPartId> => new Set(blueprint.parts.filter((part) => part.part === type).map((part) => part.id));
+  return named.map(({ target, failure }) => {
+    if ('part' in target) return { parts: ofType(target.part), failure };
+    if (typeOf(target.placed, blueprint) !== undefined) return { parts: new Set([target.placed]), failure };
+    const type = typeOf(target.placed, challenge.start);
+    return { parts: type === undefined ? undefined : ofType(type), failure };
+  });
+};
+
+const showsNamed = (named: readonly NamedOnBuild[] | undefined, partId: PlacedPartId, failure: FailureModeId): boolean =>
+  named === undefined || named.some((fault) => fault.failure === failure && (fault.parts === undefined || fault.parts.has(partId)));
+
+/**
+ * The breakdown's named faults a Run showed (D48), read from its record's `faults`: what the parent view reads beside
+ * `goal`, since a stored record keeps its verdict as `{ met, tick }` only. Empty when the fault was gone, and for any
+ * other kind of challenge. Exported from `@servo/app/store` for the parent view.
+ */
+export const namedFaultsShown = (challenge: Challenge, record: RunRecord): readonly FaultSeen[] => {
+  if (challenge.kind !== 'breakdown') return [];
+  const named = namedOnBuild(challenge, record.blueprint);
+  return record.faults.filter((fault) => showsNamed(named, fault.partId, fault.failure));
+};
+
 export interface GoalWatchOptions {
   readonly challenge: Challenge;
   /** The build that runs: the Run's snapshot. */
@@ -123,14 +161,16 @@ export interface GoalWatchOptions {
 export class GoalWatch {
   private readonly world: RunWorld;
   private readonly goal: Tracker;
-  private readonly faults: ReturnType<typeof namedFaults>;
+  private readonly faults: readonly NamedOnBuild[] | undefined;
+  private readonly breakdown: boolean;
   private faulted = false;
   private verdictNow: GoalVerdict = NOT_MET;
 
   constructor({ challenge, blueprint, catalogue }: GoalWatchOptions) {
     this.world = new RunWorld(blueprint, catalogue, catalogue.arenas?.get(blueprint.arena.preset));
     this.goal = track(challenge.goal, 0);
-    this.faults = namedFaults(challenge);
+    this.breakdown = challenge.kind === 'breakdown';
+    this.faults = namedOnBuild(challenge, blueprint);
   }
 
   get verdict(): GoalVerdict {
@@ -156,9 +196,7 @@ export class GoalWatch {
   }
 
   private faultShown(): boolean {
-    const faults = this.faults;
-    if (faults === 'any') return this.world.activeFaults().length > 0;
-    return faults.some(({ target, failure }) => this.world.partsOf(target).some((id) => this.world.faultActive(id, failure)));
+    return this.breakdown && this.world.activeFaults().some(({ partId, failure }) => showsNamed(this.faults, partId, failure));
   }
 }
 

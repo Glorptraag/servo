@@ -1,13 +1,15 @@
 // Keeping each Run (task 4.4, docs/run-loop.md "Stop") in Node on fake-indexeddb: the run loop with the recorder, as the
 // Run bar wires them, on the real sim-core and a real store. Each Run that started is kept with its number among the
 // build's Runs, the Run before it, the child's profile and every tick; a Run stopped while loading is not; no child,
-// or a store that refuses, keeps nothing and never stops a Run.
+// or a store that refuses, keeps nothing and never stops a Run. A Run under a challenge (task 4.5) keeps the
+// challenge's id and the goal's verdict, numbered among the challenge's Runs; a sandbox Run keeps neither.
 import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
 import type { CanvasHandle, CanvasMode } from '@servo/canvas';
 import { loadContent } from '@servo/content';
 import { loadFixtures } from '@servo/content/fixtures';
-import type { Blueprint } from '@servo/schema';
+import { validateChallenge } from '@servo/schema';
+import type { Blueprint, Challenge } from '@servo/schema';
 import { RunRecorder } from '../../src/run-bar/record.ts';
 import { RunLoop, SPIN_UP_MS } from '../../src/run-bar/run-loop.ts';
 import type { RunClock } from '../../src/run-bar/run-loop.ts';
@@ -60,8 +62,8 @@ const times = (): (() => string) => {
   };
 };
 
-const setUp = async (child: () => ProfileStore | null, wait = true) => {
-  const recorder = new RunRecorder({ child, now: times() });
+const setUp = async (child: () => ProfileStore | null, wait = true, challenge: () => Challenge | null = () => null) => {
+  const recorder = new RunRecorder({ child, now: times(), challenge, catalogue: loaded.content.catalogue });
   const clock = new TestClock();
   const loop = new RunLoop({
     canvas: new StandIn() as unknown as CanvasHandle,
@@ -194,6 +196,83 @@ describe('keeping each Run', { timeout: 30_000 }, () => {
       'This Run could not be kept on this device.',
       'This Run could not be kept on this device.',
     ]);
+    store.close();
+  });
+});
+
+/** A challenge for the roller on the open floor, from the content: drive forward for `forTicks` ticks. */
+const driveForward = (forTicks: number): Challenge => {
+  const result = validateChallenge(
+    {
+      id: `drive-forward-${forTicks}`,
+      kind: 'guided',
+      level: 1,
+      title: 'Drive forward',
+      goalLine: 'Make the robot drive forward',
+      goal: { kind: 'holds', when: { kind: 'forward-speed', target: { part: 'chassis' }, atLeast: 20 }, forTicks },
+      arena: { preset: 'open-floor', props: [] },
+      kit: 'rolling-start',
+      hints: [],
+    },
+    loaded.content.catalogue,
+  );
+  if (!result.ok) throw new Error(result.issues.map((issue) => issue.message).join(' '));
+  return result.value;
+};
+
+describe('a challenge’s Runs (task 4.5)', { timeout: 30_000 }, () => {
+  it('keeps a Run that meets the goal with the challenge and its verdict, numbered among the challenge’s Runs, and reads it back', async () => {
+    const { store, child } = await openChild();
+    const challenge = driveForward(5);
+    const { loop, runFor } = await setUp(() => child, true, () => challenge);
+    await runFor(20);
+    await runFor(20);
+    const runs = await child.runs.list({ challenge: challenge.id });
+    expect(runs.map((run) => [run.challenge, run.goal?.met, run.runNumber])).toEqual([
+      [challenge.id, true, 1],
+      [challenge.id, true, 2],
+    ]);
+    expect(runs[0]?.goal?.tick).toBeGreaterThanOrEqual(4);
+    // The same verdicts read back by id, and none of them among the build's sandbox Runs.
+    expect((await child.runs.get(runs[1]?.id ?? ''))?.goal).toEqual(runs[1]?.goal);
+    expect(await child.runs.list({ blueprintId: roller.meta.id, challenge: null })).toEqual([]);
+    loop.dispose();
+    store.close();
+  });
+
+  it('keeps a Run that misses the goal with the challenge and an unmet verdict, and reads it back', async () => {
+    const { store, child } = await openChild();
+    // Ten ticks of driving cannot hold for sixty.
+    const challenge = driveForward(60);
+    const { loop, runFor } = await setUp(() => child, true, () => challenge);
+    await runFor(10);
+    const [run] = await child.runs.list({ challenge: challenge.id });
+    expect(run?.challenge).toBe(challenge.id);
+    expect(run?.goal).toEqual({ met: false });
+    expect(run?.runNumber).toBe(1);
+    expect((await child.runs.get(run?.id ?? ''))?.goal).toEqual({ met: false });
+    loop.dispose();
+    store.close();
+  });
+
+  it('keeps a sandbox Run with neither a challenge nor a goal, apart from the challenge’s Runs of the same build', async () => {
+    const { store, child } = await openChild();
+    let challenge: Challenge | null = driveForward(5);
+    const { recorder, loop, runFor } = await setUp(() => child, true, () => challenge);
+    await runFor(8);
+    // Back in the sandbox: the Run bar reads the build's own Runs as the build comes onto the canvas again.
+    challenge = null;
+    recorder.prepare(roller);
+    await recorder.settled();
+    await runFor(8);
+    const sandbox = await child.runs.list({ blueprintId: roller.meta.id, challenge: null });
+    expect(sandbox).toHaveLength(1);
+    expect(sandbox[0]?.runNumber).toBe(1);
+    expect('challenge' in (sandbox[0] ?? {})).toBe(false);
+    expect('goal' in (sandbox[0] ?? {})).toBe(false);
+    expect(await child.runs.get(sandbox[0]?.id ?? '')).toEqual(sandbox[0]);
+    expect(await child.runs.list({ challenge: 'drive-forward-5' })).toHaveLength(1);
+    loop.dispose();
     store.close();
   });
 });

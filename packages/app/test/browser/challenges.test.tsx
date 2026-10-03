@@ -186,8 +186,14 @@ describe('a challenge on the canvas', () => {
     expect((await app.child.blueprints.list()).map((build) => build.name)).toContain(CROSS.title);
     // The challenge sets the arena: its preset is pressed, and the others rest.
     expect(stripButton(app, 'Wall stop').getAttribute('aria-pressed')).toBe('true');
-    expect(stripButton(app, 'Open floor').disabled).toBe(true);
+    // Still reachable by keyboard and screen reader, with its reason, and a press changes nothing.
+    expect(stripButton(app, 'Open floor').disabled).toBe(false);
+    expect(stripButton(app, 'Open floor').getAttribute('aria-disabled')).toBe('true');
     expect(stripButton(app, 'Open floor').textContent).toContain(CHALLENGE_TEXT.setByChallenge);
+    // (Playwright will not click what is aria-disabled, so this is the DOM's click.)
+    stripButton(app, 'Open floor').click();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(stripButton(app, 'Wall stop').getAttribute('aria-pressed')).toBe('true');
 
     // Run: the bumper robot crosses, stops at the wall with its motors off, and the goal is met.
     await userEvent.click(runToggle(app));
@@ -197,6 +203,11 @@ describe('a challenge on the canvas', () => {
     // Stop keeps the check: it describes the build on the canvas, which Stop gives back unchanged.
     await userEvent.click(runToggle(app));
     await vi.waitFor(() => expect(runToggle(app).dataset.run).toBe('run'), SOON);
+    // The Run is kept as the challenge's, with the verdict the check showed.
+    await vi.waitFor(async () => {
+      const runs = await app.child.runs.list({ challenge: CROSS.id });
+      expect(runs.map((run) => [run.challenge, run.goal?.met, run.runNumber])).toEqual([[CROSS.id, true, 1]]);
+    }, SOON);
     expect(ticked(app)).toBe(true);
     // A change to the build clears it: a prop brought in by keyboard, Enter on the strip's box.
     stripButton(app, PROP_PALETTE[0]?.label ?? 'Box').focus();
@@ -217,11 +228,16 @@ describe('a challenge on the canvas', () => {
     await new Promise((resolve) => setTimeout(resolve, 3500));
     expect(ticked(app)).toBe(false);
     await userEvent.click(runToggle(app));
+    await vi.waitFor(async () => {
+      const runs = await app.child.runs.list({ challenge: LIGHT.id });
+      expect(runs.map((run) => [run.challenge, run.goal])).toEqual([[LIGHT.id, { met: false }]]);
+    }, SOON);
     // Back to the sandbox from Home: the goal line goes.
     await openHome(app);
     await userEvent.click(homeButton(app, CHALLENGE_TEXT.newBuild));
     await vi.waitFor(() => expect(goal(app)).toBeNull(), SOON);
     expect(stripButton(app, 'Open floor').disabled).toBe(false);
+    expect(stripButton(app, 'Open floor').hasAttribute('aria-disabled')).toBe(false);
   });
 });
 

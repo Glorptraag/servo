@@ -204,7 +204,8 @@ export const Home = ({ challenge, onChallenge, sandboxLevel, loop, saving, paren
       <div className="home-columns" aria-busy={busy}>
         <section className="home-column" aria-labelledby={`${titleId}-build`}>
           <h3 id={`${titleId}-build`}>{CHALLENGE_TEXT.build}</h3>
-          <button type="button" className="shell-button home-choice" disabled={busy} onClick={newBuild}>
+          {/* Off while the saved builds are read, so a new build's name never repeats one (review R-4.5 nit 7). */}
+          <button type="button" className="shell-button home-choice" disabled={busy || saved.kind === 'reading'} onClick={newBuild}>
             {CHALLENGE_TEXT.newBuild}
           </button>
           <h3 id={`${titleId}-saved`}>{CHALLENGE_TEXT.savedBuilds}</h3>
