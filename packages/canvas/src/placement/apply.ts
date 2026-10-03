@@ -5,14 +5,12 @@
 import { canonicalizeBlueprint, validateBlueprint } from '@servo/schema';
 import type { Blueprint, Catalogue } from '@servo/schema';
 import type { ApplyEdit, EditBatch, EditResult, SingleEdit } from '../interface.ts';
+import { WIRING_REDUCERS } from '../wiring/commands.ts';
 import { PLACEMENT_REDUCERS } from './commands.ts';
 import type { Draft, Reducer, Reducers } from './commands.ts';
 
-/** Every command's reducer, by kind. Task 3.3 adds its wiring reducers, `connect` and `disconnect`, here. */
-const REDUCERS: Reducers = { ...PLACEMENT_REDUCERS };
-
-/** Commands another task builds: until it lands, they throw an error that names it, as the handle's stubs do. */
-const LATER: Readonly<Record<string, string>> = { connect: '3.3', disconnect: '3.3' };
+/** Every command's reducer, by kind: task 3.2's placement commands and task 3.3's wiring commands (src/wiring/). */
+const REDUCERS: Reducers = { ...PLACEMENT_REDUCERS, ...WIRING_REDUCERS };
 
 const refusal = (code: 'value.wrong_type' | 'value.not_allowed', message: string): EditResult => ({ ok: false, refusal: { code, message } });
 
@@ -34,11 +32,7 @@ const applySingle = (blueprint: Blueprint, command: SingleEdit, catalogue: Catal
   if (!isObject(command)) return refusal('value.wrong_type', 'An edit command is an object with a kind.');
   const kind = command.kind;
   const reducer = typeof kind === 'string' && Object.hasOwn(REDUCERS, kind) ? (REDUCERS as Readonly<Record<string, unknown>>)[kind] : undefined;
-  if (!reducer) {
-    const task = typeof kind === 'string' && Object.hasOwn(LATER, kind) ? LATER[kind] : undefined;
-    if (task) throw new Error(`applyEdit: '${kind}' is not implemented yet (task ${task}).`);
-    return refusal('value.not_allowed', `No edit command is called '${String(kind)}'.`);
-  }
+  if (!reducer) return refusal('value.not_allowed', `No edit command is called '${String(kind)}'.`);
   const result: Draft = (reducer as Reducer<SingleEdit['kind']>)(blueprint, command, catalogue);
   return result.ok ? finish(result.blueprint, catalogue) : result;
 };
