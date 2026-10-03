@@ -1,7 +1,8 @@
 // The parent view's first screen (task 5.1): the parental gate (D28), then the children on this device with the
-// profile switch, adding, renaming and removing a child, and the builds of the child in use. Every control is a native
-// button, radio or text field, so touch, pointer, keyboard and screen reader each have the same path. Nothing is a
-// dialog: a removal is confirmed inline, and anything that goes wrong is one plain line. The view has no routes and
+// profile switch, adding, renaming and removing a child, and the builds of the child in use, each with its parts list
+// (task 5.3, ../export/). Every control is a native button, radio or text field, so touch, pointer, keyboard and screen
+// reader each have the same path. Nothing is a dialog: a removal is confirmed inline, and anything that goes wrong is
+// one plain line. The view has no routes and
 // writes nothing to the address, so no address can open one child's records, and no profile id reaches the page.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, FormEvent, KeyboardEvent, RefObject } from 'react';
@@ -9,6 +10,7 @@ import type { Profile, ServoStore } from '@servo/app/store';
 import { answers, gateQuestion } from './gate.ts';
 import { ChoiceNotKept, NameRefused, addChild, readAccounts, removeChild, renameChild, switchChild } from './model.ts';
 import type { Accounts } from './model.ts';
+import { PartsListExport } from '../export/index.ts';
 
 /** Every line of system text, for the copy pass. None has an exclamation mark or praise (ground rule 7). */
 export const PARENT_TEXT = {
@@ -216,13 +218,13 @@ const AccountsView = ({ store }: { readonly store: ServoStore }) => {
           {builds.length === 0 ? (
             <p>{PARENT_TEXT.noBuilds}</p>
           ) : (
-            <ul>
-              {builds.map((build) => (
-                <li key={build.id}>
-                  {build.name}, {levelText(build.level)}, {dateText(build.updatedAt)}
-                </li>
-              ))}
-            </ul>
+            <PartsListExport
+              key={current.id}
+              store={store}
+              profile={current.id}
+              builds={builds}
+              describe={(build) => `${build.name}, ${levelText(build.level)}, ${dateText(build.updatedAt)}`}
+            />
           )}
         </section>
       )}
