@@ -15,13 +15,38 @@ export const dotOffsets = (length: number, travelled: number): number[] => {
   return offsets;
 };
 
-/** One wire's dots this frame: its ends on the canvas and how far its dots have moved. */
+/**
+ * One wire's dots this frame: the path its line is drawn along on the canvas, from its `from` end to its `to` end
+ * (two points for a straight line, more for a tidied route, task 3.7), and how far its dots have moved.
+ */
 export interface DotRun {
   readonly type: PortType;
-  readonly from: Vec2;
-  readonly to: Vec2;
+  readonly path: readonly Vec2[];
   readonly travelled: number;
 }
+
+/** The point `s` mm along a path, and the path's whole length. */
+const along = (path: readonly Vec2[]): { readonly length: number; at(s: number): Vec2 } => {
+  const pieces = path.slice(1).map((point, i) => {
+    const from = path[i] as Vec2;
+    return { from, to: point, length: Math.hypot(point.x - from.x, point.y - from.y) };
+  });
+  const length = pieces.reduce((sum, piece) => sum + piece.length, 0);
+  return {
+    length,
+    at: (s) => {
+      let left = s;
+      for (const piece of pieces) {
+        if (left <= piece.length && piece.length > 0) {
+          const k = left / piece.length;
+          return { x: piece.from.x + (piece.to.x - piece.from.x) * k, y: piece.from.y + (piece.to.y - piece.from.y) * k };
+        }
+        left -= piece.length;
+      }
+      return path[path.length - 1] as Vec2;
+    },
+  };
+};
 
 export class DotField {
   readonly container = new Container({ label: 'run dots' });
@@ -57,15 +82,13 @@ export class DotField {
     this.used = 0;
     this.placed.clear();
     for (const [id, run] of runs) {
-      const dx = run.to.x - run.from.x;
-      const dy = run.to.y - run.from.y;
-      const length = Math.sqrt(dx * dx + dy * dy);
-      if (length <= 0) continue;
+      const line = along(run.path);
+      if (line.length <= 0) continue;
       const context = this.contexts.get(run.type);
       if (!context) continue;
       const points: Vec2[] = [];
-      for (const s of dotOffsets(length, run.travelled)) {
-        const point = { x: run.from.x + (dx * s) / length, y: run.from.y + (dy * s) / length };
+      for (const s of dotOffsets(line.length, run.travelled)) {
+        const point = line.at(s);
         const dot = this.take(context);
         dot.position.set(point.x, point.y);
         points.push(point);

@@ -7,6 +7,7 @@ import { serializeBlueprint } from '@servo/schema';
 import type { Vec2 } from '@servo/schema';
 import { SHUDDER_MM } from '../../src/run-animation/look.ts';
 import type { CanvasSurface } from '../../src/renderer/surface.ts';
+import { distanceToSegment } from '../../src/scene/geometry.ts';
 import { fixture } from '../helpers/catalogue.ts';
 import { rollingStartFrame } from '../helpers/run-frames.ts';
 import { colourDistance, frames, listen, mount, pointer, reset, settle, shoot } from './helpers.ts';
@@ -200,6 +201,45 @@ describe('timing belongs to the app', () => {
     await settle(surface);
     expect(surface.run.shown?.ticks).toBe(2);
     expect(nodePosition('chassis').x).toBeCloseTo(40, 6);
+  });
+});
+
+describe('flowing dots on a tidied wire (task 3.7, review R-3.7 finding 13)', () => {
+  it('run along the wire’s route, not the straight line between its ends', async () => {
+    surface.tidyWires();
+    const routed = [...surface.routing.routes].filter(([id]) => ['w8', 'w9', 'w10', 'w11', 'w12'].includes(id));
+    expect(routed.length).toBeGreaterThan(0);
+    try {
+      await run([0], [1, { x: 340 }]);
+      let offTheLine = 0;
+      for (const [id, route] of routed) {
+        const wire = surface.scene.wires.find((each) => each.id === id);
+        const ends = surface.run.endsOf(id);
+        if (!wire || !ends) throw new Error(id);
+        // The robot carries the route rigidly: map it by the move that takes the wire's two sockets to their ends now.
+        const a = wire.from.at;
+        const b = wire.to.at;
+        const turn = Math.atan2(ends[1].y - ends[0].y, ends[1].x - ends[0].x) - Math.atan2(b.y - a.y, b.x - a.x);
+        const [c, s] = [Math.cos(turn), Math.sin(turn)];
+        const carried = route.map((point) => ({
+          x: ends[0].x + c * (point.x - a.x) - s * (point.y - a.y),
+          y: ends[0].y + s * (point.x - a.x) + c * (point.y - a.y),
+        }));
+        const dots = surface.run.dots.dotsOn(id);
+        expect(dots.length, id).toBeGreaterThan(0);
+        for (const dot of dots) {
+          const gap = Math.min(...carried.slice(1).map((point, k) => distanceToSegment(dot, carried[k] as Vec2, point)));
+          expect(gap, `${id} dot at ${dot.x}, ${dot.y}`).toBeLessThan(1e-6);
+          if (distanceToSegment(dot, ends[0], ends[1]) > 1) offTheLine++;
+        }
+      }
+      // A route bends away from the straight line, and its dots go with it.
+      expect(offTheLine).toBeGreaterThan(0);
+    } finally {
+      surface.setMode('build');
+      // Back to straight wires for the tests after this one: the next load draws every wire without a route.
+      surface.routing.tidy({ ...surface.scene, wires: [] });
+    }
   });
 });
 

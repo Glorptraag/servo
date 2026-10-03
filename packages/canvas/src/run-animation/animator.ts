@@ -388,7 +388,10 @@ export class RunAnimator {
       this.wireEnds.set(wire.id, ends);
       const state = display.wires.get(wire.id);
       if (!state || state.speed === 0) continue;
-      runs.set(wire.id, { type: wire.type, from: ends[0], to: ends[1], travelled: state.travelled + (this.spin.get(wire.id) ?? 0) });
+      // The dots follow the line as drawn: a line riding on one body keeps its resting path (a tidied route, task 3.7),
+      // carried by that body; a line between two bodies is drawn straight between its ends.
+      const path = sameAffine(fromBody, toBody) && view ? view.path.map((point) => apply(fromBody, point)) : ends;
+      runs.set(wire.id, { type: wire.type, path, travelled: state.travelled + (this.spin.get(wire.id) ?? 0) });
     }
     this.dots.draw(runs);
 

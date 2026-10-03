@@ -312,6 +312,14 @@ export class WireView {
   }
 
   /**
+   * The path the line takes at rest, canvas mm: its route when tidied (task 3.7), else the straight line between its
+   * sockets. Run mode's flowing dots follow it (task 3.5).
+   */
+  get path(): readonly Vec2[] {
+    return this.route ?? [this.wire.from.at, this.wire.to.at];
+  }
+
+  /**
    * Power solid, signal dashed, mechanical thick: the line-style twins of brief Section 13. Without ends it runs
    * between its two sockets, along its route when it has one (task 3.7); given ends (a drag, task 3.3), it runs
    * straight between them.
