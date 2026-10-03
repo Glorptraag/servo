@@ -204,3 +204,4 @@ Notes for later tasks:
 - 5.5 PASS (merged after 4.9 fix). 4.4 prompt MUST extend the airplane-mode e2e to press Run offline (Rapier lazy chunk cached; R-5.5 note 4). R-5.5 findings 1 (retry for unreachable host) and 2 (runs of profile removed elsewhere) -> fold into 5.1 merge or 6.4 sweep. D92-D93 queued.
 - CI on main red since 3.3/3.6 merge: canvas placement.test.ts two tests CI-only (pass locally alone). Debug worker on fix/ci-placement. Hold pharao done for 3.3, 3.6 until CI green.
 - 4.9 save-gap fix merged 3240a4b (Save stores canvas.blueprint; layout effects).
+- 3.8 + 5.1 marked done: CI run 37088995393 e2e jobs all green; check job red only on known placement CI failure, which stops pnpm -r before app/parent/tools on CI; those were green locally (parent 17, app 215, tools 927). Re-confirm on CI after the placement fix.
