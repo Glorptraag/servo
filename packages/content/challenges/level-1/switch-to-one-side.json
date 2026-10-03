@@ -119,6 +119,75 @@
           "placed": "switch"
         }
       }
+    },
+    {
+      "steps": [
+        {
+          "line": "The switch stops only the DC motors wired to side B",
+          "step": "pulse-part",
+          "target": {
+            "placed": "switch"
+          }
+        },
+        {
+          "line": "Both DC motors' plus lines belong on side B",
+          "step": "pulse-port",
+          "target": {
+            "placed": "switch",
+            "port": "b"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "motor-left",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "motor-right",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "switch",
+                "port": "b"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "motor-left",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "switch",
+                "port": "b"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "motor-right",
+                "port": "plus"
+              }
+            }
+          ],
+          "line": "Moved both DC motors' plus lines to side B of the switch",
+          "step": "do-it"
+        }
+      ]
     }
   ],
   "id": "switch-to-one-side",

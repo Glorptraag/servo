@@ -7,6 +7,7 @@ The child's app: shell, tray, library, spec card, Run bar, arena strip, challeng
 | `@servo/app` | 4.1 | `mountApp(host, options?)`, started by the web build ([src/main.tsx](src/main.tsx)) and the e2e harness: the shell round the canvas. It opens the store from task 4.9 |
 | `@servo/app/store` | 0.4 types, 4.9, 5.5, 5.6 | `openStore(options)`, the store's types and content's types ([src/store/index.ts](src/store/index.ts)); `shareLinkOf` and `SHARED_BUILD_NAME` for the parent view's shared links (task 5.6) |
 | `@servo/app/goal` | 4.5 | The goal judge: `GoalWatch`, `judgeRun` and `goalJudgeFor`, the golden harness's `env.judge` ([src/challenges/goal.ts](src/challenges/goal.ts)). Pure: no DOM, React or Vite, so `pnpm golden` runs it under plain Node |
+| `@servo/app/hint-ladder` | 4.6, 4.7 | The hint ladder's pure rules: `chooseLadder`, `narrowStep` and `doItCommand` ([src/hints/ladder.ts](src/hints/ladder.ts)). For packages/tools tests only, which climb every challenge's ladders (test/level-1-hint-ladders.test.ts). `doItCommand` skips wire changes the build already has, so do-it finishes a fix the child began (review R-4.7) |
 | `@servo/app/invite-code` | 6.3 | The tester invite code's reduction and hash, `normalizeInviteCode` and `hashInviteCode` ([src/release/invite-code.ts](src/release/invite-code.ts)). Pure: no DOM, React or Node. The release in packages/tools imports it, so the hashes it bakes in are the ones the invite gate makes |
 
 ## The shell (brief Section 9)

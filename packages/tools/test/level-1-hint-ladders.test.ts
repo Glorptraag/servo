@@ -65,6 +65,32 @@ describe('Level 1 hint ladders, climbed from every start and failing fixture', (
       ...(challenge.start ? [{ name: 'start', blueprint: challenge.start }] : []),
       ...own.filter((fixture) => fixture.expect.goal?.met === false).map((fixture) => ({ name: fixture.name, blueprint: fixture.blueprint })),
     ];
+    // Partial fixes the child makes by hand (review R-4.7 R1): from each failing build, every subset of each ladder's
+    // wire changes, made by hand, then the ladders climbed by do-it. "Do it for me" must still finish the fix.
+    it(`${challenge.id}: reaches the goal from every part of every ladder's fix made by hand`, async () => {
+      if (!passing) throw new Error('no passing fixture');
+      const tried: string[] = [];
+      for (const start of starts) {
+        for (const [index, ladder] of challenge.hints.entries()) {
+          const last = ladder.steps.at(-1);
+          if (last?.step !== 'do-it') continue;
+          const wires = last.changes.filter((change) => change.kind === 'add-wire' || change.kind === 'remove-wire');
+          for (let mask = 1; mask < 2 ** wires.length; mask += 1) {
+            const subset = wires.filter((_, bit) => (mask >> bit) & 1);
+            const made = doItCommand(subset, start.blueprint, catalogue);
+            // A subset with nothing left to do, or that does not fit this build, is not a state the child reaches this way.
+            if (!made.ok) continue;
+            const name = `${start.name}, ladder ${index} changes ${mask.toString(2)}`;
+            tried.push(name);
+            await expect(walk(challenge, made.blueprint, passing.inputs, passing.ticks, 'do-it'), name).resolves.toBeDefined();
+          }
+        }
+      }
+      // meet-the-caster and what-if-one-wheel have no wire change that fits a failing build (the caster is not placed
+      // yet; the wheel comes off as a part), so they try none here.
+      expect(tried.length > 0 || ['meet-the-caster', 'what-if-one-wheel'].includes(challenge.id)).toBe(true);
+    }, 300_000);
+
     for (const follow of ['do-it', 'ghost-wire'] as const) {
       it(`${challenge.id}: reaches the goal from each failing build, following each ${follow}`, async () => {
         expect(passing, 'a passing fixture').toBeDefined();
