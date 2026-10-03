@@ -9,7 +9,7 @@
 // so a Run that drew none of them fails. The screenshots are kept as references in
 // __screenshots__/run-animation.e2e.ts/, one per fixture, so a change to how a Run looks shows in review.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { page } from 'vitest/browser';
+import { expectScreenshot } from '../../src/e2e/screenshots.ts';
 import { loadFixtures } from '@servo/content/fixtures';
 import type { ContentFixture } from '@servo/content/fixtures';
 import { applyEdit } from '@servo/canvas';
@@ -87,7 +87,8 @@ const record = async (fixture: ContentFixture): Promise<Recorded> => {
   handle.applyRunFrame(frame);
   await settle(bench);
   const shot = await shoot(hooks.canvas);
-  await expect.element(page.elementLocator(bench.host)).toMatchScreenshot(`${fixture.name}-run`);
+  // Task 3.8's comparison, the same on every platform: test/e2e/__screenshots__/run-animation.e2e.ts/<fixture>-run.png.
+  await expectScreenshot(bench.host, `run-animation.e2e.ts/${fixture.name}-run`);
   // Run mode locks the build: an edit is refused and the blueprint is untouched.
   expect(handle.apply({ kind: 'rename', name: 'Changed in Run' })).toMatchObject({ ok: false, refusal: { code: 'edit.locked' } });
   expect(serializeBlueprint(handle.blueprint ?? fixture.blueprint)).toBe(built);
