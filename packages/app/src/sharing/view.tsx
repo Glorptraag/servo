@@ -1,7 +1,8 @@
 // A shared build's page (task 5.6): what a shared link opens. It needs no gate, opens no store and no profile, and
 // writes nothing: not to IndexedDB, not to page storage, not to the address. The build is shown on a read-only canvas
-// (D43) and replayed at once, with Stop and Run again; the canvas's own list view reads the build out and offers
-// inspection only. A link that is incomplete, changed or from a newer Servo is one plain line, never a dialog
+// (D43) and replayed at once, with Stop and Run again; with prefers-reduced-motion it waits at tick 0 for Run instead
+// of starting by itself, while the canvas shows each frame at once (task 3.5). The canvas's own list view reads the
+// build out and offers inspection only. A link that is incomplete, changed or from a newer Servo is one plain line, never a dialog
 // (ground rule 9). "Keep a copy" (D43) is not offered: it would write into a child's store (README, "Shared links").
 
 import { useEffect, useRef, useState } from 'react';
@@ -22,7 +23,9 @@ import './sharing.css';
 export const SHARE_TEXT = {
   title: SHARED_BUILD_NAME,
   readOnly: 'A shared build. It runs here, and cannot be changed.',
-  run: 'Run again',
+  run: 'Run',
+  runAgain: 'Run again',
+  ready: 'Ready to run.',
   stop: 'Stop',
   loading: 'Getting the run ready.',
   spinUp: 'Starting.',
@@ -48,7 +51,12 @@ export interface SharedPageOptions {
   readonly mountCanvas?: (host: HTMLElement, options: CanvasOptions) => CanvasHandle;
   /** Default the page's `performance.now` and `requestAnimationFrame`. */
   readonly clock?: ReplayClock;
+  /** Default the page's `prefers-reduced-motion`, read as the page opens: true keeps the replay from starting by itself. */
+  readonly reducedMotion?: () => boolean;
 }
+
+/** `prefers-reduced-motion`, read as the canvas reads it (packages/canvas/docs/run-animation.md). */
+export const prefersReducedMotion = (): boolean => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export interface SharedPageHandle {
   /** What the link held: the build, or why it was refused. */
@@ -65,19 +73,23 @@ interface ViewProps {
   readonly content: Content;
   readonly mountCanvas: (host: HTMLElement, options: CanvasOptions) => CanvasHandle;
   readonly clock: ReplayClock;
+  readonly reducedMotion: () => boolean;
   readonly onMounted: (canvas: CanvasHandle, replay: Replay) => void;
 }
 
-const SharedBuildView = ({ blueprint, seed, content, mountCanvas, clock, onMounted }: ViewProps) => {
+const SharedBuildView = ({ blueprint, seed, content, mountCanvas, clock, reducedMotion, onMounted }: ViewProps) => {
   const hostRef = useRef<HTMLDivElement>(null);
   const [replay, setReplay] = useState<Replay | null>(null);
-  const [phase, setPhase] = useState<ReplayPhase>('loading');
-  const latest = useRef({ mountCanvas, clock, onMounted });
+  // Read once, as the page opens: under reduced motion the page opens ready, waiting for Run.
+  const [waits] = useState(reducedMotion);
+  const [phase, setPhase] = useState<ReplayPhase | 'ready'>(waits ? 'ready' : 'loading');
+  const [played, setPlayed] = useState(false);
+  const latest = useRef({ mountCanvas, clock, waits, onMounted });
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
-    const { mountCanvas: mount, clock: wallClock, onMounted: mounted } = latest.current;
+    const { mountCanvas: mount, clock: wallClock, waits: wait, onMounted: mounted } = latest.current;
     const canvas = mount(host, {
       catalogue: content.catalogue,
       resolveArt: (key) => content.art.get(key),
@@ -87,10 +99,21 @@ const SharedBuildView = ({ blueprint, seed, content, mountCanvas, clock, onMount
     });
     const loaded = canvas.load(blueprint);
     if (!loaded.ok) console.warn('The shared build could not be drawn.', loaded.issues);
-    const player = new Replay({ canvas, blueprint, catalogue: content.catalogue, seed, clock: wallClock, onChange: (next) => setPhase(next) });
+    const player = new Replay({
+      canvas,
+      blueprint,
+      catalogue: content.catalogue,
+      seed,
+      clock: wallClock,
+      onChange: (next) => {
+        setPhase(next);
+        if (next === 'spin-up') setPlayed(true);
+      },
+    });
     setReplay(player);
     mounted(canvas, player);
-    void player.play();
+    // Moving content that starts by itself is what reduced motion asks to avoid: the replay waits for Run.
+    if (!wait) void player.play();
     return () => {
       player.dispose();
       canvas.destroy();
@@ -108,7 +131,7 @@ const SharedBuildView = ({ blueprint, seed, content, mountCanvas, clock, onMount
         <div className="share-canvas-host" ref={hostRef} />
         <div className="share-bar" role="group" aria-label="Replay">
           <p role="status" aria-live="polite">
-            {PHASE_LINE[phase]}
+            {phase === 'ready' ? SHARE_TEXT.ready : PHASE_LINE[phase]}
           </p>
           <button
             type="button"
@@ -116,7 +139,7 @@ const SharedBuildView = ({ blueprint, seed, content, mountCanvas, clock, onMount
             disabled={!replay || phase === 'loading'}
             onClick={() => (playing ? replay?.stop() : void replay?.play())}
           >
-            {playing ? SHARE_TEXT.stop : SHARE_TEXT.run}
+            {playing ? SHARE_TEXT.stop : played ? SHARE_TEXT.runAgain : SHARE_TEXT.run}
           </button>
         </div>
       </div>
@@ -163,7 +186,17 @@ export const mountSharedPage = async (host: HTMLElement, hash: string, options: 
       mounted = { canvas, replay };
       resolve();
     };
-    root.render(<SharedBuildView blueprint={read.blueprint} seed={read.seed} content={content} mountCanvas={mountCanvas} clock={clock} onMounted={onMounted} />);
+    root.render(
+      <SharedBuildView
+        blueprint={read.blueprint}
+        seed={read.seed}
+        content={content}
+        mountCanvas={mountCanvas}
+        clock={clock}
+        reducedMotion={options.reducedMotion ?? prefersReducedMotion}
+        onMounted={onMounted}
+      />,
+    );
   });
   return handle;
 };

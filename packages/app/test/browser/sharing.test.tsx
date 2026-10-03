@@ -1,8 +1,9 @@
 // Shared links (task 5.6) in Chromium: a link made from a child's build in a real store opens on the real, read-only
 // canvas and replays, with Stop and Run again by pointer, touch and keyboard, and the canvas's list view reading the
 // build out. Opening it opens no database and writes nothing: not to IndexedDB, page storage, the address or the
-// history. A refused link is one plain line, never a dialog. Until task 3.5 lands, the real canvas's applyRunFrame
-// throws, so the canvas here is the real one with its frames counted (and passed on once 3.5 can draw them).
+// history. A refused link is one plain line, never a dialog. The canvas is the real one, drawing every frame (task
+// 3.5), with the frames it is handed counted. With prefers-reduced-motion the replay waits for Run. Last, the real
+// page (index.html with a #share= fragment) opens the link and its canvas really moves.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cdp, userEvent } from 'vitest/browser';
 import { mountCanvas } from '@servo/canvas';
@@ -36,21 +37,19 @@ const hostOf = (): HTMLElement => {
   return host;
 };
 
-/** The real canvas, with every frame it is handed counted. */
+/** The real canvas, with every frame it is handed counted and then drawn. */
 const counting = (frames: RunFrame[]) => (host: HTMLElement, options: CanvasOptions): CanvasHandle => {
   const canvas = mountCanvas(host, options);
   const draw = canvas.applyRunFrame.bind(canvas);
   return Object.assign(canvas, {
     applyRunFrame: (frame: RunFrame) => {
       frames.push(frame);
-      try {
-        draw(frame);
-      } catch (error) {
-        if (!String(error).includes('3.5')) throw error;
-      }
+      draw(frame);
     },
   });
 };
+
+const statusOf = (root: ParentNode): string | null | undefined => root.querySelector('.share-bar [role="status"]')?.textContent;
 
 /** A tap with one finger, through the browser's own touch input. */
 const tap = async (element: Element): Promise<void> => {
@@ -113,7 +112,7 @@ describe('opening a shared link', () => {
 
     const frames: RunFrame[] = [];
     const host = hostOf();
-    const handle = await mountSharedPage(host, fragment, { mountCanvas: counting(frames) });
+    const handle = await mountSharedPage(host, fragment, { mountCanvas: counting(frames), reducedMotion: () => false });
     handles.push(handle);
 
     // The build: the real canvas, read-only, with the shared build loaded.
@@ -125,25 +124,25 @@ describe('opening a shared link', () => {
     expect(canvas.apply({ kind: 'rename', name: 'Changed' })).toMatchObject({ ok: false, refusal: { code: 'edit.locked' } });
 
     // The replay: Run mode at once, then frames past tick 0 after the spin-up.
-    await expect.poll(() => canvas.mode).toBe('run');
+    await expect.poll(() => canvas.mode, { timeout: 30_000 }).toBe('run');
     await expect.poll(() => frames.at(-1)?.tick ?? 0, { timeout: 30_000 }).toBeGreaterThan(1);
     expect(frames[0]?.tick).toBe(0);
     expect(button(host).textContent).toBe(SHARE_TEXT.stop);
-    expect(host.querySelector('.share-bar [role="status"]')?.textContent).toBe(SHARE_TEXT.running);
+    expect(statusOf(host)).toBe(SHARE_TEXT.running);
 
     // Stop by pointer, Run again by touch, Stop by keyboard: all three paths.
     await userEvent.click(button(host));
-    await expect.poll(() => canvas.mode).toBe('build');
+    await expect.poll(() => canvas.mode, { timeout: 10_000 }).toBe('build');
     expect(handle.replay()?.tick).toBe(0);
-    expect(button(host).textContent).toBe(SHARE_TEXT.run);
+    expect(button(host).textContent).toBe(SHARE_TEXT.runAgain);
     frames.length = 0;
     await tap(button(host));
-    await expect.poll(() => canvas.mode).toBe('run');
+    await expect.poll(() => canvas.mode, { timeout: 30_000 }).toBe('run');
     await expect.poll(() => frames.at(-1)?.tick ?? 0, { timeout: 30_000 }).toBeGreaterThan(1);
     expect(frames[0]?.tick).toBe(0);
     button(host).focus();
     await userEvent.keyboard('{Enter}');
-    await expect.poll(() => canvas.mode).toBe('build');
+    await expect.poll(() => canvas.mode, { timeout: 10_000 }).toBe('build');
 
     // The list view reads the shared build out too, with nothing to change it.
     expect(canvas.listView).toBeTruthy();
@@ -192,11 +191,73 @@ describe('opening a shared link', () => {
     const link = await shareLinkOf(named, content.catalogue, { base: `${location.origin}/`, includeName: true });
     if (!link.ok) throw new Error('no link');
     const host = hostOf();
-    const handle = await mountSharedPage(host, link.fragment, { mountCanvas: counting([]) });
+    const handle = await mountSharedPage(host, link.fragment, { mountCanvas: counting([]), reducedMotion: () => false });
     handles.push(handle);
     expect(host.querySelector('h1')?.textContent).toBe('Track racer');
     // The name stays on the page: never in the title, which lands in the browser's history.
     expect(document.title).not.toContain('Track racer');
     expect(serializeBlueprint(handle.canvas()?.blueprint ?? roller)).toContain('Track racer');
+  });
+
+  // Other test files set and clear the page's emulated media while this one runs, so each test here says which it
+  // wants; prefersReducedMotion itself is checked in test/sharing/view.test.ts.
+  it('waits at tick 0 for Run under reduced motion, then replays as usual', async () => {
+    const link = await shareLinkOf(roller, content.catalogue, { base: `${location.origin}/` });
+    if (!link.ok) throw new Error('no link');
+    const frames: RunFrame[] = [];
+    const host = hostOf();
+    const handle = await mountSharedPage(host, link.fragment, { mountCanvas: counting(frames), reducedMotion: () => true });
+    handles.push(handle);
+    await expect.poll(() => statusOf(host), { timeout: 10_000 }).toBe(SHARE_TEXT.ready);
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    expect(frames).toEqual([]);
+    expect(handle.canvas()?.mode).toBe('build');
+    expect(button(host).textContent).toBe(SHARE_TEXT.run);
+    await userEvent.click(button(host));
+    await expect.poll(() => handle.canvas()?.mode, { timeout: 30_000 }).toBe('run');
+    await expect.poll(() => frames.at(-1)?.tick ?? 0, { timeout: 30_000 }).toBeGreaterThan(1);
+  });
+
+  it('opens from its address on the real page, and the robot really moves on the canvas', async () => {
+    const link = await shareLinkOf(roller, content.catalogue, { base: `${location.origin}/` });
+    if (!link.ok) throw new Error('no link');
+    const frame = document.createElement('iframe');
+    frame.style.cssText = 'position: fixed; left: 0; top: 0; width: 1180px; height: 820px; border: 0';
+    frame.src = `/index.html${link.fragment}`;
+    document.body.append(frame);
+    hosts.push(frame);
+    const doc = (): Document | null => frame.contentDocument;
+    await expect.poll(() => doc()?.querySelector('.share-stage canvas'), { timeout: 30_000 }).toBeTruthy();
+    // The child's app is not what opened: no shell.
+    expect(doc()?.querySelector('[data-region="stage"]')).toBeNull();
+    // The page reads the emulated media, which other test files change: under reduced motion it waits for Run.
+    await expect.poll(() => [SHARE_TEXT.ready, SHARE_TEXT.running].includes(statusOf(doc() as Document) as never), { timeout: 30_000 }).toBe(true);
+    if (statusOf(doc() as Document) === SHARE_TEXT.ready) doc()?.querySelector<HTMLButtonElement>('.share-bar button')?.click();
+    await expect.poll(() => statusOf(doc() as Document), { timeout: 30_000 }).toBe(SHARE_TEXT.running);
+    /** The page's pixels, straight from the compositor. */
+    const shoot = async (): Promise<Uint8ClampedArray> => {
+      const outer = window.frameElement?.getBoundingClientRect();
+      const box = frame.getBoundingClientRect();
+      const clip = { x: (outer?.left ?? 0) + box.left, y: (outer?.top ?? 0) + box.top + 60, width: box.width, height: box.height - 160, scale: 1 };
+      const png = (await cdp().send('Page.captureScreenshot', { format: 'png', clip })) as { readonly data: string };
+      const bitmap = await createImageBitmap(await (await fetch(`data:image/png;base64,${png.data}`)).blob());
+      const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('no 2D context');
+      context.drawImage(bitmap, 0, 0);
+      return context.getImageData(0, 0, bitmap.width, bitmap.height).data;
+    };
+    const differing = (a: Uint8ClampedArray, b: Uint8ClampedArray): number => {
+      let count = 0;
+      for (let index = 0; index < a.length; index += 4) {
+        if (Math.abs((a[index] ?? 0) - (b[index] ?? 0)) + Math.abs((a[index + 1] ?? 0) - (b[index + 1] ?? 0)) + Math.abs((a[index + 2] ?? 0) - (b[index + 2] ?? 0)) > 30) count += 1;
+      }
+      return count;
+    };
+    const first = await shoot();
+    await expect
+      .poll(async () => differing(first, await shoot()), { timeout: 30_000, interval: 500 })
+      .toBeGreaterThan(200);
+    expect(statusOf(doc() as Document)).not.toBe(SHARE_TEXT.failed);
   });
 });

@@ -19,7 +19,7 @@ export {
 export type { ShareOptions, ShareResult, SharedRead } from './link.ts';
 export { MAX_STEPS_PER_FRAME, Replay, SPIN_UP_MS, pageClock } from './replay.ts';
 export type { ReplayClock, ReplayOptions, ReplayPhase } from './replay.ts';
-export { SHARE_TEXT, mountSharedPage } from './view.tsx';
+export { SHARE_TEXT, mountSharedPage, prefersReducedMotion } from './view.tsx';
 export type { SharedPageHandle, SharedPageOptions } from './view.tsx';
 
 /**
