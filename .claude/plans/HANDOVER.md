@@ -200,3 +200,4 @@ Notes for later tasks:
   - fix the canvas handle/placement browser timeouts;
   - add the CLAUDE.md "How to run" rows for golden, e2e, art, release:dry/release:preview, test:determinism, dev and build. A worker's initial prompt must carry these rows.
 - Removed merged worktrees (1.5, 1.7, 6.3) and the merged task branches.
+- 5.2 prompt MUST add the parent page to the web build and link it from Home behind the gate (D91, R-5.1 finding 2).

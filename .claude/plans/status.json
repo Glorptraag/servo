@@ -1891,6 +1891,54 @@
       "confidence": "medium",
       "blocks": [],
       "resolved": false
+    },
+    {
+      "id": "D86",
+      "question": "Crowded sockets at rest (D65, R-3.3 Q1): wiring fans a crowd out when a finger lands among it, but at rest neighbouring sockets still overlap. Is fanning on demand enough to close D65 before G3?",
+      "recommendation": "Keep fan-on-demand; check at G3 whether children read the robot at rest",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D87",
+      "question": "Drag sensitivity floor (D44, R-3.3 Q2): forgiveness and fan size grow without limit as sensitivity falls. Floor the setting?",
+      "recommendation": "App offers sensitivity no lower than 0.25; canvas unchanged",
+      "confidence": "high",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D88",
+      "question": "Wiring decisions (docs/wiring.md:355-369, eleven items) including #11: a wheel can be put back on a shaft by wiring hub to shaft, not with the Move handle. Accept the documented defaults?",
+      "recommendation": "Accept as documented in packages/canvas/docs/wiring.md",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D89",
+      "question": "Who picks the child (R-5.1 Q1)? Only switch is in the parent view behind the gate; Home has no child picker.",
+      "recommendation": "Keep for launch (6-8); revisit with 5.2 progress view",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D90",
+      "question": "Parental gate difficulty (R-5.1 Q2): one digit times a teen number (72-171) is within reach of many 9-12 year olds.",
+      "recommendation": "Keep D28's sum for Levels 1-2; revisit with the Level 3+ ladder",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D91",
+      "question": "Parent page wiring (R-5.1 finding 2): the parent page is not yet in the web build nor linked from Home. Who adds it?",
+      "recommendation": "Fold into task 5.2 (progress view) or 4.5 Home link: orchestrator adds it to 5.2's prompt",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
     }
   ]
 }
