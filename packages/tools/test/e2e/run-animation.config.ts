@@ -4,6 +4,7 @@
 // - `run-animation` renders on SwiftShader, the same software GPU on every machine, so screenshots and pixel probes
 //   match between a laptop and CI: every broken content fixture, and a working one, run and screenshotted.
 // - `run-animation-performance` times Run-mode frames on the machine's own GPU where it has one, last and alone.
+//   `pnpm perf` runs it alone, as CI's perf job does.
 // Kept apart from task 3.8's harness (packages/tools/src/e2e/); the two can merge once both land.
 import { fileURLToPath } from 'node:url';
 import { playwright } from '@vitest/browser-playwright';
@@ -35,6 +36,8 @@ const project = (name: string, include: string[], args: string[], groupOrder: nu
         contextOptions: { viewport: { width: IPAD.width, height: IPAD.height }, deviceScaleFactor: IPAD.deviceScaleFactor, hasTouch: true },
       }),
       instances: [{ browser: 'chromium' }],
+      // At load 200–350 with many agents running, the browser can take minutes to start and connect (default 60 s).
+      connectTimeout: 300_000,
       viewport: { width: IPAD.width, height: IPAD.height },
       screenshotFailures: false,
       expect: {

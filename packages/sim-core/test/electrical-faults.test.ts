@@ -1,10 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { makeCatalogue, validateArenaPreset, validatePartRecord, wiredNeeds } from '@servo/schema';
 import type { Blueprint, ControlState, Explanation, PartRecord, PortRef, ValidationResult } from '@servo/schema';
 import { exampleArenas, exampleParts, validBlueprints } from '@servo/schema/fixtures';
 import { buildGraph } from '../src/graph/index.ts';
 import { electricalModel, initialElectricalState, solveElectrical, stepElectrical, steadyRpm } from '../src/electrical/index.ts';
 import type { ActuatorState, ElectricalModel, ElectricalSolution, ElectricalState } from '../src/electrical/index.ts';
+
+// Runs over many ticks take a second each alone, past Vitest's 5 s default on a machine running many agents' tests.
+vi.setConfig({ testTimeout: 120_000 });
 
 const unwrap = <T>(result: ValidationResult<T>): T => {
   if (!result.ok) throw new Error(`Expected valid data:\n${JSON.stringify(result.issues, null, 2)}`);

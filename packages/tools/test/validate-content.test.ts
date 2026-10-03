@@ -3,7 +3,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { ISSUE_CODES } from '@servo/schema';
 import { exampleArenas, exampleParts, invalidBlueprints, invalidKits, validKits } from '@servo/schema/fixtures';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as tools from '../src/index.ts';
 import { generateArt } from '../src/placeholder-art/cli.ts';
 import { CONTENT_ISSUE_CODES } from '../src/validate-content/codes.ts';
@@ -21,6 +21,10 @@ import {
   write,
   writeSchemaFixtures,
 } from './validate-content/support.ts';
+
+// Tests here spawn the CLI as a Node process, which takes well past Vitest's 5 s default on a machine at load 200–350
+// with many agents running.
+vi.setConfig({ testTimeout: 120_000 });
 
 afterEach(removeTempFolders);
 

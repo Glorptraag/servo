@@ -25,9 +25,13 @@ export default defineConfig({
           name: 'browser',
           include: ['test/browser/**/*.test.{ts,tsx}'],
           testTimeout: 60_000,
+          // At load 200–350 beside many agents' browsers, starting the browser and a hook that mounts a page take
+          // minutes, past Vitest's 60 s connect and 10 s hook defaults.
+          hookTimeout: 300_000,
           browser: {
             enabled: true,
             headless: true,
+            connectTimeout: 300_000,
             provider: playwright({
               launchOptions: { channel: 'chromium', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] },
               contextOptions: { viewport: { width: 1180, height: 820 } },

@@ -2,7 +2,7 @@
 // behaviour runtime (task 1.3) and the mechanical solver in the tick loop's order, with an ideal battery standing in for
 // the electrical solver (task 1.2): a 2-cell pack at its 2.8 V under load, a motor driver passing it on less its drop.
 // Every Run happens twice and must give the same frames and the same state bytes (ground rule 2).
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { arenaPoseOf, controlId, cosSin, makeCatalogue, validateArenaPreset, validateBlueprint, validatePartRecord } from '@servo/schema';
 import type { ArenaPreset, Blueprint, ControlState, PartRecord, PlacedPartId, Prop, ValidationResult, Wire } from '@servo/schema';
 import { exampleArenas, exampleParts, validBlueprints } from '@servo/schema/fixtures';
@@ -30,6 +30,10 @@ import {
 } from '../src/mechanical/index.ts';
 import type { MechanicalModel, MechanicalState, MechanicalTick, RobotModel } from '../src/mechanical/index.ts';
 import { buildWorld, obstacleBoxes, openWorld, probeTouches } from '../src/mechanical/world.ts';
+
+// Robots driven through the physics world for hundreds of ticks take seconds each on a machine running many agents'
+// tests, past Vitest's 5 s default; generous for that.
+vi.setConfig({ testTimeout: 120_000 });
 
 // ---------------------------------------------------------------------------------------------
 // The example catalogue, three test variants and two test arenas.
@@ -517,7 +521,7 @@ describe('at a wall', () => {
     expect(faultsOf({ model, frames, last })).toEqual(['motor-left: overload', 'motor-right: overload']);
   });
 
-  it('with gearboxes slips instead: the push is past the grip, so the wheels spin, squeal and show slipping', { timeout: 30_000 }, () => {
+  it('with gearboxes slips instead: the push is past the grip, so the wheels spin, squeal and show slipping', () => {
     const { model, frames, last } = run(gearedWithoutBumper('near-wall'), 'near-wall', 120);
     const end = robotOf(last);
     // Its bumper switch's body leads: 90 mm ahead of the chassis's centre.
@@ -559,7 +563,7 @@ describe('at a wall', () => {
     expect(post.last.mechanics.actuators.get('motor-left')?.motor?.held).toBe(true);
   });
 
-  it('meets a heavy prop’s floor friction as it pushes: a 2 kg box stalls direct drive and slips geared drive, and neither moves it (review R-1.4)', { timeout: 30_000 }, () => {
+  it('meets a heavy prop’s floor friction as it pushes: a 2 kg box stalls direct drive and slips geared drive, and neither moves it (review R-1.4)', () => {
     // μ m g = 0.8 × 2 kg × 9.81 = 15.7 N, against the bare motors' 2 × 39 N·mm × 2.8 / 6 ÷ 32.5 mm = 1.12 N at a stall.
     const direct = run(edited('rolling-start', { props: [boxAhead(2000)] }), 'open-floor', 90);
     expect(direct.last.mechanics.bodies.get('arena:box')).toEqual({ x: 500, y: 600, heading: 0 });
@@ -579,7 +583,7 @@ describe('at a wall', () => {
     expect(faultsOf(geared)).toEqual(['wheel-left: slipping', 'wheel-right: slipping']);
   });
 
-  it('teaches the gearbox (D52): a box its bare motors stall against, the same robot pushes once geared', { timeout: 30_000 }, () => {
+  it('teaches the gearbox (D52): a box its bare motors stall against, the same robot pushes once geared', () => {
     // 160 g: μ m g = 1.26 N, past the bare motors' 1.12 N at a stall but inside what the geared tyres can grip.
     const friction = arena('open-floor').friction * 0.16 * 9.81;
     expect(friction).toBeGreaterThan((2 * 39 * (PACK_VOLTS / 6)) / 32.5);
@@ -602,7 +606,7 @@ describe('at a wall', () => {
     expect(faultsOf(geared)).toEqual([]);
   });
 
-  it('stays exactly where a wall stops it: stalled against it, or stopped short by its bumper switch (review R-1.4)', { timeout: 30_000 }, () => {
+  it('stays exactly where a wall stops it: stalled against it, or stopped short by its bumper switch (review R-1.4)', () => {
     for (const blueprint of [edited('rolling-start', { preset: 'near-wall' }), edited('bumper-robot', { preset: 'near-wall' })]) {
       const held = run(blueprint, 'near-wall', 600);
       const rest = held.frames.findIndex((frame) => frame.tick > 0 && robotOf(frame).forwardMmPerSecond === 0);
@@ -638,7 +642,7 @@ describe('balance', () => {
     expect(end.forwardMmPerSecond).toBeGreaterThan(0);
   });
 
-  it('starts at once while its frame drags: the frame slides with at most μN, so with no caster or a loose one it shows that one fault and never slips (review R-1.4)', { timeout: 30_000 }, () => {
+  it('starts at once while its frame drags: the frame slides with at most μN, so with no caster or a loose one it shows that one fault and never slips (review R-1.4)', () => {
     const geared = (edit: Edit): Blueprint =>
       edited('bumper-robot', {
         preset: 'open-floor',

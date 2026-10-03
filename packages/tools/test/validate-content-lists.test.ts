@@ -1,6 +1,6 @@
 // The real terminology lists in packages/content/terminology (task 2.5), checked through the validator.
 import { exampleChallenges, exampleParts } from '@servo/schema/fixtures';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { bannedFindings, compileTerminology, glossFindings, loadTerminology, partNameFindings } from '../src/validate-content/terminology.ts';
 import {
   changed,
@@ -15,6 +15,10 @@ import {
   write,
   writeSchemaFixtures,
 } from './validate-content/support.ts';
+
+// Tests here spawn the CLI as a Node process, which takes well past Vitest's 5 s default on a machine at load 200–350
+// with many agents running.
+vi.setConfig({ testTimeout: 120_000 });
 
 afterEach(removeTempFolders);
 
