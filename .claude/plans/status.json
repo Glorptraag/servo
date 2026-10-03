@@ -263,7 +263,7 @@
       "dispatched_at": "2026-10-01T06:12:30+00:00"
     },
     "1.5": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -280,8 +280,8 @@
       ],
       "done_when": "Same seed produces identical run records across 100 runs of every fixture; Stop restores the snapshot byte-for-byte; the public API matches the README; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-02T22:50:41+00:00",
+      "completed_by": "W-1.5",
       "dispatched_at": "2026-10-01T10:21:35+00:00"
     },
     "1.6": {
@@ -304,7 +304,7 @@
       "dispatched_at": "2026-10-01T06:12:30+00:00"
     },
     "1.7": {
-      "status": "pending",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -319,11 +319,12 @@
       ],
       "done_when": "Any solver change that alters a golden run fails CI with a readable diff; `--accept` regenerates; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null
+      "completed_at": "2026-10-02T22:50:42+00:00",
+      "completed_by": "W-1.7",
+      "dispatched_at": "2026-10-01T13:03:29+00:00"
     },
     "G1": {
-      "status": "pending",
+      "status": "done",
       "model": "opus",
       "size": "micro",
       "batch": null,
@@ -344,8 +345,8 @@
       ],
       "done_when": "docs/gates/G1.md exists with the golden-run and determinism results recorded.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null
+      "completed_at": "2026-10-02T23:08:58+00:00",
+      "completed_by": "orchestrator"
     },
     "2.1": {
       "status": "done",
@@ -546,7 +547,7 @@
       "dispatched_at": "2026-10-01T08:46:24+00:00"
     },
     "3.4": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -561,10 +562,11 @@
       "done_when": "Screenshot tests for each focus state pass; selection events are emitted with the right ids.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-02T01:56:16+00:00"
     },
     "3.5": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -580,10 +582,11 @@
       "done_when": "Each failure mode in the broken fixtures is visibly distinct in a recorded run (screenshot per fixture); tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-02T01:56:16+00:00"
     },
     "3.6": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -598,10 +601,11 @@
       "done_when": "A fixture built entirely from the list view produces a blueprint byte-identical to the same build wired on canvas; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-02T01:56:16+00:00"
     },
     "3.7": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -616,7 +620,8 @@
       "done_when": "Routed wires never cross a part body on the 25-part fixture; zoom cannot lose the build; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-02T01:56:16+00:00"
     },
     "3.8": {
       "status": "dispatched",
@@ -820,7 +825,7 @@
       "completed_by": null
     },
     "4.9": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -835,8 +840,8 @@
       ],
       "done_when": "Round-trip of all fixtures; a v0 fixture migrates on load; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-03T00:08:55+00:00",
+      "completed_by": "W-4.9",
       "dispatched_at": "2026-10-01T09:05:09+00:00"
     },
     "4.10": {
@@ -886,7 +891,7 @@
       "completed_by": null
     },
     "5.1": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -901,7 +906,8 @@
       "done_when": "Profile switch isolates builds; no route or store query exposes another child's data (negative tests); tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-03T00:09:42+00:00"
     },
     "5.2": {
       "status": "pending",
@@ -959,7 +965,7 @@
       "completed_by": null
     },
     "5.5": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -975,7 +981,8 @@
       "done_when": "Airplane-mode e2e passes; the conflict fixture keeps both versions; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-03T00:09:43+00:00"
     },
     "5.6": {
       "status": "pending",
@@ -1080,7 +1087,7 @@
       "completed_by": null
     },
     "6.3": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1096,8 +1103,8 @@
       ],
       "done_when": "A tagged commit produces a tester URL with the content version shown in Settings.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-02T22:50:42+00:00",
+      "completed_by": "W-6.3",
       "dispatched_at": "2026-10-01T11:34:37+00:00"
     },
     "6.4": {
@@ -1776,6 +1783,111 @@
       "id": "D72",
       "question": "Release pipeline details (task 6.3): when does the content semver bump; should a deploy refuse a tester build without an invite-code seed; when should the app load a content bundle at run time instead of the one built in; should Settings be reached from Home behind the parental gate (D28, D68); should final art travel in the content bundle (D6)?",
       "recommendation": "Bump the content minor version for new records and the patch for text fixes (the hash suffix already identifies every bundle); refuse deploys of tester builds without a seed; keep the built-in content until a host exists, then add run-time bundle loading; Settings sits behind the parental gate on Home; art ships with the app until D6 is decided.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D73",
+      "question": "Store behaviour details (task 4.9, review R-4.9): status lines 'Not saved', 'Saved', 'Saved, and the other version kept as a copy', 'Builds are not being kept on this device'; 'Saved' appears only after Save is pressed; removing a build keeps its Runs as the child's progress; a profile with no loadable build starts an empty 'Build 1' on open floor.",
+      "recommendation": "Accept for testers; task 6.5's copy pass reviews the status wording; removing a build keeping its Runs stays (progress is the child's).",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D74",
+      "question": "Fault debounce (task 1.5): one-tick faults appeared at start-up (a driver brown-out), on heavy contact (a wheel slip) and after a bumper stop (a re-close). Should a fault need a minimum duration before it counts?",
+      "recommendation": "Yes: a fault is recorded (and shown as a fault) only after 3 consecutive ticks (0.1 s), and ends after 3 ticks absent; live motion and values still show every tick as it is.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D75",
+      "question": "D31 'fixed': sim-core lists blueprint differences between two Runs that touch the faulted part, its ports or its wires (a wire removed and put back counts as no change). Accept this reading?",
+      "recommendation": "Accept as built (R-1.5 Q1)",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D76",
+      "question": "Should 'fixed' also count changes to the part that fed or explained the fault (e.g. browned-out driver fixed by a bigger battery pack)?",
+      "recommendation": "No: D31 as written, only the faulted part, its ports and wires (R-1.5 Q2)",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D77",
+      "question": "Debounced faults (D74): firstTick and the start event land on the 3rd active tick, shifting time-to-fix by 0.07 s. Keep?",
+      "recommendation": "Keep as built (R-1.5 Q3)",
+      "confidence": "high",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D78",
+      "question": "Should golden runs also pin wire flows (canvas moving dots and flow labels)? A change reversing all power-line flows passes every check today.",
+      "recommendation": "Close G1 without them; task 3.5 adds wire flows to the golden summary when the canvas first consumes them (R-1.7 Q1)",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D79",
+      "question": "Circuit Crew kit robot: bumper re-closes for one tick at tick 172 after stopping at the wall (LED, buzzer and motors on for 1/30 s). Accept at G1?",
+      "recommendation": "Accept for G1; add a contact release margin to the bumper switch in a sim-core follow-up (R-1.7 Q2)",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D80",
+      "question": "Tidy wires (3.7): a part body is its drawn outline, not the 96 px minimum touch tile, so wires may pass through touch padding. Also: tidy makes no undo step, routes drop when a socket moves, the chassis is not a body, and the app owns the tidy button and calls fit after first load. Accept?",
+      "recommendation": "Accept as ruled by the orchestrator",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": true,
+      "answer": "Superseded by D85 (R-3.7: drawn outline means the renderer's scaled picture, not body.size)"
+    },
+    {
+      "id": "D81",
+      "question": "Store (4.9 decision 7): removing a build keeps its Runs as the child's progress. Accept?",
+      "recommendation": "Accept as built",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D82",
+      "question": "Store (4.9 decision 13): on Firefox persist() prompts the person at the screen; the store asks only while storage is not yet kept. Ask from the parent view instead?",
+      "recommendation": "Move the persist() request to the parent view (task 5.2) so a child never sees the browser prompt; keep the current behaviour until then",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D83",
+      "question": "Store (4.9 decision 15, R-4.9 finding 11): two tabs editing one build keep a copy at every crossing save, so copies pile up. Add a per-build Web Lock or BroadcastChannel refresh?",
+      "recommendation": "Yes, later: a per-build Web Lock in a 6.x hardening task; nothing is lost meanwhile",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D84",
+      "question": "R-3.6 major 1: placing a new part by keyboard or screen reader only works through listView.placementsFor, which no task yet requires the app tray to offer. Add it to task 4.2's done-when before G3?",
+      "recommendation": "Yes: the orchestrator puts it in 4.2's builder prompt and checks it at 4.2 review",
+      "confidence": "high",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D85",
+      "question": "Supersedes D80 wording (R-3.7 Q1-Q4): tidy-wires 'part body' = the picture as the renderer draws it (scaled to fill the tile less padding); zoom 'build lost' = <96 px of any part's drawn tile/picture/sockets in the uncovered view, on the turned shape; tidy button + onSafeArea->setSafeArea + fit-after-load built in the app by task 3.7 (rule 8 paths together); moved socket drops its route to straight for launch (brief Sec 10 says re-route). Accept?",
+      "recommendation": "Accept; revisit auto re-route after iPad timing",
       "confidence": "medium",
       "blocks": [],
       "resolved": false

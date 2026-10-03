@@ -485,6 +485,9 @@ describe('handles never sit under a socket (brief Section 9: ports and handles a
             pointer(bench.surface.canvas, 'pointerdown', at);
             pointer(bench.surface.canvas, 'pointerup', at);
             expect(bench.surface.placement.moving, `${name}: ${socket.key} with ${part.id} selected`).toBeUndefined();
+            // The tap started a wire there (task 3.3), or fanned its crowd out; a second tap there lets the wire go.
+            pointer(bench.surface.canvas, 'pointerdown', at);
+            pointer(bench.surface.canvas, 'pointerup', at);
           }
         }
       }

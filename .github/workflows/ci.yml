@@ -29,6 +29,8 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm -r test
       - run: pnpm validate-content packages/content --terminology packages/content/terminology
+      # Golden runs (task 1.7): each fixture's expect, and each Run against packages/sim-core/golden/. About 10 s.
+      - run: pnpm golden
 
   e2e:
     # The canvas e2e harness (packages/tools/src/e2e/README.md) in four shards that run side by side, each within the

@@ -1,0 +1,1960 @@
+{
+  "about": "The Circuit Crew kit robot (Level 2) and the part records and arena it uses, copied from packages/content (task 2.6: fixtures/blueprints/kit-circuit-crew.json, parts/, arenas/). The canvas never imports content, so its tests carry this copy; task 3.8 can check live content in packages/tools.",
+  "parts": [
+    {
+      "behaviour": [
+        {
+          "capacityMah": 40,
+          "emptyVolts": 2,
+          "id": "cells",
+          "internalOhms": 0.4,
+          "kind": "source",
+          "output": {
+            "neg": "minus",
+            "pos": "plus"
+          },
+          "volts": 3
+        }
+      ],
+      "body": {
+        "centreOfMass": {
+          "x": 0,
+          "y": 0,
+          "z": 8
+        },
+        "grams": 58,
+        "size": {
+          "x": 58,
+          "y": 32,
+          "z": 16
+        }
+      },
+      "card": {
+        "does": "Stores electricity and gives it to the parts you wire to it.",
+        "gives": "Gives: power (red) from two AA cells.",
+        "needs": "Needs: power lines (red) in a loop from plus, through a part, back to minus.",
+        "popularMechanics": "The same AA cells power a TV remote and a torch.",
+        "safetyNote": "Use real battery packs only with an adult nearby, and never join plus straight to minus."
+      },
+      "failureModes": [
+        {
+          "cardLine": "Short circuit: the battery pack drains fast.",
+          "hint": "This battery pack is in a loop with nothing in it that uses power",
+          "id": "short-circuit",
+          "need": "no-short",
+          "shows": [
+            "drain"
+          ],
+          "teachingNote": "When plus is joined back to minus with nothing that uses power in between, such as a bare wire, a closed switch or a different battery pack side by side, nothing holds the current back, so the pack empties in seconds and grows warm.",
+          "unmet": "shorted"
+        },
+        {
+          "cardLine": "No loop: nothing on the battery pack works.",
+          "hint": "This battery pack has no loop back to minus",
+          "id": "no-loop",
+          "need": "loop",
+          "shows": [
+            "off"
+          ],
+          "teachingNote": "A battery pack gives power only round a closed loop from plus back to minus. With no loop at all, nothing flows and nothing wired to it works.",
+          "unmet": "open"
+        }
+      ],
+      "id": "battery-pack-2-cell",
+      "identity": {
+        "art": "part/battery-pack-2-cell",
+        "colours": {
+          "accent": "#212121",
+          "main": "#c62828"
+        },
+        "domains": [
+          "electronics-and-power",
+          "robotic-system-components"
+        ],
+        "family": "power",
+        "level": 1,
+        "name": "2-cell battery pack"
+      },
+      "needs": [
+        {
+          "id": "no-short",
+          "kind": "isolation",
+          "ports": [
+            "plus",
+            "minus"
+          ]
+        },
+        {
+          "id": "loop",
+          "kind": "loop",
+          "ports": [
+            "plus",
+            "minus"
+          ]
+        }
+      ],
+      "ports": [
+        {
+          "id": "plus",
+          "label": "plus (+)",
+          "polarity": "positive",
+          "type": "power"
+        },
+        {
+          "id": "minus",
+          "label": "minus (−)",
+          "polarity": "negative",
+          "type": "power"
+        },
+        {
+          "at": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "id": "mount",
+          "label": "mount",
+          "role": "mount",
+          "type": "mechanical",
+          "yaw": 0
+        }
+      ],
+      "settings": []
+    },
+    {
+      "behaviour": [
+        {
+          "actuation": {
+            "kind": "contact",
+            "normally": "closed",
+            "probe": {
+              "from": {
+                "x": 10,
+                "y": -20
+              },
+              "to": {
+                "x": 10,
+                "y": 20
+              }
+            }
+          },
+          "id": "contacts",
+          "kind": "switch",
+          "terminals": [
+            "a",
+            "b"
+          ]
+        }
+      ],
+      "body": {
+        "centreOfMass": {
+          "x": -2,
+          "y": 0,
+          "z": 6
+        },
+        "grams": 8,
+        "size": {
+          "x": 20,
+          "y": 40,
+          "z": 14
+        }
+      },
+      "card": {
+        "does": "Lets power through, and cuts it off while its front bar presses against something.",
+        "gives": "Gives: a stop when your robot bumps into a wall or a box.",
+        "needs": "Needs: a place in the power line (red), at the front of the chassis (frame).",
+        "popularMechanics": "A robot vacuum cleaner feels its way round a room with a bumper switch like this.",
+        "safetyNote": "Real bumper switches are small parts, so build with an adult nearby."
+      },
+      "failureModes": [
+        {
+          "cardLine": "Across the battery pack: it drains the pack fast until its bar is pressed.",
+          "hint": "This bumper switch closes a loop with nothing in it that uses power",
+          "id": "across-the-pack",
+          "need": "no-short",
+          "shows": [
+            "drain"
+          ],
+          "teachingNote": "A bumper switch stays closed until its bar is pressed. Wired straight across the battery pack, it joins plus to minus the whole time nothing touches it, so it makes a short circuit instead of stopping a part.",
+          "unmet": "shorted"
+        },
+        {
+          "cardLine": "Not in the loop: a bump changes nothing.",
+          "hint": "This bumper switch is not in a loop with the battery pack",
+          "id": "outside-loop",
+          "need": "in-loop",
+          "shows": [
+            "off"
+          ],
+          "teachingNote": "A bumper switch stops only the loop it sits in. Wired off to one side, with no loop running through it, a bump changes nothing.",
+          "unmet": "open"
+        }
+      ],
+      "id": "bumper-switch",
+      "identity": {
+        "art": "part/bumper-switch",
+        "colours": {
+          "accent": "#ffb300",
+          "main": "#455a64"
+        },
+        "domains": [
+          "electronics-and-power",
+          "sensing-and-feedback-loops"
+        ],
+        "family": "sense",
+        "level": 2,
+        "name": "bumper switch"
+      },
+      "needs": [
+        {
+          "id": "no-short",
+          "kind": "isolation",
+          "ports": [
+            "a",
+            "b"
+          ]
+        },
+        {
+          "id": "in-loop",
+          "kind": "loop",
+          "ports": [
+            "a",
+            "b"
+          ]
+        }
+      ],
+      "ports": [
+        {
+          "id": "a",
+          "label": "side A",
+          "polarity": "none",
+          "type": "power"
+        },
+        {
+          "id": "b",
+          "label": "side B",
+          "polarity": "none",
+          "type": "power"
+        },
+        {
+          "at": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "id": "mount",
+          "label": "mount",
+          "role": "mount",
+          "type": "mechanical",
+          "yaw": 0
+        }
+      ],
+      "settings": []
+    },
+    {
+      "behaviour": [
+        {
+          "emits": {
+            "hz": 2300,
+            "kind": "sound"
+          },
+          "id": "sounder",
+          "kind": "load",
+          "onVolts": 1,
+          "ratedMilliamps": 30,
+          "ratedVolts": 3,
+          "supply": {
+            "neg": "minus",
+            "pos": "plus"
+          },
+          "whenReversed": "blocks"
+        }
+      ],
+      "body": {
+        "centreOfMass": {
+          "x": 0,
+          "y": 0,
+          "z": 5
+        },
+        "grams": 2,
+        "size": {
+          "x": 12,
+          "y": 12,
+          "z": 10
+        }
+      },
+      "card": {
+        "does": "Makes a buzzing sound when power flows through it.",
+        "gives": "Gives: a buzz you can hear across the room.",
+        "needs": "Needs: power (red), with its plus side towards plus.",
+        "popularMechanics": "A washing machine beeps with a buzzer like this when the wash is done.",
+        "safetyNote": "Real buzzers are small parts, so build with an adult nearby."
+      },
+      "failureModes": [
+        {
+          "cardLine": "Wires swapped: it stays silent.",
+          "hint": "This buzzer's plus and minus are swapped",
+          "id": "reversed",
+          "need": "power",
+          "shows": [
+            "silent"
+          ],
+          "teachingNote": "A buzzer like this has a plus side and a minus side, and it sounds only with its plus side towards plus. Wired the other way round, it stays silent.",
+          "unmet": "reversed"
+        },
+        {
+          "cardLine": "No complete circuit: it stays silent.",
+          "hint": "This buzzer is not in a loop with the battery pack",
+          "id": "no-circuit",
+          "need": "power",
+          "shows": [
+            "silent"
+          ],
+          "teachingNote": "Sound needs current, and current needs a complete loop: from plus, through the buzzer, and back to minus.",
+          "unmet": "open"
+        },
+        {
+          "cardLine": "Too little power: it buzzes quietly.",
+          "hint": "This buzzer is not getting enough power",
+          "id": "low-voltage",
+          "need": "power",
+          "shows": [
+            "quiet"
+          ],
+          "teachingNote": "A buzzer sounds louder as its voltage rises. On too little, such as a single cell, it still buzzes, but quietly, and below about 1 volt it falls silent.",
+          "unmet": "low"
+        }
+      ],
+      "id": "buzzer",
+      "identity": {
+        "art": "part/buzzer",
+        "colours": {
+          "accent": "#cfd8dc",
+          "main": "#263238"
+        },
+        "domains": [
+          "electronics-and-power"
+        ],
+        "family": "output",
+        "level": 2,
+        "name": "buzzer"
+      },
+      "needs": [
+        {
+          "id": "power",
+          "kind": "power",
+          "maxVolts": 6,
+          "minVolts": 2.5,
+          "supply": {
+            "neg": "minus",
+            "pos": "plus"
+          }
+        }
+      ],
+      "ports": [
+        {
+          "id": "plus",
+          "label": "plus (+)",
+          "polarity": "positive",
+          "type": "power"
+        },
+        {
+          "id": "minus",
+          "label": "minus (−)",
+          "polarity": "negative",
+          "type": "power"
+        },
+        {
+          "at": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "id": "mount",
+          "label": "mount",
+          "role": "mount",
+          "type": "mechanical",
+          "yaw": 0
+        }
+      ],
+      "settings": []
+    },
+    {
+      "behaviour": [
+        {
+          "id": "roller",
+          "kind": "support",
+          "mount": "mount",
+          "rollingFriction": 0.02
+        }
+      ],
+      "body": {
+        "centreOfMass": {
+          "x": 0,
+          "y": 0,
+          "z": 6
+        },
+        "grams": 12,
+        "size": {
+          "x": 22,
+          "y": 22,
+          "z": 16.5
+        }
+      },
+      "card": {
+        "does": "Holds up one end of the chassis (frame) and rolls whichever way the robot goes.",
+        "gives": "Gives: a rolling support, so the chassis does not scrape the floor.",
+        "needs": "Needs: a mount (grey) under the chassis, with its ball on the floor.",
+        "popularMechanics": "Office chairs and shopping trolleys roll on casters that turn any way you push.",
+        "safetyNote": "A real caster has a small ball that can come out, so build with an adult nearby."
+      },
+      "failureModes": [
+        {
+          "cardLine": "Loose: the chassis (frame) drags on the floor.",
+          "hint": "This caster is not fixed to the chassis",
+          "id": "loose",
+          "need": "fixed",
+          "shows": [
+            "drag"
+          ],
+          "teachingNote": "A caster holds one end of the chassis off the floor and rolls with the robot. Left loose, it holds up nothing, so that end of the chassis scrapes the floor and the robot drags.",
+          "unmet": "absent"
+        },
+        {
+          "cardLine": "Off the floor: the chassis (frame) drags.",
+          "hint": "This caster does not reach the floor",
+          "id": "lifted",
+          "need": "on-floor",
+          "shows": [
+            "drag"
+          ],
+          "teachingNote": "A caster holds the chassis up only where its ball reaches the floor. Fixed too high, it hangs in the air and the chassis scrapes.",
+          "unmet": "lifted"
+        }
+      ],
+      "id": "caster",
+      "identity": {
+        "art": "part/caster",
+        "colours": {
+          "accent": "#424242",
+          "main": "#9e9e9e"
+        },
+        "domains": [
+          "mechanics"
+        ],
+        "family": "structure-and-ride",
+        "level": 1,
+        "name": "caster"
+      },
+      "needs": [
+        {
+          "id": "fixed",
+          "kind": "mount",
+          "port": "mount"
+        },
+        {
+          "id": "on-floor",
+          "kind": "floor"
+        }
+      ],
+      "ports": [
+        {
+          "at": {
+            "x": 0,
+            "y": 0,
+            "z": 16.5
+          },
+          "id": "mount",
+          "label": "mount",
+          "role": "mount",
+          "type": "mechanical",
+          "yaw": 0
+        }
+      ],
+      "settings": []
+    },
+    {
+      "behaviour": [],
+      "body": {
+        "centreOfMass": {
+          "x": 0,
+          "y": 0,
+          "z": 3
+        },
+        "grams": 90,
+        "size": {
+          "x": 160,
+          "y": 130,
+          "z": 6
+        }
+      },
+      "card": {
+        "does": "The chassis (frame) holds every part of your robot together.",
+        "gives": "Gives: mount points (grey) that hold each part in its place.",
+        "needs": "Needs: wheels and a caster under it, and parts fixed to its mount points (grey).",
+        "popularMechanics": "A car has a chassis too: the frame its engine, seats and wheels bolt onto."
+      },
+      "failureModes": [
+        {
+          "cardLine": "Too much weight high up or to one side: the robot tips over.",
+          "hint": "This chassis carries its weight too high or too far out",
+          "id": "top-heavy",
+          "need": "upright",
+          "shows": [
+            "tip"
+          ],
+          "teachingNote": "A robot stays upright while its centre of mass sits over the space between its wheels and caster. Heavy parts mounted high or far out move that centre, and a fast start or a slope then tips the robot over.",
+          "unmet": "lost"
+        },
+        {
+          "cardLine": "Chassis (frame) on the floor: the robot drags.",
+          "hint": "Nothing holds up one end of this chassis",
+          "id": "scraping",
+          "need": "upright",
+          "shows": [
+            "drag"
+          ],
+          "teachingNote": "The chassis rides clear of the floor only while wheels and a caster hold it up at both ends. With nothing under one end, it rests on the floor and scrapes, so the robot drags.",
+          "unmet": "grounded"
+        }
+      ],
+      "id": "chassis",
+      "identity": {
+        "art": "part/chassis",
+        "colours": {
+          "accent": "#90caf9",
+          "main": "#1565c0"
+        },
+        "domains": [
+          "mechanics",
+          "robotic-system-components"
+        ],
+        "family": "structure-and-ride",
+        "level": 1,
+        "name": "chassis"
+      },
+      "needs": [
+        {
+          "id": "upright",
+          "kind": "balance"
+        }
+      ],
+      "ports": [
+        {
+          "at": {
+            "x": 30,
+            "y": 53,
+            "z": 6
+          },
+          "id": "motor-left",
+          "label": "left motor mount",
+          "mirrored": false,
+          "role": "mount-point",
+          "type": "mechanical",
+          "yaw": 0
+        },
+        {
+          "at": {
+            "x": 30,
+            "y": -53,
+            "z": 6
+          },
+          "id": "motor-right",
+          "label": "right motor mount",
+          "mirrored": true,
+          "role": "mount-point",
+          "type": "mechanical",
+          "yaw": 0
+        },
+        {
+          "at": {
+            "x": 30,
+            "y": 29,
+            "z": 6
+          },
+          "id": "motor-left-inner",
+          "label": "left inner motor mount",
+          "mirrored": false,
+          "role": "mount-point",
+          "type": "mechanical",
+          "yaw": 0
+        },
+        {
+          "at": {
+            "x": 30,
+            "y": -29,
+            "z": 6
+          },
+          "id": "motor-right-inner",
+          "label": "right inner motor mount",
+          "mirrored": true,
+          "role": "mount-point",
+          "type": "mechanical",
+          "yaw": 0
+        },
+        {
+          "at": {
+            "x": 40,
+            "y": 53,
+            "z": 6
+          },
+          "id": "gear-left",
+          "label": "left gearbox mount",
+          "mirrored": false,
+          "role": "mount-point",
+          "type": "mechanical",
+          "yaw": 0
+        },
+        {
+          "at": {
+            "x": 40,
+            "y": -53,
+            "z": 6
+          },
+          "id": "gear-right",
+          "label": "right gearbox mount",
+          "mirrored": true,
+          "role": "mount-point",
+          "type": "mechanical",
+          "yaw": 0
+        },
+        {
+          "at": {
+            "x": 55,
+            "y": 0,
+            "z": 6
+          },
+          "id": "deck-front",
+          "label": "front deck",
+          "mirrored": false,
+          "role": "mount-point",
+          "type": "mechanical",
+          "yaw": 0
+        },
+        {
+          "at": {
+            "x": 0,
+            "y": 0,
+            "z": 6
+          },
+          "id": "deck-middle",
+          "label": "middle deck",
+          "mirrored": false,
+          "role": "mount-point",
+          "type": "mechanical",
+          "yaw": 0
+        },
+        {
+          "at": {
+            "x": -45,
+            "y": 0,
+            "z": 6
+          },
+          "id": "deck-rear",
+          "label": "rear deck",
+          "mirrored": false,
+          "role": "mount-point",
+          "type": "mechanical",
+          "yaw": 0
+        },
+        {
+          "at": {
+            "x": 80,
+            "y": 0,
+            "z": 6
+          },
+          "id": "bumper",
+          "label": "bumper mount",
+          "mirrored": false,
+          "role": "mount-point",
+          "type": "mechanical",
+          "yaw": 0
+        },
+        {
+          "at": {
+            "x": -70,
+            "y": 0,
+            "z": 0
+          },
+          "id": "caster",
+          "label": "caster mount",
+          "mirrored": false,
+          "role": "mount-point",
+          "type": "mechanical",
+          "yaw": 0
+        }
+      ],
+      "settings": []
+    },
+    {
+      "behaviour": [
+        {
+          "drive": "shaft",
+          "id": "motor",
+          "kind": "actuator",
+          "mode": "speed",
+          "noLoadMilliamps": 120,
+          "noLoadRpm": 200,
+          "ratedVolts": 6,
+          "reverse": false,
+          "stallMilliamps": 1200,
+          "stallTorqueNmm": 39,
+          "startVolts": 0.8,
+          "supply": {
+            "neg": "minus",
+            "pos": "plus"
+          },
+          "throttle": 1,
+          "whenReversed": "reverses"
+        }
+      ],
+      "body": {
+        "centreOfMass": {
+          "x": -7,
+          "y": 0,
+          "z": 10
+        },
+        "grams": 30,
+        "size": {
+          "x": 64,
+          "y": 22,
+          "z": 20
+        }
+      },
+      "card": {
+        "does": "Turns electricity into spinning.",
+        "gives": "Gives: a spinning shaft (grey).",
+        "needs": "Needs: power (red) in a loop, in at plus and out at minus.",
+        "popularMechanics": "A DC motor like this spins the blades of a hand-held fan."
+      },
+      "failureModes": [
+        {
+          "cardLine": "No complete circuit: the shaft stays still.",
+          "hint": "This motor is not in a loop with the battery pack",
+          "id": "no-circuit",
+          "need": "power",
+          "shows": [
+            "still"
+          ],
+          "teachingNote": "Current flows only round a complete loop: out of the battery pack, through the motor and back. With one wire missing, nothing flows, so the shaft stays still.",
+          "unmet": "open"
+        },
+        {
+          "cardLine": "Too little power: it turns slowly.",
+          "hint": "This motor is not getting enough power",
+          "id": "low-voltage",
+          "need": "power",
+          "shows": [
+            "slow",
+            "drain"
+          ],
+          "teachingNote": "Speed rises with voltage. On too little, such as a single cell, the motor turns slowly, and the battery pack drains more for each turn it makes.",
+          "unmet": "low"
+        },
+        {
+          "cardLine": "Too much to turn: it stops and hums.",
+          "hint": "This motor cannot turn its load",
+          "id": "overload",
+          "need": "load",
+          "shows": [
+            "stall",
+            "hum",
+            "drain"
+          ],
+          "teachingNote": "A motor can turn only so much load. Asked for more, such as up a steep ramp or against a wall, the shaft stops and the motor hums while it draws the most current it ever draws, so the battery pack drains fast.",
+          "unmet": "exceeded"
+        },
+        {
+          "cardLine": "Wires swapped: it turns the other way.",
+          "hint": "This motor's plus and minus are swapped",
+          "id": "reversed",
+          "need": "power",
+          "shows": [
+            "reverse"
+          ],
+          "teachingNote": "A DC motor turns one way when its plus meets plus, and the other way when its wires swap. On a robot, one motor wired the other way round spins it on the spot.",
+          "unmet": "reversed"
+        }
+      ],
+      "id": "dc-motor",
+      "identity": {
+        "art": "part/dc-motor",
+        "colours": {
+          "accent": "#fdd835",
+          "main": "#b0bec5"
+        },
+        "domains": [
+          "mechanics",
+          "electronics-and-power"
+        ],
+        "family": "actuators",
+        "level": 1,
+        "name": "DC motor"
+      },
+      "needs": [
+        {
+          "id": "power",
+          "kind": "power",
+          "maxVolts": 6,
+          "minVolts": 2.2,
+          "supply": {
+            "neg": "minus",
+            "pos": "plus"
+          }
+        },
+        {
+          "id": "load",
+          "kind": "torque",
+          "port": "shaft"
+        }
+      ],
+      "ports": [
+        {
+          "id": "plus",
+          "label": "plus (+)",
+          "polarity": "positive",
+          "type": "power"
+        },
+        {
+          "id": "minus",
+          "label": "minus (−)",
+          "polarity": "negative",
+          "type": "power"
+        },
+        {
+          "at": {
+            "x": 21,
+            "y": 13,
+            "z": 10
+          },
+          "axis": "+y",
+          "id": "shaft",
+          "label": "shaft",
+          "role": "drive-out",
+          "type": "mechanical"
+        },
+        {
+          "at": {
+            "x": 11,
+            "y": 0,
+            "z": 0
+          },
+          "id": "mount",
+          "label": "mount",
+          "role": "mount",
+          "type": "mechanical",
+          "yaw": 0
+        }
+      ],
+      "settings": [
+        {
+          "binds": {
+            "param": "reverse",
+            "primitive": "motor"
+          },
+          "default": "forward",
+          "id": "direction",
+          "kind": "choice",
+          "label": "Direction",
+          "options": [
+            {
+              "id": "forward",
+              "label": "Forward",
+              "value": false
+            },
+            {
+              "id": "backward",
+              "label": "Backward",
+              "value": true
+            }
+          ],
+          "unlockLevel": 2
+        },
+        {
+          "binds": {
+            "param": "throttle",
+            "primitive": "motor",
+            "range": [
+              0,
+              1
+            ]
+          },
+          "default": 100,
+          "id": "speed",
+          "kind": "number",
+          "label": "Speed",
+          "max": 100,
+          "min": 0,
+          "step": 10,
+          "unit": "%",
+          "unlockLevel": 3
+        }
+      ]
+    },
+    {
+      "behaviour": [
+        {
+          "emits": {
+            "colour": "#ff3b30",
+            "kind": "light"
+          },
+          "id": "light",
+          "kind": "load",
+          "onVolts": 1.8,
+          "ratedMilliamps": 15,
+          "ratedVolts": 3,
+          "supply": {
+            "neg": "minus",
+            "pos": "plus"
+          },
+          "whenReversed": "blocks"
+        }
+      ],
+      "body": {
+        "centreOfMass": {
+          "x": 0,
+          "y": 0,
+          "z": 4
+        },
+        "grams": 1,
+        "size": {
+          "x": 8,
+          "y": 8,
+          "z": 11
+        }
+      },
+      "card": {
+        "does": "Lights up when power flows through it.",
+        "gives": "Gives: light.",
+        "needs": "Needs: power (red), with its long leg towards plus.",
+        "popularMechanics": "Many car headlights and bike lamps are made of LEDs.",
+        "safetyNote": "Real LEDs are small parts with sharp legs, so build with an adult nearby."
+      },
+      "failureModes": [
+        {
+          "cardLine": "Legs swapped: it stays dark.",
+          "hint": "This LED's legs are swapped",
+          "id": "reversed",
+          "need": "power",
+          "shows": [
+            "dark"
+          ],
+          "teachingNote": "An LED lets current through one way only, from its long leg to its short leg. Turned round, no current flows, so it stays dark.",
+          "unmet": "reversed"
+        },
+        {
+          "cardLine": "No complete circuit: it stays dark.",
+          "hint": "This LED is not in a loop with the battery pack",
+          "id": "no-circuit",
+          "need": "power",
+          "shows": [
+            "dark"
+          ],
+          "teachingNote": "Light needs current, and current needs a complete loop: from plus, through the LED, and back to minus.",
+          "unmet": "open"
+        },
+        {
+          "cardLine": "Too little power: it stays dark.",
+          "hint": "This LED is not getting enough power",
+          "id": "low-voltage",
+          "need": "power",
+          "shows": [
+            "dark"
+          ],
+          "teachingNote": "An LED lets no current through until about 1.8 volts. Below that, as on a single cell, it stays dark.",
+          "unmet": "low"
+        }
+      ],
+      "id": "led",
+      "identity": {
+        "art": "part/led",
+        "colours": {
+          "accent": "#212121",
+          "main": "#e53935"
+        },
+        "domains": [
+          "electronics-and-power"
+        ],
+        "family": "output",
+        "level": 2,
+        "name": "LED"
+      },
+      "needs": [
+        {
+          "id": "power",
+          "kind": "power",
+          "maxVolts": 6,
+          "minVolts": 1.8,
+          "supply": {
+            "neg": "minus",
+            "pos": "plus"
+          }
+        }
+      ],
+      "ports": [
+        {
+          "id": "plus",
+          "label": "plus (+), long leg",
+          "polarity": "positive",
+          "type": "power"
+        },
+        {
+          "id": "minus",
+          "label": "minus (−), short leg",
+          "polarity": "negative",
+          "type": "power"
+        },
+        {
+          "at": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "id": "mount",
+          "label": "mount",
+          "role": "mount",
+          "type": "mechanical",
+          "yaw": 0
+        }
+      ],
+      "settings": [
+        {
+          "binds": {
+            "param": "colour",
+            "primitive": "light"
+          },
+          "default": "red",
+          "id": "colour",
+          "kind": "choice",
+          "label": "Colour",
+          "options": [
+            {
+              "id": "red",
+              "label": "Red",
+              "value": "#ff3b30"
+            },
+            {
+              "id": "orange",
+              "label": "Orange",
+              "value": "#ff9500"
+            },
+            {
+              "id": "yellow",
+              "label": "Yellow",
+              "value": "#ffcc00"
+            }
+          ],
+          "unlockLevel": 3
+        }
+      ]
+    },
+    {
+      "behaviour": [
+        {
+          "command": 1,
+          "dropVolts": 0.3,
+          "id": "channel-a",
+          "idleMilliamps": 1,
+          "kind": "driver",
+          "maxMilliamps": 1200,
+          "onVolts": 2.5,
+          "output": {
+            "neg": "a-minus",
+            "pos": "a-plus"
+          },
+          "signal": "in-a",
+          "supply": {
+            "neg": "minus",
+            "pos": "plus"
+          }
+        },
+        {
+          "command": 1,
+          "dropVolts": 0.3,
+          "id": "channel-b",
+          "idleMilliamps": 1,
+          "kind": "driver",
+          "maxMilliamps": 1200,
+          "onVolts": 2.5,
+          "output": {
+            "neg": "b-minus",
+            "pos": "b-plus"
+          },
+          "signal": "in-b",
+          "supply": {
+            "neg": "minus",
+            "pos": "plus"
+          }
+        }
+      ],
+      "body": {
+        "centreOfMass": {
+          "x": 0,
+          "y": 0,
+          "z": 4
+        },
+        "grams": 6,
+        "size": {
+          "x": 30,
+          "y": 22,
+          "z": 12
+        }
+      },
+      "card": {
+        "does": "Passes power from the battery pack to two motors, and sets each one forward, backward or stopped.",
+        "gives": "Gives: power (red) out to two motors.",
+        "needs": "Needs: power (red) in, and a setting or a signal (yellow) for each motor.",
+        "popularMechanics": "A remote-control car has a motor driver inside, which runs its motor forward or backward.",
+        "safetyNote": "Real motor drivers are small boards with sharp pins, so build with an adult nearby."
+      },
+      "failureModes": [
+        {
+          "cardLine": "No power in: its motors stay still.",
+          "hint": "This motor driver has no power in",
+          "id": "no-power",
+          "need": "power",
+          "shows": [
+            "off"
+          ],
+          "teachingNote": "A motor driver passes power on to its motors, so it needs its own loop to the battery pack. With none, both outputs give nothing, and the motors wired to it stay still with no fault of their own: the fault is the driver's.",
+          "unmet": "open"
+        },
+        {
+          "cardLine": "Too little power: it gives its motors nothing.",
+          "hint": "This motor driver is not getting enough power",
+          "id": "low-voltage",
+          "need": "power",
+          "shows": [
+            "off"
+          ],
+          "teachingNote": "A motor driver needs at least 2.5 volts to switch its outputs. On less, such as a 1-cell battery pack, it gives its motors nothing, and they stay still with no fault of their own: the fault is the driver's.",
+          "unmet": "low"
+        },
+        {
+          "cardLine": "Power in swapped: it gives its motors nothing.",
+          "hint": "This motor driver's plus and minus are swapped",
+          "id": "reversed",
+          "need": "power",
+          "shows": [
+            "off"
+          ],
+          "teachingNote": "A motor driver works only with plus to plus at its power in. Wired the other way round it gives its motors nothing, and they stay still with no fault of their own: the fault is the driver's. A real one can be damaged this way.",
+          "unmet": "reversed"
+        }
+      ],
+      "id": "motor-driver",
+      "identity": {
+        "art": "part/motor-driver",
+        "colours": {
+          "accent": "#212121",
+          "main": "#2e7d32"
+        },
+        "domains": [
+          "electronics-and-power",
+          "robotic-system-components"
+        ],
+        "family": "power",
+        "level": 2,
+        "name": "motor driver"
+      },
+      "needs": [
+        {
+          "id": "power",
+          "kind": "power",
+          "maxVolts": 10,
+          "minVolts": 2.5,
+          "supply": {
+            "neg": "minus",
+            "pos": "plus"
+          }
+        }
+      ],
+      "ports": [
+        {
+          "id": "plus",
+          "label": "power in (+)",
+          "polarity": "positive",
+          "type": "power"
+        },
+        {
+          "id": "minus",
+          "label": "power in (−)",
+          "polarity": "negative",
+          "type": "power"
+        },
+        {
+          "id": "a-plus",
+          "label": "motor A (+)",
+          "polarity": "positive",
+          "type": "power"
+        },
+        {
+          "id": "a-minus",
+          "label": "motor A (−)",
+          "polarity": "negative",
+          "type": "power"
+        },
+        {
+          "id": "b-plus",
+          "label": "motor B (+)",
+          "polarity": "positive",
+          "type": "power"
+        },
+        {
+          "id": "b-minus",
+          "label": "motor B (−)",
+          "polarity": "negative",
+          "type": "power"
+        },
+        {
+          "direction": "in",
+          "id": "in-a",
+          "label": "signal in A",
+          "type": "signal"
+        },
+        {
+          "direction": "in",
+          "id": "in-b",
+          "label": "signal in B",
+          "type": "signal"
+        },
+        {
+          "at": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "id": "mount",
+          "label": "mount",
+          "role": "mount",
+          "type": "mechanical",
+          "yaw": 0
+        }
+      ],
+      "settings": [
+        {
+          "binds": {
+            "param": "command",
+            "primitive": "channel-a"
+          },
+          "default": "forward",
+          "id": "motor-a",
+          "kind": "choice",
+          "label": "Motor A",
+          "options": [
+            {
+              "id": "forward",
+              "label": "Forward",
+              "value": 1
+            },
+            {
+              "id": "stop",
+              "label": "Stop",
+              "value": 0
+            },
+            {
+              "id": "backward",
+              "label": "Backward",
+              "value": -1
+            }
+          ],
+          "unlockLevel": 2
+        },
+        {
+          "binds": {
+            "param": "command",
+            "primitive": "channel-b"
+          },
+          "default": "forward",
+          "id": "motor-b",
+          "kind": "choice",
+          "label": "Motor B",
+          "options": [
+            {
+              "id": "forward",
+              "label": "Forward",
+              "value": 1
+            },
+            {
+              "id": "stop",
+              "label": "Stop",
+              "value": 0
+            },
+            {
+              "id": "backward",
+              "label": "Backward",
+              "value": -1
+            }
+          ],
+          "unlockLevel": 2
+        }
+      ]
+    },
+    {
+      "behaviour": [
+        {
+          "actuation": {
+            "initially": "closed",
+            "kind": "manual"
+          },
+          "id": "contacts",
+          "kind": "switch",
+          "terminals": [
+            "a",
+            "b"
+          ]
+        }
+      ],
+      "body": {
+        "centreOfMass": {
+          "x": 0,
+          "y": 0,
+          "z": 5
+        },
+        "grams": 6,
+        "size": {
+          "x": 24,
+          "y": 13,
+          "z": 12
+        }
+      },
+      "card": {
+        "does": "Opens or closes a gap in the power line when you press it.",
+        "gives": "Gives: a way to stop and start the power.",
+        "needs": "Needs: a place in the power line (red), between the battery pack and a part.",
+        "popularMechanics": "The light switch on your wall opens and closes a gap in the same way.",
+        "safetyNote": "Real switches are small parts, so build with an adult nearby."
+      },
+      "failureModes": [
+        {
+          "cardLine": "Across the battery pack: closing it drains the pack fast.",
+          "hint": "This switch closes a loop with nothing in it that uses power",
+          "id": "across-the-pack",
+          "need": "no-short",
+          "shows": [
+            "drain"
+          ],
+          "teachingNote": "A switch wired straight across the battery pack joins plus to minus when it closes, so closing it makes a short circuit instead of turning a part on.",
+          "unmet": "shorted"
+        },
+        {
+          "cardLine": "Not in the loop: pressing it changes nothing.",
+          "hint": "This switch is not in a loop with the battery pack",
+          "id": "outside-loop",
+          "need": "in-loop",
+          "shows": [
+            "off"
+          ],
+          "teachingNote": "A switch starts and stops only the loop it sits in. Wired off to one side, with no loop running through it, pressing it changes nothing.",
+          "unmet": "open"
+        }
+      ],
+      "id": "switch",
+      "identity": {
+        "art": "part/switch",
+        "colours": {
+          "accent": "#eceff1",
+          "main": "#263238"
+        },
+        "domains": [
+          "electronics-and-power"
+        ],
+        "family": "power",
+        "level": 1,
+        "name": "switch"
+      },
+      "needs": [
+        {
+          "id": "no-short",
+          "kind": "isolation",
+          "ports": [
+            "a",
+            "b"
+          ]
+        },
+        {
+          "id": "in-loop",
+          "kind": "loop",
+          "ports": [
+            "a",
+            "b"
+          ]
+        }
+      ],
+      "ports": [
+        {
+          "id": "a",
+          "label": "side A",
+          "polarity": "none",
+          "type": "power"
+        },
+        {
+          "id": "b",
+          "label": "side B",
+          "polarity": "none",
+          "type": "power"
+        },
+        {
+          "at": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "id": "mount",
+          "label": "mount",
+          "role": "mount",
+          "type": "mechanical",
+          "yaw": 0
+        }
+      ],
+      "settings": []
+    },
+    {
+      "behaviour": [
+        {
+          "grip": 1,
+          "hub": "hub",
+          "id": "tyre",
+          "kind": "wheel",
+          "radiusMm": 32.5,
+          "widthMm": 26
+        }
+      ],
+      "body": {
+        "centreOfMass": {
+          "x": 0,
+          "y": 0,
+          "z": 32.5
+        },
+        "grams": 30,
+        "size": {
+          "x": 65,
+          "y": 26,
+          "z": 65
+        }
+      },
+      "card": {
+        "does": "Rolls your robot along the floor when a shaft turns it.",
+        "gives": "Gives: movement along the floor.",
+        "needs": "Needs: a turning shaft (grey) in its hub, and the floor under it.",
+        "popularMechanics": "A bike's back wheel does the same job: the chain turns it and the tyre grips the road."
+      },
+      "failureModes": [
+        {
+          "cardLine": "No shaft in its hub: the wheel stays still.",
+          "hint": "This wheel needs a shaft in its hub",
+          "id": "not-driven",
+          "need": "driven",
+          "shows": [
+            "still"
+          ],
+          "teachingNote": "A wheel moves the robot only when a shaft turns it. With no shaft in its hub, it stays still and drives nothing.",
+          "unmet": "absent"
+        },
+        {
+          "cardLine": "Off the floor: the wheel spins in the air.",
+          "hint": "This wheel does not reach the floor",
+          "id": "lifted",
+          "need": "on-floor",
+          "shows": [
+            "slip"
+          ],
+          "teachingNote": "A wheel pushes the robot only while its tyre touches the floor. Lifted off it, such as when the robot tips over, it spins in the air and moves nothing.",
+          "unmet": "lifted"
+        },
+        {
+          "cardLine": "Slipping: the wheel spins but the robot stays put.",
+          "hint": "This wheel is spinning in place",
+          "id": "slipping",
+          "need": "on-floor",
+          "shows": [
+            "slip"
+          ],
+          "teachingNote": "A wheel pushes only as hard as its tyre grips the floor. With little weight on it, or turned harder than that grip allows, such as through a gearbox against a wall, it spins in place.",
+          "unmet": "slipping"
+        }
+      ],
+      "id": "wheel-large",
+      "identity": {
+        "art": "part/wheel-large",
+        "colours": {
+          "accent": "#ffca28",
+          "main": "#212121"
+        },
+        "domains": [
+          "mechanics"
+        ],
+        "family": "drivetrain",
+        "level": 1,
+        "name": "large wheel"
+      },
+      "needs": [
+        {
+          "id": "driven",
+          "kind": "drive",
+          "port": "hub"
+        },
+        {
+          "id": "on-floor",
+          "kind": "floor"
+        }
+      ],
+      "ports": [
+        {
+          "at": {
+            "x": 0,
+            "y": -13,
+            "z": 32.5
+          },
+          "axis": "+y",
+          "id": "hub",
+          "label": "hub",
+          "role": "drive-in",
+          "type": "mechanical"
+        }
+      ],
+      "settings": []
+    }
+  ],
+  "arenas": [
+    {
+      "friction": 0.8,
+      "id": "wall-stop",
+      "lines": [],
+      "name": "Wall stop",
+      "props": [],
+      "ramps": [],
+      "size": {
+        "x": 2000,
+        "y": 1200
+      },
+      "start": {
+        "heading": 0,
+        "x": 300,
+        "y": 600
+      },
+      "walls": [
+        {
+          "from": {
+            "x": 1980,
+            "y": 0
+          },
+          "id": "far-wall",
+          "thicknessMm": 40,
+          "to": {
+            "x": 1980,
+            "y": 1200
+          }
+        }
+      ],
+      "zones": [
+        {
+          "from": {
+            "x": 1560,
+            "y": 0
+          },
+          "id": "far-side",
+          "to": {
+            "x": 1960,
+            "y": 1200
+          }
+        }
+      ]
+    }
+  ],
+  "blueprint": {
+    "arena": {
+      "preset": "wall-stop",
+      "props": []
+    },
+    "meta": {
+      "createdAt": "2026-10-01T09:00:00.000Z",
+      "highWater": {
+        "parts": 0,
+        "wires": 23
+      },
+      "id": "4eba3d47-995b-4b6d-9e42-27938f9b91b3",
+      "level": 2,
+      "name": "Bumper robot",
+      "updatedAt": "2026-10-01T09:00:00.000Z"
+    },
+    "parts": [
+      {
+        "id": "battery",
+        "part": "battery-pack-2-cell",
+        "position": {
+          "x": -45,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "bumper",
+        "part": "bumper-switch",
+        "position": {
+          "x": 80,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "buzzer",
+        "part": "buzzer",
+        "position": {
+          "x": 30,
+          "y": -29
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "caster",
+        "part": "caster",
+        "position": {
+          "x": -70,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "chassis",
+        "part": "chassis",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "driver",
+        "part": "motor-driver",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "led",
+        "part": "led",
+        "position": {
+          "x": 55,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "motor-left",
+        "part": "dc-motor",
+        "position": {
+          "x": 19,
+          "y": -53
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "motor-right",
+        "part": "dc-motor",
+        "position": {
+          "x": 19,
+          "y": 53
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "switch",
+        "part": "switch",
+        "position": {
+          "x": 30,
+          "y": 29
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "wheel-left",
+        "part": "wheel-large",
+        "position": {
+          "x": 40,
+          "y": -79
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "wheel-right",
+        "part": "wheel-large",
+        "position": {
+          "x": 40,
+          "y": 79
+        },
+        "rotation": 0,
+        "settings": {}
+      }
+    ],
+    "version": 1,
+    "wires": [
+      {
+        "from": {
+          "part": "battery",
+          "port": "mount"
+        },
+        "id": "w1",
+        "to": {
+          "part": "chassis",
+          "port": "deck-rear"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-left",
+          "port": "shaft"
+        },
+        "id": "w10",
+        "to": {
+          "part": "wheel-left",
+          "port": "hub"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-right",
+          "port": "shaft"
+        },
+        "id": "w11",
+        "to": {
+          "part": "wheel-right",
+          "port": "hub"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "plus"
+        },
+        "id": "w12",
+        "to": {
+          "part": "switch",
+          "port": "a"
+        }
+      },
+      {
+        "from": {
+          "part": "bumper",
+          "port": "a"
+        },
+        "id": "w13",
+        "to": {
+          "part": "switch",
+          "port": "b"
+        }
+      },
+      {
+        "from": {
+          "part": "bumper",
+          "port": "b"
+        },
+        "id": "w14",
+        "to": {
+          "part": "driver",
+          "port": "plus"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w15",
+        "to": {
+          "part": "driver",
+          "port": "minus"
+        }
+      },
+      {
+        "from": {
+          "part": "driver",
+          "port": "a-plus"
+        },
+        "id": "w16",
+        "to": {
+          "part": "motor-left",
+          "port": "plus"
+        }
+      },
+      {
+        "from": {
+          "part": "driver",
+          "port": "a-minus"
+        },
+        "id": "w17",
+        "to": {
+          "part": "motor-left",
+          "port": "minus"
+        }
+      },
+      {
+        "from": {
+          "part": "driver",
+          "port": "b-plus"
+        },
+        "id": "w18",
+        "to": {
+          "part": "motor-right",
+          "port": "plus"
+        }
+      },
+      {
+        "from": {
+          "part": "driver",
+          "port": "b-minus"
+        },
+        "id": "w19",
+        "to": {
+          "part": "motor-right",
+          "port": "minus"
+        }
+      },
+      {
+        "from": {
+          "part": "bumper",
+          "port": "mount"
+        },
+        "id": "w2",
+        "to": {
+          "part": "chassis",
+          "port": "bumper"
+        }
+      },
+      {
+        "from": {
+          "part": "bumper",
+          "port": "b"
+        },
+        "id": "w20",
+        "to": {
+          "part": "led",
+          "port": "plus"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w21",
+        "to": {
+          "part": "led",
+          "port": "minus"
+        }
+      },
+      {
+        "from": {
+          "part": "bumper",
+          "port": "b"
+        },
+        "id": "w22",
+        "to": {
+          "part": "buzzer",
+          "port": "plus"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w23",
+        "to": {
+          "part": "buzzer",
+          "port": "minus"
+        }
+      },
+      {
+        "from": {
+          "part": "buzzer",
+          "port": "mount"
+        },
+        "id": "w3",
+        "to": {
+          "part": "chassis",
+          "port": "motor-left-inner"
+        }
+      },
+      {
+        "from": {
+          "part": "caster",
+          "port": "mount"
+        },
+        "id": "w4",
+        "to": {
+          "part": "chassis",
+          "port": "caster"
+        }
+      },
+      {
+        "from": {
+          "part": "driver",
+          "port": "mount"
+        },
+        "id": "w5",
+        "to": {
+          "part": "chassis",
+          "port": "deck-middle"
+        }
+      },
+      {
+        "from": {
+          "part": "led",
+          "port": "mount"
+        },
+        "id": "w6",
+        "to": {
+          "part": "chassis",
+          "port": "deck-front"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-left",
+          "port": "mount"
+        },
+        "id": "w7",
+        "to": {
+          "part": "chassis",
+          "port": "motor-left"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-right",
+          "port": "mount"
+        },
+        "id": "w8",
+        "to": {
+          "part": "chassis",
+          "port": "motor-right"
+        }
+      },
+      {
+        "from": {
+          "part": "switch",
+          "port": "mount"
+        },
+        "id": "w9",
+        "to": {
+          "part": "chassis",
+          "port": "motor-right-inner"
+        }
+      }
+    ]
+  }
+}

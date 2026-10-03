@@ -16,7 +16,10 @@
     "lint": "eslint --config eslint.config.js --max-warnings 0 .",
     "check": "pnpm lint && pnpm typecheck && pnpm test",
     "e2e": "pnpm art && pnpm --filter @servo/tools e2e",
-    "validate-content": "node packages/tools/src/validate-content/main.ts"
+    "golden": "node packages/tools/src/golden-runs/main.ts",
+    "validate-content": "node packages/tools/src/validate-content/main.ts",
+    "release:dry": "node packages/tools/src/release/main.ts",
+    "release:preview": "pnpm --filter @servo/app exec vite preview --outDir ../../dist/release/web"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
