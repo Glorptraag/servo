@@ -1157,7 +1157,7 @@
       "completed_by": null
     },
     "6.6": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1174,7 +1174,8 @@
       "done_when": "Flag off by default; with it on, a servo angle can be set and the servo sweeps to it in a run; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-03T07:23:14+00:00"
     },
     "G6": {
       "status": "pending",
