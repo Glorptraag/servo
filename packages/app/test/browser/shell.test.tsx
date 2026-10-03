@@ -513,7 +513,9 @@ describe('mountApp', () => {
       const app = await mountApp(host);
       expect(host.querySelector('.servo-shell')).not.toBeNull();
       expect(host.querySelector('[data-region="stage"] canvas')).not.toBeNull();
-      expect(host.querySelector('[data-region="tray"]')?.textContent).toBe('Part tray');
+      // The tray holds the Level 1 kit's tiles (task 4.2).
+      const tiles = [...host.querySelectorAll<HTMLElement>('[data-region="tray"] [data-part]')].map((tile) => tile.dataset.part);
+      expect(tiles).toEqual(['battery-pack-2-cell', 'switch', 'dc-motor', 'wheel-large', 'chassis', 'caster']);
       expect(host.querySelector<HTMLButtonElement>('[data-region="runBar"] button')?.disabled).toBe(true);
       expect(host.querySelector<HTMLElement>('[data-region="specCard"]')?.dataset.shown).toBe('false');
       app.destroy();
