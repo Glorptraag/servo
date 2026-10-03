@@ -2,6 +2,8 @@
 // lists it under FLAGS_KEY, a JSON list of names such as `["level-3-slot"]`; anything missing, unreadable or unknown
 // is off. The app reads them once as it mounts and never writes them: an adult turns one on from the browser's
 // developer tools (README, "Feature flags"). Pure apart from `deviceFlags`, which only reads.
+import { pageStorage } from '../shell/edges.ts';
+
 /** Where the flags live on the device. */
 export const FLAGS_KEY = 'servo.flags';
 
@@ -31,15 +33,6 @@ export const readFlags = (storage: Pick<Storage, 'getItem'> | null | undefined):
   if (!Array.isArray(saved)) return NO_FLAGS;
   const on = new Set(saved.filter(isFlagName));
   return { 'level-3-slot': on.has('level-3-slot') };
-};
-
-/** The page's localStorage, or null where it cannot be reached. */
-const pageStorage = (): Storage | null => {
-  try {
-    return typeof localStorage === 'undefined' ? null : localStorage;
-  } catch {
-    return null;
-  }
 };
 
 /** This device's flags. */

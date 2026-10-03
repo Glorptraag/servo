@@ -1,7 +1,7 @@
 // The child's app: the shell round the canvas, with the content's catalogue and art injected into the canvas
 // (README, "How the packages meet"). Each slot holds its placeholder until the task that owns it lands; swap a
 // placeholder for the real part here.
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { mountCanvas } from '@servo/canvas';
 import type { CanvasHandle, ResolveArt } from '@servo/canvas';
 import type { Content } from '@servo/content';
@@ -11,8 +11,9 @@ import type { Flags } from './flags/index.ts';
 import { ProgramView, programFor, slotSetting } from './program-view/index.ts';
 import { RunBar } from './run-bar/index.ts';
 import type { RunLoop } from './run-bar/index.ts';
-import { PLACEHOLDER_SLOTS, SaveControl, Shell } from './shell/index.ts';
+import { PLACEHOLDER_SLOTS, SaveControl, Shell, pageStorage } from './shell/index.ts';
 import type { Autosaver, CanvasSetup, ShellSlots } from './shell/index.ts';
+import { SoundControl, SoundLayer, WebAudioSink } from './sound/index.ts';
 import { SpecCard, createRunFrames } from './spec-card/index.ts';
 import type { ProfileStore } from './store/index.ts';
 
@@ -38,17 +39,21 @@ export const App = ({ content, child = null, start, saving, onReady, flags: give
   // The run loop (task 4.4) gives each Run frame to the spec card's live readouts, which clear whenever no Run plays:
   // on Stop, on a failed Run, and while the next one loads.
   const runFrames = useMemo(createRunFrames, []);
+  // The sound layer (task 4.10) hears the same loop, and the canvas's edits through its control in the header.
+  const [sound] = useState(() => new SoundLayer({ sink: new WebAudioSink(), storage: pageStorage() }));
+  useEffect(() => () => sound.dispose(), [sound]);
   const joinRunLoop = useMemo(() => {
     let off: (() => void) | undefined;
     return (loop: RunLoop | null): void => {
       off?.();
       runFrames.clear();
+      sound.follow(loop);
       off = loop?.subscribe((state, frame) => {
         if (frame) runFrames.push(frame);
         else if (state.phase !== 'spin-up' && state.phase !== 'running') runFrames.clear();
       });
     };
-  }, [runFrames]);
+  }, [runFrames, sound]);
   // The Level 3 slot (task 6.6, README "Feature flags"): with the flag on, the servo motor's angle unlocks on its card,
   // a brain's card shows its program, and each Run drives the brains by it.
   const slot = flags['level-3-slot'];
@@ -65,10 +70,11 @@ export const App = ({ content, child = null, start, saving, onReady, flags: give
           {slot && <ProgramView />}
         </>
       ),
+      sound: <SoundControl layer={sound} />,
       save: <SaveControl saving={saving} />,
       runBar: <RunBar onLoop={joinRunLoop} {...(program ? { program } : {})} />,
     }),
-    [saving, runFrames, joinRunLoop, slot, program],
+    [saving, runFrames, joinRunLoop, sound, slot, program],
   );
   // The swap registry: a key with no picture gives undefined, and the canvas draws a neutral tile.
   const resolveArt: ResolveArt = (key) => content.art.get(key);
