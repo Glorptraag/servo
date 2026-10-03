@@ -9,6 +9,10 @@ import { openStoreWith } from './open.ts';
 
 export type { ArtEntry, ArtRegistry, Content, ContentIssue, TerminologyFile } from '@servo/content';
 
+// Shared links (task 5.6): only the parent view, behind the parental gate, makes one (D28), and this is its one way in.
+export { SHARED_BUILD_NAME, shareLinkOf } from '../sharing/link.ts';
+export type { ShareOptions, ShareResult } from '../sharing/link.ts';
+
 export interface StoreOptions {
   /** The IndexedDB database name. Tests pass their own. Default 'servo'. */
   readonly name?: string;

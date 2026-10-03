@@ -118,6 +118,20 @@ export type MountParent = (host: HTMLElement, store: ServoStore) => ParentHandle
 
 export const mountParent: MountParent = (host, store) => mountParentWith(host, store);
 
-export { ChoiceNotKept, NAME_MAX, NameRefused, PARENT_TEXT, addChild, mountParentWith, nameOf, readAccounts, removeChild, renameChild, switchChild } from './accounts/index.ts';
+export {
+  ChoiceNotKept,
+  NAME_MAX,
+  NameRefused,
+  PARENT_TEXT,
+  ShareRefused,
+  addChild,
+  mountParentWith,
+  nameOf,
+  readAccounts,
+  removeChild,
+  renameChild,
+  shareLinkFor,
+  switchChild,
+} from './accounts/index.ts';
 export type { Accounts, ParentOptions } from './accounts/index.ts';
 export { EXPORT_TEXT, LIST_TEXT, UnknownPart } from './export/index.ts';

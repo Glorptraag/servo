@@ -3,7 +3,7 @@
 // print with a print stylesheet that prints the list alone. Every control is a native button, so touch, pointer and
 // keyboard take the same path, and the list itself is a table and plain lists a screen reader reads in order.
 import { useEffect, useRef, useState } from 'react';
-import type { CSSProperties, KeyboardEvent } from 'react';
+import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
 import type { BlueprintSummary, ServoStore } from '@servo/app/store';
 import { PART_FAMILIES } from '@servo/schema';
 import type { BlueprintId, ProfileId } from '@servo/schema';
@@ -61,10 +61,12 @@ export interface PartsListExportProps {
   readonly builds: readonly BlueprintSummary[];
   /** The line that names a build in the list. */
   readonly describe: (build: BlueprintSummary) => string;
+  /** Other actions on a build, after Parts list in its row: the shared link's Copy link (task 5.6). */
+  readonly actions?: (build: BlueprintSummary) => ReactNode;
 }
 
 /** The child's builds, each with its Parts list button, and the list that is open, if any. */
-export const PartsListExport = ({ store, profile, builds, describe }: PartsListExportProps) => {
+export const PartsListExport = ({ store, profile, builds, describe, actions }: PartsListExportProps) => {
   const [shown, setShown] = useState<Shown | undefined>(undefined);
   const openers = useRef(new Map<BlueprintId, HTMLButtonElement>());
   const request = useRef(0);
@@ -115,6 +117,7 @@ export const PartsListExport = ({ store, profile, builds, describe }: PartsListE
             >
               {EXPORT_TEXT.open}
             </button>
+            {actions?.(build)}
           </li>
         ))}
       </ul>

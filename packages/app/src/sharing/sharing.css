@@ -1,0 +1,141 @@
+/*
+ * A shared build's page (task 5.6): a thin header with the build's name, the read-only canvas filling the rest, and one
+ * control bar at the bottom centre, in the shell's palette and type (src/shell/shell.css), with 44 px targets and the
+ * shell's focus ring. A refused link is one plain panel, as the release's pages are.
+ */
+
+.share-page {
+  --share-workbench: #ebe8e3;
+  --share-panel: #fbfaf7;
+  --share-line: #d6d0c6;
+  --share-ink: #2b2926;
+  --share-muted: #5e584f;
+  --share-focus: #1d5fc4;
+  --share-shadow: 0 2px 12px rgb(43 41 38 / 18%);
+
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+  background: var(--share-workbench);
+  color: var(--share-ink);
+  font-family: Nunito, 'Varela Round', ui-rounded, system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.3;
+  touch-action: manipulation;
+}
+
+.share-page *,
+.share-page *::before,
+.share-page *::after {
+  box-sizing: border-box;
+}
+
+.share-page :focus-visible {
+  outline: 3px solid var(--share-focus);
+  outline-offset: 2px;
+}
+
+.share-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--share-line);
+  background: var(--share-panel);
+}
+
+.share-header h1 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.share-header p {
+  margin: 0;
+  color: var(--share-muted);
+}
+
+.share-stage {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.share-canvas-host {
+  position: absolute;
+  inset: 0;
+}
+
+.share-bar {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100% - 32px);
+  padding: 8px;
+  border: 1px solid var(--share-line);
+  border-radius: 16px;
+  background: var(--share-panel);
+  box-shadow: var(--share-shadow);
+  transform: translateX(-50%);
+}
+
+.share-bar p {
+  margin: 0 8px 0 0;
+  color: var(--share-muted);
+}
+
+.share-button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--share-ink);
+  border-radius: 12px;
+  background: var(--share-ink);
+  color: var(--share-panel);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.share-button:disabled {
+  border-color: var(--share-line);
+  background: var(--share-line);
+  color: var(--share-muted);
+  cursor: default;
+}
+
+.share-refused {
+  display: grid;
+  grid-template-rows: none;
+  place-items: center;
+  padding: 24px 16px;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.share-panel {
+  width: min(100%, 440px);
+  padding: 24px;
+  border: 1px solid var(--share-line);
+  border-radius: 16px;
+  background: var(--share-panel);
+  box-shadow: var(--share-shadow);
+}
+
+.share-panel h1 {
+  margin: 0 0 12px;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.share-panel p {
+  margin: 0;
+}
