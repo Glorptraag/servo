@@ -8,7 +8,7 @@ import type { ServoStore } from '@servo/app/store';
 import { loadFixtures } from '@servo/content/fixtures';
 import type { Blueprint } from '@servo/schema';
 import { PARENT_TEXT, mountParentWith } from '../../src/accounts/index.ts';
-import { CROSSING_TEXT, EXPORT_TEXT } from '../../src/export/index.ts';
+import { EXPORT_TEXT, LIST_TEXT } from '../../src/export/index.ts';
 import type { ParentHandle } from '../../src/index.ts';
 
 const fixture = (name: string): Blueprint => {
@@ -129,9 +129,16 @@ describe('the parts list in the parent view', () => {
       ['Chassis', 'Structure & Ride', '1'],
     ]);
     const wiring = [...(panel(host)?.querySelectorAll('ol li') ?? [])].map((item) => item.textContent);
-    expect(wiring).toHaveLength(roller.wires.length + 3);
-    expect(wiring).toContain(CROSSING_TEXT.cross('DC motor (right motor mount)', 'plus (+)', 'minus (−)'));
-    expect(wiring).toContain(CROSSING_TEXT.adult);
+    expect(wiring).toHaveLength(roller.wires.length);
+    expect(wiring.filter((line) => line?.includes(LIST_TEXT.marker))).toHaveLength(2);
+    // The real-kit notes are not numbered steps: they sit in their own list, after the connections.
+    const notes = [...(panel(host)?.querySelectorAll('ul.servo-real-kit li') ?? [])].map((item) => item.textContent);
+    expect(notes).toContain(LIST_TEXT.alreadyCrossed('DC motor (right motor mount)', 'plus (+)', 'minus (−)'));
+    expect(notes).toContain(LIST_TEXT.adult);
+    expect(panel(host)?.querySelector('ol .servo-real-kit, ol li ul')).toBeNull();
+    expect(byText(panel(host) as HTMLElement, 'h4', EXPORT_TEXT.realKit).compareDocumentPosition(panel(host)?.querySelector('ol') as Node)).toBe(
+      Node.DOCUMENT_POSITION_PRECEDING,
+    );
     expect(panel(host)?.textContent).toContain('Use real battery packs only with an adult nearby');
     expect(document.querySelector('dialog, [role="dialog"], [role="alertdialog"]')).toBeNull();
     expect(host.textContent).not.toContain('!');
@@ -203,10 +210,13 @@ describe('the parts list in the parent view', () => {
     await cdp().send('Emulation.setEmulatedMedia', { media: 'print' });
     await expect.poll(() => printButton.checkVisibility()).toBe(false);
     expect(byText(panel(host) as HTMLElement, 'button', EXPORT_TEXT.close).checkVisibility()).toBe(false);
-    expect(getComputedStyle(host.querySelector('h1') as HTMLElement).visibility).toBe('hidden');
-    expect(getComputedStyle(opener(host, 'Robin roller')).visibility).toBe('hidden');
-    expect(getComputedStyle(panel(host)?.querySelector('h3') as HTMLElement).visibility).toBe('visible');
-    expect(getComputedStyle(panel(host)?.querySelector('tbody td') as HTMLElement).visibility).toBe('visible');
+    // The rest of the page takes no room on paper, so no blank pages print.
+    expect((host.querySelector('h1') as HTMLElement).checkVisibility()).toBe(false);
+    expect(getComputedStyle(host.querySelector('h1') as HTMLElement).display).toBe('none');
+    expect(opener(host, 'Robin roller').checkVisibility()).toBe(false);
+    expect((panel(host)?.querySelector('h3') as HTMLElement).checkVisibility()).toBe(true);
+    expect((panel(host)?.querySelector('tbody td') as HTMLElement).checkVisibility()).toBe(true);
+    expect((panel(host)?.querySelector('ul.servo-real-kit li') as HTMLElement).checkVisibility()).toBe(true);
 
     // Once the list is closed, printing the page prints the page.
     await cdp().send('Emulation.setEmulatedMedia', { media: '' });
@@ -214,7 +224,7 @@ describe('the parts list in the parent view', () => {
     await expect.poll(() => panel(host)).toBeNull();
     await cdp().send('Emulation.setEmulatedMedia', { media: 'print' });
     await expect.poll(() => matchMedia('print').matches).toBe(true);
-    expect(getComputedStyle(host.querySelector('h1') as HTMLElement).visibility).toBe('visible');
+    expect((host.querySelector('h1') as HTMLElement).checkVisibility()).toBe(true);
   });
 
   it('closes when the adult switches child, and says so in one line when a build cannot be opened', async () => {

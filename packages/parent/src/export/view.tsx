@@ -21,7 +21,8 @@ export const EXPORT_TEXT = {
   family: 'Family',
   quantity: 'Quantity',
   wiring: 'Wiring',
-  wiringIntro: 'One line for each connection, as it is made in a real kit.',
+  wiringIntro: 'One line for each connection, as it is made in a real kit. Make them in this order.',
+  realKit: 'For a real kit',
   noWiring: 'Nothing is connected yet.',
   safety: 'Adult supervision',
   print: 'Print',
@@ -33,11 +34,12 @@ export const EXPORT_TEXT = {
 const TARGET: CSSProperties = { minHeight: 44, minWidth: 44, fontSize: '1rem' };
 const ROW: CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginBlock: 8 };
 
-/** On paper, only the parts list shows, and without its buttons. */
+/**
+ * On paper, while a list is open, only the list shows, without its buttons: everything that neither holds the list nor
+ * is in it takes no room, so no blank pages print. With no list open the page prints as it is.
+ */
 export const PRINT_CSS = `@media print {
-  body:has(.servo-parts-list) * { visibility: hidden; }
-  body .servo-parts-list, body .servo-parts-list * { visibility: visible; }
-  .servo-parts-list { position: absolute; left: 0; top: 0; width: 100%; }
+  body:has(.servo-parts-list) :not(:has(.servo-parts-list)):not(.servo-parts-list):not(.servo-parts-list *) { display: none; }
   .servo-parts-list .servo-no-print { display: none; }
   .servo-parts-list table { border-collapse: collapse; }
   .servo-parts-list th, .servo-parts-list td { border: 1px solid #000; padding: 4px 8px; text-align: left; }
@@ -177,6 +179,16 @@ export const PartsListPanel = ({ list, onClose }: PartsListPanelProps) => {
               <li key={index}>{line}</li>
             ))}
           </ol>
+        </>
+      )}
+      {list.realKit.length > 0 && (
+        <>
+          <h4>{EXPORT_TEXT.realKit}</h4>
+          <ul className="servo-real-kit">
+            {list.realKit.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
         </>
       )}
       {list.safetyNotes.length > 0 && (

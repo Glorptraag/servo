@@ -82,8 +82,13 @@ export interface PartsList {
   readonly blueprint: { readonly id: BlueprintId; readonly name: string };
   /** Each part type once, in family order, with its real name and how many the build uses. */
   readonly parts: readonly { readonly part: PartTypeId; readonly name: Text; readonly family: PartFamily; readonly quantity: number }[];
-  /** The wiring in plain words, one line per connection, crossing one motor's leads where a real kit needs it (D27). */
+  /**
+   * The connections in plain words, one line per wire, as a real kit makes them: the only steps on the page. Where the
+   * real kit needs a motor's leads crossed (D27), its lines already cross them and are marked.
+   */
   readonly wiring: readonly string[];
+  /** Notes for the real kit: which marked lines already cross which leads, why, and what is left unconnected. Never steps. */
+  readonly realKit: readonly string[];
   /** The adult-supervision notes of the parts that have one (`card.safetyNote`). */
   readonly safetyNotes: readonly Text[];
 }
@@ -115,4 +120,4 @@ export const mountParent: MountParent = (host, store) => mountParentWith(host, s
 
 export { ChoiceNotKept, NAME_MAX, NameRefused, PARENT_TEXT, addChild, mountParentWith, nameOf, readAccounts, removeChild, renameChild, switchChild } from './accounts/index.ts';
 export type { Accounts, ParentOptions } from './accounts/index.ts';
-export { CROSSING_TEXT, EXPORT_TEXT, UnknownPart } from './export/index.ts';
+export { EXPORT_TEXT, LIST_TEXT, UnknownPart } from './export/index.ts';
