@@ -11,7 +11,9 @@
     "test:determinism": "SERVO_DETERMINISM=sweep vitest run test/sim-determinism.test.ts",
     "typecheck": "tsc --noEmit",
     "e2e": "vitest run --config src/e2e/vitest.config.ts",
-    "e2e:run-animation": "vitest run --config test/e2e/run-animation.config.ts"
+    "e2e:run-animation": "vitest run --config test/e2e/run-animation.config.ts",
+    "gate:g3": "vite --config src/gate/vite.config.ts",
+    "e2e:gate-g3": "vitest run --config test/e2e/gate-g3.config.ts"
   },
   "dependencies": {
     "@servo/app": "workspace:*",
@@ -27,6 +29,7 @@
     "eslint": "catalog:",
     "playwright": "1.63.0",
     "typescript": "catalog:",
+    "vite": "catalog:",
     "vitest": "catalog:"
   }
 }

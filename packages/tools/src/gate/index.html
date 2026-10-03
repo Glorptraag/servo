@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>Servo gate G3</title>
+    <link rel="icon" href="data:," />
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        overscroll-behavior: none;
+        background: #ebe8e3;
+        color: #1b1b1b;
+        font: 16px/1.35 system-ui, -apple-system, 'Segoe UI', sans-serif;
+        touch-action: manipulation;
+      }
+
+      #gate {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        grid-template-columns: 210px 1fr;
+        grid-template-rows: auto 1fr;
+      }
+
+      header {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 14px;
+        padding: 6px 12px;
+        background: #f7f5f1;
+        border-bottom: 1px solid #c9c4ba;
+      }
+
+      header label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      select,
+      button {
+        font: inherit;
+        min-height: 44px;
+        min-width: 44px;
+        padding: 4px 12px;
+        border-radius: 8px;
+        border: 2px solid #1b1b1b;
+        background: #ffffff;
+        color: inherit;
+      }
+
+      button[aria-pressed='true'] {
+        background: #1b1b1b;
+        color: #ffffff;
+      }
+
+      button:disabled {
+        opacity: 0.45;
+      }
+
+      button:focus-visible,
+      select:focus-visible {
+        outline: 4px solid #1f6feb;
+        outline-offset: 2px;
+      }
+
+      /* Over the canvas, so a longer line never moves the canvas under a finger. */
+      #status-bar {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        max-width: calc(100% - 200px);
+        display: flex;
+        gap: 10px;
+        align-items: baseline;
+        margin: 0;
+        padding: 6px 10px;
+        border-radius: 8px;
+        background: rgba(247, 245, 241, 0.94);
+        border: 1px solid #c9c4ba;
+        pointer-events: none;
+      }
+
+      #status {
+        margin: 0;
+      }
+
+      #clock {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+
+      /* Not selectable, as in the e2e harness's tray: a mouse drag from a selectable tray selects text, and the browser's
+         native drag of that selection, or of a tile's picture, cancels the pointer the canvas was carrying. */
+      #tray {
+        grid-column: 1;
+        grid-row: 2;
+        overflow: auto;
+        padding: 8px;
+        background: #d8d4cc;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+        touch-action: none;
+      }
+
+      #tray img {
+        -webkit-user-drag: none;
+        user-select: none;
+        pointer-events: none;
+      }
+
+      #tray h2,
+      #tray h3 {
+        font-size: 1em;
+        margin: 4px 0 8px;
+      }
+
+      #tray ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      #tiles .group {
+        margin-bottom: 10px;
+      }
+
+      #tiles li {
+        margin-bottom: 6px;
+      }
+
+      .tile {
+        display: grid;
+        grid-template-columns: 56px 1fr;
+        grid-template-rows: auto auto;
+        align-items: center;
+        column-gap: 8px;
+        width: 100%;
+        min-height: 72px;
+        text-align: left;
+        touch-action: none;
+      }
+
+      .tile img {
+        grid-row: 1 / span 2;
+        width: 56px;
+        height: 56px;
+        object-fit: contain;
+      }
+
+      .tile .count {
+        font-size: 0.85em;
+        opacity: 0.75;
+      }
+
+      #by-list {
+        width: 100%;
+        margin-bottom: 10px;
+      }
+
+      #places {
+        margin-top: 8px;
+        padding: 8px;
+        background: #ffffff;
+        border: 2px solid #1b1b1b;
+        border-radius: 8px;
+        user-select: text;
+        -webkit-user-select: text;
+      }
+
+      #places button {
+        width: 100%;
+        margin-bottom: 4px;
+        text-align: left;
+      }
+
+      #said {
+        min-height: 1.35em;
+        margin: 8px 0 0;
+        font-size: 0.9em;
+      }
+
+      #gate:not([data-mode='build']):not([data-mode='failed']) #tray > * {
+        visibility: hidden;
+      }
+
+      #stage {
+        grid-column: 2;
+        grid-row: 2;
+        position: relative;
+        min-width: 0;
+        min-height: 0;
+      }
+
+      #canvas {
+        position: absolute;
+        inset: 0;
+      }
+
+      #runbar {
+        position: absolute;
+        left: 50%;
+        bottom: 12px;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 8px;
+        padding: 6px;
+        border-radius: 12px;
+        background: rgba(247, 245, 241, 0.92);
+        border: 1px solid #c9c4ba;
+      }
+
+      #run {
+        min-width: 120px;
+        font-weight: 600;
+      }
+
+      #what {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        max-width: min(420px, 60%);
+        max-height: 70%;
+        overflow: auto;
+        padding: 6px 10px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid #c9c4ba;
+        font-size: 0.9em;
+      }
+
+      #what summary {
+        min-height: 32px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      #what ol {
+        padding-left: 20px;
+        margin: 6px 0;
+      }
+
+      @media (orientation: portrait) {
+        #gate {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto 1fr auto;
+        }
+
+        #stage {
+          grid-column: 1;
+          grid-row: 2;
+        }
+
+        #tray {
+          grid-column: 1;
+          grid-row: 3;
+          max-height: 34vh;
+        }
+
+        #tiles {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+
+        #tiles .group {
+          display: flex;
+          gap: 6px;
+          margin: 0;
+        }
+
+        .tile {
+          width: 180px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="gate" data-mode="build">
+      <header>
+        <label>Robot <select id="robot"></select></label>
+        <label
+          >Start with
+          <select id="start">
+            <option value="empty">An empty canvas</option>
+            <option value="chassis">The chassis placed</option>
+          </select>
+        </label>
+        <button id="reset" type="button">Start again</button>
+      </header>
+      <aside id="tray" aria-label="Part tray">
+        <button id="by-list" type="button" aria-pressed="false">Place by list</button>
+        <div id="tiles"></div>
+        <div id="places" role="group" aria-label="Places for a part" hidden></div>
+        <p id="said" role="status" aria-live="polite"></p>
+      </aside>
+      <main id="stage">
+        <div id="canvas"></div>
+        <p id="status-bar">
+          <span id="status" role="status" aria-live="polite">Loading the canvas.</span>
+          <span id="clock" aria-hidden="true"></span>
+        </p>
+        <details id="what">
+          <summary>What to build</summary>
+          <p id="about"></p>
+          <ol id="steps"></ol>
+        </details>
+        <div id="runbar">
+          <button id="run" type="button" aria-pressed="false">Run</button>
+          <button id="fit" type="button">Fit</button>
+          <button id="tidy" type="button">Tidy wires</button>
+          <button id="list" type="button">List view</button>
+        </div>
+      </main>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
