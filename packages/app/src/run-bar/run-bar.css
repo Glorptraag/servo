@@ -1,0 +1,179 @@
+/*
+ * The Run bar (task 4.4): inside the shell's Run bar room, 440 x 64 px with the pill's padding (docs/shell.md). Every
+ * control keeps its place and size in Build and Run, so nothing under a finger moves. Neutral chrome: the Run/Stop
+ * toggle is the one strong control, and colour is kept for meaning (brief Section 11). Every target is 44 px or more.
+ */
+
+.run-bar {
+  --run-bar-ink: var(--shell-ink, #2b2926);
+  --run-bar-on-ink: var(--shell-panel, #fbfaf7);
+  --run-bar-beat: #1d5fc4;
+
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 52px;
+}
+
+.run-bar button {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--shell-line, #d6d0c6);
+  border-radius: 12px;
+  background: var(--shell-panel, #fbfaf7);
+  color: var(--run-bar-ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.run-bar button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* One large toggle: Run with a triangle, Stop with a square, so the shape says it before the word. */
+.run-bar .run-bar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 96px;
+  height: 52px;
+  border-color: var(--run-bar-ink);
+  border-radius: 14px;
+  background: var(--run-bar-ink);
+  color: var(--run-bar-on-ink);
+  font-size: 18px;
+}
+
+.run-bar-shape {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+/* The clock: Slower, the speed with the tick's visual twin under it, Faster. */
+.run-bar-clock {
+  display: flex;
+  align-items: center;
+  width: 148px;
+}
+
+.run-bar .run-bar-step {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+}
+
+.run-bar-step svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+.run-bar-readout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.run-bar-rate {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.run-bar-unit {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--shell-muted, #5e584f);
+}
+
+/* Read aloud, not drawn. */
+.run-bar-spoken {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/*
+ * The tick's visual twin (brief Section 11: every sound has one): in slow motion each step of the clock fills or
+ * empties the dot and pulses it once, beside the tick's number, as the tick sound plays. With reduced motion the dot
+ * still fills and empties, without the pulse.
+ */
+.run-bar-twin {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  visibility: hidden;
+}
+
+.run-bar-twin[data-shown='true'] {
+  visibility: visible;
+}
+
+.run-bar-beat {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--run-bar-beat);
+  border-radius: 50%;
+  animation: run-bar-beat 180ms ease-out;
+}
+
+.run-bar-twin[data-beat='even'] .run-bar-beat {
+  background: var(--run-bar-beat);
+}
+
+@keyframes run-bar-beat {
+  from {
+    transform: scale(1.6);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .run-bar-beat {
+    animation: none;
+  }
+}
+
+/* Why Run is off, in the clock's place: one plain line, never a dialog (ground rule 9). */
+.run-bar-reason {
+  display: flex;
+  align-items: center;
+  width: 148px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.2;
+  color: var(--run-bar-ink);
+}
+
+.run-bar .run-bar-button {
+  height: 44px;
+  padding: 0 8px;
+  font-size: 15px;
+}
+
+.run-bar .run-bar-button:not(.run-bar-reset) {
+  width: 64px;
+}
+
+.run-bar .run-bar-reset {
+  width: 84px;
+  line-height: 1.1;
+}
