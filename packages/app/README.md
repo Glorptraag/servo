@@ -5,7 +5,7 @@ The child's app: shell, tray, library, spec card, Run bar, arena strip, challeng
 | Export | Owner | What |
 | --- | --- | --- |
 | `@servo/app` | 4.1 | `mountApp(host, options?)`, started by the web build ([src/main.tsx](src/main.tsx)) and the e2e harness: the shell round the canvas. It opens the store from task 4.9 |
-| `@servo/app/store` | 0.4 types, 4.9, 5.5 | `openStore(options)`, the store's types and content's types ([src/store/index.ts](src/store/index.ts)) |
+| `@servo/app/store` | 0.4 types, 4.9, 5.5, 5.6 | `openStore(options)`, the store's types and content's types ([src/store/index.ts](src/store/index.ts)); `shareLinkOf` and `SHARED_BUILD_NAME` for the parent view's shared links (task 5.6) |
 | `@servo/app/invite-code` | 6.3 | The tester invite code's reduction and hash, `normalizeInviteCode` and `hashInviteCode` ([src/release/invite-code.ts](src/release/invite-code.ts)). Pure: no DOM, React or Node. The release in packages/tools imports it, so the hashes it bakes in are the ones the invite gate makes |
 
 ## The shell (brief Section 9)
@@ -26,7 +26,7 @@ The canvas fills the screen, and the chrome over it (header, tray, spec card, Ru
 - **Content.** `openStore()` loads it once, and `mountApp` takes it from the store (or from `loadContent()` itself when the device's storage cannot be opened); the app passes `content.catalogue` and a `resolveArt` built from `content.art` to `mountCanvas`.
 - **Canvas.** The app listens to `edit` (Undo history and saving), `select` (spec card), `placement` (tray and arena strip) and `control` (switch flips). Its own changes (settings, name, arena and Reset arena, the hint ladder's do-it) go through `canvas.apply`, so every change to a build is an `EditCommand`.
 - **sim-core.** Run snapshots tick 0 and switches the canvas to Run mode. After a one-second spin-up, a wall-clock driver steps the simulation at 30 ticks a second or in slow motion, and passes each frame to the canvas, spec card, sound layer and challenge runner. Stop records the Run, restores tick 0 and returns the canvas to Build mode, where the build is exactly as it was (ground rule 4). An unchanged build keeps its Simulation and seed (D37).
-- **Shared links** open a read-only canvas: a replay with "keep a copy" (D43).
+- **Shared links** open a read-only canvas and replay the build (D43), with no store opened ([below](#shared-links)).
 
 Details: [docs/run-loop.md](docs/run-loop.md).
 
@@ -87,6 +87,34 @@ Taken here, conservatively:
 8. Sync conflicts are not yet said in Save's line ("A copy of the other version was kept"): `syncFor`'s `onKept` is there for the app when a host exists.
 9. When sync puts the other device's version at the id of the build open on the canvas, the canvas's next save keeps that version as a copy too, by the store's two-tab rule, so nothing is lost but one version may be kept twice.
 10. `httpRemote`'s wire format, its authentication and where `VITE_` configuration would name its address are for D13 and task 5.1.
+
+## Shared links
+
+Task 5.6, in [src/sharing/](src/sharing/). Read-only links from one adult to another. There is no backend (D10), so a link carries the build itself in its URL fragment, which a browser never sends to a server, and opening one needs no network once the app is cached.
+
+- **Making one** ([link.ts](src/sharing/link.ts)). `shareLinkOf(blueprint, catalogue, { includeName, base })` gives `<app address>#share=1.<payload>`: the canonical JSON (`serializeBlueprint`), deflated with the browser's `CompressionStream('deflate')` (zlib, whose checksum makes a changed or cut-off link fail to inflate), in base64url. No new dependency. Only an adult makes one, from the parent view behind the parental gate (D28): it is exported through `@servo/app/store`, the parent's one way into the app.
+- **What it carries** (D21). A new blueprint made field by field: the build's parts, wires and arena, and a `meta` of its level and id marks, a fresh UUID v4 as its id, and the moment of sharing as both dates. Never `meta.author`, the build's own id or dates, a Run, or anything of the profile. The build's name travels only when `includeName` is true (the "include the build's name" option, unticked by default); otherwise it is "Shared build". The content fixtures' links are 0.7 to 1.1 KB.
+- **Opening one** ([view.tsx](src/sharing/view.tsx)). [main.tsx](src/main.tsx) opens `mountSharedPage` in place of the child's app when the fragment starts `#share=` (after the tester invite gate, as any page), and reloads when the fragment moves into, out of or between links. The page opens no store, no profile and no gate, and writes nothing: not to IndexedDB, page storage, the address or the history. Its title is never the build's name.
+- **Reading it** (`readShareFragment`). Never throws. It refuses a fragment over 64 KB, a payload that is not base64url, does not inflate, inflates past 1 MB, is not UTF-8 JSON, carries `meta.author` or any field a blueprint does not have, fails `migrateBlueprint`, or fails `validateBlueprint` against this build's content. A newer link format or blueprint version is said to be newer. The page then shows one plain line, never a dialog (ground rule 9).
+- **The replay** ([replay.ts](src/sharing/replay.ts)). The Run flow of [docs/run-loop.md](docs/run-loop.md) on a read-only canvas: one Simulation from the shared blueprint, tick 0 snapshotted, Run mode, the one-second spin-up, then 30 ticks a second from `requestAnimationFrame` (a gap such as a hidden tab is skipped, not caught up). It starts on opening; Stop restores tick 0 and Build mode, and Run again plays the same run. The seed is a hash of the build's parts, wires and arena (`seedOf`), so everyone who opens a link to a build sees the same run, tick for tick. A read-only canvas emits no control, so a replay has no switch flips. Stop and Run again is a native button (pointer, touch, keyboard, screen reader); the canvas's list view reads the build out and offers inspection only. A canvas that cannot draw frames ends the replay with a plain line: until task 3.5 lands, the real canvas's `applyRunFrame` throws, so the page shows the build still with "The run cannot be shown on this device."
+- **Offline.** The service worker (task 5.5) answers every page of the app with the cached `index.html` and never sees the fragment, so links open offline as online.
+
+### Tests
+
+- **Unit, Node** ([test/sharing/](test/sharing/)). The negative test: a real child's build in a real store (fake-indexeddb), with a profile name, a name the child gave it and a Run on record, is shared; the payload, inflated by hand, has exactly the blueprint's top-level fields and the allowed `meta` keys, and holds no profile id or name, author, build id or dates, Run id or times, and no string that is not the build's own or the shared copy's meta. The name only with the option ticked; extras on the object left behind. Every content fixture round-trips; the seed is the same for the same build and differs for another; a version 0 link migrates, and one with an author is refused. Refused: cut-off and changed links, non-links, non-JSON and non-UTF-8, an author, every extra field, unknown parts and arenas, newer formats and versions, oversize links and payloads that inflate too far, and 50 random fragments, none of which throws. The replay on the real sim-core and a stand-in canvas: spin-up, 30 ticks a second, the same frames as the build's own Run with the link's seed, Stop and Run again, a long gap, a canvas that cannot draw, Stop and dispose while loading. The service worker serves a link's page from the cache.
+- **Browser, Chromium** ([test/browser/sharing.test.tsx](test/browser/sharing.test.tsx)). A link from a child's build in real IndexedDB opens on the real read-only canvas and replays; Stop by pointer, Run again by touch, Stop by keyboard; no `indexedDB.open`, `localStorage` write, history entry, address change or dialog, and the store's rows are unchanged. Refused links are one line with no canvas; the build's name shows only when the link carries it, never in the title.
+
+### Decisions and open questions (task 5.6)
+
+Taken conservatively, for Drew and the orchestrator:
+
+1. "Keep a copy" (D43's recommendation) is not built: the task says opening a link must never write into a child's store, and choosing which child would need the parental gate. `blueprints.copy` already takes a shared blueprint when Drew decides where the action lives (for example in the parent view, pasting a link).
+2. No button in the parent view yet: task 5.3 is changing the same build list. `shareLinkOf` is ready through `@servo/app/store`; the button, the "include the build's name" checkbox (unticked) and copying the link are a small follow-up.
+3. The shared copy gets a fresh id and the moment of sharing as its dates, so a link never names the child's build or when the child made it.
+4. A link without the name says "Shared build" (schema requires a name).
+5. The replay's seed comes from the build, not from a child's Run, and a replay has no switch flips: a link carries no Run (D21). Whether a link should carry one Run's seed and inputs is for Drew.
+6. The replay starts on opening and runs until Stop, as a Run does. Whether it should respect reduced motion, or stop by itself, is for Drew (and task 5.7).
+7. A link opened in a tester build still meets the invite gate first.
 
 ## Areas and owners
 
