@@ -8,6 +8,7 @@ import type { Content } from '@servo/content';
 import type { Blueprint, Level } from '@servo/schema';
 import { PLACEHOLDER_SLOTS, SaveControl, Shell } from './shell/index.ts';
 import type { Autosaver, CanvasSetup, ShellSlots } from './shell/index.ts';
+import { SpecCard, createRunFrames } from './spec-card/index.ts';
 import type { ProfileStore } from './store/index.ts';
 
 /** A child starts at Level 1 (brief Section 2); the level comes from progress once task 5.2 records it. */
@@ -26,7 +27,12 @@ export interface AppProps {
 }
 
 export const App = ({ content, child = null, start, saving, onReady }: AppProps) => {
-  const slots = useMemo<ShellSlots>(() => ({ ...PLACEHOLDER_SLOTS, save: <SaveControl saving={saving} /> }), [saving]);
+  // The run loop (task 4.4) pushes each Run frame here for the spec card's live readouts.
+  const runFrames = useMemo(createRunFrames, []);
+  const slots = useMemo<ShellSlots>(
+    () => ({ ...PLACEHOLDER_SLOTS, specCard: <SpecCard frames={runFrames} />, save: <SaveControl saving={saving} /> }),
+    [saving, runFrames],
+  );
   // The swap registry: a key with no picture gives undefined, and the canvas draws a neutral tile.
   const resolveArt: ResolveArt = (key) => content.art.get(key);
   const drawCanvas = (host: HTMLElement, setup: CanvasSetup): CanvasHandle =>
