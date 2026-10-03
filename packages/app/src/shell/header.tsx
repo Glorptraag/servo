@@ -1,9 +1,10 @@
 // The header's contents (brief Section 9): Home, the kit and level name, the challenge goal in one line with the
-// hint button beside it, the blueprint's name, and Save. The kit, level and name come from data; the rest are
-// slots that later tasks fill.
+// hint button beside it, the blueprint's name, and Save. The kit, level and name come from data, and a tap on the
+// name renames the build (name.tsx); the rest are slots that later tasks fill.
 import type { ReactNode } from 'react';
 import { LEVELS } from '@servo/schema';
 import { useShell } from './context.ts';
+import { BlueprintName } from './name.tsx';
 
 export interface HeaderSlots {
   /** Home. */
@@ -19,7 +20,7 @@ export interface HeaderSlots {
 }
 
 export const HeaderContents = ({ home, goal, hints, sound, save }: HeaderSlots) => {
-  const { kit, level, blueprint } = useShell();
+  const { kit, level } = useShell();
   const levelName = LEVELS.find((info) => info.level === level)?.label;
   return (
     <>
@@ -30,7 +31,7 @@ export const HeaderContents = ({ home, goal, hints, sound, save }: HeaderSlots) 
       </p>
       <div className="shell-goal">{goal}</div>
       <div className="shell-header-slot">{hints}</div>
-      <p className="shell-blueprint-name">{blueprint?.meta.name}</p>
+      <BlueprintName />
       <div className="shell-header-slot">{sound}</div>
       <div className="shell-header-slot">{save}</div>
     </>

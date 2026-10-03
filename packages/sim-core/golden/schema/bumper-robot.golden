@@ -1,0 +1,206 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case schema/bumper-robot
+seed 2026
+ticks 30
+inputs none
+blueprint 2a4593aa551aa158
+arena wall-stop e655694a00d0f9fd
+part battery-pack-2-cell 4f06898988ddc4d3
+part bumper-switch f9d36ab7b77ed291
+part buzzer 4d72863463005016
+part caster 2a2f645fdaf6f14e
+part chassis e4dd75ff894669d7
+part dc-motor 860878b9ebd9b2f6
+part gearbox b27c24359f1e3c80
+part motor-driver d751dabace2c7b52
+part servo-motor 5d68db52aaa87fc7
+part wheel-large a38367d03cf69dba
+record f746833a69e704fd6d46785738efe3c67cd69b03b2eae6fb71d916e02fe134a6
+fault buzzer low-voltage first-tick=2
+fault servo low-voltage first-tick=2
+subjects battery bumper buzzer caster chassis driver gear-left gear-right motor-left motor-right servo wheel-left wheel-right arena:box arena:cone
+tick 0 f6e42e92
+  battery volts=2.622 milliamps=945.9 charge=1
+  bumper volts=0 milliamps=945.9 closed=true
+  buzzer volts=2.622 milliamps=9.6 x=180 y=510 heading=0 sound.buzz=0.32@2400hz
+  chassis x=300 y=600 heading=0 pitch=0 roll=0
+  driver volts=2.622 milliamps=928.8
+  gear-left rpm=25.7
+  gear-right rpm=25.7
+  motor-left volts=2.317 milliamps=463.4 rpm=77.2 sound.motor=0.386
+  motor-right volts=2.317 milliamps=463.4 rpm=77.2 sound.motor=0.386
+  servo volts=2.622 milliamps=7.5 angle=90
+  wheel-left rpm=25.7
+  wheel-right rpm=25.7
+  arena:box x=1000 y=950 heading=0
+  arena:cone x=1200 y=300 heading=0
+tick 1 fc24a6d0
+  chassis x=301.9
+tick 2 c79afb79
+  battery volts=2.808 milliamps=478.6 charge=0.9998
+  bumper milliamps=478.6
+  buzzer volts=2.808 milliamps=11.2 sound.buzz=0.374@2400hz faults=low-voltage
+  chassis x=304.8
+  driver volts=2.808 milliamps=459.3
+  gear-left rpm=23.9
+  gear-right rpm=23.9
+  motor-left volts=2.506 milliamps=228.7 rpm=71.7 sound.motor=0.359
+  motor-right volts=2.506 milliamps=228.7 rpm=71.7 sound.motor=0.359
+  servo volts=2.808 milliamps=8 faults=low-voltage
+  wheel-left rpm=23.9
+  wheel-right rpm=23.9
+tick 3 bb5914d5
+  battery volts=2.87 milliamps=325.1 charge=0.9997
+  bumper milliamps=325.1
+  buzzer volts=2.87 milliamps=11.7 sound.buzz=0.391@2400hz
+  chassis x=308
+  driver volts=2.87 milliamps=305.2
+  gear-left rpm=27.5
+  gear-right rpm=27.5
+  motor-left volts=2.568 milliamps=151.6 rpm=82.4 sound.motor=0.412
+  motor-right volts=2.568 milliamps=151.6 rpm=82.4 sound.motor=0.412
+  servo volts=2.87 milliamps=8.2
+  wheel-left rpm=27.5
+  wheel-right rpm=27.5
+tick 4 c6e27503
+  battery volts=2.886 milliamps=284.6 charge=0.9996
+  bumper milliamps=284.6
+  buzzer volts=2.886 milliamps=11.9 sound.buzz=0.396@2400hz
+  chassis x=311.2
+  driver volts=2.886 milliamps=264.4
+  gear-left rpm=28.3
+  gear-right rpm=28.3
+  motor-left volts=2.584 milliamps=131.2 rpm=84.8 sound.motor=0.424
+  motor-right volts=2.584 milliamps=131.2 rpm=84.8 sound.motor=0.424
+  servo volts=2.886
+  wheel-left rpm=28.3
+  wheel-right rpm=28.3
+tick 5 9258ae37
+  battery volts=2.89 milliamps=273.8 charge=0.9995
+  bumper milliamps=273.8
+  buzzer volts=2.89 sound.buzz=0.397@2400hz
+  chassis x=314.4
+  driver volts=2.89 milliamps=253.6
+  gear-left rpm=28.5
+  gear-right rpm=28.5
+  motor-left volts=2.589 milliamps=125.8 rpm=85.5 sound.motor=0.427
+  motor-right volts=2.589 milliamps=125.8 rpm=85.5 sound.motor=0.427
+  servo volts=2.89 milliamps=8.3
+  wheel-left rpm=28.5
+  wheel-right rpm=28.5
+tick 6 6993442c
+  battery volts=2.891 milliamps=270.8
+  bumper milliamps=270.8
+  buzzer volts=2.891
+  chassis x=317.6
+  driver volts=2.891 milliamps=250.7
+  motor-left volts=2.59 milliamps=124.3 rpm=85.6 sound.motor=0.428
+  motor-right volts=2.59 milliamps=124.3 rpm=85.6 sound.motor=0.428
+  servo volts=2.891
+tick 7 be8d592b
+  battery milliamps=270.2 charge=0.9994
+  bumper milliamps=270.2
+  buzzer sound.buzz=0.398@2400hz
+  chassis x=320.9
+  driver milliamps=250
+  gear-left rpm=28.6
+  gear-right rpm=28.6
+  motor-left milliamps=124 rpm=85.7
+  motor-right milliamps=124 rpm=85.7
+  wheel-left rpm=28.6
+  wheel-right rpm=28.6
+tick 8 41449264
+  battery milliamps=270 charge=0.9993
+  bumper milliamps=270
+  chassis x=324.1
+  driver milliamps=249.8
+  motor-left milliamps=123.9
+  motor-right milliamps=123.9
+tick 9 c4b98d82
+  chassis x=327.4
+tick 10 8f90ee77
+  battery charge=0.9992
+  buzzer sound.buzz=0.397@2400hz
+  chassis x=330.6
+tick 11 95debf8f
+  battery milliamps=269.9
+  bumper milliamps=269.9
+  chassis x=333.8
+tick 12 66731ccc
+  battery charge=0.9991
+  chassis x=337.1
+  driver milliamps=249.7
+tick 13 b0bfe9ec
+  battery charge=0.999
+  chassis x=340.3
+tick 14 448c46ad
+  chassis x=343.6
+  motor-left milliamps=123.8
+  motor-right milliamps=123.8
+tick 15 7fac2ea2
+  battery milliamps=269.8 charge=0.9989
+  bumper milliamps=269.8
+  chassis x=346.8
+tick 16 87f382c6
+  battery charge=0.9988
+  chassis x=350.1
+  driver milliamps=249.6
+tick 17 0d7ab8a6
+  chassis x=353.3
+tick 18 13c65980
+  battery charge=0.9987
+  chassis x=356.5
+tick 19 07f40633
+  chassis x=359.8
+tick 20 c48bcd6f
+  battery milliamps=269.7 charge=0.9986
+  bumper milliamps=269.7
+  chassis x=363
+  motor-left volts=2.589
+  motor-right volts=2.589
+tick 21 d6157d38
+  battery charge=0.9985
+  chassis x=366.3
+  driver milliamps=249.5
+tick 22 2721c2b5
+  chassis x=369.5
+tick 23 91a87b50
+  battery charge=0.9984
+  chassis x=372.7
+  motor-left milliamps=123.7
+  motor-right milliamps=123.7
+tick 24 f08a27e8
+  battery volts=2.89 milliamps=269.8 charge=0.9983
+  bumper milliamps=269.8
+  buzzer volts=2.89
+  chassis x=376
+  driver volts=2.89 milliamps=249.6
+  motor-left milliamps=123.8
+  motor-right milliamps=123.8
+  servo volts=2.89
+tick 25 50d0c87e
+  chassis x=379.2
+tick 26 8af8815a
+  battery milliamps=269.7 charge=0.9982
+  bumper milliamps=269.7
+  chassis x=382.5
+tick 27 35183cc9
+  chassis x=385.7
+  driver milliamps=249.5
+tick 28 11c21dff
+  battery charge=0.9981
+  chassis x=388.9
+tick 29 b7d374b6
+  battery charge=0.998
+  chassis x=392.2
+  motor-left milliamps=123.7
+  motor-right milliamps=123.7
+tick 30 dc0b60e6
+  battery milliamps=269.8
+  bumper milliamps=269.8
+  chassis x=395.4
+  driver milliamps=249.6
+  motor-left milliamps=123.8
+  motor-right milliamps=123.8

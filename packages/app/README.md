@@ -6,6 +6,7 @@ The child's app: shell, tray, library, spec card, Run bar, arena strip, challeng
 | --- | --- | --- |
 | `@servo/app` | 4.1 | `mountApp(host, options?)`, started by the web build ([src/main.tsx](src/main.tsx)) and the e2e harness: the shell round the canvas. It opens the store from task 4.9 |
 | `@servo/app/store` | 0.4 types, 4.9, 5.5 | `openStore(options)`, the store's types and content's types ([src/store/index.ts](src/store/index.ts)) |
+| `@servo/app/invite-code` | 6.3 | The tester invite code's reduction and hash, `normalizeInviteCode` and `hashInviteCode` ([src/release/invite-code.ts](src/release/invite-code.ts)). Pure: no DOM, React or Node. The release in packages/tools imports it, so the hashes it bakes in are the ones the invite gate makes |
 
 ## The shell (brief Section 9)
 
@@ -22,7 +23,7 @@ The canvas fills the screen, and the chrome over it (header, tray, spec card, Ru
 
 ## How the packages meet
 
-- **Content.** `openStore()` loads it once (until task 4.9, `mountApp` calls `loadContent()` itself); the app passes `content.catalogue` and a `resolveArt` built from `content.art` to `mountCanvas`.
+- **Content.** `openStore()` loads it once, and `mountApp` takes it from the store (or from `loadContent()` itself when the device's storage cannot be opened); the app passes `content.catalogue` and a `resolveArt` built from `content.art` to `mountCanvas`.
 - **Canvas.** The app listens to `edit` (Undo history and saving), `select` (spec card), `placement` (tray and arena strip) and `control` (switch flips). Its own changes (settings, name, arena and Reset arena, the hint ladder's do-it) go through `canvas.apply`, so every change to a build is an `EditCommand`.
 - **sim-core.** Run snapshots tick 0 and switches the canvas to Run mode. After a one-second spin-up, a wall-clock driver steps the simulation at 30 ticks a second or in slow motion, and passes each frame to the canvas, spec card, sound layer and challenge runner. Stop records the Run, restores tick 0 and returns the canvas to Build mode, where the build is exactly as it was (ground rule 4). An unchanged build keeps its Simulation and seed (D37).
 - **Shared links** open a read-only canvas: a replay with "keep a copy" (D43).
@@ -33,9 +34,59 @@ Details: [docs/run-loop.md](docs/run-loop.md).
 
 From the repository root, `pnpm dev` serves the app and `pnpm build` writes it to `packages/app/dist`; both run `pnpm art` first. `pnpm --filter @servo/app preview` serves the build, and `pnpm --filter @servo/app test` runs the unit and browser tests ([docs/shell.md](docs/shell.md), "Tests").
 
+A release (`pnpm release:dry`, or a `v*` tag; [packages/tools/src/release/README.md](../tools/src/release/README.md)) bakes in the app version, the content version and, in a tester build, the hashes of the invite codes. A tester build opens on the invite form, a plain page with one field, before anything else, and remembers an accepted code on the device. `/settings` shows both versions; a build made any other way has no gate and shows "Not a release build" there.
+
 ## The store
 
-Local-first on Dexie and profile-scoped: blueprints keyed by `meta.id`, run records and card-game results. Loading migrates and validates, and a document that fails stays stored. A content defect never stops the store opening. Sync goes through a pluggable `SyncRemote`, off until one is configured (D10, D13); two devices' copies of one blueprint are both kept. Details: [docs/store.md](docs/store.md).
+Local-first on Dexie and profile-scoped: blueprints keyed by `meta.id`, run records and card-game results. Loading migrates and validates, and a document that fails stays stored. A content defect never stops the store opening. Sync goes through a pluggable `SyncRemote`, off until one is configured (D10, D13); two devices' copies of one blueprint are both kept. On first run the app makes a profile, "Builder 1", and an empty "Build 1"; after that it opens the one profile's newest build. The build saves itself a second after each edit, and at once on Run and when the page is hidden or left; Save in the header stores it at once, and a tap on the build's name renames it. Two tabs on one build keep both versions, and a device that cannot keep builds still builds, with a line saying so. Details: [docs/store.md](docs/store.md).
+
+## Offline and sync
+
+Task 5.5. The full sandbox and every level work with no network, and builds sync on reconnect with the project's conflict rule: the latest blueprint wins its id, and both versions are kept (brief Section 6).
+
+### Offline ([src/offline/](src/offline/))
+
+- **What is kept.** Content is baked into the build (`loadContent()` reads it with `import.meta.glob`), so every level ships with the app; "downloaded" means the app was opened online once. The store is local-first (task 4.9), so builds, Runs and card games are kept on the device whatever the network does.
+- **The service worker.** `vite build` writes `/sw.js` ([plugin.ts](src/offline/plugin.ts), added in [vite.config.ts](vite.config.ts)) from [service-worker.ts](src/offline/service-worker.ts), with the build's every file written in front of it: `index.html`, every script and stylesheet, the art, and every lazily loaded chunk (Pixi's today, Rapier's WebAssembly once the Run loop loads it, D11), but not source maps or the worker itself. No dependency: the list comes from the bundle Vite writes.
+- **Install.** The worker downloads every file into the cache `servo-offline-<version>`, all or nothing (`cache.addAll`, bypassing the HTTP cache). The version is a hash of the file list and of `index.html`, so any change to any file changes the worker's bytes, which is how the browser sees a new build.
+- **Serving.** Same-origin GETs come from the cache, then the network; every page of the app (`/`, `/settings/`) opens on the cached `index.html`, and `startPage` reads the path as before. Nothing else is cached at run time.
+- **Updates.** A new build installs beside the old one and takes over only once no page of the old one is open, so a child mid-build never has the code swapped under them; then the old cache is deleted. The first install takes the page at once (`clients.claim`), so the app is ready offline after its first online start.
+- **Registering.** [main.tsx](src/main.tsx) calls `registerOffline()` ([src/offline/index.ts](src/offline/index.ts)) after `load`, so the downloads never slow the first start (D11). Only a production build registers; `pnpm dev` and the tests have no worker. A page that is not a secure context (a laptop's plain http address on the home network) cannot have one: there the app works online only. A failed registration is a console warning, never a dialog.
+
+### Sync ([src/sync/](src/sync/))
+
+- **The seam.** `openStore({ remote })` syncs through any `SyncRemote` ([src/store/index.ts](src/store/index.ts)). With none, which is the app today (D10, D13), the store is local-only and `sync.now()` resolves at once. `memoryRemote()` is the in-memory one for tests and the sync page. `httpRemote({ url, headers })` speaks `GET <url>/changes?cursor=` and `POST <url>/changes`; nothing in the app makes one until D13 names a host and the adult account can sign its requests.
+- **When.** As the store opens (when online), on `sync.now()`, and on reconnect (the browser's `online` event). While offline (`navigator.onLine` false, or the remote unreachable: `RemoteUnreachable`) it waits in state `offline` and `now()` resolves without syncing. A remote that refuses puts it in `failed`, `now()` rejects, and it tries again 2 s later, then 4 s and so on up to 30 s. One sync runs at a time; `now()` during one runs another after it. Tabs on one device take turns through Web Locks where the browser has them; without them a change may be pushed twice, which every device takes as one. The state is for the app to show as a line if it wants one, never a dialog.
+- **A sync** pulls the changes after the stored cursor, applies them and the cursor in one transaction, then pushes every waiting change (the store records one per record as it writes, task 4.9). Pushed changes stop waiting; a change recorded again meanwhile stays for the next push.
+- **The version a change was made from.** Each device notes, per blueprint, the version it last sent or took (its `meta.updatedAt` and a hash of its content, in the store's `sync` table). A pushed blueprint carries it as `base`, and a kept copy carries `keptFrom` (both optional `SyncChange` fields added by this task).
+- **The conflict rule**, for a blueprint arriving at a device:
+  - new here: kept, with `keptFrom` when it is a copy. A removal here not yet pushed gives way to it;
+  - the version this device last synced, or the same content as the one here: nothing new;
+  - made from the version here, which has not changed since: it replaces it;
+  - otherwise both changed since they last agreed: the later `meta.updatedAt` keeps the id, and the other is kept as its own blueprint under a fresh UUID v4, `keptFrom` naming the id, exactly as the store keeps two tabs' versions (docs/store.md, decision 15), and is pushed so every device has both. A tie keeps the version here. A version from a newer Servo is kept as it came.
+  - A run of versions of one blueprint in one pull, each made from the one before, counts as its last, so a device that missed a dozen autosaves keeps at most one copy.
+- **Removals.** A blueprint removed elsewhere goes only when it is the version the remover last synced and has not changed here since; otherwise it stays and is sent back to the remote. Runs and card-game results are only ever added. A profile removed elsewhere goes only when nothing of it is left here. A record for a profile this device does not hold (removed here) is left on the remote.
+- **Remotes keep a log.** A pull gives every change after the cursor in the order pushed. A remote that kept only each record's latest change would lose nothing, but devices would keep copies of versions they simply had not seen.
+
+### Tests
+
+- **Unit, Node on fake-indexeddb** ([test/sync/](test/sync/)). The conflict fixture ([fixtures/conflict.ts](test/sync/fixtures/conflict.ts): one build changed on a tablet and a laptop, both offline) in both reconnect orders: every device, a newcomer and the remote end with the laptop's later version at the id and the tablet's as one copy, and syncing again changes nothing; a tie. Then: local-only; pull then push; sync on open; offline, then sync on reconnect by itself; an unreachable remote; a refusing one, retried; one sync at a time; a plain update; no copy of a device's own version coming back; two devices that both pushed from the same version; removals both ways; profiles, renames, runs and card games; a profile removed elsewhere; a newer Servo's version; changes it cannot read; a pull taken twice; one copy for many missed autosaves. The remotes, the HTTP one against a stand-in fetch.
+- **Browser, Chromium** ([test/browser/offline.test.ts](test/browser/offline.test.ts), [sync.test.ts](test/browser/sync.test.ts)). Commands in [side-page.ts](test/browser/side-page.ts), registered in [vitest.config.ts](vitest.config.ts), drive a page in a browser context of its own, so going offline never touches the test runner. **Airplane mode:** the real production build (with its worker) is built and served with `vite preview`; opened online, it makes "Builder 1" and "Build 1" and the worker caches every file; then the context goes offline and the server is stopped, and after a reload the shell, the canvas and Save work, every file of the build loads, a save is kept across another reload, and no request of the app fails. **Sync on reconnect:** the conflict fixture on two stores in one page ([sync-page.ts](test/browser/sync-page.ts)); the context goes offline, the tablet saves and waits, the laptop's edit reaches the remote, and when the context comes back online the tablet syncs by itself and both end with both versions.
+
+### Decisions and open questions
+
+Taken here, conservatively:
+
+1. A service worker written by a small Vite plugin, no new dependency (not `vite-plugin-pwa`/Workbox). No web app manifest: installing to the home screen is a product decision for Drew (it also matters for Safari's storage eviction, docs/stack.md).
+2. A new build waits until every page of the old one is closed. Asking the child to reload, or reloading for them between builds, is for Drew.
+3. `SyncChange` gains two optional fields, `base` and `keptFrom` (interface change, noted in src/store/index.ts). The store's database gains version 2 with one table, `sync`.
+4. Sync runs on open, on `now()` and on reconnect. Whether to sync on a timer or after each save while online is for Drew (and the host's limits).
+5. A profile removed on one device while a child built in it offline on another is kept on the second device, with that build. A record arriving for a profile removed here is not taken. Both for Drew (D38).
+6. A blueprint removed on one device but changed offline on another is kept and sent back to the remote.
+7. Concurrent pushes from two devices made from the same version can leave one copy per device that meets them. A host that rejects a push whose `base` is not its current version would prevent that: for D13.
+8. Sync conflicts are not yet said in Save's line ("A copy of the other version was kept"): `syncFor`'s `onKept` is there for the app when a host exists.
+9. When sync puts the other device's version at the id of the build open on the canvas, the canvas's next save keeps that version as a copy too, by the store's two-tab rule, so nothing is lost but one version may be kept twice.
+10. `httpRemote`'s wire format, its authentication and where `VITE_` configuration would name its address are for D13 and task 5.1.
 
 ## Areas and owners
 
@@ -47,9 +98,11 @@ Local-first on Dexie and profile-scoped: blueprints keyed by `meta.id`, run reco
 | `run-bar/` | 4.4 | Run and Stop, the clock, Undo, Reset arena, the spin-up |
 | `challenges/` | 4.5 | Goal line, arena preset, goal detection over the Run, the tick |
 | `hints/` | 4.6 | Which ladder and rung; the canvas draws them, and do-it is one `batch` |
-| `store/` | 4.9, 5.5 | Persistence and sync |
+| `store/` | 4.9, 5.5 | Persistence, and the changes sync pushes |
+| `offline/`, `sync/` | 5.5 | The service worker and its build step; sync through a `SyncRemote` with the conflict rule |
 | `sound/` | 4.10 | Machine sounds and UI clicks, each with a visual twin; mute persists |
 | `sharing/` | 5.6 | Read-only links with the blueprint in the URL fragment and no profile data (D10, D43) |
 | `a11y/`, `theme/` | 5.7 | WCAG 2.2 AA chrome, high contrast, dyslexia-friendly type, left-handed mirror |
 | `telemetry/` | 6.2 | Only the events the success measures need |
+| `release/` | 6.3 | What a release bakes in (`build-info.ts`), the page's start (`start.ts`: the invite gate first in a tester build, then Settings at `/settings` or the app), the invite gate, Settings, and the invite code's hash (`@servo/app/invite-code`) |
 | `flags/`, `program-view/` | 6.6 | The Level 3 slot, off by default |

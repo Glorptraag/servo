@@ -1,9 +1,11 @@
-// @servo/app/store: the local-first store's typed interface (task 0.4). Task 4.9 implements it on Dexie and
-// task 5.5 adds sync; until then openStore rejects. packages/parent imports only this module (CLAUDE.md package
+// @servo/app/store: the local-first store's typed interface (task 0.4), implemented on Dexie over IndexedDB by task
+// 4.9 (open.ts and its neighbours); task 5.5 adds sync. packages/parent imports only this module (CLAUDE.md package
 // map), so it reads content, and content's types, through here. See packages/app/docs/store.md.
 
+import { loadContent } from '@servo/content';
 import type { Content, ContentIssue } from '@servo/content';
 import type { ArenaRef, Blueprint, BlueprintId, ChallengeId, Issue, Level, PartTypeId, ProfileId, RunId, RunRecord, Timestamp } from '@servo/schema';
+import { openStoreWith } from './open.ts';
 
 export type { ArtEntry, ArtRegistry, Content, ContentIssue, TerminologyFile } from '@servo/content';
 
@@ -24,7 +26,7 @@ export interface StoreOptions {
  */
 export type OpenStore = (options?: StoreOptions) => Promise<ServoStore>;
 
-export const openStore: OpenStore = () => Promise.reject(new Error('openStore is not implemented yet (task 4.9).'));
+export const openStore: OpenStore = (options) => openStoreWith(loadContent(), options);
 
 export interface ServoStore {
   /**
@@ -56,8 +58,20 @@ export interface Profiles {
   create(name: string): Promise<Profile>;
   rename(id: ProfileId, name: string): Promise<Profile>;
   /**
-   * Deletes the profile and everything it owns: its blueprints, runs and card-game results (D38). The parent view
-   * asks the adult to confirm first. The app never deletes anything on its own.
+   * The profile in use on this device, whose records the child's app opens (task 5.1): the one chosen with `use`, or
+   * the only one when the device has one. Undefined when several are on the device and none of them is chosen.
+   */
+  inUse(): Promise<Profile | undefined>;
+  /**
+   * Chooses the profile in use on this device: the parent view's profile switch (task 5.1). The choice is this
+   * device's alone and never syncs. Refuses a profile that is not on the device, and a device whose page storage is
+   * blocked.
+   */
+  use(id: ProfileId): Promise<Profile>;
+  /**
+   * Deletes the profile and everything it owns: its blueprints, runs and card-game results (D38), and what this device
+   * noted for it outside the database: builds the autosave journal holds, and the choice of it as the profile in use.
+   * The parent view asks the adult to confirm first. The app never deletes anything on its own.
    */
   remove(id: ProfileId): Promise<void>;
 }
@@ -90,7 +104,9 @@ export interface Blueprints {
   /**
    * Stores a build this profile already holds, in canonical form under its `meta.id`, with `updatedAt` stamped now.
    * Refuses a `meta.id` the profile does not hold (new builds come from create, copy or duplicate), another
-   * profile's build, and one that does not validate.
+   * profile's build, and one that does not validate. The `updatedAt` given names the stored version the build was
+   * saved from (as load and save return it): when the stored build has changed since, in another tab, the stored
+   * version is kept as its own blueprint (`keptFrom`) and this one keeps the id, as sync's conflict rule below.
    */
   save(blueprint: Blueprint): Promise<Blueprint>;
   /** A copy under a fresh `meta.id`, with its own name. Its runs start again from 1. */
@@ -179,13 +195,24 @@ export interface SyncChange {
   readonly updatedAt: Timestamp;
   /** The record as stored (a blueprint as `serializeBlueprint` writes it, parsed), or absent when it was removed. */
   readonly document?: unknown;
+  /**
+   * A blueprint's only (task 5.5): the `meta.updatedAt` of the version the sending device last synced, which this
+   * change was made from. Absent for a blueprint the device never synced. A device takes a change as a plain update
+   * only when it was made from the version the device holds; otherwise both versions are kept.
+   */
+  readonly base?: Timestamp;
+  /** A blueprint's only (task 5.5): set on a copy the conflict rule kept, naming the blueprint it was kept from. */
+  readonly keptFrom?: BlueprintId;
 }
 
 export type SyncState = 'local-only' | 'idle' | 'syncing' | 'offline' | 'failed';
 
 export interface Sync {
   readonly state: SyncState;
-  /** Pulls, applies the conflict rule, then pushes. Resolves at once when local-only. */
+  /**
+   * Pulls, applies the conflict rule, then pushes. Resolves at once when local-only, and without syncing when the
+   * device is offline (the state says so, and the store syncs on reconnect). Rejects when the remote refuses.
+   */
   now(): Promise<void>;
   /** Called whenever `state` changes. Returns the unsubscribe function. */
   subscribe(listener: (state: SyncState) => void): () => void;

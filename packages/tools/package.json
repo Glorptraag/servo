@@ -8,7 +8,9 @@
   },
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "test:determinism": "SERVO_DETERMINISM=sweep vitest run test/sim-determinism.test.ts",
+    "typecheck": "tsc --noEmit",
+    "e2e": "vitest run --config src/e2e/vitest.config.ts"
   },
   "dependencies": {
     "@servo/app": "workspace:*",
@@ -20,7 +22,9 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@vitest/browser-playwright": "5.0.2",
     "eslint": "catalog:",
+    "playwright": "1.63.0",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

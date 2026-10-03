@@ -8,6 +8,7 @@ import type { ReactNode } from 'react';
 import type { CanvasHandle, CanvasMode, CanvasPrefs, Selection } from '@servo/canvas';
 import type { Content } from '@servo/content';
 import type { Blueprint, Kit, Level, ValidationResult } from '@servo/schema';
+import type { ProfileStore } from '../store/index.ts';
 import { ShellContext } from './context.ts';
 import type { ShellApi } from './context.ts';
 import { EdgeTab } from './edge-tab.tsx';
@@ -59,6 +60,10 @@ export interface ShellProps {
   readonly storage?: Storage | null;
   /** The prefs the canvas starts with. */
   readonly prefs?: CanvasPrefs;
+  /** The child's records in the store (task 4.9), shared with the slots as `useShell().child`. None without a store or a profile. */
+  readonly child?: ProfileStore | null;
+  /** A build to load onto the canvas as soon as it is mounted. */
+  readonly start?: Blueprint | undefined;
   /** Called once the canvas is mounted. */
   readonly onReady?: () => void;
   /**
@@ -69,7 +74,19 @@ export interface ShellProps {
   readonly onSafeArea?: (safeArea: SafeArea, canvas: CanvasHandle) => void;
 }
 
-export const Shell = ({ content, level, kit, slots = {}, mountCanvas, storage: givenStorage, prefs: startPrefs, onReady, onSafeArea }: ShellProps) => {
+export const Shell = ({
+  content,
+  level,
+  kit,
+  slots = {},
+  mountCanvas,
+  storage: givenStorage,
+  prefs: startPrefs,
+  child = null,
+  start,
+  onReady,
+  onSafeArea,
+}: ShellProps) => {
   const storage = useMemo(() => (givenStorage === undefined ? pageStorage() : givenStorage), [givenStorage]);
   const rootRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -108,8 +125,8 @@ export const Shell = ({ content, level, kit, slots = {}, mountCanvas, storage: g
   }, []);
 
   // The canvas is mounted once, with the level and prefs of the moment; later changes reach it through its setters.
-  const latest = useRef({ mountCanvas, onReady, onSafeArea, level, prefs });
-  latest.current = { mountCanvas, onReady, onSafeArea, level, prefs };
+  const latest = useRef({ mountCanvas, onReady, onSafeArea, level, prefs, start });
+  latest.current = { mountCanvas, onReady, onSafeArea, level, prefs, start };
   const applied = useRef<CanvasSetup | null>(null);
   const measured = size !== null;
   useEffect(() => {
@@ -122,6 +139,8 @@ export const Shell = ({ content, level, kit, slots = {}, mountCanvas, storage: g
     // The spec card follows the selection: it slides in when a part is selected and out when none is (brief Section 9).
     const offSelect = handle.on('select', (event) => setSelection(event.selection));
     setSelection(handle.selection);
+    const first = setup.start ? handle.load(setup.start) : undefined;
+    if (first?.ok) setBlueprint(first.value);
     setCanvas(handle);
     setup.onReady?.();
     return () => {
@@ -251,6 +270,7 @@ export const Shell = ({ content, level, kit, slots = {}, mountCanvas, storage: g
       setMode,
       blueprint,
       load,
+      child,
       selection,
       tucked,
       setTucked,
@@ -260,7 +280,7 @@ export const Shell = ({ content, level, kit, slots = {}, mountCanvas, storage: g
       prefs,
       setPrefs,
     }),
-    [content, level, kit, canvas, mode, setMode, blueprint, load, selection, tucked, setTucked, specCardAside, layout, prefs],
+    [content, level, kit, canvas, mode, setMode, blueprint, load, child, selection, tucked, setTucked, specCardAside, layout, prefs],
   );
 
   const { shown } = layout;
