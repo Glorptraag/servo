@@ -1,6 +1,6 @@
 # @servo/parent
 
-The adult's side of Servo: the account and child profiles, the progress view, the parts-list export and the name-the-part card game. It imports only `@servo/schema` and `@servo/app/store` (the package map), so it reaches content, and content's types, through the store. Nothing here asks the child to do anything. Phase 5 owns it: accounts 5.1, progress 5.2, export 5.3, card game 5.4. Task 0.4 owns this interface, typed in [src/index.ts](src/index.ts) with stubs that throw until their tasks land; task 5.1's has landed.
+The adult's side of Servo: the account and child profiles, the progress view, the parts-list export and the name-the-part card game. It imports only `@servo/schema` and `@servo/app/store` (the package map), so it reaches content, and content's types, through the store. Nothing here asks the child to do anything. Phase 5 owns it: accounts 5.1, progress 5.2, export 5.3, card game 5.4. Task 0.4 owns this interface, typed in [src/index.ts](src/index.ts) with stubs that throw until their tasks land; tasks 5.1 and 5.3 have landed. Its tests also read `@servo/content` (a dev dependency) for the kit fixtures; its source does not.
 
 ```ts
 import { openStore } from '@servo/app/store';
@@ -17,7 +17,7 @@ const progress = progressOf({ runs: await child.runs.list(), content: store.cont
 | `mountParent(host, store)` | 5.1 | The parent view behind the parental gate: the profile list and switch, then progress, exports and the card game per child. The caller opens and closes the store. `mountParentWith(host, store, { random })` fixes the gate's questions for tests |
 | `readAccounts`, `addChild`, `renameChild`, `switchChild`, `removeChild`, `nameOf`, `PARENT_TEXT` | 5.1 | The accounts model and the view's text (below) |
 | `progressOf(input)` → `Progress` | 5.2 | The progress read model, a pure function of the records below |
-| `partsListOf(blueprint, catalogue)` → `PartsList` | 5.3 | The printable parts list for one blueprint |
+| `partsListOf(blueprint, catalogue)` → `PartsList`, `UnknownPart`, `LIST_TEXT`, `EXPORT_TEXT` | 5.3 | The printable parts list for one blueprint, and its text (below) |
 | `drawCards(content, seed)` | 5.4 | Ten Level 1–2 part types for one round of the card game |
 
 The parent view runs as its own page of the web build, beside the child's app, because the app may not import parent. A parental gate on the way in keeps it out of a child's way (D28).
@@ -69,6 +69,73 @@ Each figure must reconcile to the run records (task 5.2's acceptance). Session s
 ## The parts-list export (task 5.3)
 
 One line per part type, once, with its real name, family and quantity, then a wiring summary in plain words, and the `safetyNote` of any part that has one. The app's chassis mirrors its right-hand motor mount, so two motors wired alike drive forward (D23). A real kit does not, so the wiring summary must say which motor's leads to cross (D27).
+
+In [src/export/](src/export/). Every name, family, port label and note comes from the part records (ground rule 1): nothing in the export knows a part by its id.
+
+- **The model** ([parts-list.ts](src/export/parts-list.ts)), pure: `partsListOf(blueprint, catalogue)`.
+  - **Parts.** Each part type once, in `PART_FAMILIES` order and then by name, with how many the build uses.
+  - **Wiring.** One line per wire, as a real kit makes it, in build order: mounts, mechanical linkages, power lines, then signal lines, each group sorted by its text. These are the page's only steps. A line names each end by the part's real name and the port's label, with the line's colour, for example `Power line (red): 2-cell battery pack, plus (+) to switch, side A`. When a build has more than one part of a type, each is told apart by the mount point it is fixed to (`DC motor (left motor mount)`), or else by a number in id order (`large wheel 1`). Placed-part ids never appear.
+  - **Real-kit notes** (`realKit`). Explanations, never steps: which marked lines already cross which leads ("Do not swap them again"), why, what is left unconnected, an adult note, and what to do if the real robot drives backward.
+  - **Safety notes.** Each part's `card.safetyNote`, once each.
+  - **Unknown parts.** A blueprint that names a part type or port the catalogue does not have is refused with `UnknownPart` rather than listed short.
+  - **Text.** Every line template is in `LIST_TEXT`; the view's own text is in `EXPORT_TEXT`.
+- **Crossed leads (D27).** The connection lines cross a pair of leads where the real kit needs it to turn as the app does, and mark each such line `(crossed for a real kit)`:
+  - a speed actuator that turns the other way when its supply is reversed (`whenReversed: 'reverses'`, a DC motor), when the app shows it as a mirror image (D23, composed through its hosts by `placeParts`) or a choice setting bound to its `reverse` has it turn backwards, but not both, since the two cancel;
+  - a motor-driver channel with no signal wired, whose choice setting bound to `command` runs it backwards: its output leads are crossed. A channel set to stop has no lines to its outputs, and a note says so.
+
+  A part on a mirrored mount whose turning does not hang on its leads, such as Circuit Crew's switch on the right inner motor mount, is wired as the app shows.
+- **The view** ([view.tsx](src/export/view.tsx)). Behind the gate, each build of the child in use has a Parts list button, which loads that build through the child's own scope and opens its list in place, never in a dialog. Focus moves to the list's heading, and Close or Escape returns it to the button. The list has these parts, in order:
+  - a table of parts (name, family, quantity);
+  - the connections as a numbered list;
+  - the real-kit notes as their own unnumbered list under "For a real kit";
+  - the safety notes.
+
+  A screen reader reads it in that order. Print calls the browser's print. While a list is open, a print stylesheet removes everything else and the list's buttons from the printed page, so no blank pages print. With no list open, the page prints as it is. Switching child closes the list. A build that cannot be loaded is one plain line.
+
+### Tests
+
+- **Unit** ([test/export/](test/export/)), on the live content and its fixtures:
+  - every part type is listed once, with the name and family from its record and the build's quantity, in family order;
+  - one connection line per wire, with only the DC motor on the right motor mount crossed;
+  - real-kit notes that never ask for a lead to be crossed or swapped;
+  - safety notes, once each;
+  - no placed-part id, exclamation mark or banned phrase;
+  - the same list whatever order the parts and wires come in;
+  - unknown parts and ports refused.
+
+  [kit-model.ts](test/export/kit-model.ts) holds two models. One reads the blueprint as the app runs it. The other walks the printed connection lines in order on a real kit, with mirrored mounts undone and no settings. The walk tests check these cases:
+  - both kits drive both motors forward;
+  - a DC motor set to Backward, crossed and turning as in the app;
+  - the reversed-motor build set to Backward, forward with nothing crossed;
+  - Backward on a mirrored mount, cancelling;
+  - busy-workbench's motor driver on Backward;
+  - a channel on Stop.
+
+  In every case the real kit's motors turn as the app's do. One more test swaps the marked leads a second time and shows the walk catches the spin.
+- **Browser** ([test/browser/export.test.tsx](test/browser/export.test.tsx)):
+  - offered only behind the gate, and only for the child in use;
+  - opened and closed by pointer, by touch (CDP touch events) and by keyboard (Enter, Space, Tab, Escape), with focus to the heading and back to the button;
+  - the real-kit notes outside the numbered list;
+  - Print calls the browser's print;
+  - with print media emulated, only the list shows, without its buttons, and the rest takes no room;
+  - the whole page prints again once the list is closed;
+  - closed on a child switch;
+  - a build that cannot be loaded gives one line.
+
+### Decisions and open questions (task 5.3)
+
+1. **The crossing on paper (R-5.3 Q1, default (b)).** The connection lines are the real kit's, with the crossed lines marked. The notes say the marked lines already swap the leads and must not be swapped again. They sit in their own unnumbered list after the connections.
+2. **Settings that a real part does not have** are matched by crossing leads. A DC motor's Direction set to Backward crosses that motor; with a mirrored mount the two cancel. A motor-driver channel set to Backward crosses its outputs (R-5.3 Q3, default yes). A channel set to Stop has nothing connected to its outputs, with a note. When a signal is wired to a channel, its setting is ignored, as in the app.
+3. **A servo motor on a mirrored mount is not mentioned** (R-5.3 Q2, default). Crossing its leads is no fix.
+4. **Real motors' polarity is unconfirmed** (R-5.3 Q4, default). The last note reads: "If the real robot drives backward where the app's drives forward, swap the two leads of every DC motor." Confirm the convention once the real kit is chosen.
+5. **Parts of one type** are told apart by mount point, or else by number in id order.
+6. **The list shows the build's name**, which is child text. It reaches the screen and paper only, never a URL or a log (D21).
+7. **Interface and changes outside src/export/:**
+   - `PartsList` gains `realKit`, and `wiring` now holds connection lines only;
+   - `src/index.ts` binds `partsListOf` and exports `UnknownPart`, `LIST_TEXT` and `EXPORT_TEXT`;
+   - `src/accounts/view.tsx` lists builds through `PartsListExport`;
+   - `test/contract.test.ts` no longer expects the 5.3 stub to throw;
+   - `package.json` and `pnpm-lock.yaml` add `@servo/content` as a dev dependency, for the tests' fixtures only.
 
 ## The card game (task 5.4)
 

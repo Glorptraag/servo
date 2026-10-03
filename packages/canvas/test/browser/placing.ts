@@ -34,7 +34,10 @@ export const mountWorkbench = async (
   const mounted = await mount(options, size);
   mounted.host.style.left = `${TRAY_WIDTH}px`;
   const tray = document.createElement('div');
-  tray.style.cssText = `position: fixed; left: 0; top: 0; width: ${TRAY_WIDTH}px; height: 820px; touch-action: none; background: #ddd;`;
+  // Not selectable, as in the app's shell (packages/app/src/shell/shell.css). A mouse drag from a selectable tray
+  // selects the page's text, the list view's among it (task 3.6); the next press inside that selection drags it
+  // instead, and the browser cancels the pointer the canvas was carrying.
+  tray.style.cssText = `position: fixed; left: 0; top: 0; width: ${TRAY_WIDTH}px; height: 820px; touch-action: none; user-select: none; background: #ddd;`;
   document.body.appendChild(tray);
   let item: PartTypeId | PropTemplate = '';
   let how: 'drag' | 'tap' = 'drag';

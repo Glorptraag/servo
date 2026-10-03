@@ -212,7 +212,10 @@ describe('layer order, by pixel probes', () => {
     const arena = stage?.children[0];
     expect(arena?.label).toBe('arena');
     expect(stage?.children.indexOf(world as never)).toBe(1);
-    expect(arena?.children.map((child) => child.label)).toEqual(['arena floor', 'arena features', 'arena props', 'grid']);
+    // Run mode's floor marks (task 3.5: scrapes and tilt shadows) are on the floor itself, so they sit with the
+    // arena floor in brief Section 9's bottom layer: over its features, under the props that stand on it, and under
+    // the grid and the build.
+    expect(arena?.children.map((child) => child.label)).toEqual(['arena floor', 'arena features', 'run marks', 'arena props', 'grid']);
   });
 });
 

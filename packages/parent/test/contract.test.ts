@@ -21,7 +21,8 @@ describe('the contracts the parent view builds against', () => {
     // Task 4.9 has landed: openStore opens the store on IndexedDB, and packages/app tests it there.
     expect(openStore).toBeTypeOf('function');
     expect(() => progressOf({ runs: [], content: {} as ServoStore['content'], cardGames: [] })).toThrow(/task 5\.2/);
-    expect(() => partsListOf({} as Parameters<typeof partsListOf>[0], {} as Parameters<typeof partsListOf>[1])).toThrow(/task 5\.3/);
+    // Task 5.3 has landed: partsListOf reads a blueprint against the catalogue, and test/export/ tests it on the kits.
+    expect(partsListOf).toBeTypeOf('function');
     expect(() => drawCards({} as ServoStore['content'], 1)).toThrow(/task 5\.4/);
     // Task 5.1 has landed: mountParent draws the parent view, and test/browser/ tests it in Chromium.
     expect(mountParent).toBeTypeOf('function');

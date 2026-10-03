@@ -53,6 +53,8 @@ const nodeLocal = (point: Vec2): Vec2 => ({ x: point.x, y: -point.y });
 
 export class PartView {
   readonly node = new Container();
+  /** Run mode's drawing on the part (task 3.5, src/run-animation/): above its body, in the same layer. */
+  readonly run = new Container();
   part: ScenePart;
   private readonly body = new Container();
   private readonly tile = new Graphics();
@@ -71,22 +73,25 @@ export class PartView {
     this.body.label = 'body';
     this.frameSockets.label = 'frame sockets';
     this.sockets.label = 'sockets';
+    this.run.label = 'run';
     this.body.addChild(this.tile);
     // Every child of the node renders through a layer; a frame's mount points draw just above its body.
-    this.node.addChild(this.body, this.sockets);
+    this.node.addChild(this.body, this.run, this.sockets);
     if (part.frame) this.node.addChild(this.frameSockets);
     parent.addChild(this.node);
     this.setPose(part.pose);
   }
 
   /**
-   * Puts the body in the chassis layer (a frame) or the parts layer, a frame's mount points just above its body,
-   * and the sockets in the ports layer. Each call moves them to the top of their layers, so attaching views in
+   * Puts the body in the chassis layer (a frame) or the parts layer, with Run mode's drawing and a frame's mount
+   * points just above it, and the sockets in the ports layer. Each call moves them to the top of their layers, so attaching views in
    * the scene's order gives the scene's draw order.
    */
   attach(layers: WorldLayers): void {
-    for (const object of [this.body, this.frameSockets, this.sockets]) object.parentRenderLayer?.detach(object);
-    (this.part.frame ? layers.chassis : layers.parts).attach(this.body);
+    for (const object of [this.body, this.run, this.frameSockets, this.sockets]) object.parentRenderLayer?.detach(object);
+    const layer = this.part.frame ? layers.chassis : layers.parts;
+    layer.attach(this.body);
+    layer.attach(this.run);
     if (this.part.frame) layers.chassis.attach(this.frameSockets);
     layers.ports.attach(this.sockets);
   }
