@@ -2,14 +2,21 @@
 // content plus the schema's example microcontroller, as the content has no brain yet (test/program-view/fixtures.ts).
 // Off by default: the servo motor's angle stays locked, a microcontroller's card shows no program, and in a Run the
 // servo motor gets no signal. On, from the device's localStorage: only the angle unlocks (rule 10), by keyboard,
-// pointer and touch on the card's native slider, which a screen reader works too; the program view follows it; and
+// pointer and touch on the card's native slider and from the canvas's list view, which give the same build; the
+// program view follows it; and
 // Run on the real Run bar sweeps the servo motor to the angle set.
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cdp, userEvent } from 'vitest/browser';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
+import { mountCanvas } from '@servo/canvas';
+import { serializeBlueprint } from '@servo/schema';
 import { App } from '../../src/App.tsx';
 import { FLAGS_KEY } from '../../src/flags/index.ts';
+import { slotSetting } from '../../src/program-view/index.ts';
+import { Shell, useShell } from '../../src/shell/index.ts';
+import type { ShellApi } from '../../src/shell/index.ts';
+import { SpecCard } from '../../src/spec-card/index.ts';
 import { benchContent, servoOnBrain } from '../program-view/fixtures.ts';
 
 /** The bench, with a DC motor and an LED left loose: their Level 3 settings must stay locked with the slot on. */
@@ -146,7 +153,10 @@ describe('the Level 3 slot', () => {
     // Rule 10: the DC motor's speed and the LED's colour stay locked at Level 1, on the card and in the list view.
     await select(host, 'motor');
     expect(settingIds(host)).not.toContain('speed');
-    expect(await listAction(host, 'motor', 'setting:motor:speed:up')).toBeNull();
+    expect(await listAction(host, 'motor', 'select:part:motor')).not.toBeNull();
+    expect(host.querySelector('[data-action^="setting:motor:speed:"]')).toBeNull();
+    expect(await listAction(host, 'lamp', 'select:part:lamp')).not.toBeNull();
+    expect(host.querySelector('[data-action^="setting:lamp:colour:"]')).toBeNull();
     await select(host, 'lamp');
     expect(settingIds(host)).not.toContain('colour');
 
@@ -164,13 +174,68 @@ describe('the Level 3 slot', () => {
     await dragSlider(host, 3 / 12, 10 / 12, 'mouse');
     await vi.waitFor(() => expect(shownAngle(host)).toBe('150°'));
 
-    await dragSlider(host, 10 / 12, 5 / 12, 'touch');
+    await dragSlider(host, 10 / 12, 4 / 12, 'touch');
+    await vi.waitFor(() => expect(shownAngle(host)).toBe('60°'));
+
+    // The list view, delivered with the slider (rule 8).
+    const up = await listAction(host, 'servo', 'setting:servo:angle:up');
+    expect(up?.textContent).toBe('Set servo motor angle to 75°');
+    up?.click();
     await vi.waitFor(() => expect(shownAngle(host)).toBe('75°'));
 
     await select(host, 'brain');
     expect(rule(host)?.textContent).toBe('Always set out 1 to the servo motor’s angle, 75°.');
     expect(Number(rule(host)?.dataset.level)).toBeCloseTo(75 / 180, 12);
     expect(document.querySelector('dialog, [role="dialog"], [role="alertdialog"]')).toBeNull();
+  });
+
+  it('on: the list view and the card’s slider give the same build (rule 8)', async () => {
+    // The app's composition (App.tsx) on the real canvas, with the shell's build in reach: the slot's setting given
+    // to the card and to the canvas's list view.
+    const build = async (by: 'slider' | 'list'): Promise<string> => {
+      const host = document.createElement('div');
+      host.style.cssText = 'position: fixed; left: 0; top: 0; width: 1180px; height: 820px;';
+      document.body.appendChild(host);
+      const root = createRoot(host);
+      mounted = { root, host };
+      let shell: ShellApi | null = null;
+      const Probe = () => {
+        shell = useShell();
+        return null;
+      };
+      root.render(
+        <Shell
+          content={content}
+          level={1}
+          storage={null}
+          start={bench}
+          slots={{ specCard: <SpecCard speech={null} unlocked={slotSetting} />, sound: <Probe /> }}
+          mountCanvas={(where, setup) =>
+            mountCanvas(where, { catalogue: content.catalogue, resolveArt: () => undefined, level: setup.level, prefs: setup.prefs, unlockSettings: slotSetting })
+          }
+        />,
+      );
+      await vi.waitFor(() => expect((shell as ShellApi | null)?.canvas).toBeTruthy());
+      const start = (shell as ShellApi | null)?.blueprint;
+      if (by === 'list') {
+        const down = await listAction(host, 'servo', 'setting:servo:angle:down');
+        expect(down?.textContent).toBe('Set servo motor angle to 75°');
+        down?.click();
+      } else {
+        await select(host, 'servo');
+        slider(host).focus();
+        await userEvent.keyboard('{ArrowLeft}');
+      }
+      await vi.waitFor(() => expect((shell as ShellApi | null)?.blueprint).not.toBe(start));
+      const after = (shell as ShellApi | null)?.blueprint;
+      if (!after) throw new Error('no build');
+      expect(after.parts.find((part) => part.id === 'servo')?.settings).toEqual({ angle: 75 });
+      root.unmount();
+      host.remove();
+      mounted = undefined;
+      return serializeBlueprint(after);
+    };
+    expect(await build('list')).toBe(await build('slider'));
   });
 
   it('on: Run on the real Run bar sweeps the servo motor to the angle set, and Stop brings it back', async () => {

@@ -220,6 +220,18 @@ describe('the canvas’s actions, from the list', () => {
     expect(settingIds()).toEqual(['setting:motor-left:direction:backward', 'setting:motor-left:speed:up', 'setting:motor-left:speed:down']);
   });
 
+  it('offers a setting named by unlockSettings before its level, and no other (task 6.6)', () => {
+    const bench = benchOf(fixture('rolling-start'), { level: 2, unlockSettings: (record, setting) => record.id === 'dc-motor' && setting.id === 'speed' });
+    const settingIds = (partId: string): string[] =>
+      bench.model.actionsFor({ kind: 'part', partId }).filter((action) => action.id.startsWith('setting:')).map((action) => action.id);
+    expect(settingIds('motor-left')).toEqual(['setting:motor-left:direction:backward', 'setting:motor-left:speed:down']);
+    bench.act({ kind: 'part', partId: 'motor-left' }, 'setting:motor-left:speed:down');
+    expect(bench.blueprint?.parts.find((part) => part.id === 'motor-left')?.settings).toEqual({ speed: 90 });
+    expect(benchOf(fixture('rolling-start'), { level: 2 }).model.actionsFor({ kind: 'part', partId: 'motor-left' }).map((action) => action.id)).not.toContain(
+      'setting:motor-left:speed:down',
+    );
+  });
+
   it('places a large wheel on a free motor shaft, or moves a loose one there, as a wire to the shaft does', () => {
     const bench = benchOf(fixture('rolling-start'));
     bench.act({ kind: 'part', partId: 'wheel-left' }, 'remove:wheel-left');

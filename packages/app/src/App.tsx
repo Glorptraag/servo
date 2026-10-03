@@ -73,7 +73,7 @@ export const App = ({ content, child = null, start, saving, onReady, flags: give
   // The swap registry: a key with no picture gives undefined, and the canvas draws a neutral tile.
   const resolveArt: ResolveArt = (key) => content.art.get(key);
   const drawCanvas = (host: HTMLElement, setup: CanvasSetup): CanvasHandle =>
-    mountCanvas(host, { catalogue: content.catalogue, resolveArt, level: setup.level, prefs: setup.prefs });
+    mountCanvas(host, { catalogue: content.catalogue, resolveArt, level: setup.level, prefs: setup.prefs, ...(slot ? { unlockSettings: slotSetting } : {}) });
   // The canvas fits and zooms in the part of it the panels leave uncovered (D70, task 3.7).
   return (
     <Shell
