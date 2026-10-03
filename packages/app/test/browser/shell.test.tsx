@@ -63,7 +63,10 @@ class StandInCanvas implements CanvasHandle {
   beginPlacement(): void {}
   beginPropPlacement(): void {}
   cancelPlacement(): void {}
-  setRemoveTargets(): void {}
+  removeTargets: (readonly HTMLElement[])[] = [];
+  setRemoveTargets(elements: readonly HTMLElement[]): void {
+    this.removeTargets.push(elements);
+  }
   select(selection: Selection | null): void {
     this.selection = selection;
     this.emit('select', { selection });
@@ -447,6 +450,19 @@ describe('the shell', () => {
     expect(seen).toHaveLength(calls);
   });
 
+  it('gives the canvas the tray and the arena strip as its remove targets, in one call, while each shows (R-4.2)', async () => {
+    const app = await mountShell();
+    expect(app.canvas.removeTargets).toEqual([[app.region('tray'), app.region('arenaStrip')]]);
+    // A tucked arena strip lies behind the header, so a drop there must not remove a part.
+    await tap(app.tab('arenaStrip'));
+    expect(app.canvas.removeTargets.at(-1)).toEqual([app.region('tray')]);
+    await tap(app.tab('tray'));
+    expect(app.canvas.removeTargets.at(-1)).toEqual([]);
+    await tap(app.tab('arenaStrip'));
+    await tap(app.tab('tray'));
+    expect(app.canvas.removeTargets.at(-1)).toEqual([app.region('tray'), app.region('arenaStrip')]);
+  });
+
   it('zooms along its ladder and re-centres with Fit', async () => {
     const app = await mountShell();
     const button = (name: string) => app.host.querySelector<HTMLButtonElement>(`.shell-zoom button[aria-label="${name}"]`);
@@ -513,7 +529,9 @@ describe('mountApp', () => {
       const app = await mountApp(host);
       expect(host.querySelector('.servo-shell')).not.toBeNull();
       expect(host.querySelector('[data-region="stage"] canvas')).not.toBeNull();
-      expect(host.querySelector('[data-region="tray"]')?.textContent).toBe('Part tray');
+      // The tray holds the Level 1 kit's tiles (task 4.2).
+      const tiles = [...host.querySelectorAll<HTMLElement>('[data-region="tray"] [data-part]')].map((tile) => tile.dataset.part);
+      expect(tiles).toEqual(['battery-pack-2-cell', 'switch', 'dc-motor', 'wheel-large', 'chassis', 'caster']);
       // Run is off with nothing placed, and stays focusable so its reason can be heard (task 4.4).
       expect(host.querySelector<HTMLButtonElement>('[data-region="runBar"] button')?.getAttribute('aria-disabled')).toBe('true');
       expect(host.querySelector<HTMLElement>('[data-region="specCard"]')?.dataset.shown).toBe('false');

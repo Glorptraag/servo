@@ -191,6 +191,14 @@ describe('airplane mode', () => {
     await commands.clickInSidePage('[data-region="runBar"] .run-bar-toggle');
     await vi.waitFor(async () => expect(await commands.evaluateInSidePage(runNow)).toMatchObject({ phase: 'build', label: 'Run' }), SOON);
 
+    // The parent page (D91), still offline: its own page from the worker's cache, at its parental gate (D28).
+    expect(precached).toContain('/parent.html');
+    await commands.evaluateInSidePage(`(setTimeout(() => location.assign('/parent.html')), true)`);
+    await vi.waitFor(
+      async () => expect(await commands.evaluateInSidePage(`location.pathname + ' ' + (document.querySelector('#parent h1')?.textContent ?? '')`)).toBe('/parent.html For adults'),
+      SOON,
+    );
+
     // Nothing the app loads failed. (The browser's own favicon.ico request is not the app's, and the build has none.)
     const failed = (await commands.failedSideRequests()).map((address) => new URL(address).pathname);
     expect(failed.filter((path) => path !== '/favicon.ico')).toEqual([]);

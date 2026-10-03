@@ -1,6 +1,6 @@
 # @servo/parent
 
-The adult's side of Servo: the account and child profiles, the progress view, the parts-list export and the name-the-part card game. It imports only `@servo/schema` and `@servo/app/store` (the package map), so it reaches content, and content's types, through the store. Nothing here asks the child to do anything. Phase 5 owns it: accounts 5.1, progress 5.2, export 5.3, card game 5.4. Task 0.4 owns this interface, typed in [src/index.ts](src/index.ts) with stubs that throw until their tasks land; tasks 5.1 and 5.3 have landed. Its tests also read `@servo/content` (a dev dependency) for the kit fixtures; its source does not.
+The adult's side of Servo: the account and child profiles, the progress view, the parts-list export and the name-the-part card game. It imports only `@servo/schema` and `@servo/app/store` (the package map), so it reaches content, and content's types, through the store. Nothing here asks the child to do anything. Phase 5 owns it: accounts 5.1, progress 5.2, export 5.3, card game 5.4. Task 0.4 owns this interface, typed in [src/index.ts](src/index.ts) with stubs that throw until their tasks land; tasks 5.1, 5.2 and 5.3 have landed. Its tests also read `@servo/content` (a dev dependency) for the kit fixtures; its source does not.
 
 ```ts
 import { openStore } from '@servo/app/store';
@@ -16,11 +16,11 @@ const progress = progressOf({ runs: await child.runs.list(), content: store.cont
 | --- | --- | --- |
 | `mountParent(host, store)` | 5.1 | The parent view behind the parental gate: the profile list and switch, then progress, exports and the card game per child. The caller opens and closes the store. `mountParentWith(host, store, { random })` fixes the gate's questions for tests |
 | `readAccounts`, `addChild`, `renameChild`, `switchChild`, `removeChild`, `nameOf`, `PARENT_TEXT` | 5.1 | The accounts model and the view's text (below) |
-| `progressOf(input)` → `Progress` | 5.2 | The progress read model, a pure function of the records below |
+| `progressOf(input)` → `Progress`, `readProgress(store, profile)`, `PROGRESS_TEXT` | 5.2 | The progress read model, a pure function of the records below; reading it for one child through the store; the view's text |
 | `partsListOf(blueprint, catalogue)` → `PartsList`, `UnknownPart`, `LIST_TEXT`, `EXPORT_TEXT` | 5.3 | The printable parts list for one blueprint, and its text (below) |
 | `drawCards(content, seed)` | 5.4 | Ten Level 1–2 part types for one round of the card game |
 
-The parent view runs as its own page of the web build, beside the child's app, because the app may not import parent. A parental gate on the way in keeps it out of a child's way (D28).
+The parent view runs as its own page of the web build, beside the child's app, because the app may not import parent. A parental gate on the way in keeps it out of a child's way (D28). Home's "For adults" link opens it (D91, below).
 
 ## Accounts and the profile switch (task 5.1)
 
@@ -54,19 +54,56 @@ Taken conservatively, for Drew and the orchestrator:
 5. The parent view lists the child-in-use's builds (name, level, date) as the base for the exports (task 5.3); progress (5.2) and the card game (5.4) add their sections beside it.
 6. Interface changes outside this package (listed for review): `Profiles.inUse()` and `Profiles.use(id)` in `@servo/app/store`; `profiles.remove` also clears the child's journal notes and in-use choice (packages/app/src/store/device.ts); the app opens the profile in use (packages/app/src/index.ts).
 
-## The progress read model (task 5.2)
+## Progress (task 5.2)
 
-Derived for one child whenever the view opens. Never stored, never shown to the child.
+In [src/progress/](src/progress/). One child's figures, derived from their run records and card-game rounds each time the view opens: never stored, never shown to the child, and nothing for the child to do (brief Section 7).
 
-| Field | Read from | Rule |
+- **The model** ([model.ts](src/progress/model.ts)), pure: `progressOf({ runs, content, cardGames })`. Every figure names the records it came from (run ids and `startedAt` times), so it can be checked against them.
+
+| Figure | Read from | Rule |
 | --- | --- | --- |
-| Parts met | Run records' `blueprint` | Each part type in the blueprint of any of the child's Runs, from the first such Run |
-| Unscripted builds passed | Run records with a `challenge` whose kind is `unscripted-build` (from `store.content`) and `goal.met` | The first passing Run per challenge, with its `runNumber`: the pass-rate measure counts a pass within 3 Runs |
-| Faults fixed | Run records' `faults` and `fixed` | Per fault: the Run that fixed it, how many Runs it took, and the time from the first Run that showed it (the fault-fixing measure) |
-| Time in the sandbox | Task 6.2's telemetry | Absent until that telemetry exists (D39) |
-| Parts named | The store's card-game results | The latest round per child (D40) |
+| Parts met | Each Run's `blueprint` | Each part type in the blueprint of any Run, once, from the first Run that had it, in the order met |
+| Unscripted builds passed | Runs with a `challenge` whose kind in `store.content` is `unscripted-build`, and `goal.met` | The first passing Run per challenge, with its `runNumber` (the pass-rate measure counts a pass within 3 Runs) |
+| Faults fixed | Each Run's `faults`, `ticks` and `blueprint`, in its series | Below. Per fault: the Run that fixed it, the Runs from the first showing to the fix (both counted) and the time between their `startedAt` |
+| Time in the sandbox | Task 6.2's telemetry | Absent until that telemetry exists (D39); the view says "Not measured yet." |
+| Parts named | The card-game rounds | The latest round (D40): the one played last, of two at one moment the later in the list |
 
-Each figure must reconcile to the run records (task 5.2's acceptance). Session start mode is a success measure Drew reads from telemetry, not a field of the parent view (D39).
+- **Runs left out.** A Run of 0 ticks counts in no figure. The app keeps none (task 4.4), but an older store may hold one, and it showed nothing.
+- **Series.** A Run belongs to its challenge's Runs, or to its build's Runs in the sandbox: the series the app numbers it in (`runNumber`) and links it to for `fixed`. A challenge's series spans the builds it was started from.
+- **Faults fixed** (D31, with the defaults of D75, D76 and D96). A fault is a failure mode on one placed part. In each series, oldest Run first:
+  1. A Run that shows the fault opens it, or keeps it open. Time-to-fix starts at the first Run that showed it. The latest Run that showed it gives the build a fix is compared with and the tick it showed at (`firstTick`).
+  2. A later Run that does not show it and whose `ticks` run past that tick settles it (D96). A Run that stopped at or before that tick settles nothing.
+  3. Settled, it counts as fixed only when that Run's build differs from the latest showing build on the faulted part (added, removed, another type, a setting changed) or on a wire on one of its ports (D75). A move is no change. A change to any other part, such as the battery pack that fed it, does not count (D76). Otherwise it went with no fix and is not counted.
+  4. Once settled, a later showing is a new fault.
+
+  `differsOn` reads a change exactly as sim-core's `fixed` does (packages/sim-core/src/recorder/changes.ts), and the tests check the two agree on every pair. The model reads `faults` rather than `fixed` because `fixed` looks back one Run only: it would count a Run that stopped before the fault's tick, and miss the fix after it. A `fixed` entry whose earlier Run is not among the child's records is not counted, since its tick cannot be checked.
+- **Reading it** ([load.ts](src/progress/load.ts)): `readProgress(store, profile)` reads the child's Runs and rounds through `store.forProfile(profile)` only, and gives nothing for a profile not on the device. Runs a sync left behind for a profile removed elsewhere (R-5.5) show under no one: the scope reads only that profile's rows, and a record whose own `profile` names another is left out too.
+- **The view** ([view.tsx](src/progress/view.tsx)). Behind the gate, after the builds, a "Progress: name" section for the child in use only, remounted when the switch changes child and read again whenever the gate opens the view (so after the page was hidden). Headings with the counts, then plain lists: each part met by its real name and the date; each unscripted pass by the challenge's title, its Run number and date; each fixed fault by the part's real name, its spec card's line for that fault, and "Fixed in n Runs and time". It has nothing to press, so touch, pointer, keyboard and screen reader meet the same headings and lists; the profile switch beside it is 5.1's. No id, score, praise or exclamation mark; every line is in `PROGRESS_TEXT`.
+
+### The parent page (D91)
+
+- **The page.** `packages/app/parent.html` is the web build's second page (`vite.config.ts` lists both as inputs). Its module script imports [src/page/main.ts](src/page/main.ts), which opens the store and mounts the parent view; where the device keeps no store it shows one line. A "Back to Servo" link returns to the app.
+- **The link.** Home's named spot (packages/app/src/challenges/home.tsx) holds a plain "For adults" link to `parent.html`, passed in by App.tsx. The app imports nothing of parent: the page is reached only by the link, and its gate asks first (D28), and again after the page is hidden (5.1).
+- **Offline.** The service worker opens a navigation to `parent.html` on its own cached page, and every other page on `index.html` as before; the cache's version hashes both pages' text.
+
+### Tests
+
+- **Unit** ([test/progress/](test/progress/)):
+  - [fixtures.test.ts](test/progress/fixtures.test.ts), the acceptance: every content fixture is run through sim-core as the app records it, alone, then followed by a Run with each faulted part taken out; every fixture is then run in turn as one child; and the schema's stored run record is read. [reconcile.ts](test/progress/reconcile.ts) holds every figure up against the records, without the model's code, and checks each fix sim-core's `fixed` states between two Runs in a row is counted.
+  - [model.test.ts](test/progress/model.test.ts): each rule on hand-written records (a fault fixed; gone with no change; a change to another part; a move; a short Run, then a long one; a fault shown again; a fault settled then shown again; series kept apart), 0-tick Runs, order, unscripted passes, the latest round, and a real pass of cross and stop judged by the app's goal judge.
+  - [load.test.ts](test/progress/load.test.ts): on fake-indexeddb, one child's figures and none of another's; no figures for a profile not on the device; a record naming another profile left out.
+- **Browser** ([test/browser/progress.test.tsx](test/browser/progress.test.tsx)): nothing before the gate; only the child in use, with no id and no exclamation mark; the switch followed by pointer, touch and keyboard; read again after the page is hidden and the gate answered.
+- **In packages/app**: Home's link ([challenges.test.tsx](../app/test/browser/challenges.test.tsx)); the worker's pages ([test/offline/pages.test.ts](../app/test/offline/pages.test.ts)); and the built app offline opening `parent.html` at its gate ([offline.test.ts](../app/test/browser/offline.test.ts)).
+
+### Decisions and open questions (task 5.2)
+
+1. **D96's tick.** A later Run settles a fault only when its `ticks` are past (`>`) the tick the fault showed at in the latest Run that showed it.
+2. **A fault that went with no change** to its part is not counted, and is settled; if it shows again, it is a new fault.
+3. **Time-to-fix** runs from the first showing Run's `startedAt` to the fixing Run's `startedAt`. Every figure's time is a Run's `startedAt`.
+4. **Time in the sandbox** stays absent (D39), though sandbox Runs' `startedAt` and `endedAt` could give a lower bound (R-4.5 suggests it). Should the view show that before task 6.2?
+5. **Breakdowns' named faults** (D48, `namedFaultsShown`) are not marked apart: a breakdown's fix is counted like any other fault.
+6. **The tester invite gate** (task 6.3) guards `index.html` only. `parent.html` cannot use it, since parent may import only `@servo/app/store`. Should the parent page ask for the invite code too?
+7. **Changes outside src/progress/:** `src/index.ts` binds `progressOf` and exports `readProgress` and `PROGRESS_TEXT`, with the `FaultFixed` comments brought up to the rule; `src/accounts/view.tsx` adds the section; `src/page/main.ts` is new; `test/contract.test.ts`; `package.json` and `pnpm-lock.yaml` add `@servo/sim-core` as a dev dependency, for the tests' Runs only. In packages/app: `parent.html`, `vite.config.ts`, App.tsx's Home link, `CHALLENGE_TEXT.forAdults` and `PARENT_PAGE`, one CSS rule, the service worker's page choice and the offline plugin's version hash.
 
 ## The parts-list export (task 5.3)
 

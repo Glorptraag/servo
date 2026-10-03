@@ -1,5 +1,6 @@
 // @servo/parent: the adult's side of Servo (tasks 5.1–5.4). Typed stubs until those tasks land; each throws.
-// Tasks 5.1 and 5.3 have landed: the account and child profiles, in accounts/, and the parts-list export, in export/.
+// Tasks 5.1, 5.2 and 5.3 have landed: the account and child profiles, in accounts/, progress, in progress/, and the
+// parts-list export, in export/.
 // Imports only @servo/schema and @servo/app/store (the package map). See README.md.
 
 import type { CardGameResult, Content, ServoStore } from '@servo/app/store';
@@ -19,6 +20,7 @@ import type {
 } from '@servo/schema';
 import { mountParentWith } from './accounts/index.ts';
 import { partsListFrom } from './export/index.ts';
+import { progressFrom } from './progress/index.ts';
 
 /** What the progress view reads for one child: nothing the child has to do (brief Section 7). */
 export interface ProgressInput {
@@ -31,11 +33,14 @@ export interface ProgressInput {
 
 /** One child's progress, derived whenever the view opens; never stored, never shown to the child. */
 export interface Progress {
-  /** Each part type in the blueprint of any Run, from the first such Run. */
+  /** Each part type in the blueprint of any Run, from the first such Run. Every figure skips a Run of 0 ticks. */
   readonly partsMet: readonly PartMet[];
-  /** The first passing Run of each unscripted build. */
+  /** The first passing Run of each unscripted build, in the order they were passed. */
   readonly unscriptedBuildsPassed: readonly UnscriptedPass[];
-  /** Each fault a later Run no longer showed, with what the run record says fixed it. */
+  /**
+   * Each fault a later Run of the same challenge, or of the same build in the sandbox, ran past without, with a change
+   * to the faulted part, its ports or its wires (D31, D75, D76, D96). In the order they were fixed.
+   */
   readonly faultsFixed: readonly FaultFixed[];
   /** Total time in the sandbox. Absent until task 6.2's telemetry exists (D39). */
   readonly timeInSandboxMs?: number;
@@ -63,19 +68,17 @@ export interface FaultFixed {
   readonly failure: FailureModeId;
   /** The first Run that showed it, where time-to-fix starts. */
   readonly firstSeen: Timestamp;
-  /** The Run whose record lists it in `fixed`. */
+  /** The first later Run that ran past the tick the fault showed at without it, with a change to the part. */
   readonly fixedBy: RunId;
   readonly fixedAt: Timestamp;
-  /** Runs from the first that showed it to the one that fixed it. */
+  /** Runs of its challenge or build from the first that showed it to the one that fixed it, both counted: at least 2. */
   readonly runs: number;
 }
 
 export type ProgressOf = (input: ProgressInput) => Progress;
 
 /** The progress read model (task 5.2): pure, and it reconciles to the run records. */
-export const progressOf: ProgressOf = () => {
-  throw new Error('progressOf is not implemented yet (task 5.2).');
-};
+export const progressOf: ProgressOf = progressFrom;
 
 /** A printable parts list for one blueprint (task 5.3). */
 export interface PartsList {
@@ -135,3 +138,5 @@ export {
 } from './accounts/index.ts';
 export type { Accounts, ParentOptions } from './accounts/index.ts';
 export { EXPORT_TEXT, LIST_TEXT, UnknownPart } from './export/index.ts';
+export { PROGRESS_TEXT, readProgress } from './progress/index.ts';
+export type { ProgressRead } from './progress/index.ts';

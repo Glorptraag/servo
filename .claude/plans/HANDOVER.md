@@ -211,3 +211,37 @@ Notes for later tasks:
 - 3.7 merged eac2c99 (PASS @93aa16f + integration cc30450). Mark 3.4 and 3.7 done once fix/selection-ci lands and CI is green.
 - 4.3 merged + done: local app all green (unit 219 + every browser file); CI 37105659554 red only on canvas frame-time flake (hardening branch fixes); re-confirm after chore/test-hardening lands.
 - 6.4 sweep: R-4.10 hush sound when tab hidden (finding 2).
+
+## Wrap-up 2026-10-03 (Drew asked to wrap up)
+
+**State.** 43 of 57 tasks done, 4 dispatched, 10 pending. Main is at the commit after b3b3364, and CI on main is green (run 37117184602), including the perf job. Gates:
+- G0 and G1 closed;
+- G2 PROVISIONAL (D64);
+- G3 PROVISIONAL (D95: Drew runs `pnpm gate:g3` per docs/gates/G3-howto.md on an iPad and a laptop).
+
+**Stopped mid-flight.** Each worktree keeps its work and each agent transcript is saved. Resume by sending a message to the agent id, or reset the task in pharao and re-dispatch.
+
+| Task | Branch | Worktree | State | Agent |
+| --- | --- | --- | --- | --- |
+| 4.2 tray/library | task/4.2 at 9d90871, pushed | agent-ac6bf9cdcf02455b5 | fix for R-4.2 FAIL (angled touch drags) done, CI 37115979192 green; re-review was stopped | reviewer a0f36fe7ecfa77d54 |
+| 4.6 hint ladder | task/4.6, uncommitted (5 files) | agent-a866792f8f37b43cd | building, was wiring RunBar/App | builder a866792f8f37b43cd |
+| 4.7 Level 1 challenges | task/4.7, uncommitted (13 files) | agent-a8fd54e455109c6ed | authoring content (D26: L1 unscripted = cross the arena) | builder a8fd54e455109c6ed |
+| 5.2 progress view | task/5.2, uncommitted (16 files) | agent-af2616875cf2a04ef | building, incl. D91 parent page in web build + Home link | builder af2616875cf2a04ef |
+
+**Next, in order.**
+1. Resume the 4.2 re-review. Merge 4.2 when it passes and CI is green.
+2. Resume the 4.6, 4.7 and 5.2 builders, then review and merge each.
+3. When 4.7 is done, 4.8 (Level 2 challenges) becomes ready. Carry these notes into its prompt:
+   - D26: stop at the wall is Level 2;
+   - D52: heavy-box gearbox push, 143–178 g;
+   - add a wheel-slip fixture (R-1.7);
+   - D61: no tipping.
+4. Later tasks: 5.4 needs 5.2; 5.7, 6.1 and G4 come after 4.x; then 6.2, 6.4 (sweep; minors are collected in this file), 6.5, G5 and G6, which are Drew's.
+
+**Process rules learned this session.**
+- Commit plan state before every merge; merge autostash dropped it once.
+- Merge checks run every browser file of each touched package, not only unit tests.
+- Mark a task done only after CI on main is green. CI is the authority when local load is high.
+- Builders push their branch and report a CI run id.
+
+**Open decisions.** D1–D106, each with a default the build uses. Drew's sign-offs are D64 (G2 cards) and D95 (G3 hands-on). The settings change is D103 (make perf a required check).

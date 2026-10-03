@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#ebe8e3" />
+    <title>Servo: for adults</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 16px 24px;
+        background: #ebe8e3;
+        color: #2b2926;
+        font-family: system-ui, sans-serif;
+      }
+
+      .parent-back {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        color: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- The parent page (D91): the parent view, behind its parental gate (D28), from packages/parent. -->
+    <nav><a class="parent-back" href="./">Back to Servo</a></nav>
+    <div id="parent"></div>
+    <script type="module">
+      import '../parent/src/page/main.ts';
+    </script>
+  </body>
+</html>

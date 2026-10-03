@@ -2,8 +2,8 @@
 // imports nothing: plugin.ts builds this file on its own and writes the build's file list in front of it as
 // `self.__SERVO_OFFLINE__`. On install it downloads every file of the build: the app shell, the content baked into
 // it, the art, and every lazily loaded chunk (Rapier's WebAssembly too, once the Run loop loads it), all or nothing.
-// After that the app opens and runs with no network: each file comes from the cache, and every page of the app opens
-// on the cached index.html. A new build waits until no page of the old one is open, so a child mid-build never has
+// After that the app opens and runs with no network: each file comes from the cache, the parent page (parent.html, D91)
+// opens on its own cached page, and every other page of the app opens on the cached index.html. A new build waits until no page of the old one is open, so a child mid-build never has
 // the code swapped under them. See README.md, "Offline and sync".
 
 interface Precache {
@@ -50,11 +50,18 @@ worker.addEventListener('activate', (event) => {
   );
 });
 
+/** The page a navigation opens: a page of the build by its own address (parent.html, D91), else index.html. */
+const pageFor = (request: Request): string | undefined => {
+  const path = new URL(request.url).pathname;
+  return path.endsWith('.html') && files.includes(path) ? path : INDEX;
+};
+
 const cached = async (request: Request): Promise<Response> => {
   const cache = await caches.open(CACHE);
   // Vary is ignored: each file is cached once, by its address, and a module script's request carries an Origin header
   // that the request that cached it did not.
-  const found = await cache.match(request.mode === 'navigate' && INDEX !== undefined ? INDEX : request, { ignoreVary: true });
+  const page = request.mode === 'navigate' ? pageFor(request) : undefined;
+  const found = await cache.match(page ?? request, { ignoreVary: true });
   return found ?? fetch(request);
 };
 

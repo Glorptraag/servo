@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { Blueprint, Challenge, Timestamp } from '@servo/schema';
 import type { ProgramRuntime } from '@servo/sim-core';
+import type { HintUses } from '../hints/log.ts';
 import { useShell } from '../shell/context.ts';
 import { UndoHistory } from './history.ts';
 import { isRunKey } from './keys.ts';
@@ -46,11 +47,13 @@ export interface RunBarProps {
   readonly challenge?: Challenge | null;
   /** The brains' program for each new Simulation (the Level 3 slot, task 6.6). Default none: the no-op brain (D41). */
   readonly program?: (blueprint: Blueprint) => ProgramRuntime | undefined;
+  /** The hint steps used since the last Run kept (task 4.6), which each Run's record keeps. Default none. */
+  readonly hints?: HintUses;
 }
 
 const BUILD: RunState = { phase: 'build', tick: 0, rate: NORMAL_RATE };
 
-export const RunBar = ({ clock, seed, now, onLoop, challenge = null, program }: RunBarProps) => {
+export const RunBar = ({ clock, seed, now, onLoop, challenge = null, program, hints }: RunBarProps) => {
   const { canvas, content, child, blueprint, mode, setMode, load } = useShell();
   const reasonId = useId();
   const barRef = useRef<HTMLDivElement>(null);
@@ -59,8 +62,8 @@ export const RunBar = ({ clock, seed, now, onLoop, challenge = null, program }: 
   const [history] = useState(() => new UndoHistory());
   const [undoSteps, setUndoSteps] = useState(0);
   const recorderRef = useRef<RunRecorder | null>(null);
-  const latest = useRef({ setMode, child, clock, seed, now, onLoop, challenge, program, rate: run.rate });
-  latest.current = { setMode, child, clock, seed, now, onLoop, challenge, program, rate: run.rate };
+  const latest = useRef({ setMode, child, clock, seed, now, onLoop, challenge, program, hints, rate: run.rate });
+  latest.current = { setMode, child, clock, seed, now, onLoop, challenge, program, hints, rate: run.rate };
 
   // One loop per canvas. Frames at normal speed redraw nothing here, so the bar re-renders only for what it shows.
   useEffect(() => {
@@ -71,6 +74,10 @@ export const RunBar = ({ clock, seed, now, onLoop, challenge = null, program }: 
       child: () => latest.current.child,
       challenge: () => latest.current.challenge,
       catalogue: content.catalogue,
+      hints: {
+        pending: (build) => latest.current.hints?.pending(build) ?? [],
+        recorded: (count) => latest.current.hints?.recorded(count),
+      },
       ...(given.now ? { now: given.now } : {}),
     });
     recorderRef.current = recorder;

@@ -7,11 +7,12 @@
 // Run ends, or that cannot keep Runs, is a console warning, never a dialog, and never delays or stops a Run.
 // A Run made under a challenge (task 4.5) is numbered among the child's Runs of that challenge and linked to the last of
 // them, as the schema says, and keeps the challenge's id and the goal judge's verdict (`goal`), judged from its own
-// record by the same judge as the goal line and `pnpm golden`. A sandbox Run keeps neither. The hint steps used
-// (task 4.6) join the record when that task lands.
-import type { Blueprint, BlueprintId, Catalogue, Challenge, RunId, RunRecord, Timestamp } from '@servo/schema';
+// record by the same judge as the goal line and `pnpm golden`. A sandbox Run keeps neither. The hint steps used since
+// the last Run kept (task 4.6) join the record as its `hints`, taken as Run is pressed and let go once it is recorded.
+import type { Blueprint, BlueprintId, Catalogue, Challenge, HintUse, RunId, RunRecord, Timestamp } from '@servo/schema';
 import type { Simulation } from '@servo/sim-core';
 import { judgeRun } from '../challenges/goal.ts';
+import type { HintUses } from '../hints/log.ts';
 import type { ProfileStore } from '../store/index.ts';
 import { uuidV4 } from '../store/uuid.ts';
 
@@ -25,6 +26,8 @@ export interface RunRecorderOptions {
   readonly challenge?: () => Challenge | null;
   /** The part records and arena presets a challenge Run is judged with. Needed with `challenge`. */
   readonly catalogue?: Catalogue;
+  /** The hint steps used since the last Run kept (task 4.6). Default none. */
+  readonly hints?: HintUses;
 }
 
 /** Whose Runs a Run counts among: the build's in the sandbox, or the challenge's. */
@@ -35,6 +38,7 @@ interface Pressed {
   readonly series: Series;
   readonly key: string;
   readonly startedAt: Timestamp;
+  readonly hints: readonly HintUse[];
 }
 
 /** What the recorder knows of one child's Runs of one build or challenge: how many there are, and the latest. */
@@ -98,7 +102,7 @@ export class RunRecorder {
     const child = this.options.child();
     if (!child) return;
     const series = this.seriesOf(blueprint);
-    this.pressed = { child, series, key: keyOf(child, series), startedAt: this.now() };
+    this.pressed = { child, series, key: keyOf(child, series), startedAt: this.now(), hints: this.options.hints?.pending(blueprint) ?? [] };
     this.read(child, series);
   }
 
@@ -120,7 +124,7 @@ export class RunRecorder {
         endedAt: this.now(),
         runNumber: known.count + 1,
         profile: pressed.child.profile,
-        hints: [],
+        hints: pressed.hints,
         ...(known.last ? { previous: known.last } : {}),
       };
       record = simulation.record(context);
@@ -134,6 +138,7 @@ export class RunRecorder {
       console.warn('This Run could not be recorded.', error);
       return;
     }
+    this.options.hints?.recorded(pressed.hints.length);
     known.count += 1;
     known.last = record;
     const { child, series, key } = pressed;
