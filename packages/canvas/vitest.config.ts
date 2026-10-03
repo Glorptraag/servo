@@ -101,8 +101,9 @@ export default defineConfig({
           sequence: { groupOrder: 0 },
         },
       },
-      // Generous: a software GPU on a busy machine (CI, other agents' browsers) can take a minute to mount a canvas.
-      browserProject('browser', ['test/browser/**/*.test.ts'], [FRAME_TIME, HANDS], ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'], 120_000, 0),
+      // Generous: a software GPU on a busy machine (CI, other agents' browsers) can take a minute to mount a canvas, and
+      // at load 45 and above a placement or art test has run past two minutes (every file here mounts one), so five.
+      browserProject('browser', ['test/browser/**/*.test.ts'], [FRAME_TIME, HANDS], ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'], 300_000, 0),
       {
         test: {
           name: 'hands',
