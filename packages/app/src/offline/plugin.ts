@@ -23,9 +23,9 @@ const textOf = (source: string | Uint8Array): string => (typeof source === 'stri
 
 /**
  * Builds the service worker with the app. Every file the build writes is listed, index.html first, except the worker
- * itself and source maps. The cache's version is a hash of the list and of index.html, whose name never changes:
- * every other file's name carries a hash of its content, so a change to any file changes the worker's bytes, which
- * is how the browser knows a new build is there.
+ * itself and source maps. The cache's version is a hash of the list and of its pages (index.html and parent.html),
+ * whose names never change: every other file's name carries a hash of its content, so a change to any file changes the
+ * worker's bytes, which is how the browser knows a new build is there.
  */
 export const offlinePlugin = (): Plugin => {
   let base = '/';
@@ -49,7 +49,12 @@ export const offlinePlugin = (): Plugin => {
         .filter((name) => name !== WORKER_FILE && name !== 'index.html' && !name.endsWith('.map'))
         .sort();
       const files = ['index.html', ...others].map((name) => `${base}${name}`);
-      const version = hashOf(`${files.join('\n')}\n${textOf(index.source)}`);
+      // Pages keep their names, so each page's own text is hashed too: index.html and parent.html (D91).
+      const pages = ['index.html', ...others.filter((name) => name.endsWith('.html'))].map((name) => {
+        const page = bundle[name];
+        return page?.type === 'asset' ? textOf(page.source) : '';
+      });
+      const version = hashOf(`${files.join('\n')}\n${pages.join('\n')}`);
       worker.code = `self.__SERVO_OFFLINE__ = ${JSON.stringify({ version, files })};\n${worker.code}`;
     },
   };

@@ -20,7 +20,12 @@ export const CHALLENGE_TEXT = {
   props: 'Props',
   /** The arena preset a challenge sets, which the picker keeps while the challenge is on the canvas. */
   setByChallenge: 'This challenge sets the arena.',
+  /** Home's link to the parent page, which asks its parental gate first (D28, D91). */
+  forAdults: 'For adults',
 } as const;
+
+/** The parent page of the web build (parent.html, D91), under the app's base. */
+export const PARENT_PAGE = 'parent.html';
 
 /** The brief's names for each kind of challenge (Section 5). */
 export const KIND_WORDS: Readonly<Record<ChallengeKind, string>> = {

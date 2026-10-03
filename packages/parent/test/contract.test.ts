@@ -20,7 +20,12 @@ describe('the contracts the parent view builds against', () => {
   it('has typed stubs that refuse until their tasks land', async () => {
     // Task 4.9 has landed: openStore opens the store on IndexedDB, and packages/app tests it there.
     expect(openStore).toBeTypeOf('function');
-    expect(() => progressOf({ runs: [], content: {} as ServoStore['content'], cardGames: [] })).toThrow(/task 5\.2/);
+    // Task 5.2 has landed: progressOf reads the records, and test/progress/ reconciles it to every fixture's.
+    expect(progressOf({ runs: [], content: { challenges: [] } as unknown as ServoStore['content'], cardGames: [] })).toEqual({
+      partsMet: [],
+      unscriptedBuildsPassed: [],
+      faultsFixed: [],
+    });
     // Task 5.3 has landed: partsListOf reads a blueprint against the catalogue, and test/export/ tests it on the kits.
     expect(partsListOf).toBeTypeOf('function');
     expect(() => drawCards({} as ServoStore['content'], 1)).toThrow(/task 5\.4/);

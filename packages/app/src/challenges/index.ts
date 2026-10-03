@@ -8,6 +8,6 @@ export { GoalLine } from './goal-line.tsx';
 export type { GoalLineProps } from './goal-line.tsx';
 export { BUILD_NAME, Home, challengesByLevel, nextBuildName, sandboxArena } from './home.tsx';
 export type { HomeProps } from './home.tsx';
-export { CHALLENGE_TEXT, KIND_WORDS } from './text.ts';
+export { CHALLENGE_TEXT, KIND_WORDS, PARENT_PAGE } from './text.ts';
 export { LIT_LEVEL, POWERED_VOLTS, RunWorld, TIPPED_DEGREES, TURNING_DEGREES, TURNING_RPM } from './world.ts';
 export type { FloorPose } from './world.ts';
