@@ -712,7 +712,7 @@
       "dispatched_at": "2026-10-03T05:36:05+00:00"
     },
     "4.3": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -728,8 +728,8 @@
       ],
       "done_when": "Every Level 1\u20132 part renders its card at Levels 1 and 2 without truncation at the 10-inch size; live readouts match the run record values; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-03T07:23:04+00:00",
+      "completed_by": "W-4.3",
       "dispatched_at": "2026-10-03T05:36:05+00:00"
     },
     "4.4": {
@@ -1998,6 +1998,22 @@
       "question": "Clock speed: starts at 30 tps on each visit, not persisted per child (R-4.4 Q3).",
       "recommendation": "Keep as built",
       "confidence": "high",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D99",
+      "question": "Spec card at Level 2 (R-4.3 Q1): in the 320x308 panel, 12 of 14 Level 2 cards scroll by 16-278 px. Taller panel (loosen the 30% rule), smaller type, or scrolling?",
+      "recommendation": "Keep scrolling for now (nothing clipped, all paths scroll); revisit with children at G4",
+      "confidence": "low",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D100",
+      "question": "Spec card details (R-4.3 Q2-Q6): speak-it reads setting name + chosen option; live readouts with labels and units at every level; coasting motor shows negative back-EMF (-0.6 V) as recorded; safety note from Level 2; ports at every level; one speak-it button per card. Accept defaults?",
+      "recommendation": "Accept as built, except clamp negative back-EMF readouts to 0 V at Levels 1-2 to avoid confusing 6-8 year olds (small follow-up)",
+      "confidence": "medium",
       "blocks": [],
       "resolved": false
     }
