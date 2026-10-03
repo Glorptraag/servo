@@ -1,22 +1,23 @@
 // The name-the-part card game (task 5.4, D40), in the parent view behind the parental gate (D28): the adult shows the
 // child the picture of each of ten Level 1–2 parts, asks what it is called, and marks it named or not named. The round
 // is kept for the child in use through their own scope (`cardGames.add`); the latest round is the one that counts.
-// The child is shown pictures only: no score, praise, streak or exclamation mark (ground rule 7). The adult gets a
-// plain summary at the end. Every control is a native button, so touch, pointer, keyboard and screen reader share one
+// The child is shown pictures only: no score, praise, streak or exclamation mark (ground rule 7). The round ends on a
+// neutral line with no count and no verdict per card, since the child is watching; the adult reads the result in the
+// progress view (task 5.2) alone. Every control is a native button, so touch, pointer, keyboard and screen reader share one
 // path (ground rule 8), and nothing is a dialog (ground rule 9). A round stopped, or left by a child switch or the
 // page being hidden, keeps nothing.
 import { useEffect, useId, useRef, useState } from 'react';
 import type { CSSProperties, RefObject } from 'react';
 import type { CardGameResult, CardMark, Content, ServoStore } from '@servo/app/store';
 import type { PartRecord, PartTypeId, ProfileId } from '@servo/schema';
-import { drawCardsFrom } from './deck.ts';
+import { deckParts, drawCardsFrom } from './deck.ts';
 import { CardPicture } from './picture.tsx';
 
 /** Every line of the card game's system text, for the copy pass. None has an exclamation mark or praise. */
 export const CARD_GAME_TEXT = {
   title: (name: string): string => `Card game: ${name}`,
   intro:
-    'About two minutes, led by you. Show the child each picture and ask what the part is called, then mark whether they named it. Ten cards, from the Level 1–2 parts. The child sees only the pictures, never a result.',
+    'About two minutes, led by you. Show the child each picture and ask what the part is called, then mark whether they named it. Ten cards, from the Level 1–2 parts. The child sees only the pictures, never a result: once the round is over, read it under Progress.',
   start: 'Start a round',
   card: (n: number, of: number): string => `Card ${n} of ${of}`,
   showName: 'Show the name',
@@ -26,20 +27,15 @@ export const CARD_GAME_TEXT = {
   stop: 'Stop the round',
   stopped: 'The round was stopped. Nothing was kept.',
   saving: 'Keeping the round',
-  summaryTitle: 'This round',
-  summary: (named: number, of: number): string => `${named} of ${of} parts named.`,
-  kept: 'Kept for this child. Progress shows the latest round.',
-  mark: (name: string, named: boolean): string => `${name}: ${named ? 'named' : 'not named'}`,
+  done: 'That is all the cards.',
   again: 'Play another round',
   saveFailed: 'The round could not be kept on this device.',
   saveAgain: 'Try keeping it again',
   noParts: 'This version of Servo has no Level 1–2 parts to show.',
-  unknownPart: 'A part this version of Servo does not have',
 } as const;
 
 const TARGET: CSSProperties = { minHeight: 44, minWidth: 44, fontSize: '1rem' };
 const ROW: CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginBlock: 8 };
-const LIST: CSSProperties = { marginBlock: 8, lineHeight: 1.5 };
 
 const capitalise = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 
@@ -47,7 +43,7 @@ const recordOf = (content: Content, part: PartTypeId): PartRecord | undefined =>
 
 const nameOf = (content: Content, part: PartTypeId): string => {
   const record = recordOf(content, part);
-  return record ? capitalise(record.identity.name) : CARD_GAME_TEXT.unknownPart;
+  return record ? capitalise(record.identity.name) : '';
 };
 
 /** A fresh seed for each round. */
@@ -58,7 +54,7 @@ type Round =
   | { readonly kind: 'playing'; readonly deck: readonly PartTypeId[]; readonly marks: readonly CardMark[]; readonly revealed: boolean }
   | { readonly kind: 'saving'; readonly marks: readonly CardMark[] }
   | { readonly kind: 'failed'; readonly marks: readonly CardMark[] }
-  | { readonly kind: 'done'; readonly result: CardGameResult };
+  | { readonly kind: 'done' };
 
 export interface CardGameSectionProps {
   readonly store: ServoStore;
@@ -79,7 +75,8 @@ export const CardGameSection = ({ store, profile, name, onKept, seed = randomSee
   const live = useRef(true);
   const startRef = useRef<HTMLButtonElement>(null);
   const cardRef = useRef<HTMLHeadingElement>(null);
-  const summaryRef = useRef<HTMLHeadingElement>(null);
+  const doneRef = useRef<HTMLParagraphElement>(null);
+  const retryRef = useRef<HTMLButtonElement>(null);
   const content = store.content;
 
   useEffect(() => {
@@ -89,12 +86,14 @@ export const CardGameSection = ({ store, profile, name, onKept, seed = randomSee
     };
   }, []);
 
-  // Focus follows the round: to each card's heading as it is shown, to the summary when kept, back to Start when stopped.
+  // Focus follows the round: to each card's heading as it is shown, to the closing line when kept, to Try keeping it
+  // again when the store refused it, back to Start when stopped.
   const cardIndex = round.kind === 'playing' ? round.marks.length : -1;
   const started = useRef(false);
   useEffect(() => {
     if (round.kind === 'playing') cardRef.current?.focus();
-    else if (round.kind === 'done') summaryRef.current?.focus();
+    else if (round.kind === 'done') doneRef.current?.focus();
+    else if (round.kind === 'failed') retryRef.current?.focus();
     else if (round.kind === 'idle' && started.current) startRef.current?.focus();
   }, [round.kind, cardIndex]);
 
@@ -106,7 +105,7 @@ export const CardGameSection = ({ store, profile, name, onKept, seed = randomSee
       .then(
         (result) => {
           if (!live.current) return;
-          setRound({ kind: 'done', result });
+          setRound({ kind: 'done' });
           onKept?.(result);
         },
         () => {
@@ -129,7 +128,7 @@ export const CardGameSection = ({ store, profile, name, onKept, seed = randomSee
     else setRound({ ...round, marks, revealed: false });
   };
 
-  const canPlay = drawCardsFrom(content, 0).length > 0;
+  const canPlay = deckParts(content).length > 0;
 
   return (
     <section aria-labelledby={`${ids}-title`} className="servo-card-game">
@@ -165,27 +164,17 @@ export const CardGameSection = ({ store, profile, name, onKept, seed = randomSee
 
       {round.kind === 'failed' && (
         <div style={ROW}>
-          <button type="button" onClick={() => keep(round.marks)} style={TARGET}>
+          <button ref={retryRef} type="button" onClick={() => keep(round.marks)} style={TARGET}>
             {CARD_GAME_TEXT.saveAgain}
-          </button>
-          <button type="button" onClick={start} style={TARGET}>
-            {CARD_GAME_TEXT.again}
           </button>
         </div>
       )}
 
       {round.kind === 'done' && (
         <>
-          <h3 id={`${ids}-summary`} ref={summaryRef} tabIndex={-1}>
-            {CARD_GAME_TEXT.summaryTitle}
-          </h3>
-          <p>{CARD_GAME_TEXT.summary(round.result.cards.filter((card) => card.named).length, round.result.cards.length)}</p>
-          <ul aria-labelledby={`${ids}-summary`} style={LIST}>
-            {round.result.cards.map((card) => (
-              <li key={card.part}>{CARD_GAME_TEXT.mark(nameOf(content, card.part), card.named)}</li>
-            ))}
-          </ul>
-          <p>{CARD_GAME_TEXT.kept}</p>
+          <p ref={doneRef} tabIndex={-1}>
+            {CARD_GAME_TEXT.done}
+          </p>
           <div style={ROW}>
             <button type="button" onClick={start} style={TARGET}>
               {CARD_GAME_TEXT.again}
