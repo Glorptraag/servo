@@ -3,11 +3,12 @@
 // failure happening now. Everything on it comes from the part record (ground rule 1). It sits in the shell's
 // `specCard` slot, which slides in while a part is selected; see README.md beside this file.
 import { useId, useRef, useSyncExternalStore } from 'react';
-import type { Level, PlacedPartId, PortType, SettingValue } from '@servo/schema';
+import type { PlacedPartId, PortType, SettingValue } from '@servo/schema';
 import type { RunFrame } from '@servo/sim-core';
 import { useShell } from '../shell/index.ts';
 import type { RunFrames } from './frames.ts';
 import { cardModel, failureNotes } from './model.ts';
+import type { UnlockedSetting } from './model.ts';
 import { PartPicture, RealWorldPicture } from './picture.tsx';
 import { readoutsOf } from './readouts.ts';
 import { SettingControl } from './settings.tsx';
@@ -20,8 +21,8 @@ export interface SpecCardProps {
   readonly frames?: RunFrames;
   /** Speak-it's voice. Default: the page's speechSynthesis; null (or a browser without one) hides the button. */
   readonly speech?: SpeechPort | null;
-  /** The level settings unlock at. Default the child's level; the Level 3 slot raises it (task 6.6). */
-  readonly unlockLevel?: Level;
+  /** Settings to show before their unlock level. Default none; the Level 3 slot names the servo motor's angle (task 6.6). */
+  readonly unlocked?: UnlockedSetting;
 }
 
 const NO_FRAMES = { subscribe: () => () => {}, frame: null };
@@ -55,7 +56,7 @@ const useShownPart = (): PlacedPartId | null => {
   return last.current;
 };
 
-export const SpecCard = ({ frames, speech = pageSpeech(), unlockLevel }: SpecCardProps) => {
+export const SpecCard = ({ frames, speech = pageSpeech(), unlocked }: SpecCardProps) => {
   const { content, level, canvas, mode, blueprint } = useShell();
   const partId = useShownPart();
   const frame = useFrame(frames);
@@ -66,7 +67,7 @@ export const SpecCard = ({ frames, speech = pageSpeech(), unlockLevel }: SpecCar
   const record = placed && content.catalogue.parts.get(placed.part);
   if (!placed || !record) return null;
 
-  const model = cardModel(record, placed, level, unlockLevel ?? level);
+  const model = cardModel(record, placed, level, unlocked);
   const { text } = model;
   const running = mode === 'run';
   const live = running ? frame?.live.get(placed.id) : undefined;

@@ -14,6 +14,7 @@ import type {
   PortId,
   PositionActuator,
   PrimitiveId,
+  Setting,
   Wire,
 } from '@servo/schema';
 import { settingValue } from '../spec-card/model.ts';
@@ -50,14 +51,23 @@ const reachedBy = (wire: Wire, partId: PlacedPartId, output: PortId): Wire['to']
 
 const clamp = (value: number, low: number, high: number): number => (value < low ? low : value > high ? high : value);
 
+const isTargetOf = (actuator: PositionActuator, setting: Setting): setting is NumberSetting =>
+  setting.kind === 'number' && setting.binds.primitive === actuator.id && setting.binds.param === 'target';
+
+/**
+ * The one setting the Level 3 slot unlocks (rule 10): a number setting bound to a position actuator's target, which
+ * is the servo motor's angle, the setting the slot's rule follows. The DC motor's speed and the LED's colour stay at
+ * their own unlock level.
+ */
+export const slotSetting = (record: PartRecord, setting: Setting): boolean =>
+  record.behaviour.some((primitive) => primitive.kind === 'actuator' && primitive.mode === 'position' && isTargetOf(primitive, setting));
+
 /** The rule for an output reaching `port` on `placed`, when that port commands a position actuator with a target setting. */
 const ruleFor = (output: PortId, placed: PlacedPart, record: PartRecord, port: PortId): AngleRule | undefined => {
   for (const primitive of record.behaviour) {
     if (primitive.kind !== 'actuator' || primitive.mode !== 'position' || primitive.command !== port) continue;
     const actuator: PositionActuator = primitive;
-    const setting = record.settings.find(
-      (each): each is NumberSetting => each.kind === 'number' && each.binds.primitive === actuator.id && each.binds.param === 'target',
-    );
+    const setting = record.settings.find((each): each is NumberSetting => isTargetOf(actuator, each));
     if (!setting) continue;
     const value = settingValue(setting, placed);
     if (typeof value !== 'number') continue;

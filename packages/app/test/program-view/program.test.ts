@@ -8,7 +8,8 @@ import { createSimulation } from '@servo/sim-core';
 import type { ProgramRuntime, RunFrame } from '@servo/sim-core';
 import { NO_FLAGS } from '../../src/flags/index.ts';
 import type { Flags } from '../../src/flags/index.ts';
-import { programFor, programRuntime, programsOf } from '../../src/program-view/index.ts';
+import { programFor, programRuntime, programsOf, slotSetting } from '../../src/program-view/index.ts';
+import { cardModel } from '../../src/spec-card/index.ts';
 import { benchContent, microcontroller, servoOnBrain } from './fixtures.ts';
 
 const ON: Flags = { 'level-3-slot': true };
@@ -36,6 +37,27 @@ const withAngle = (blueprint: Blueprint, angle: number): Blueprint => {
   if (!result.ok) throw new Error(result.refusal.message);
   return result.blueprint;
 };
+
+describe('what the slot unlocks (rule 10)', () => {
+  it('is the servo motor’s angle and no other setting in the content', () => {
+    const named = content.parts.flatMap((record) => record.settings.filter((setting) => slotSetting(record, setting)).map((setting) => `${record.id}.${setting.id}`));
+    expect(named).toEqual(['servo-motor.angle']);
+    const levelThree = content.parts.flatMap((record) => record.settings.filter((setting) => setting.unlockLevel === 3).map((setting) => `${record.id}.${setting.id}`));
+    expect(levelThree.sort()).toEqual(['dc-motor.speed', 'led.colour', 'servo-motor.angle']);
+  });
+
+  it('shows on the card at Level 1 only the angle, beside the settings the level already has', () => {
+    const shown = (id: string) => {
+      const record = content.catalogue.parts.get(id);
+      if (!record) throw new Error(`no part ${id}`);
+      const placed = { id: 'p1', part: id, position: { x: 0, y: 0 }, rotation: 0, settings: {} };
+      return { off: cardModel(record, placed, 1).settings.map((each) => each.setting.id), on: cardModel(record, placed, 1, slotSetting).settings.map((each) => each.setting.id) };
+    };
+    expect(shown('servo-motor')).toEqual({ off: [], on: ['angle'] });
+    expect(shown('dc-motor')).toEqual({ off: [], on: [] });
+    expect(shown('led')).toEqual({ off: [], on: [] });
+  });
+});
 
 describe('the program rules', () => {
   it('drives the output wired to the servo motor at the level of its angle', () => {

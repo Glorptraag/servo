@@ -1,6 +1,6 @@
 // The feature flags (task 6.6): per device, off by default, on only when the device's storage names them.
 import { describe, expect, it } from 'vitest';
-import { FLAGS_KEY, FLAG_NAMES, NO_FLAGS, deviceFlags, readFlags, settingsLevel } from '../../src/flags/index.ts';
+import { FLAGS_KEY, FLAG_NAMES, NO_FLAGS, deviceFlags, readFlags } from '../../src/flags/index.ts';
 
 const holding = (value: string | null) => ({ getItem: (key: string) => (key === FLAGS_KEY ? value : null) });
 
@@ -29,13 +29,5 @@ describe('feature flags', () => {
   it('turn on when the device lists them', () => {
     expect(readFlags(holding('["level-3-slot"]'))).toEqual({ 'level-3-slot': true });
     expect(readFlags(holding('["something-else","level-3-slot"]'))).toEqual({ 'level-3-slot': true });
-  });
-
-  it('raise only the level settings unlock at, to Level 3 with the slot on', () => {
-    expect(settingsLevel(1, NO_FLAGS)).toBe(1);
-    expect(settingsLevel(2, NO_FLAGS)).toBe(2);
-    expect(settingsLevel(1, { 'level-3-slot': true })).toBe(3);
-    expect(settingsLevel(2, { 'level-3-slot': true })).toBe(3);
-    expect(settingsLevel(4, { 'level-3-slot': true })).toBe(4);
   });
 });

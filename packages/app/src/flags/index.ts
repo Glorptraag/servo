@@ -2,15 +2,13 @@
 // lists it under FLAGS_KEY, a JSON list of names such as `["level-3-slot"]`; anything missing, unreadable or unknown
 // is off. The app reads them once as it mounts and never writes them: an adult turns one on from the browser's
 // developer tools (README, "Feature flags"). Pure apart from `deviceFlags`, which only reads.
-import type { Level } from '@servo/schema';
-
 /** Where the flags live on the device. */
 export const FLAGS_KEY = 'servo.flags';
 
 /**
- * - `level-3-slot`: the Level 3 slot. Settings that unlock at Level 3 (the servo motor's angle among them) can be
- *   changed below it, a microcontroller's spec card shows its program, and in a Run each microcontroller output
- *   wired to a servo motor's signal in drives it to that servo motor's angle setting.
+ * - `level-3-slot`: the Level 3 slot. The servo motor's angle, and no other Level 3 setting, can be changed below
+ *   Level 3, a microcontroller's spec card shows its program, and in a Run each microcontroller output wired to a
+ *   servo motor's signal in drives it to that servo motor's angle setting.
  */
 export const FLAG_NAMES = ['level-3-slot'] as const;
 
@@ -46,13 +44,3 @@ const pageStorage = (): Storage | null => {
 
 /** This device's flags. */
 export const deviceFlags = (): Flags => readFlags(pageStorage());
-
-/** The level the Level 3 slot opens settings at. */
-export const LEVEL_3_SLOT: Level = 3;
-
-/**
- * The level settings unlock at: the child's own, or Level 3 with the Level 3 slot on. Only settings follow it; the
- * card's text layers and the header keep the child's level.
- */
-export const settingsLevel = (level: Level, flags: Flags): Level =>
-  flags['level-3-slot'] && level < LEVEL_3_SLOT ? LEVEL_3_SLOT : level;

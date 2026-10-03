@@ -1,8 +1,9 @@
-// The Level 3 slot (task 6.6) in the real app: the real shell and canvas at the 10-inch size, with the real content
-// plus the schema's example microcontroller (test/program-view/fixtures.ts). Off by default: the servo motor's angle
-// stays locked on its card and in the list view, and a microcontroller's card shows no program. On, from the device's
-// localStorage: the angle is set by keyboard, pointer, touch and the list view (rule 8), and the microcontroller's
-// program view follows it. That the angle then sweeps the servo motor in a Run is test/program-view/program.test.ts.
+// The Level 3 slot (task 6.6) in the real app: the real shell, canvas and Run bar at the 10-inch size, with the real
+// content plus the schema's example microcontroller, as the content has no brain yet (test/program-view/fixtures.ts).
+// Off by default: the servo motor's angle stays locked, a microcontroller's card shows no program, and in a Run the
+// servo motor gets no signal. On, from the device's localStorage: only the angle unlocks (rule 10), by keyboard,
+// pointer and touch on the card's native slider, which a screen reader works too; the program view follows it; and
+// Run on the real Run bar sweeps the servo motor to the angle set.
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cdp, userEvent } from 'vitest/browser';
 import { createRoot } from 'react-dom/client';
@@ -10,6 +11,19 @@ import type { Root } from 'react-dom/client';
 import { App } from '../../src/App.tsx';
 import { FLAGS_KEY } from '../../src/flags/index.ts';
 import { benchContent, servoOnBrain } from '../program-view/fixtures.ts';
+
+/** The bench, with a DC motor and an LED left loose: their Level 3 settings must stay locked with the slot on. */
+const bench = (() => {
+  const build = servoOnBrain();
+  return {
+    ...build,
+    parts: [
+      ...build.parts,
+      { id: 'motor', part: 'dc-motor', position: { x: 140, y: 60 }, rotation: 0, settings: {} },
+      { id: 'lamp', part: 'led', position: { x: 140, y: -60 }, rotation: 0, settings: {} },
+    ],
+  };
+})();
 
 const content = benchContent();
 let mounted: { root: Root; host: HTMLElement } | undefined;
@@ -31,7 +45,7 @@ const mount = async (): Promise<HTMLElement> => {
   const root = createRoot(host);
   mounted = { root, host };
   let ready = false;
-  root.render(<App content={content} start={servoOnBrain()} onReady={() => (ready = true)} />);
+  root.render(<App content={content} start={bench} onReady={() => (ready = true)} />);
   await vi.waitFor(() => {
     if (!ready) throw new Error('the app has not mounted its canvas yet');
   });
@@ -89,8 +103,14 @@ const dragSlider = async (host: HTMLElement, from: number, to: number, by: 'mous
   await finger('touchEnd');
 };
 
+const settingIds = (host: HTMLElement): (string | undefined)[] =>
+  [...card(host).querySelectorAll<HTMLElement>('[data-setting]')].map((each) => each.dataset.setting);
+const liveAngle = (host: HTMLElement): number => Number(card(host).querySelector<HTMLElement>('[data-readout="angle"]')?.dataset.value);
+const runButton = (host: HTMLElement) => element<HTMLButtonElement>(host, '.run-bar [data-run]');
+const phase = (host: HTMLElement) => element<HTMLElement>(host, '.run-bar').dataset.phase;
+
 describe('the Level 3 slot', () => {
-  it('is off by default: the angle is locked on the card and in the list view, and a microcontroller shows no program', async () => {
+  it('is off by default: the angle is locked, a microcontroller shows no program, and a Run gives the servo motor no signal', async () => {
     expect(localStorage.getItem(FLAGS_KEY)).toBeNull();
     const host = await mount();
     await select(host, 'servo');
@@ -100,9 +120,20 @@ describe('the Level 3 slot', () => {
     await select(host, 'brain');
     expect(element<HTMLElement>(host, 'article.spec-card').dataset.part).toBe('microcontroller');
     expect(card(host).querySelector('.program-view')).toBeNull();
+
+    await select(host, 'servo');
+    runButton(host).click();
+    await vi.waitFor(() => expect(phase(host)).toBe('running'), { timeout: 20_000 });
+    await vi.waitFor(() => expect(card(host).querySelector('.spec-card-faults')?.textContent).toBe('No signal: the arm stays where it is and hums.'), {
+      timeout: 10_000,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(liveAngle(host)).toBe(90);
+    runButton(host).click();
+    await vi.waitFor(() => expect(phase(host)).toBe('build'));
   });
 
-  it('on: the angle is set by keyboard, pointer, touch and list view, and the program view follows it', async () => {
+  it('on: only the angle unlocks, by keyboard, pointer and touch, and the program view follows it', async () => {
     localStorage.setItem(FLAGS_KEY, JSON.stringify(['level-3-slot']));
     const host = await mount();
 
@@ -112,10 +143,19 @@ describe('the Level 3 slot', () => {
     expect(rule(host)?.textContent).toBe('Always set out 1 to the servo motor’s angle, 90°.');
     expect(rule(host)?.dataset.level).toBe('0.5');
 
-    // The servo motor's card at the child's level, with the angle open (the header still says Level 1's words).
+    // Rule 10: the DC motor's speed and the LED's colour stay locked at Level 1, on the card and in the list view.
+    await select(host, 'motor');
+    expect(settingIds(host)).not.toContain('speed');
+    expect(await listAction(host, 'motor', 'setting:motor:speed:up')).toBeNull();
+    await select(host, 'lamp');
+    expect(settingIds(host)).not.toContain('colour');
+
+    // The servo motor's card at the child's level, with the angle open.
     await select(host, 'servo');
     expect(element<HTMLElement>(host, 'article.spec-card').dataset.level).toBe('1');
+    expect(settingIds(host)).toEqual(['angle']);
     expect([slider(host).min, slider(host).max, slider(host).step, slider(host).value]).toEqual(['0', '180', '15', '90']);
+    expect(slider(host).getAttribute('aria-valuetext')).toBe('90°');
 
     slider(host).focus();
     await userEvent.keyboard('{ArrowLeft}{ArrowLeft}{ArrowLeft}');
@@ -124,17 +164,42 @@ describe('the Level 3 slot', () => {
     await dragSlider(host, 3 / 12, 10 / 12, 'mouse');
     await vi.waitFor(() => expect(shownAngle(host)).toBe('150°'));
 
-    await dragSlider(host, 10 / 12, 4 / 12, 'touch');
-    await vi.waitFor(() => expect(shownAngle(host)).toBe('60°'));
-
-    const up = await listAction(host, 'servo', 'setting:servo:angle:up');
-    expect(up?.textContent).toBe('Set servo motor angle to 75°');
-    up?.click();
+    await dragSlider(host, 10 / 12, 5 / 12, 'touch');
     await vi.waitFor(() => expect(shownAngle(host)).toBe('75°'));
 
     await select(host, 'brain');
     expect(rule(host)?.textContent).toBe('Always set out 1 to the servo motor’s angle, 75°.');
     expect(Number(rule(host)?.dataset.level)).toBeCloseTo(75 / 180, 12);
+    expect(document.querySelector('dialog, [role="dialog"], [role="alertdialog"]')).toBeNull();
+  });
+
+  it('on: Run on the real Run bar sweeps the servo motor to the angle set, and Stop brings it back', async () => {
+    localStorage.setItem(FLAGS_KEY, JSON.stringify(['level-3-slot']));
+    const host = await mount();
+    await select(host, 'servo');
+    slider(host).focus();
+    await userEvent.keyboard('{ArrowLeft}{ArrowLeft}{ArrowLeft}');
+    await vi.waitFor(() => expect(shownAngle(host)).toBe('45°'));
+
+    const seen: number[] = [];
+    runButton(host).click();
+    await vi.waitFor(
+      () => {
+        const angle = liveAngle(host);
+        if (Number.isFinite(angle) && seen.at(-1) !== angle) seen.push(angle);
+        expect(angle).toBeCloseTo(45, 6);
+      },
+      { timeout: 20_000, interval: 5 },
+    );
+    expect(phase(host)).toBe('running');
+    // A sweep from 90°, never going back, with no no-signal line.
+    expect(seen[0]).toBe(90);
+    expect(seen.every((angle, index) => index === 0 || angle <= (seen[index - 1] ?? 90))).toBe(true);
+    expect(card(host).querySelector('.spec-card-faults')?.textContent).toBe('');
+
+    runButton(host).click();
+    await vi.waitFor(() => expect(phase(host)).toBe('build'));
+    expect(shownAngle(host)).toBe('45°');
     expect(document.querySelector('dialog, [role="dialog"], [role="alertdialog"]')).toBeNull();
   });
 });

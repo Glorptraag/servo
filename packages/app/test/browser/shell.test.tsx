@@ -514,7 +514,8 @@ describe('mountApp', () => {
       expect(host.querySelector('.servo-shell')).not.toBeNull();
       expect(host.querySelector('[data-region="stage"] canvas')).not.toBeNull();
       expect(host.querySelector('[data-region="tray"]')?.textContent).toBe('Part tray');
-      expect(host.querySelector<HTMLButtonElement>('[data-region="runBar"] button')?.disabled).toBe(true);
+      // Run is off with nothing placed, and stays focusable so its reason can be heard (task 4.4).
+      expect(host.querySelector<HTMLButtonElement>('[data-region="runBar"] button')?.getAttribute('aria-disabled')).toBe('true');
       expect(host.querySelector<HTMLElement>('[data-region="specCard"]')?.dataset.shown).toBe('false');
       app.destroy();
       expect(host.childElementCount).toBe(0);
