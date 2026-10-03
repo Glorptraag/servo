@@ -19,6 +19,7 @@ import type { Autosaver, CanvasSetup, ShellSlots } from './shell/index.ts';
 import { SoundControl, SoundLayer, WebAudioSink } from './sound/index.ts';
 import { SpecCard, createRunFrames } from './spec-card/index.ts';
 import type { ProfileStore } from './store/index.ts';
+import { Tray, kitForLevel } from './tray/index.ts';
 
 /** A child starts at Level 1 (brief Section 2); the level comes from progress once task 5.2 records it. */
 export const START_LEVEL: Level = 1;
@@ -39,6 +40,8 @@ export interface AppProps {
 
 export const App = ({ content, child = null, start, saving, onReady, flags: givenFlags }: AppProps) => {
   const flags = useMemo(() => givenFlags ?? deviceFlags(), [givenFlags]);
+  // The sandbox tray holds the kit at the child's level; a challenge brings its own kit (D68, task 4.5).
+  const kit = useMemo(() => kitForLevel(content.kits, START_LEVEL), [content]);
   // The run loop (task 4.4) gives each Run frame to the spec card's live readouts, which clear whenever no Run plays:
   // on Stop, on a failed Run, and while the next one loads.
   // The goal line judges the same loop's frames (task 4.5).
@@ -74,6 +77,7 @@ export const App = ({ content, child = null, start, saving, onReady, flags: give
   const slots = useMemo<ShellSlots>(
     () => ({
       ...PLACEHOLDER_SLOTS,
+      tray: <Tray />,
       home: <Home challenge={challenge} onChallenge={setChallenge} sandboxLevel={START_LEVEL} loop={loop} saving={saving} />,
       goal: <GoalLine challenge={challenge} loop={loop} />,
       hints: <HintButton challenge={challenge} loop={loop} log={hints} />,
@@ -99,7 +103,7 @@ export const App = ({ content, child = null, start, saving, onReady, flags: give
     <Shell
       content={content}
       level={challenge?.level ?? START_LEVEL}
-      kit={challenge ? content.catalogue.kits?.get(challenge.kit) : undefined}
+      kit={challenge ? content.catalogue.kits?.get(challenge.kit) : kit}
       slots={slots}
       mountCanvas={drawCanvas}
       child={child}

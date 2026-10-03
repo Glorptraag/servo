@@ -1,0 +1,185 @@
+/*
+ * The part tray (task 4.2): the Library button, then the kit's tiles by family, down the left edge, or along the
+ * bottom in portrait. Never selectable: a mouse drag from a selectable tray selects text (the list view's included),
+ * and the browser's native drag of that selection, or of a tile's picture, cancels the pointer the canvas is carrying.
+ */
+/* The room round the tiles scrolls the tray, along it only. The page itself never pans or swipes back (shell.css). */
+.tray {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.servo-shell[data-orientation='portrait'] .tray {
+  flex-direction: row;
+  touch-action: pan-x;
+  align-items: stretch;
+  height: 100%;
+}
+
+.tray-library {
+  flex: none;
+  width: 100%;
+}
+
+.servo-shell[data-orientation='portrait'] .tray-library {
+  width: auto;
+  height: 100%;
+}
+
+.tray-group {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tray-family {
+  margin: 0;
+  color: var(--shell-muted);
+  font-size: 13px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.tray-tiles {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.servo-shell[data-orientation='portrait'] .tray-tiles {
+  flex-direction: row;
+}
+
+/*
+ * A big tile. It takes every press itself: a drag in any direction carries its part (tray.tsx), so the browser never
+ * claims a finger aimed at the canvas and cancels it (review R-4.2).
+ */
+.tray-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 80px;
+  min-height: 88px;
+  padding: 6px 4px;
+  border: 1px solid var(--shell-line);
+  border-radius: 12px;
+  background: var(--shell-panel);
+  color: var(--shell-ink);
+  font: inherit;
+  cursor: grab;
+  touch-action: none;
+}
+
+.servo-shell[data-orientation='portrait'] .tray-tile {
+  width: 104px;
+  min-height: 0;
+  height: 74px;
+}
+
+/* Waiting for a tap on the canvas. */
+.tray-tile[aria-pressed='true'] {
+  border: 3px solid var(--shell-focus);
+  padding: 4px 2px;
+}
+
+.tray-picture {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.servo-shell[data-orientation='portrait'] .tray-tile .tray-picture {
+  width: 34px;
+  height: 34px;
+}
+
+.tray-swatch {
+  display: block;
+  width: 40px;
+  height: 28px;
+  border: 4px solid;
+  border-radius: 6px;
+}
+
+.tray-name {
+  font-size: 14px;
+  line-height: 1.1;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.tray-count {
+  position: absolute;
+  top: 3px;
+  right: 6px;
+  color: var(--shell-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tray-said {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Where a part can go, for the keyboard and screen readers (D84). */
+.tray-places {
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  max-width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 16px;
+  border: 1px solid var(--shell-line);
+  border-radius: 16px;
+  background: var(--shell-panel);
+  color: var(--shell-ink);
+  box-shadow: var(--shell-shadow);
+}
+
+.tray-places::backdrop {
+  background: rgb(43 41 38 / 30%);
+}
+
+.tray-places h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+
+.tray-places ul {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.tray-place {
+  width: 100%;
+  font-weight: 400;
+  text-align: left;
+}

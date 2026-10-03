@@ -67,7 +67,7 @@ One rounded sans-serif where the device has one: Nunito, Varela Round, then the 
 
 ## Slots
 
-`<Shell slots={…}>` takes a React node per slot ([shell.tsx](../src/shell/shell.tsx), `ShellSlots`). An empty slot shows nothing. [App.tsx](../src/App.tsx) fills them with [placeholders](../src/shell/placeholders.tsx) of real words only: disabled Home and Run buttons, and the tray, spec card and arena strip showing their names. Save is task 4.9's ([save.tsx](../src/shell/save.tsx), [store.md](store.md), "In the app"). The shell also takes `child`, the child's records, and `start`, a build it loads onto the canvas once the canvas is mounted (task 4.9).
+`<Shell slots={…}>` takes a React node per slot ([shell.tsx](../src/shell/shell.tsx), `ShellSlots`). An empty slot shows nothing. [App.tsx](../src/App.tsx) fills them with [placeholders](../src/shell/placeholders.tsx) of real words only: disabled Home and Run buttons, and the tray, spec card and arena strip showing their names. Save is task 4.9's ([save.tsx](../src/shell/save.tsx), [store.md](store.md), "In the app"). The shell also takes `child`, the child's records, and `start`, a build it loads onto the canvas once the canvas is mounted (task 4.9). The shell also gives the canvas its remove targets, the tray and the arena strip regions, in one `setRemoveTargets` call when the canvas mounts (review R-4.2): that call replaces the whole list, so no slot makes it.
 
 | Slot | Region | Owner |
 | --- | --- | --- |
