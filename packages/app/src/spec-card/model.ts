@@ -67,7 +67,8 @@ export const settingValue = (setting: Setting, placed: PlacedPart): SettingValue
   return typeof value === 'string' && setting.options.some((option) => option.id === value) ? value : setting.default;
 };
 
-export const cardModel = (record: PartRecord, placed: PlacedPart, level: Level): CardModel => {
+/** `unlockLevel` decides which settings show; it is the child's level unless the Level 3 slot opens more (task 6.6). */
+export const cardModel = (record: PartRecord, placed: PlacedPart, level: Level, unlockLevel: Level = level): CardModel => {
   const { card } = record;
   const needsGives = layerShows('needs-gives', level);
   const popular = layerShows('popular-mechanics', level);
@@ -85,7 +86,7 @@ export const cardModel = (record: PartRecord, placed: PlacedPart, level: Level):
     text,
     ports: record.ports.map((port) => ({ id: port.id, label: port.label, type: port.type })),
     settings: record.settings
-      .filter((setting) => setting.unlockLevel <= level)
+      .filter((setting) => setting.unlockLevel <= unlockLevel)
       .map((setting) => ({ setting, value: settingValue(setting, placed) })),
   };
 };
