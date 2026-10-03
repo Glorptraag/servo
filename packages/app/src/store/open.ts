@@ -10,7 +10,8 @@ import { DATABASE_NAME, openDatabase } from './database.ts';
 import type { Profile, ServoStore, StoreOptions } from './index.ts';
 import { profilesOf, profilesOrFirst } from './profiles.ts';
 import { cardGamesOf, runsOf } from './records.ts';
-import { syncOf } from './sync.ts';
+import { syncFor } from '../sync/index.ts';
+import type { SyncOptions } from '../sync/index.ts';
 
 /**
  * Asks the browser to keep the store, since Safari may otherwise evict it; sync is the real backup. It asks only when
@@ -35,10 +36,12 @@ const contextOf = (store: ServoStore): StoreContext => {
   return ctx;
 };
 
-export const openStoreWith = async (load: ContentLoad, options: StoreOptions = {}): Promise<ServoStore> => {
+/** `sync` sets how the store syncs: tests and a second device in one page give it a network of their own (task 5.5). */
+export const openStoreWith = async (load: ContentLoad, options: StoreOptions = {}, sync: SyncOptions = {}): Promise<ServoStore> => {
   const db = await openDatabase(options.name ?? DATABASE_NAME);
   keepStorage();
   const ctx: StoreContext = { db, content: load.content, now: options.now ?? (() => new Date().toISOString()) };
+  const syncing = syncFor(ctx, options.remote, sync);
   const store: ServoStore = {
     content: load.content,
     contentIssues: load.issues,
@@ -49,8 +52,11 @@ export const openStoreWith = async (load: ContentLoad, options: StoreOptions = {
       runs: runsOf(ctx, profile),
       cardGames: cardGamesOf(ctx, profile),
     }),
-    sync: syncOf(options.remote),
-    close: () => db.close(),
+    sync: syncing,
+    close: () => {
+      syncing.dispose();
+      db.close();
+    },
   };
   contexts.set(store, ctx);
   return store;
