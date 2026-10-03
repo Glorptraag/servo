@@ -62,7 +62,8 @@ describe('the contracts the app builds against', () => {
     expect(applyEdit({} as Blueprint, doIt, {} as Catalogue).ok).toBe(false);
     // Task 1.5 has landed: createSimulation refuses invalid input with a SimulationSetupError.
     await expect(createSimulation({ blueprint: {} as Blueprint, catalogue: {} as Catalogue, arena: {} as never, seed: 1 })).rejects.toMatchObject({ name: 'SimulationSetupError' });
-    await expect(openStore()).rejects.toThrow(/task 4\.9/);
+    // Task 4.9 has landed: openStore opens the store on IndexedDB, and test/store tests it there.
+    expect(openStore).toBeTypeOf('function');
     // Task 4.1 has landed: mountApp draws the shell in a browser, and test/browser tests it there.
     expect(mountApp).toBeTypeOf('function');
     expect([runOnce, replay].every((flow) => typeof flow === 'function')).toBe(true);

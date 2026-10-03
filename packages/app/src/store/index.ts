@@ -1,9 +1,11 @@
-// @servo/app/store: the local-first store's typed interface (task 0.4). Task 4.9 implements it on Dexie and
-// task 5.5 adds sync; until then openStore rejects. packages/parent imports only this module (CLAUDE.md package
+// @servo/app/store: the local-first store's typed interface (task 0.4), implemented on Dexie over IndexedDB by task
+// 4.9 (open.ts and its neighbours); task 5.5 adds sync. packages/parent imports only this module (CLAUDE.md package
 // map), so it reads content, and content's types, through here. See packages/app/docs/store.md.
 
+import { loadContent } from '@servo/content';
 import type { Content, ContentIssue } from '@servo/content';
 import type { ArenaRef, Blueprint, BlueprintId, ChallengeId, Issue, Level, PartTypeId, ProfileId, RunId, RunRecord, Timestamp } from '@servo/schema';
+import { openStoreWith } from './open.ts';
 
 export type { ArtEntry, ArtRegistry, Content, ContentIssue, TerminologyFile } from '@servo/content';
 
@@ -24,7 +26,7 @@ export interface StoreOptions {
  */
 export type OpenStore = (options?: StoreOptions) => Promise<ServoStore>;
 
-export const openStore: OpenStore = () => Promise.reject(new Error('openStore is not implemented yet (task 4.9).'));
+export const openStore: OpenStore = (options) => openStoreWith(loadContent(), options);
 
 export interface ServoStore {
   /**
@@ -90,7 +92,9 @@ export interface Blueprints {
   /**
    * Stores a build this profile already holds, in canonical form under its `meta.id`, with `updatedAt` stamped now.
    * Refuses a `meta.id` the profile does not hold (new builds come from create, copy or duplicate), another
-   * profile's build, and one that does not validate.
+   * profile's build, and one that does not validate. The `updatedAt` given names the stored version the build was
+   * saved from (as load and save return it): when the stored build has changed since, in another tab, the stored
+   * version is kept as its own blueprint (`keptFrom`) and this one keeps the id, as sync's conflict rule below.
    */
   save(blueprint: Blueprint): Promise<Blueprint>;
   /** A copy under a fresh `meta.id`, with its own name. Its runs start again from 1. */

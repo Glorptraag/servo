@@ -1,0 +1,109 @@
+/*
+ * The release's pages (task 6.3): the tester invite form and Settings. One plain panel on the workbench colour, in the
+ * shell's palette and type (src/shell/shell.css), with 44 px targets and the shell's focus ring.
+ */
+
+.release-page {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: 24px 16px;
+  overflow: auto;
+  background: #ebe8e3;
+  color: #2b2926;
+  font-family: Nunito, 'Varela Round', ui-rounded, system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.release-page *,
+.release-page *::before,
+.release-page *::after {
+  box-sizing: border-box;
+}
+
+.release-page :focus-visible {
+  outline: 3px solid #1d5fc4;
+  outline-offset: 2px;
+}
+
+.release-panel {
+  width: min(100%, 440px);
+  padding: 24px;
+  border: 1px solid #d6d0c6;
+  border-radius: 16px;
+  background: #fbfaf7;
+  box-shadow: 0 2px 12px rgb(43 41 38 / 18%);
+}
+
+.release-panel h1 {
+  margin: 0 0 12px;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.release-panel p {
+  margin: 0 0 16px;
+}
+
+.release-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.release-input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid #7a7368;
+  border-radius: 12px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.release-panel .release-problem {
+  min-height: 1.4em;
+  margin: 8px 0 16px;
+  color: #5e584f;
+}
+
+.release-button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid #2b2926;
+  border-radius: 12px;
+  background: #2b2926;
+  color: #fbfaf7;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.release-facts {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.release-facts div {
+  display: grid;
+  gap: 2px;
+}
+
+.release-facts dt {
+  color: #5e584f;
+}
+
+.release-facts dd {
+  margin: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}

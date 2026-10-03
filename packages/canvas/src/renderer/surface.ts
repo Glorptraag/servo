@@ -19,6 +19,8 @@ import type {
   PropTemplate,
   Selection,
 } from '../interface.ts';
+import { ListViewDom } from '../list-view/dom.ts';
+import { ListViewModel } from '../list-view/model.ts';
 import { applyEdit } from '../placement/apply.ts';
 import { PlacementController } from '../placement/controller.ts';
 import { RunAnimator } from '../run-animation/animator.ts';
@@ -85,6 +87,9 @@ export class CanvasSurface implements CanvasHandle {
   readonly wiring: WiringController;
   /** Run mode's drawing: the frames `applyRunFrame` gives, tweened between ticks (task 3.5, src/run-animation/). */
   readonly run: RunAnimator;
+  /** The screen-reader and keyboard path: the list view's model and its DOM beside the canvas (task 3.6, src/list-view/). */
+  readonly list: ListViewModel;
+  readonly listDom: ListViewDom;
 
   private readonly options: CanvasOptions;
   private readonly emitter = new Emitter<CanvasEventMap>();
@@ -173,6 +178,17 @@ export class CanvasSurface implements CanvasHandle {
     // A tap or click on a manual switch in Run mode flips it; Enter flips a selected one (D42).
     this.input.taps.push((_event, screen) => this.tappedInRun(screen));
     this.canvas.addEventListener('keydown', this.keyedInRun);
+    this.list = new ListViewModel({
+      catalogue: options.catalogue,
+      readOnly: options.readOnly === true,
+      blueprint: () => this.current,
+      mode: () => this.currentMode,
+      level: () => this.level,
+      apply: (command) => this.apply(command),
+      control: (input) => this.emitter.emit('control', { input }),
+      select: (selection) => this.select(selection),
+    });
+    this.listDom = new ListViewDom(host, this.list, { prefs: () => this.prefs });
     this.resizeObserver =
       typeof ResizeObserver === 'function' ? new ResizeObserver(() => this.resized()) : undefined;
     this.resizeObserver?.observe(this.canvas);
@@ -222,6 +238,7 @@ export class CanvasSurface implements CanvasHandle {
     }
     this.modeFade.toward(mode === 'run' ? 1 : 0, this.motion(MODE_FADE_MS), performance.now());
     this.loop.request();
+    this.list.changed();
   }
 
   fit(): void {
@@ -245,6 +262,7 @@ export class CanvasSurface implements CanvasHandle {
   setLevel(level: Level): void {
     this.alive('setLevel');
     this.level = level;
+    this.list.changed();
   }
 
   /** The child's level, as `mountCanvas` or `setLevel` last gave it. */
@@ -270,6 +288,7 @@ export class CanvasSurface implements CanvasHandle {
     this.wiring.destroy();
     this.canvas.removeEventListener('keydown', this.keyedInRun);
     this.run.destroy();
+    this.listDom.destroy();
     this.loop.stop();
     if (this.restTimer !== undefined) clearTimeout(this.restTimer);
     this.resizeObserver?.disconnect();
@@ -325,14 +344,17 @@ export class CanvasSurface implements CanvasHandle {
   }
 
   // ---------------------------------------------------------------------------------------------------------
+  // CanvasHandle: task 3.6 (src/list-view/)
+
+  get listView(): ListView {
+    return this.list;
+  }
+
+  // ---------------------------------------------------------------------------------------------------------
   // CanvasHandle: later tasks
 
   get selection(): Selection | null {
     return null;
-  }
-
-  get listView(): ListView {
-    throw notYet('listView', '3.6');
   }
 
   select(selection: Selection | null): void {
@@ -572,6 +594,7 @@ export class CanvasSurface implements CanvasHandle {
     if (this.destroyed) return;
     this.scene = buildScene(this.current, this.options.catalogue);
     this.arena = layArena(this.current, this.options.catalogue, this.scene);
+    this.list.changed();
     const layers = this.layers;
     const renderer = this.renderer;
     if (!layers || !renderer) {
