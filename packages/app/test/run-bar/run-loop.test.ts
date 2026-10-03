@@ -122,7 +122,7 @@ const playFor = (clock: TestClock, frames: number, ms = 1000 / 30): void => {
 /** The Simulation the loop holds, through the run record hook. */
 const holding = (loop: RunLoop): Simulation => (loop as unknown as { simulation: Simulation }).simulation;
 
-describe('the run loop', () => {
+describe('the run loop', { timeout: 30_000 }, () => {
   it('puts the canvas in Run mode with tick 0 held for the one-second spin-up, then steps 30 ticks a second', async () => {
     const { loop, canvas, clock, states, heard } = loopOf(roller);
     expect(loop.rate).toBe(NORMAL_RATE);

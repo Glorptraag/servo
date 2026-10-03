@@ -27,7 +27,9 @@
   cursor: pointer;
 }
 
-.run-bar button:disabled {
+/* Run with nothing placed stays focusable, so a keyboard or screen reader reaches it and hears why it is off. */
+.run-bar button:disabled,
+.run-bar button[aria-disabled='true'] {
   cursor: default;
   opacity: 0.5;
 }

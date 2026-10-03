@@ -17,7 +17,7 @@ import type { Blueprint } from '@servo/schema';
 import type { RunFrame } from '@servo/sim-core';
 import { RUN_BAR_TEXT, RunBar, SPIN_UP_MS } from '../../src/run-bar/index.ts';
 import type { RunClock, RunLoop } from '../../src/run-bar/index.ts';
-import { PLACEHOLDER_SLOTS, SaveControl, Shell, useShell } from '../../src/shell/index.ts';
+import { PLACEHOLDER_SLOTS, SAVE_LINES, SaveControl, Shell, useShell } from '../../src/shell/index.ts';
 import type { CanvasSetup, ShellApi } from '../../src/shell/index.ts';
 import { openStore } from '../../src/store/index.ts';
 import type { ProfileStore, ServoStore } from '../../src/store/index.ts';
@@ -71,7 +71,7 @@ afterEach(() => {
 });
 
 /** The shell round the real canvas, opened on `start` kept as the child's own build in a store of its own. */
-const mount = async (start: Blueprint | 'empty'): Promise<Mounted> => {
+const mount = async (start: Blueprint | 'empty', wrap: (child: ProfileStore) => ProfileStore = (child) => child): Promise<Mounted> => {
   const store = await openStore({ name: `servo-run-bar-${crypto.randomUUID()}` });
   const profile = await store.profiles.create('Builder 1');
   const child = store.forProfile(profile.id);
@@ -110,7 +110,7 @@ const mount = async (start: Blueprint | 'empty'): Promise<Mounted> => {
         content={content}
         level={1}
         storage={null}
-        child={child}
+        child={wrap(child)}
         start={build}
         mountCanvas={counting}
         onReady={ready}
@@ -187,7 +187,13 @@ describe('the Run bar', () => {
     const app = await mount('empty');
     const run = toggle(app);
     expect(run.textContent).toBe(RUN_BAR_TEXT.run);
-    expect(run.disabled).toBe(true);
+    // Off, but focusable, so a keyboard or screen reader reaches it and hears why (rule 8).
+    expect(run.getAttribute('aria-disabled')).toBe('true');
+    expect(run.disabled).toBe(false);
+    // A press does nothing. (Playwright will not click what is aria-disabled, so this is the DOM's click.)
+    run.click();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(app.loop().phase).toBe('build');
     const reason = runBar(app).querySelector('.run-bar-reason');
     expect(reason?.textContent).toBe(RUN_BAR_TEXT.nothingPlaced);
     expect(reason?.getAttribute('role')).toBe('status');
@@ -199,7 +205,7 @@ describe('the Run bar', () => {
     expect(app.canvas().mode).toBe('build');
 
     flushSync(() => app.canvas().apply({ kind: 'place-part', part: 'chassis' }));
-    expect(toggle(app).disabled).toBe(false);
+    expect(toggle(app).getAttribute('aria-disabled')).toBe('false');
     expect(runBar(app).querySelector('.run-bar-reason')).toBeNull();
     expect(runBar(app).querySelector('[role="group"]')?.getAttribute('aria-label')).toBe(RUN_BAR_TEXT.clock);
     expect(toggle(app).hasAttribute('aria-describedby')).toBe(false);
@@ -352,6 +358,30 @@ describe('the Run bar', () => {
     await vi.waitFor(() => expect(serializeBlueprint(canvas.blueprint as Blueprint)).toBe(before), SOON);
   });
 
+  it('never waits on the store: a stalled store still runs at once, and a failed save is the plain save line', async () => {
+    const never = new Promise<never>(() => undefined);
+    const app = await mount(roller, (child) => ({
+      ...child,
+      blueprints: { ...child.blueprints, save: () => Promise.reject(new Error('The store is full.')) },
+      runs: { ...child.runs, list: () => never, add: () => never },
+    }));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    flushSync(() => app.canvas().apply({ kind: 'rename', name: 'Rolling robot 2' }));
+    await userEvent.click(toggle(app));
+    await playing(app);
+    app.clock.advance(SPIN_UP_MS);
+    app.clock.advance(1000 / 30);
+    expect(app.loop().phase).toBe('running');
+    await userEvent.click(toggle(app));
+    await vi.waitFor(() => expect(app.canvas().mode).toBe('build'), SOON);
+    // The Simulation is kept, and the store is still not answering: the next Run starts at once, with no loading.
+    await userEvent.click(toggle(app));
+    expect(app.loop().phase).toBe('spin-up');
+    await userEvent.click(toggle(app));
+    await vi.waitFor(() => expect(app.host.querySelector('[data-region="header"] [role="status"]')?.textContent).toBe(SAVE_LINES.notSaved), SOON);
+    expect(warn).toHaveBeenCalledWith('The earlier Runs of this build were not read in time, so this Run is not kept.');
+  });
+
   it('keeps each Run on Stop, and saves the build as Run is pressed (D71)', async () => {
     const app = await mount(roller);
     const canvas = app.canvas();
@@ -371,6 +401,12 @@ describe('the Run bar', () => {
     app.clock.advance(SPIN_UP_MS);
     await userEvent.click(toggle(app));
     await vi.waitFor(async () => expect(await app.child.runs.list({ blueprintId: app.build.meta.id })).toHaveLength(2), SOON);
+    // A Run stopped in its spin-up showed nothing, so it is not kept (R-4.4, finding 1).
+    await userEvent.click(toggle(app));
+    await playing(app);
+    await userEvent.click(toggle(app));
+    await vi.waitFor(() => expect(app.canvas().mode).toBe('build'), SOON);
+    await new Promise((resolve) => setTimeout(resolve, 200));
     const runs = await app.child.runs.list({ blueprintId: app.build.meta.id });
     expect(runs.map((run) => [run.runNumber, run.ticks, run.seed])).toEqual([
       [1, 15, 7],

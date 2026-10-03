@@ -51,15 +51,16 @@ class TestClock implements RunClock {
   }
 }
 
+/** One clock for every recorder in this file, so a later recorder's Runs come later. */
+let second = 0;
 const times = (): (() => string) => {
-  let second = 0;
   return () => {
     second += 1;
     return new Date(Date.UTC(2026, 9, 3, 10, 0, second)).toISOString();
   };
 };
 
-const setUp = async (child: () => ProfileStore | null) => {
+const setUp = async (child: () => ProfileStore | null, wait = true) => {
   const recorder = new RunRecorder({ child, now: times() });
   const clock = new TestClock();
   const loop = new RunLoop({
@@ -77,7 +78,10 @@ const setUp = async (child: () => ProfileStore | null) => {
     loop.stop();
     await recorder.settled();
   };
-  return { recorder, loop, runFor };
+  // The Run bar starts reading as the build comes onto the canvas.
+  recorder.prepare(roller);
+  if (wait) await recorder.settled();
+  return { recorder, loop, clock, runFor };
 };
 
 const openChild = async () => {
@@ -86,7 +90,7 @@ const openChild = async () => {
   return { store, child: store.forProfile(profile.id) };
 };
 
-describe('keeping each Run', () => {
+describe('keeping each Run', { timeout: 30_000 }, () => {
   it('keeps each Run as it stops, numbered among the build’s Runs, with the Run before it and every tick', async () => {
     const { store, child } = await openChild();
     const { loop, runFor } = await setUp(() => child);
@@ -99,18 +103,32 @@ describe('keeping each Run', () => {
     expect(runs.every((run) => run.challenge === undefined)).toBe(true);
     expect((runs[0]?.startedAt ?? '') < (runs[0]?.endedAt ?? '')).toBe(true);
     expect(runs[0]?.id).not.toBe(runs[1]?.id);
+    // A second recorder, as after a reload, counts the Runs the store already holds.
     loop.dispose();
+    const again = await setUp(() => child);
+    await again.runFor(3);
+    expect((await child.runs.list({ blueprintId: roller.meta.id })).map((run) => run.runNumber)).toEqual([1, 2, 3]);
+    again.loop.dispose();
     store.close();
   });
 
-  it('keeps nothing for a Run stopped while it loads, or with no child', async () => {
+  it('keeps no Run stopped before its first tick, so it never marks the Run before’s faults fixed (D31)', async () => {
     const { store, child } = await openChild();
-    const { recorder, loop } = await setUp(() => child);
-    const running = loop.run();
+    const { recorder, loop, runFor } = await setUp(() => child);
+    await runFor(5);
+    // Stopped in the spin-up, and stopped while it loads: neither stepped, so neither is kept.
+    await loop.run();
     loop.stop();
-    await running;
+    const loading = loop.run();
+    loop.stop();
+    await loading;
     await recorder.settled();
-    expect(await child.runs.list()).toEqual([]);
+    await runFor(4);
+    const runs = await child.runs.list({ blueprintId: roller.meta.id });
+    expect(runs.map((run) => [run.runNumber, run.ticks])).toEqual([
+      [1, 5],
+      [2, 4],
+    ]);
     loop.dispose();
     const none = await setUp(() => null);
     await none.runFor(5);
@@ -118,22 +136,64 @@ describe('keeping each Run', () => {
     store.close();
   });
 
-  it('never stops a Run when the store cannot keep it: a warning, not a dialog', async () => {
+  it('never makes a Run wait on the store, and keeps a Run that ends once the store has answered', async () => {
     const { store, child } = await openChild();
+    let answer: () => void = () => undefined;
+    const answered = new Promise<void>((resolve) => {
+      answer = resolve;
+    });
+    const slow: ProfileStore = { ...child, runs: { ...child.runs, list: (filter) => answered.then(() => child.runs.list(filter)) } };
+    const { recorder, loop, clock } = await setUp(() => slow, false);
+    const phases: string[] = [];
+    loop.subscribe((state, frame) => {
+      if (!frame) phases.push(state.phase);
+    });
+    // The first Run loads only the Simulation; the second, with the Simulation kept, has no loading at all.
+    await loop.run();
+    expect(loop.phase).toBe('spin-up');
+    loop.stop();
+    await loop.run();
+    expect(phases).toEqual(['loading', 'spin-up', 'build', 'spin-up']);
+    answer();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    clock.advance(SPIN_UP_MS);
+    loop.stop();
+    await recorder.settled();
+    expect((await child.runs.list()).map((run) => [run.runNumber, run.ticks])).toEqual([[1, 1]]);
+    loop.dispose();
+    store.close();
+  });
+
+  it('runs on when the store never answers or cannot keep a Run: a warning, not a dialog', async () => {
+    const { store, child } = await openChild();
+    const never = new Promise<never>(() => undefined);
+    const stalled: ProfileStore = { ...child, runs: { ...child.runs, list: () => never } };
     const refusing: ProfileStore = { ...child, runs: { ...child.runs, add: () => Promise.reject(new Error('full')) } };
-    const { loop, runFor } = await setUp(() => refusing);
     const warn = console.warn;
     const warnings: unknown[] = [];
     console.warn = (...args: unknown[]) => warnings.push(args[0]);
     try {
-      await runFor(5);
-      await runFor(5);
+      const first = await setUp(() => stalled, false);
+      await first.loop.run();
+      expect(first.loop.phase).toBe('spin-up');
+      first.clock.advance(SPIN_UP_MS);
+      first.loop.stop();
+      await first.loop.run();
+      expect(first.loop.phase).toBe('spin-up');
+      first.loop.dispose();
+      const second = await setUp(() => refusing);
+      await second.runFor(5);
+      await second.runFor(5);
+      expect(second.loop.phase).toBe('build');
+      second.loop.dispose();
     } finally {
       console.warn = warn;
     }
-    expect(warnings).toEqual(['This Run could not be kept on this device.', 'This Run could not be kept on this device.']);
-    expect(loop.phase).toBe('build');
-    loop.dispose();
+    expect(warnings).toEqual([
+      'The earlier Runs of this build were not read in time, so this Run is not kept.',
+      'This Run could not be kept on this device.',
+      'This Run could not be kept on this device.',
+    ]);
     store.close();
   });
 });

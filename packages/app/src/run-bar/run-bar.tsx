@@ -53,6 +53,7 @@ export const RunBar = ({ clock, seed, now, onLoop }: RunBarProps) => {
   const [run, setRun] = useState<RunState>(BUILD);
   const [history] = useState(() => new UndoHistory());
   const [undoSteps, setUndoSteps] = useState(0);
+  const recorderRef = useRef<RunRecorder | null>(null);
   const latest = useRef({ setMode, child, clock, seed, now, onLoop, rate: run.rate });
   latest.current = { setMode, child, clock, seed, now, onLoop, rate: run.rate };
 
@@ -62,6 +63,8 @@ export const RunBar = ({ clock, seed, now, onLoop }: RunBarProps) => {
     if (!canvas || !view) return undefined;
     const given = latest.current;
     const recorder = new RunRecorder({ child: () => latest.current.child, ...(given.now ? { now: given.now } : {}) });
+    recorderRef.current = recorder;
+    if (canvas.blueprint) recorder.prepare(canvas.blueprint);
     const made = new RunLoop({
       canvas,
       catalogue: content.catalogue,
@@ -84,6 +87,7 @@ export const RunBar = ({ clock, seed, now, onLoop }: RunBarProps) => {
       off();
       made.dispose();
       setLoop(null);
+      recorderRef.current = null;
       latest.current.onLoop?.(null);
     };
   }, [canvas, content]);
@@ -99,6 +103,7 @@ export const RunBar = ({ clock, seed, now, onLoop }: RunBarProps) => {
 
   // A build loaded by anything but an edit or Undo (the first build, Home choosing another) starts the history again.
   useLayoutEffect(() => {
+    if (blueprint) recorderRef.current?.prepare(blueprint);
     if (!blueprint || blueprint === history.current) return;
     history.loaded(blueprint);
     setUndoSteps(history.size);
@@ -176,7 +181,8 @@ export const RunBar = ({ clock, seed, now, onLoop }: RunBarProps) => {
         aria-keyshortcuts="Space"
         aria-busy={run.phase === 'loading'}
         aria-describedby={reason ? reasonId : undefined}
-        disabled={!loop || !canRun}
+        aria-disabled={!canRun}
+        disabled={!loop}
         onClick={toggle}
       >
         <svg className="run-bar-shape" viewBox="0 0 20 20" aria-hidden="true" focusable="false">

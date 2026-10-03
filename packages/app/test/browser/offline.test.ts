@@ -86,7 +86,7 @@ const runNow = `(() => {
   const list = document.querySelector('.servo-list-view')?.textContent ?? '';
   return {
     phase: bar?.getAttribute('data-phase') ?? null,
-    disabled: toggle ? toggle.disabled : null,
+    disabled: toggle ? toggle.disabled || toggle.getAttribute('aria-disabled') === 'true' : null,
     label: toggle?.textContent ?? null,
     turning: /(^|[^0-9-])-?[1-9][0-9]* turns a minute/.test(list),
   };

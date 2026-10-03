@@ -104,7 +104,10 @@ export interface RunLoopOptions {
   readonly seed?: (blueprint: Blueprint) => number;
   /** Ticks a second at first. Default NORMAL_RATE. */
   readonly rate?: number;
-  /** Called as each Run is pressed, and awaited (phase `loading`) before the spin-up. Must not reject. */
+  /**
+   * Called as each Run is pressed. A promise it returns is awaited (phase `loading`) before the spin-up, so the app's
+   * recorder returns none: the store is never on a Run's path. Must not reject.
+   */
   readonly onStart?: (blueprint: Blueprint) => Promise<void> | void;
   /** Called as each Run that reached the spin-up ends, before the Simulation is restored, so it can be recorded. */
   readonly onEnd?: (simulation: Simulation) => void;
@@ -211,6 +214,11 @@ export class RunLoop {
       // the build as it is now.
       const now = this.blueprintNow();
       if (!now || runKeyOf(now) === key) break;
+      if (now.parts.length === 0) {
+        // Every part was taken away meanwhile: there is nothing to run (brief Section 9).
+        this.set('build');
+        return;
+      }
       blueprint = now;
     }
     const simulation = this.simulation;
