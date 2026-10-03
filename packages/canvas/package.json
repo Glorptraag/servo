@@ -10,7 +10,7 @@
   "scripts": {
     "test": "vitest run",
     "test:unit": "vitest run --project unit",
-    "test:browser": "vitest run --project browser --project performance",
+    "test:browser": "vitest run --project browser --project 'hands*' --project performance",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

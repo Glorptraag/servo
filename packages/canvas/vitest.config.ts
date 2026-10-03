@@ -1,6 +1,7 @@
 import { playwright } from '@vitest/browser-playwright';
 import { defineConfig } from 'vitest/config';
 import type { TestProjectInlineConfiguration } from 'vitest/config';
+import type { BrowserCommand } from 'vitest/node';
 
 // Three projects (docs/renderer.md, "Tests"):
 // - `unit` runs in Node: the scene model, the port layout, the camera and the arena's place.
@@ -9,6 +10,8 @@ import type { TestProjectInlineConfiguration } from 'vitest/config';
 //   probes match between a laptop and CI.
 // - `performance` runs the frame-time test in the same profile on the machine's own GPU where it has one (SwiftShader
 //   where it has none, as on CI). The test slows the CPU 4× itself, through CDP.
+// - `hands` runs the list view by tap and click in Chromium and in WebKit, Safari's engine: Safari does not focus a
+//   button it is pressing, which Chromium does. Playwright's own input, no CDP, in a touchscreen context.
 // Task 3.8 generalises this into the e2e harness.
 const IPAD = { width: 1180, height: 820, deviceScaleFactor: 2 };
 
@@ -57,6 +60,24 @@ const browserProject = (
 });
 
 const FRAME_TIME = 'test/browser/frame-time.test.ts';
+const HANDS = 'test/browser/list-view-hands.test.ts';
+
+// Touchscreen taps and mouse clicks in the page under test, as Playwright gives them in every engine.
+const tap: BrowserCommand<[selector: string]> = async (context, selector) => {
+  await context.iframe.locator(selector).tap();
+};
+const tapAt: BrowserCommand<[x: number, y: number]> = async (context, x, y) => {
+  await context.page.touchscreen.tap(x, y);
+};
+const clickAt: BrowserCommand<[x: number, y: number]> = async (context, x, y) => {
+  await context.page.mouse.click(x, y);
+};
+
+const touchscreen = (browser: 'chromium' | 'webkit') =>
+  playwright({
+    ...(browser === 'chromium' ? { launchOptions: { channel: 'chromium' } } : {}),
+    contextOptions: { viewport: { width: IPAD.width, height: IPAD.height }, deviceScaleFactor: IPAD.deviceScaleFactor, hasTouch: true },
+  });
 
 export default defineConfig({
   test: {
@@ -73,7 +94,26 @@ export default defineConfig({
         },
       },
       // Generous: a software GPU on a busy machine (CI, other agents' browsers) can take a minute to mount a canvas.
-      browserProject('browser', ['test/browser/**/*.test.ts'], [FRAME_TIME], ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'], 120_000, 0),
+      browserProject('browser', ['test/browser/**/*.test.ts'], [FRAME_TIME, HANDS], ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'], 120_000, 0),
+      {
+        test: {
+          name: 'hands',
+          include: [HANDS],
+          testTimeout: 120_000,
+          sequence: { groupOrder: 0 },
+          browser: {
+            enabled: true,
+            headless: true,
+            commands: { tap, tapAt, clickAt },
+            instances: [
+              { browser: 'chromium', provider: touchscreen('chromium') },
+              { browser: 'webkit', provider: touchscreen('webkit') },
+            ],
+            viewport: { width: IPAD.width, height: IPAD.height },
+            screenshotFailures: false,
+          },
+        },
+      },
       // Last and alone, so no other test competes for the CPU while frames are timed.
       browserProject('performance', [FRAME_TIME], [], ['--enable-unsafe-swiftshader'], 240_000, 1),
     ],

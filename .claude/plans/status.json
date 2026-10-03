@@ -690,7 +690,7 @@
       "dispatched_at": "2026-10-01T06:59:05+00:00"
     },
     "4.2": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -708,10 +708,11 @@
       "done_when": "Tray shows exactly the kit's parts; library overlay opens with working filters and no drag-out before Level 3; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-03T05:36:05+00:00"
     },
     "4.3": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -728,10 +729,11 @@
       "done_when": "Every Level 1\u20132 part renders its card at Levels 1 and 2 without truncation at the 10-inch size; live readouts match the run record values; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-03T05:36:05+00:00"
     },
     "4.4": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -748,7 +750,8 @@
       "done_when": "Stop restores the build exactly; slow-motion shows per-tick steps with the tick's visual twin; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-03T05:36:05+00:00"
     },
     "4.5": {
       "status": "pending",
