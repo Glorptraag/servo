@@ -6,6 +6,7 @@ import { cdp, userEvent } from 'vitest/browser';
 import { SHARED_BUILD_NAME, openStore } from '@servo/app/store';
 import type { ServoStore } from '@servo/app/store';
 import { PARENT_TEXT, mountParentWith } from '../../src/accounts/index.ts';
+import { EXPORT_TEXT } from '../../src/export/index.ts';
 import type { ParentHandle } from '../../src/index.ts';
 
 let mounted: { handle: ParentHandle; host: HTMLElement; store: ServoStore } | undefined;
@@ -78,6 +79,14 @@ describe('Copy link in the parent view', () => {
     if (!option) throw new Error('no option');
     expect(option.checked).toBe(false);
     expect(option.closest('label')?.textContent).toBe(PARENT_TEXT.includeName);
+
+    // Both actions sit in the build's own row: 5.3's Parts list, then Copy link, and both still work.
+    const row = copy().closest('li');
+    const partsList = row?.querySelector<HTMLButtonElement>(`button[aria-label="${EXPORT_TEXT.openFor('Robin rocket')}"]`);
+    expect(partsList).toBeTruthy();
+    expect([...(row?.querySelectorAll('button') ?? [])].map((found) => found.textContent)).toEqual([EXPORT_TEXT.open, PARENT_TEXT.copyLink]);
+    await userEvent.click(partsList as HTMLButtonElement);
+    await expect.poll(() => host.querySelector('#servo-parts-list-title')?.textContent).toBe(EXPORT_TEXT.title('Robin rocket'));
 
     // Pointer, unticked: "Shared build".
     await userEvent.click(copy());

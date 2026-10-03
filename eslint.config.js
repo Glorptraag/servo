@@ -23,8 +23,12 @@ const packageMap = {
 
 // Entries for dev tooling: only these packages' src/ may import them, whatever the map allows. Tests anywhere may,
 // as they may import any export. The behaviour runtime is for packages/tools' behaviour fixtures; a Run goes
-// through createSimulation.
-const toolsOnly = ['@servo/sim-core/behaviour'];
+// through createSimulation. The canvas's testing entry is for the e2e harness; the app reaches the canvas through
+// @servo/canvas.
+const toolsOnly = {
+  '@servo/sim-core/behaviour': 'Run a simulation through createSimulation from @servo/sim-core.',
+  '@servo/canvas/testing': 'The app reaches the canvas through @servo/canvas.',
+};
 const toolsOnlyUsers = ['tools', 'sim-core'];
 
 const exportedEntries = (name) => {
@@ -129,7 +133,7 @@ const packageBoundaries = {
       outsideMap: "'{{specifier}}' is outside the package map: packages/{{pkg}}/src may import {{allowed}} (CLAUDE.md).",
       notExported: "'{{specifier}}' is not an entry its package exports.",
       unknownPackage: "'{{specifier}}' is not a Servo package.",
-      toolsOnly: "'{{specifier}}' is for packages/tools only. Run a simulation through createSimulation from @servo/sim-core.",
+      toolsOnly: "'{{specifier}}' is for packages/tools only. {{instead}}",
     },
   },
   create(context) {
@@ -147,6 +151,7 @@ const packageBoundaries = {
               specifier: reference?.head,
               pkg: where.pkg,
               allowed: listed.map((name) => `@servo/${name}`).join(', ') || 'no other Servo package',
+              instead: reference && Object.hasOwn(toolsOnly, reference.head) ? toolsOnly[reference.head] : '',
             },
           });
         if (!reference) return report('dynamic');
@@ -160,7 +165,7 @@ const packageBoundaries = {
           if (where.shipped && !namesData(reference) && !isInside(target, where.source)) report('leavesSource');
           return;
         }
-        if (where.shipped && !toolsOnlyUsers.includes(where.pkg) && toolsOnly.includes(head)) return report('toolsOnly');
+        if (where.shipped && !toolsOnlyUsers.includes(where.pkg) && Object.hasOwn(toolsOnly, head)) return report('toolsOnly');
         if (!head.startsWith('@servo/') || allowed.some((entry) => entry.test(head))) return;
         const name = head.split('/')[1];
         if (!Object.hasOwn(packageMap, name)) return report('unknownPackage');

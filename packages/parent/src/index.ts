@@ -1,5 +1,5 @@
 // @servo/parent: the adult's side of Servo (tasks 5.1–5.4). Typed stubs until those tasks land; each throws.
-// Task 5.1 has landed: the account and child profiles, in accounts/.
+// Tasks 5.1 and 5.3 have landed: the account and child profiles, in accounts/, and the parts-list export, in export/.
 // Imports only @servo/schema and @servo/app/store (the package map). See README.md.
 
 import type { CardGameResult, Content, ServoStore } from '@servo/app/store';
@@ -18,6 +18,7 @@ import type {
   Timestamp,
 } from '@servo/schema';
 import { mountParentWith } from './accounts/index.ts';
+import { partsListFrom } from './export/index.ts';
 
 /** What the progress view reads for one child: nothing the child has to do (brief Section 7). */
 export interface ProgressInput {
@@ -81,17 +82,21 @@ export interface PartsList {
   readonly blueprint: { readonly id: BlueprintId; readonly name: string };
   /** Each part type once, in family order, with its real name and how many the build uses. */
   readonly parts: readonly { readonly part: PartTypeId; readonly name: Text; readonly family: PartFamily; readonly quantity: number }[];
-  /** The wiring in plain words, one line per connection, crossing one motor's leads where a real kit needs it (D27). */
+  /**
+   * The connections in plain words, one line per wire, as a real kit makes them: the only steps on the page. Where the
+   * real kit needs a motor's leads crossed (D27), its lines already cross them and are marked.
+   */
   readonly wiring: readonly string[];
+  /** Notes for the real kit: which marked lines already cross which leads, why, and what is left unconnected. Never steps. */
+  readonly realKit: readonly string[];
   /** The adult-supervision notes of the parts that have one (`card.safetyNote`). */
   readonly safetyNotes: readonly Text[];
 }
 
+/** Throws `UnknownPart` for a blueprint that names a part type or port the catalogue does not have. */
 export type PartsListOf = (blueprint: Blueprint, catalogue: Catalogue) => PartsList;
 
-export const partsListOf: PartsListOf = () => {
-  throw new Error('partsListOf is not implemented yet (task 5.3).');
-};
+export const partsListOf: PartsListOf = partsListFrom;
 
 /** Ten part types drawn from the Level 1–2 parts in `content`, in the order to show them (D40). Same seed, same deck. */
 export type DrawCards = (content: Content, seed: number) => readonly PartTypeId[];
@@ -129,3 +134,4 @@ export {
   switchChild,
 } from './accounts/index.ts';
 export type { Accounts, ParentOptions } from './accounts/index.ts';
+export { EXPORT_TEXT, LIST_TEXT, UnknownPart } from './export/index.ts';

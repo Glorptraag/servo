@@ -1,8 +1,9 @@
 // The parent view's first screen (task 5.1): the parental gate (D28), then the children on this device with the
-// profile switch, adding, renaming and removing a child, and the builds of the child in use, each with a "Copy link"
-// that shares it read-only with another adult (task 5.6, D21: the build's name only when ticked). Every control is a native
-// button, radio or text field, so touch, pointer, keyboard and screen reader each have the same path. Nothing is a
-// dialog: a removal is confirmed inline, and anything that goes wrong is one plain line. The view has no routes and
+// profile switch, adding, renaming and removing a child, and the builds of the child in use, each with its parts list
+// (task 5.3, ../export/) and a "Copy link" that shares it read-only with another adult (task 5.6, D21: the build's name
+// only when ticked). Every control is a native button, radio, checkbox or text field, so touch, pointer, keyboard and
+// screen reader each have the same path. Nothing is a dialog: a removal is confirmed inline, and anything that goes
+// wrong is one plain line. The view has no routes and
 // writes nothing to the address, so no address can open one child's records, and no profile id reaches the page.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, FormEvent, KeyboardEvent, RefObject } from 'react';
@@ -10,6 +11,7 @@ import type { Profile, ServoStore } from '@servo/app/store';
 import { answers, gateQuestion } from './gate.ts';
 import { ChoiceNotKept, NameRefused, addChild, readAccounts, removeChild, renameChild, shareLinkFor, switchChild } from './model.ts';
 import type { Accounts } from './model.ts';
+import { PartsListExport } from '../export/index.ts';
 
 /** Every line of system text, for the copy pass. None has an exclamation mark or praise (ground rule 7). */
 export const PARENT_TEXT = {
@@ -34,7 +36,8 @@ export const PARENT_TEXT = {
   add: 'Add',
   builds: 'Builds',
   noBuilds: 'No builds yet.',
-  shareIntro: 'A link lets another adult watch a build on their own device. It cannot change the build, and never holds a child’s name.',
+  shareIntro:
+    'A link lets another adult watch a build on their own device. It cannot change the build, and never holds a child’s profile. The build’s name is included only if you tick the box below.',
   includeName: 'Include the build’s name in links',
   copyLink: 'Copy link',
   copied: 'Link copied.',
@@ -254,12 +257,14 @@ const AccountsView = ({ store }: { readonly store: ServoStore }) => {
                 <input type="checkbox" checked={includeName} onChange={(event) => setIncludeName(event.target.checked)} style={TARGET} />
                 {PARENT_TEXT.includeName}
               </label>
-              <ul>
-                {builds.map((build) => (
-                  <li key={build.id} style={ROW}>
-                    <span>
-                      {build.name}, {levelText(build.level)}, {dateText(build.updatedAt)}
-                    </span>
+              <PartsListExport
+                key={current.id}
+                store={store}
+                profile={current.id}
+                builds={builds}
+                describe={(build) => `${build.name}, ${levelText(build.level)}, ${dateText(build.updatedAt)}`}
+                actions={(build) => (
+                  <>
                     <button type="button" aria-label={`${PARENT_TEXT.copyLink}: ${build.name}`} onClick={() => void copyLink(build.id)} style={TARGET}>
                       {PARENT_TEXT.copyLink}
                     </button>
@@ -269,9 +274,9 @@ const AccountsView = ({ store }: { readonly store: ServoStore }) => {
                         <input readOnly value={shown.url} autoFocus onFocus={(event) => event.target.select()} style={TARGET} />
                       </label>
                     )}
-                  </li>
-                ))}
-              </ul>
+                  </>
+                )}
+              />
             </>
           )}
         </section>

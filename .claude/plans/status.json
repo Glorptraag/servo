@@ -528,7 +528,7 @@
       "dispatched_at": "2026-10-01T06:59:05+00:00"
     },
     "3.3": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -542,8 +542,8 @@
       ],
       "done_when": "Every legal fixture can be wired by script in both input paths; illegal wires are refused with the glow cue; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-03T03:29:59+00:00",
+      "completed_by": "W-3.3",
       "dispatched_at": "2026-10-01T08:46:24+00:00"
     },
     "3.4": {
@@ -566,7 +566,7 @@
       "dispatched_at": "2026-10-02T01:56:16+00:00"
     },
     "3.5": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -581,12 +581,12 @@
       ],
       "done_when": "Each failure mode in the broken fixtures is visibly distinct in a recorded run (screenshot per fixture); tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-03T03:29:59+00:00",
+      "completed_by": "W-3.5",
       "dispatched_at": "2026-10-02T01:56:16+00:00"
     },
     "3.6": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -600,8 +600,8 @@
       ],
       "done_when": "A fixture built entirely from the list view produces a blueprint byte-identical to the same build wired on canvas; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-03T03:29:59+00:00",
+      "completed_by": "W-3.6",
       "dispatched_at": "2026-10-02T01:56:16+00:00"
     },
     "3.7": {
@@ -929,7 +929,7 @@
       "completed_by": null
     },
     "5.3": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -943,8 +943,8 @@
       ],
       "done_when": "Export of each kit fixture lists every part once with its family; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-03T03:55:31+00:00",
+      "completed_by": "W-5.3",
       "dispatched_at": "2026-10-03T02:19:54+00:00"
     },
     "5.4": {

@@ -329,6 +329,18 @@ export class WireView {
     if (glowChanged && this.palette && this.ends) this.draw(this.wire, this.palette, this.ends[0], this.ends[1]);
   }
 
+  get currentEmphasis(): Emphasis {
+    return this.emphasis;
+  }
+
+  /**
+   * The path the line is drawn along now, end to end: its two sockets, or the ends a drag or a route gave (tasks 3.3,
+   * 3.7). Selection's label sits on it.
+   */
+  get path(): readonly Vec2[] {
+    return this.ends ? [...this.ends] : [this.wire.from.at, this.wire.to.at];
+  }
+
   destroy(): void {
     this.graphics.destroy();
   }
