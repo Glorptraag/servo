@@ -139,3 +139,6 @@
 {"ts": "2026-10-03T01:15:44+00:00", "event": "decision_add", "id": "D89", "blocks": []}
 {"ts": "2026-10-03T01:15:44+00:00", "event": "decision_add", "id": "D90", "blocks": []}
 {"ts": "2026-10-03T01:15:44+00:00", "event": "decision_add", "id": "D91", "blocks": []}
+{"ts": "2026-10-03T01:52:41+00:00", "event": "decision_add", "id": "D92", "blocks": []}
+{"ts": "2026-10-03T01:52:41+00:00", "event": "decision_add", "id": "D93", "blocks": []}
+{"ts": "2026-10-03T02:04:34+00:00", "event": "done", "tasks": ["5.5"], "by": "W-5.5"}

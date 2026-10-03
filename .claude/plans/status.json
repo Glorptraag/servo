@@ -965,7 +965,7 @@
       "completed_by": null
     },
     "5.5": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -980,8 +980,8 @@
       ],
       "done_when": "Airplane-mode e2e passes; the conflict fixture keeps both versions; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-03T02:04:34+00:00",
+      "completed_by": "W-5.5",
       "dispatched_at": "2026-10-03T00:09:43+00:00"
     },
     "5.6": {
@@ -1936,6 +1936,22 @@
       "id": "D91",
       "question": "Parent page wiring (R-5.1 finding 2): the parent page is not yet in the web build nor linked from Home. Who adds it?",
       "recommendation": "Fold into task 5.2 (progress view) or 4.5 Home link: orchestrator adds it to 5.2's prompt",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D92",
+      "question": "5.5 Q1: a new app build waits until every tab of the old one closes (iPad Safari tabs live for weeks). Show a quiet 'A new version is ready; it opens next time' line, or reload at a safe moment?",
+      "recommendation": "Keep waiting silently for launch; revisit before G5 (family week offline)",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D93",
+      "question": "5.5 Q2-Q6: sync copy line, sync timing (open/reconnect/manual + retry once a host exists), keep runs of a profile removed elsewhere, wire format base hash + device id (D13), no web app manifest. Accept defaults?",
+      "recommendation": "Accept all defaults in docs/reviews/tasks/5.5.md; revisit manifest before G5 because of Safari storage eviction",
       "confidence": "medium",
       "blocks": [],
       "resolved": false
