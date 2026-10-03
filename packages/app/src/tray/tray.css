@@ -3,7 +3,7 @@
  * bottom in portrait. Never selectable: a mouse drag from a selectable tray selects text (the list view's included),
  * and the browser's native drag of that selection, or of a tile's picture, cancels the pointer the canvas is carrying.
  */
-/* Only scrolling along the tray is the browser's; a swipe across it never reaches the page, which a touch browser can read as Back. */
+/* The room round the tiles scrolls the tray, along it only. The page itself never pans or swipes back (shell.css). */
 .tray {
   display: flex;
   flex-direction: column;
@@ -60,8 +60,8 @@
 }
 
 /*
- * A big tile. A drag across the tray, towards the canvas, carries the part; a drag along the tray scrolls it, so the
- * Level 2 kit's tiles stay reachable by touch.
+ * A big tile. It takes every press itself: a drag in any direction carries its part (tray.tsx), so the browser never
+ * claims a finger aimed at the canvas and cancels it (review R-4.2).
  */
 .tray-tile {
   position: relative;
@@ -80,14 +80,13 @@
   color: var(--shell-ink);
   font: inherit;
   cursor: grab;
-  touch-action: pan-y;
+  touch-action: none;
 }
 
 .servo-shell[data-orientation='portrait'] .tray-tile {
   width: 104px;
   min-height: 0;
   height: 74px;
-  touch-action: pan-x;
 }
 
 /* Waiting for a tap on the canvas. */

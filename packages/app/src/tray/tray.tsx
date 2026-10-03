@@ -1,7 +1,8 @@
 // The part tray (brief Sections 9 and 10, task 4.2): the kit's parts as big tiles grouped by family, and the Library
 // button. A tile places its part through the canvas's own placement: drag it onto the canvas, or tap it and then tap
 // where it goes (`beginPlacement`), with a finger or a pointer; from the keyboard or a screen reader it lists the
-// places the list view offers (places.tsx). A part dragged back over the tray is removed, as by the bin.
+// places the list view offers (places.tsx). A tile takes every press itself (`touch-action: none`), so a drag in any
+// direction hands its pointer to the canvas; the tray scrolls from the room round the tiles.
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import type { PartTypeId } from '@servo/schema';
@@ -16,6 +17,13 @@ import './tray.css';
 /** A press on a tile that travels this far (CSS px at drag sensitivity 1) is a drag; less is a tap. The canvas's own threshold. */
 export const TILE_DRAG_PX = DRAG_PX;
 
+/** A part the canvas is carrying for a pointer from a tile, and whether the browser cancelled that pointer. */
+interface Carry {
+  readonly part: PartTypeId;
+  cancelled: boolean;
+  readonly release: () => void;
+}
+
 interface Press {
   readonly part: PartTypeId;
   readonly pointerId: number;
@@ -27,7 +35,6 @@ interface Press {
 export const Tray = () => {
   const { content, kit, canvas, mode, prefs, layout } = useShell();
   const groups = useMemo(() => (kit ? trayGroups(kit, content.catalogue, content.art) : []), [kit, content]);
-  const rootRef = useRef<HTMLDivElement>(null);
   const ids = useId();
   const tileRefs = useRef(new Map<PartTypeId, HTMLButtonElement>());
   // The tile whose part waits for a tap on the canvas (tap-then-tap).
@@ -42,19 +49,33 @@ export const Tray = () => {
   // The tile to focus once the places list has gone.
   const refocus = useRef<PartTypeId | null>(null);
   const press = useRef<Press | null>(null);
+  const carried = useRef<Carry | null>(null);
   const latest = useRef({ canvas, prefs });
   latest.current = { canvas, prefs };
   const shown = mode === 'build' && layout.shown.tray;
 
-  // Every placement ends with `placement`, landed or not, so the tile lets go then.
-  useEffect(() => canvas?.on('placement', () => setWaiting(null)), [canvas]);
-
-  // The tray is where parts go back to: a part, wire or prop dragged over it is removed (brief Section 10). The
-  // canvas ignores a target no longer in the page, so a tray taken away needs no clean-up, and the canvas may be gone.
-  useEffect(() => {
-    const region = rootRef.current?.closest<HTMLElement>('[data-region="tray"]') ?? rootRef.current;
-    if (canvas && region) canvas.setRemoveTargets([region]);
-  }, [canvas]);
+  // Every placement ends with `placement`, landed or not, so the tile lets go then. A part dropped because the browser
+  // cancelled the finger carrying it (a system gesture, an alert) is never lost: it waits for a tap on the canvas
+  // instead, its tile marked and the places it can go ringed, as after a tap on the tile.
+  useEffect(
+    () =>
+      canvas?.on('placement', (event) => {
+        const carry = carried.current;
+        carried.current = null;
+        carry?.release();
+        if (carry?.cancelled && event.kind === 'part' && !event.placed && event.part === carry.part) {
+          queueMicrotask(() => {
+            const handle = latest.current.canvas;
+            if (handle?.mode !== 'build') return;
+            handle.beginPlacement(carry.part);
+            setWaiting(carry.part);
+          });
+          return;
+        }
+        setWaiting(null);
+      }),
+    [canvas],
+  );
 
   // Run mode and a tucked tray end whatever the tray had begun.
   useEffect(() => {
@@ -65,12 +86,19 @@ export const Tray = () => {
     press.current?.release();
   }, [shown]);
 
-  useEffect(() => () => press.current?.release(), []);
+  useEffect(
+    () => () => {
+      press.current?.release();
+      carried.current?.release();
+    },
+    [],
+  );
 
   const pressed = (tile: TrayTile, event: ReactPointerEvent<HTMLButtonElement>): void => {
     if (!canvas || canvas.mode !== 'build' || !event.isPrimary || event.button !== 0) return;
     press.current?.release();
-    const view = event.currentTarget.ownerDocument.defaultView;
+    const element = event.currentTarget;
+    const view = element.ownerDocument.defaultView;
     if (!view) return;
     const moved = (move: PointerEvent): void => {
       const current = press.current;
@@ -79,8 +107,7 @@ export const Tray = () => {
       if (Math.hypot(move.clientX - current.x, move.clientY - current.y) < threshold) return;
       current.release();
       if (waitingRef.current !== null) setWaiting(null);
-      // The canvas carries the part from here, following this pointer wherever its events go.
-      latest.current.canvas?.beginPlacement(current.part, move);
+      carry(element, view, current.part, move);
     };
     const lifted = (up: PointerEvent): void => {
       const current = press.current;
@@ -103,6 +130,35 @@ export const Tray = () => {
     press.current = { part: tile.part, pointerId: event.pointerId, x: event.clientX, y: event.clientY, release };
   };
 
+  /**
+   * Hands a pointer that has travelled the drag threshold, in any direction, to the canvas, which carries the part from
+   * here wherever the pointer's events go. The tile keeps the pointer (capture), and the tray listens, before the
+   * canvas does, for the browser cancelling it.
+   */
+  const carry = (element: HTMLElement, view: Window, part: PartTypeId, pointer: PointerEvent): void => {
+    const handle = latest.current.canvas;
+    if (!handle) return;
+    carried.current?.release();
+    const ended = (end: PointerEvent): void => {
+      if (end.pointerId !== pointer.pointerId || carried.current !== state) return;
+      if (end.type === 'pointercancel') state.cancelled = true;
+    };
+    const release = (): void => {
+      view.removeEventListener('pointercancel', ended, true);
+      view.removeEventListener('pointerup', ended, true);
+    };
+    const state: Carry = { part, cancelled: false, release };
+    view.addEventListener('pointercancel', ended, true);
+    view.addEventListener('pointerup', ended, true);
+    carried.current = state;
+    try {
+      element.setPointerCapture(pointer.pointerId);
+    } catch {
+      // A pointer already gone cannot be captured; the canvas's own window listeners still see it end.
+    }
+    handle.beginPlacement(part, pointer);
+  };
+
   // A tap: the part waits for the next tap on the canvas. A second tap on the same tile lets it go.
   const tapped = (part: PartTypeId): void => {
     const handle = latest.current.canvas;
@@ -117,7 +173,7 @@ export const Tray = () => {
   };
 
   const clicked = (tile: TrayTile, event: ReactMouseEvent<HTMLButtonElement>): void => {
-    // A click with no pointer behind it: Enter or Space, or a screen reader's activation.
+    // A click with no pointer behind it: Enter, or a screen reader's activation. (Space is Run and Stop, D42.)
     if (event.detail !== 0 || !canvas || canvas.mode !== 'build') return;
     if (waitingRef.current !== null) canvas.cancelPlacement();
     setWaiting(null);
@@ -141,7 +197,7 @@ export const Tray = () => {
   }, [listing]);
 
   return (
-    <div ref={rootRef} className="tray">
+    <div className="tray">
       <Library available={shown} />
       {groups.map((group) => (
         <section key={group.family} className="tray-group" aria-labelledby={`${ids}-${group.family}`} data-family={group.family}>

@@ -90,6 +90,8 @@ export const Shell = ({
   const storage = useMemo(() => (givenStorage === undefined ? pageStorage() : givenStorage), [givenStorage]);
   const rootRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
+  const trayRef = useRef<HTMLElement>(null);
+  const arenaStripRef = useRef<HTMLElement>(null);
   // Null until the shell is measured: the regions render only then, so nothing animates in from a zero size.
   const [size, setSize] = useState<{ readonly width: number; readonly height: number } | null>(null);
   const [tucked, setTuckedState] = useState<Tucked>(() => readTucked(storage));
@@ -196,6 +198,14 @@ export const Shell = ({
     };
   }, [measured]);
 
+  // The tray and the arena strip are where a part, wire or prop dragged off the canvas goes back to, as the bin
+  // (brief Section 10, D36). `setRemoveTargets` replaces the whole list, so the shell, which holds both regions, is its
+  // one caller (review R-4.2). Both are in the page whenever the canvas is.
+  useEffect(() => {
+    const targets = [trayRef.current, arenaStripRef.current].filter((each): each is HTMLElement => each !== null);
+    canvas?.setRemoveTargets(targets);
+  }, [canvas]);
+
   // The tuck states are written when the child changes them, never just for reading them.
   const unchanged = useRef(true);
   useEffect(() => {
@@ -291,6 +301,7 @@ export const Shell = ({
       </header>
       <EdgeTab edge="header" controls={ids.header} />
       <section
+        ref={trayRef}
         id={ids.tray}
         className="shell-tray shell-panel"
         data-region="tray"
@@ -306,6 +317,7 @@ export const Shell = ({
         <div ref={hostRef} className="shell-canvas-host" />
       </main>
       <section
+        ref={arenaStripRef}
         id={ids.arenaStrip}
         className="shell-arena-strip shell-panel"
         data-region="arenaStrip"

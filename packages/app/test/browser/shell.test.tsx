@@ -63,7 +63,10 @@ class StandInCanvas implements CanvasHandle {
   beginPlacement(): void {}
   beginPropPlacement(): void {}
   cancelPlacement(): void {}
-  setRemoveTargets(): void {}
+  removeTargets: (readonly HTMLElement[])[] = [];
+  setRemoveTargets(elements: readonly HTMLElement[]): void {
+    this.removeTargets.push(elements);
+  }
   select(selection: Selection | null): void {
     this.selection = selection;
     this.emit('select', { selection });
@@ -445,6 +448,11 @@ describe('the shell', () => {
     flushSync(() => app.render({ kit }));
     await new Promise((resolve) => setTimeout(resolve, 20));
     expect(seen).toHaveLength(calls);
+  });
+
+  it('gives the canvas the tray and the arena strip as its remove targets, in one call (R-4.2)', async () => {
+    const app = await mountShell();
+    expect(app.canvas.removeTargets).toEqual([[app.region('tray'), app.region('arenaStrip')]]);
   });
 
   it('zooms along its ladder and re-centres with Fit', async () => {

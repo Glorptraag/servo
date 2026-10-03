@@ -57,7 +57,11 @@ afterEach(() => {
   }
 });
 
-const mountTray = async (level: Level = 1, size = { width: 1180, height: 820 }): Promise<Mounted> => {
+const LANDSCAPE = { width: 1180, height: 820 };
+/** Taller than wide, so the shell lays out in portrait, and inside the test page's 1180 × 820 viewport. */
+const PORTRAIT = { width: 600, height: 820 };
+
+const mountTray = async (level: Level = 1, size = LANDSCAPE): Promise<Mounted> => {
   const host = document.createElement('div');
   host.style.cssText = `position: fixed; left: 0; top: 0; width: ${size.width}px; height: ${size.height}px;`;
   document.body.appendChild(host);
@@ -190,22 +194,24 @@ describe('the part tray', () => {
       // Never selectable, so a mouse drag never selects text and starts a native drag (G3).
       const tray = app.host.querySelector<HTMLElement>('.tray');
       expect(tray && getComputedStyle(tray).userSelect).toBe('none');
-      // A drag across the tray is the tray's (it carries the part); only a drag along it scrolls, so a sideways swipe
-      // never reaches the page, which a touch browser can read as Back.
+      // A tile takes every press itself, so the browser never claims a drag aimed at the canvas (R-4.2); the room round
+      // the tiles scrolls the tray, along it only, and the page never swipes back.
+      expect(getComputedStyle(app.tile(kit.parts[0]?.part ?? '')).touchAction).toBe('none');
       expect(tray && getComputedStyle(tray).touchAction).toBe('pan-y');
-      expect(getComputedStyle(app.tile(kit.parts[0]?.part ?? '')).touchAction).toBe('pan-y');
+      expect(getComputedStyle(document.documentElement).overscrollBehaviorX).toBe('none');
+      expect(getComputedStyle(document.body).overscrollBehaviorX).toBe('none');
       for (const picture of app.host.querySelectorAll<HTMLImageElement>('.tray img')) expect(picture.draggable).toBe(false);
     });
   }
 
   it('lays the tiles along the bottom edge in portrait, in a row', async () => {
-    const app = await mountTray(1, { width: 820, height: 1180 });
+    const app = await mountTray(1, PORTRAIT);
     const tray = app.host.querySelector<HTMLElement>('.tray');
     expect(tray && getComputedStyle(tray).touchAction).toBe('pan-x');
-    expect(getComputedStyle(app.tile('chassis')).touchAction).toBe('pan-x');
+    expect(getComputedStyle(app.tile('chassis')).touchAction).toBe('none');
     const boxes = app.tiles().map((part) => app.tile(part).getBoundingClientRect());
     for (const [index, box] of boxes.entries()) {
-      expect(box.top).toBeGreaterThanOrEqual(1180 - 112);
+      expect(box.top).toBeGreaterThanOrEqual(PORTRAIT.height - 112);
       if (index > 0) expect(box.left).toBeGreaterThan(boxes[index - 1]?.left ?? 0);
     }
   });
@@ -252,6 +258,59 @@ describe('the part tray', () => {
     });
   }
 
+  // A finger rarely leaves a tile straight at the canvas. Each drag sets off at an angle from the way to the canvas
+  // (0° straight at it, 90° along the tray), travels 48 px that way, past the drag threshold, then goes on to the
+  // canvas: wherever it sets off, the part lands (R-4.2).
+  for (const [name, size] of [
+    ['landscape', LANDSCAPE],
+    ['portrait', PORTRAIT],
+  ] as const) {
+    it(`places a part dragged by touch from a tile at 0°, 30°, 60° and 90° in ${name}`, async () => {
+      const app = await mountTray(1, size);
+      const portrait = size.height > size.width;
+      const toCanvas: Vec2 = portrait ? { x: 0, y: -1 } : { x: 1, y: 0 };
+      const alongTray: Vec2 = portrait ? { x: 1, y: 0 } : { x: 0, y: 1 };
+      const parts = ['battery-pack-2-cell', 'switch', 'chassis', 'caster'];
+      for (const [index, degrees] of [0, 30, 60, 90].entries()) {
+        const part = parts[index] ?? '';
+        const tile = app.tile(part);
+        tile.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        const from = middleOf(tile);
+        const angle = (degrees * Math.PI) / 180;
+        const step = 48;
+        const turn = { x: from.x + step * (Math.cos(angle) * toCanvas.x + Math.sin(angle) * alongTray.x), y: from.y + step * (Math.cos(angle) * toCanvas.y + Math.sin(angle) * alongTray.y) };
+        await send('touch', 'down', from);
+        for (let i = 1; i <= 4; i++) await send('touch', 'move', { x: from.x + ((turn.x - from.x) * i) / 4, y: from.y + ((turn.y - from.y) * i) / 4 });
+        for (let i = 1; i <= 6; i++) await send('touch', 'move', { x: turn.x + ((app.open.x - turn.x) * i) / 6, y: turn.y + ((app.open.y - turn.y) * i) / 6 });
+        await new Promise((resolve) => setTimeout(resolve, 120));
+        await send('touch', 'up', app.open);
+        await vi.waitFor(() => expect(placedTypes(app.canvas), `${degrees}°`).toEqual(parts.slice(0, index + 1)));
+        expect(app.placements.at(-1), `${degrees}°`).toEqual({ kind: 'part', part, placed: true });
+      }
+    });
+  }
+
+  it('never loses a part when the browser cancels the finger carrying it: the part waits for a tap instead', async () => {
+    const app = await mountTray(1);
+    const tile = app.tile('chassis');
+    const from = middleOf(tile);
+    await send('touch', 'down', from);
+    for (let i = 1; i <= 6; i++) await send('touch', 'move', { x: from.x + ((app.open.x - from.x) * i) / 6, y: from.y + ((app.open.y - from.y) * i) / 6 });
+    await cdp().send('Input.dispatchTouchEvent', { type: 'touchCancel', touchPoints: [] });
+    await vi.waitFor(() => expect(app.placements.at(-1)).toEqual({ kind: 'part', part: 'chassis', placed: false }));
+    // Not lost: its tile is marked and the next tap on the canvas places it.
+    await vi.waitFor(() => expect(tile.getAttribute('aria-pressed')).toBe('true'));
+    expect(placedTypes(app.canvas)).toEqual([]);
+    await tap('touch', app.open);
+    await vi.waitFor(() => expect(placedTypes(app.canvas)).toEqual(['chassis']));
+    expect(tile.getAttribute('aria-pressed')).toBe('false');
+    // A part let go over the tray on purpose is not kept waiting.
+    await drag('touch', middleOf(app.tile('caster')), { x: from.x, y: from.y + 150 });
+    await vi.waitFor(() => expect(app.placements.at(-1)).toEqual({ kind: 'part', part: 'caster', placed: false }));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(app.tile('caster').getAttribute('aria-pressed')).toBe('false');
+  });
+
   it('offers the keyboard and screen readers the places the list view gives, and places through them (D84)', async () => {
     const app = await mountTray(1);
     const chassis = app.tile('chassis');
@@ -277,7 +336,7 @@ describe('the part tray', () => {
     // With the chassis down, a DC motor can go on a free mount point as well as the workbench.
     const motor = app.tile('dc-motor');
     motor.focus();
-    await userEvent.keyboard(' ');
+    await userEvent.keyboard('{Enter}');
     const motorPlaces = await vi.waitFor(() => {
       const found = app.host.querySelector<HTMLDialogElement>('dialog.tray-places');
       if (!found?.open) throw new Error('no places');
