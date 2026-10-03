@@ -1,5 +1,5 @@
 // @servo/parent: the adult's side of Servo (tasks 5.1–5.4). Typed stubs until those tasks land; each throws.
-// Task 5.1 has landed: the account and child profiles, in accounts/.
+// Tasks 5.1 and 5.3 have landed: the account and child profiles, in accounts/, and the parts-list export, in export/.
 // Imports only @servo/schema and @servo/app/store (the package map). See README.md.
 
 import type { CardGameResult, Content, ServoStore } from '@servo/app/store';
@@ -18,6 +18,7 @@ import type {
   Timestamp,
 } from '@servo/schema';
 import { mountParentWith } from './accounts/index.ts';
+import { partsListFrom } from './export/index.ts';
 
 /** What the progress view reads for one child: nothing the child has to do (brief Section 7). */
 export interface ProgressInput {
@@ -87,11 +88,10 @@ export interface PartsList {
   readonly safetyNotes: readonly Text[];
 }
 
+/** Throws `UnknownPart` for a blueprint that names a part type or port the catalogue does not have. */
 export type PartsListOf = (blueprint: Blueprint, catalogue: Catalogue) => PartsList;
 
-export const partsListOf: PartsListOf = () => {
-  throw new Error('partsListOf is not implemented yet (task 5.3).');
-};
+export const partsListOf: PartsListOf = partsListFrom;
 
 /** Ten part types drawn from the Level 1–2 parts in `content`, in the order to show them (D40). Same seed, same deck. */
 export type DrawCards = (content: Content, seed: number) => readonly PartTypeId[];
@@ -115,3 +115,4 @@ export const mountParent: MountParent = (host, store) => mountParentWith(host, s
 
 export { ChoiceNotKept, NAME_MAX, NameRefused, PARENT_TEXT, addChild, mountParentWith, nameOf, readAccounts, removeChild, renameChild, switchChild } from './accounts/index.ts';
 export type { Accounts, ParentOptions } from './accounts/index.ts';
+export { CROSSING_TEXT, EXPORT_TEXT, UnknownPart } from './export/index.ts';
