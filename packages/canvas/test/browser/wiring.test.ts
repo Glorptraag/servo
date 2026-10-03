@@ -26,7 +26,8 @@ import { handsOf, homeOf, placeOf } from './wiring-hands.ts';
 
 const CANVAS = { width: 600, height: 420 };
 /** A software GPU on a busy machine can take a minute to mount a canvas, and minutes for a test of many gestures. */
-const MOUNT_MS = 120_000;
+// Five minutes: at load 200–350 with many agents running, mounting has run past two (review: list-view hook timeout).
+const MOUNT_MS = 300_000;
 const LONG_MS = 360_000;
 /** Empty workbench in every view these tests use. */
 const EMPTY = { x: -40, y: 40 };

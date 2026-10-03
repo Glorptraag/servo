@@ -31,6 +31,10 @@ class StandIn {
     if (this.failFrames) throw new Error('applyRunFrame is task 3.5');
     this.frames.push(frame);
   }
+  /** A read-only canvas emits no control. */
+  on(): () => void {
+    return () => undefined;
+  }
 }
 
 /** A clock the test moves: each `advance` runs the frame callback that is waiting, once per call. */

@@ -690,7 +690,7 @@
       "dispatched_at": "2026-10-01T06:59:05+00:00"
     },
     "4.2": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -708,10 +708,11 @@
       "done_when": "Tray shows exactly the kit's parts; library overlay opens with working filters and no drag-out before Level 3; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-03T05:36:05+00:00"
     },
     "4.3": {
-      "status": "pending",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -727,11 +728,12 @@
       ],
       "done_when": "Every Level 1\u20132 part renders its card at Levels 1 and 2 without truncation at the 10-inch size; live readouts match the run record values; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null
+      "completed_at": "2026-10-03T07:23:04+00:00",
+      "completed_by": "W-4.3",
+      "dispatched_at": "2026-10-03T05:36:05+00:00"
     },
     "4.4": {
-      "status": "pending",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -747,11 +749,12 @@
       ],
       "done_when": "Stop restores the build exactly; slow-motion shows per-tick steps with the tick's visual twin; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null
+      "completed_at": "2026-10-03T07:50:56+00:00",
+      "completed_by": "W-4.4",
+      "dispatched_at": "2026-10-03T05:36:05+00:00"
     },
     "4.5": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -767,7 +770,8 @@
       "done_when": "All Level 1\u20132 challenge fixtures detect success and non-success correctly; tests pass.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-03T07:51:08+00:00"
     },
     "4.6": {
       "status": "pending",
@@ -845,7 +849,7 @@
       "dispatched_at": "2026-10-01T09:05:09+00:00"
     },
     "4.10": {
-      "status": "pending",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -859,8 +863,9 @@
       ],
       "done_when": "Audio events map one-to-one to run events in a recorded run; mute persists across reload; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null
+      "completed_at": "2026-10-03T09:17:19+00:00",
+      "completed_by": "W-4.10",
+      "dispatched_at": "2026-10-03T07:51:08+00:00"
     },
     "G4": {
       "status": "pending",
@@ -1154,7 +1159,7 @@
       "completed_by": null
     },
     "6.6": {
-      "status": "pending",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1170,8 +1175,9 @@
       ],
       "done_when": "Flag off by default; with it on, a servo angle can be set and the servo sweeps to it in a run; tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null
+      "completed_at": "2026-10-03T09:45:55+00:00",
+      "completed_by": "W-6.6",
+      "dispatched_at": "2026-10-03T07:23:14+00:00"
     },
     "G6": {
       "status": "pending",
@@ -1971,6 +1977,86 @@
       "question": "G3 sign-off: wire both Level 1 robots by hand on the iPad (Safari) and a laptop using docs/gates/G3-howto.md (pnpm gate:g3); both run; list view drives the same build. Pass or fail, with findings?",
       "recommendation": "Drew runs the session; findings become fix tasks before 4.2-4.8 land. G3 closed PROVISIONAL meanwhile.",
       "confidence": "high",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D96",
+      "question": "D31 'fixed' (R-4.4 Q1): should 'fixed' also require the new Run to last past the tick at which the fault first appeared?",
+      "recommendation": "Yes: a fault counts as fixed only if the later Run passes that tick without it; queue for the 5.2 progress view",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D97",
+      "question": "Space is always Run/Stop (D42) and never activates a focused button anywhere in the app; Enter activates buttons (R-4.4 Q2). OK for launch given switch-access setups that send Space?",
+      "recommendation": "Yes for launch; revisit with an accessibility review before G4",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D98",
+      "question": "Clock speed: starts at 30 tps on each visit, not persisted per child (R-4.4 Q3).",
+      "recommendation": "Keep as built",
+      "confidence": "high",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D99",
+      "question": "Spec card at Level 2 (R-4.3 Q1): in the 320x308 panel, 12 of 14 Level 2 cards scroll by 16-278 px. Taller panel (loosen the 30% rule), smaller type, or scrolling?",
+      "recommendation": "Keep scrolling for now (nothing clipped, all paths scroll); revisit with children at G4",
+      "confidence": "low",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D100",
+      "question": "Spec card details (R-4.3 Q2-Q6): speak-it reads setting name + chosen option; live readouts with labels and units at every level; coasting motor shows negative back-EMF (-0.6 V) as recorded; safety note from Level 2; ports at every level; one speak-it button per card. Accept defaults?",
+      "recommendation": "Accept as built, except clamp negative back-EMF readouts to 0 V at Levels 1-2 to avoid confusing 6-8 year olds (small follow-up)",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D101",
+      "question": "R-4.4 Q5: a Run that ends while the store has stalled >1 s before reading earlier Runs is dropped (with a console warning). Keep it instead, without its D31 'fixed'?",
+      "recommendation": "Drop for launch (rare); revisit if G5 offline week shows stalls",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D102",
+      "question": "Level 3 slot (6.6): content has no microcontroller part yet, so with the flag on nothing in a real kit can signal the servo; the slot is exercised with the schema's example microcontroller build. Accept for v1?",
+      "recommendation": "Accept; Level 3 content (microcontroller record) is out of launch scope (rule 10)",
+      "confidence": "high",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D103",
+      "question": "Make the new CI 'perf' job a required status check in GitHub branch protection for main? (repo settings change, Drew's call)",
+      "recommendation": "Yes, once it stays green for a week; until then it runs on every push and is read by the orchestrator",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D104",
+      "question": "Sound (R-4.10 Q1-Q4): click only on wire landing (not part landing); shared-build replay silent; hush when tab hidden (small follow-up); on/off only, no volume. Accept?",
+      "recommendation": "Accept; add the hidden-tab hush in the 6.4 sweep",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D105",
+      "question": "Level 3 slot (R-6.6 Q1-Q3): angle shows with flag on though nothing drives it with today's content; run records/shared builds don't record that a program drove a Run (replays differ for flag-on Runs); no Settings row for the flag. Accept defaults?",
+      "recommendation": "Accept all three defaults; record program-driven Runs with the schema minor bump that adds brain rules, before any brain part ships",
+      "confidence": "medium",
       "blocks": [],
       "resolved": false
     }

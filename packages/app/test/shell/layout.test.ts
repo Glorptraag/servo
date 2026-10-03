@@ -2,7 +2,7 @@
 // spec card, the Run bar, the zoom control and the tabs never cover more than 30% of it (brief Section 9's 70%); the
 // arena strip is a layer of the canvas. The spec card is a readable 320 px wide and shows only while a part is
 // selected. The Run bar and the zoom control never move. The browser tests check that the page draws these boxes.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { CanvasMode } from '@servo/canvas';
 import { ALL_OPEN, EDGES } from '../../src/shell/edges.ts';
 import type { Edge, Tucked } from '../../src/shell/edges.ts';
@@ -21,6 +21,10 @@ import {
   unionArea,
 } from '../../src/shell/layout.ts';
 import type { Hand, LayoutInput, Rect, ShellLayout } from '../../src/shell/layout.ts';
+
+// Its sweeps over screens and states take seconds alone, past Vitest's 5 s default on a machine at load 200–350 with
+// many agents running.
+vi.setConfig({ testTimeout: 120_000 });
 
 /** The screens task 4.1 names: a 10-inch tablet in landscape, a 13-inch screen, and a tablet in portrait. */
 const SCREENS = [

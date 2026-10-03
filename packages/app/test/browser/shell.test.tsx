@@ -516,7 +516,8 @@ describe('mountApp', () => {
       // The tray holds the Level 1 kit's tiles (task 4.2).
       const tiles = [...host.querySelectorAll<HTMLElement>('[data-region="tray"] [data-part]')].map((tile) => tile.dataset.part);
       expect(tiles).toEqual(['battery-pack-2-cell', 'switch', 'dc-motor', 'wheel-large', 'chassis', 'caster']);
-      expect(host.querySelector<HTMLButtonElement>('[data-region="runBar"] button')?.disabled).toBe(true);
+      // Run is off with nothing placed, and stays focusable so its reason can be heard (task 4.4).
+      expect(host.querySelector<HTMLButtonElement>('[data-region="runBar"] button')?.getAttribute('aria-disabled')).toBe('true');
       expect(host.querySelector<HTMLElement>('[data-region="specCard"]')?.dataset.shown).toBe('false');
       app.destroy();
       expect(host.childElementCount).toBe(0);

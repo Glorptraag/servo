@@ -3,10 +3,11 @@
 Back to the [tools README](../../README.md). The harness drives the real canvas (`@servo/canvas`) over the real content (`@servo/content` and its `FIXTURES`) in Playwright's Chromium, with Vitest browser mode. It generalises task 3.1's and 3.2's browser helpers (packages/canvas/test/browser/) so later tasks test through one set of hands, one screenshot setup and one device profile. Its first job is ground rule 8: touch, pointer and the list view give the same blueprint, byte for byte.
 
 ```sh
-pnpm e2e                                   # at the repo root: pnpm art, then every harness file (packages/tools: vitest run --config src/e2e/vitest.config.ts)
+pnpm e2e                                   # at the repo root: pnpm art, then every harness file but the timing (packages/tools: vitest run --config src/e2e/vitest.config.ts --project e2e)
 pnpm e2e test/e2e/parity-1.e2e.ts          # some files only, as a CI shard runs them
 pnpm e2e -u                                # rewrite the screenshot references
 SERVO_PARITY_STRICT=1 pnpm e2e             # gate G3: a parity fixture with a step left out or a path waiting fails
+pnpm perf                                  # at the repo root: every package's timing tests, this harness's performance project among them
 ```
 
 Chromium must be installed once per machine: `pnpm --filter @servo/tools exec playwright install chromium`. The art registry is gitignored, so `pnpm e2e` runs `pnpm art` first; the bench refuses to start while any part has no picture.
@@ -15,7 +16,7 @@ Chromium must be installed once per machine: `pnpm --filter @servo/tools exec pl
 
 | Path | What it does |
 | --- | --- |
-| `vitest.config.ts` | Two browser projects in the iPad profile, one after the other: `e2e` on SwiftShader (parity, screenshots and their mutation test, gestures), then `performance` on the machine's own GPU, alone. The reporters, and `provide` for the strict switch |
+| `vitest.config.ts` | Two browser projects in the iPad profile, one after the other: `e2e` on SwiftShader (parity, screenshots and their mutation test, gestures), then `performance` on the machine's own GPU, alone. `pnpm e2e` runs `e2e`; `pnpm perf` runs `performance`. The reporters, and `provide` for the strict switch |
 | `profile.ts` | The iPad profile (1180 × 820 CSS pixels at device scale factor 2, with touch), the 4× CPU slowdown, the 16 ms budget, the Chromium flags |
 | `bench.ts` | Mounts the canvas as the app lays it out, with a part tray at its left, the content catalogue and `resolveArt` from the art registry; waits for it to settle; moves the view; turns canvas millimetres into page points |
 | `input.ts` | Real input through CDP: touch tap, drag and pinch; mouse click, drag and wheel |
@@ -38,7 +39,7 @@ Tests: `test/e2e/*.e2e.ts` run in the browser under this config, and are not pic
 | `test/e2e/screenshots.e2e.ts` | Every content fixture in Build mode with its real pictures matches its reference, and its probes see every line and part; the two arena presets the fixtures use, in Run mode |
 | `test/e2e/screenshot-mutations.e2e.ts` | Each fixture without one wire, and without one part, fails both its reference and its probe |
 | `test/e2e/gestures.e2e.ts` | The harness's hands reach the canvas as a child's would: a touch drag and a mouse drag pan exactly with the hand, a pinch and the wheel zoom about the right point, taps and clicks change nothing |
-| `test/e2e/performance.e2e.ts` | Frame time on busy-workbench (content's 25-part fixture) with its pictures, in the iPad profile at 4× CPU slowdown |
+| `test/e2e/performance.e2e.ts` | Frame time on busy-workbench (content's 25-part fixture) with its pictures, in the iPad profile at 4× CPU slowdown, the best of five samples. Run by `pnpm perf` and CI's perf job, not by `pnpm e2e` or a shard (`PERFORMANCE_FILE` in `profile.ts`) |
 
 ## The bench
 
@@ -75,7 +76,7 @@ A line or part with too little to judge (fewer than 4 uncovered line samples, or
 
 ## The iPad profile and frame time
 
-The profile is task 3.1's: a 1180 × 820 viewport at device scale factor 2, with touch. `measureFrames(gestures, frames)` slows the CPU 4× through CDP and plays each gesture one step per frame, timing every frame's main-thread work (its requestAnimationFrame callbacks, input and drawing together). The hand dispatches its pointer and wheel events itself, inside the frame, because CDP input arrives on its own schedule. The performance test asserts a median and p95 within 16 ms, and on a hardware GPU 50 fps or better; a software GPU (CI) draws far below 60 fps whatever the page does, so there it runs fewer frames and only prints the rate.
+The profile is task 3.1's: a 1180 × 820 viewport at device scale factor 2, with touch. `measureFrames(gestures, frames)` slows the CPU 4× through CDP and plays each gesture one step per frame, timing every frame's main-thread work (its requestAnimationFrame callbacks, input and drawing together). The hand dispatches its pointer and wheel events itself, inside the frame, because CDP input arrives on its own schedule. The performance test asserts a median and p95 within 16 ms, and on a hardware GPU 50 fps or better; a software GPU (CI) draws far below 60 fps whatever the page does, so there it runs fewer frames and only prints the rate. One run of the gestures is one sample, and on a shared CI runner with SwiftShader one sample's p95 has read from 8.1 to 37.8 ms for the same code, the first after mounting nearly always the slowest. So the test takes `FRAME_SAMPLES` (5) samples from the fitted view, prints each, and holds `bestSample`, the one with the lowest p95, to the budget, as sim-core's tick cost takes the fastest of its batches: a busy runner only ever adds time. The budget is unchanged, over a whole run; a change that slows frames slows every sample. `run-animation.timing.ts` samples its Run the same way. The canvas README ("Frame time") says why not the median of the samples.
 
 ## The parity check
 

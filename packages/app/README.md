@@ -43,6 +43,68 @@ Open questions, taken conservatively here: the tray shows how many of each part 
 
 Details: [docs/run-loop.md](docs/run-loop.md).
 
+## The Run bar
+
+Task 4.4, in [src/run-bar/](src/run-bar/). It fills the shell's `runBar` slot (App.tsx), inside the 440 × 64 px room the layout keeps for it, and never tucks or moves (D67).
+
+- **Run and Stop.** One large toggle, a triangle and "Run", a square and "Stop". Run is off until a part is placed, with one plain line in the clock's place, "Place a part first.", that the button names as its description (ground rule 9: a line, never a dialog). Space is Run and Stop wherever focus is (D42), except in a field the child types in (the build's name), a select, a checkbox or a radio button; on a focused button Space never activates the button as well, as the canvas's list view already keeps it, so one press is one toggle. Enter flips a selected switch in a Run, which is the canvas's.
+- **The run loop** ([run-loop.ts](src/run-bar/run-loop.ts)) is the one for the app: the shared build's replay ([src/sharing/replay.ts](src/sharing/replay.ts)) is now a thin wrapper round it. Run makes a Simulation, or keeps the one made from the same build with its seed (D37: same `meta.id`, parts, wires and arena; a new name keeps it), snapshots tick 0, switches Build to Run through the shell's `setMode` (so the tray slides out and Save stores what waits, D71), gives the canvas tick 0 and holds it for the one-second spin-up, then steps at the clock's rate, never more than 4 ticks in one animation frame (a hidden tab's gap is skipped). Every frame goes once, in tick order, to `canvas.applyRunFrame` and to the loop's listeners (`subscribe`), where the spec card's readouts, the sound layer and the challenge runner listen; the bar hands out its loop with `onLoop`, and App.tsx joins it to the spec card's `runFrames` (task 4.3) and the sound layer (task 4.10): every frame pushed, cleared whenever no Run plays. A switch flip from the canvas's `control` event, or `loop.input`, reaches the Simulation. Stop restores tick 0 and returns the canvas to Build mode: the loop never loads or edits a build, so the build is byte for byte what it was (ground rule 4). A build the child changes while the first Run loads (the physics engine, D11) is run as it is once ready. A build that cannot be run or drawn ends in one plain line in the clock's place.
+- **The clock.** Slower and Faster step through 1, 2, 3, 5, 10, 15 and 30 ticks a second of display, from 30; a tick is always 1/30 s of simulated time, so slow motion slows the clock, never the simulation (the same frames at every speed). At 5 or fewer (brief Section 10) each step shows the tick's visual twin under the speed: a dot that fills and empties, and pulses once, with the tick's number. Reduced motion keeps the fill and drops the pulse. The tick sound itself is task 4.10's, from the loop's frames (see Sound).
+- **Undo** ([history.ts](src/run-bar/history.ts)) keeps the builds the canvas's `edit` events carry, up to 100 steps, and loads the one before with the shell's `load`, which Save hears as an edit (task 4.9). Another build loaded onto the canvas starts it again. **Reset arena** applies `set-arena` with the preset kept and the child's props dropped (D29), so it is one Undo step. Both are off in a Run, when the build is locked, and Reset arena is off with no props to drop.
+- **Runs are kept** ([record.ts](src/run-bar/record.ts)), and the store is never on a Run's path. As a build comes onto the canvas the recorder reads the child's earlier Runs of it in the sandbox, in the background; pressing Run only notes the time. As a Run that stepped at least once ends, before tick 0 is restored, it is numbered, linked to the Run before it (D31's `fixed`) and its record (`simulation.record`, with every event, the seed and the switch flips) is added to `child.runs` in the background. A Run stopped in its spin-up is not kept, so it never marks the faults of the Run before as fixed (R-4.4). A store that has not answered by the time a Run ends, or cannot keep it, is a console warning; the Run goes on, and a failed autosave is Save's plain "Not saved" line. No child, nothing kept.
+
+### Tests
+
+- **Unit, Node** ([test/run-bar/](test/run-bar/)), on the real sim-core with a stand-in canvas that throws on any load or edit and a clock the test moves: the spin-up and 30 ticks a second; Stop giving back the build and the Simulation's tick-0 snapshot byte for byte, and the next Run the same frames with the same seed; a new Simulation and seed for a changed build, not for a new name; slow motion one tick per step at 1 and 5 a second, changing speed mid-Run, the same frames at every speed; a switch flip reaching the run record's inputs; the record hook before restore, and only for a Run that started; a build changed while loading; a long gap; a build that cannot run; dispose. Undo's history. The recorder with a real store on fake-indexeddb: numbers, the Run before, every tick, counting after a reload; nothing for a Run stopped in its spin-up or while loading; no loading phase waiting on a slow store; a store that never answers or refuses.
+- **Browser, Chromium** ([test/browser/run-bar.test.tsx](test/browser/run-bar.test.tsx)), the shell with the real canvas, content, sim-core and IndexedDB: Run off with its line and still focusable, on once a part is placed; Run and Stop by pointer, touch (CDP) and Space, one toggle per press with focus on the toggle, Space typing in the name field; the robot's poses changing; Stop giving the build back exactly; slow motion at 1 tick a second, each step one frame and one beat of the twin, by pointer, touch and keyboard; Undo of an edit, Reset arena and its Undo; each Run kept on Stop, none for a Stop in the spin-up, and the build saved on Run; a store that never answers and refuses saves, with Run still starting at once and Save's "Not saved" line. **Airplane mode** ([test/browser/offline.test.ts](test/browser/offline.test.ts)) now opens a rolling robot offline, presses Run, and reads its wheels turning in the list view (R-5.5 note 4: the physics engine's lazy chunk comes from the worker's cache).
+
+### Decisions and open questions (task 4.4)
+
+Taken conservatively, for Drew and the orchestrator:
+
+1. The clock is a Slower/Faster stepper of 44 px buttons (no drag needed), over 1, 2, 3, 5, 10, 15 and 30 ticks a second. It starts at 30 on every visit; whether it should persist is open.
+2. Slow motion is 5 ticks a second or fewer (brief Section 10). The tick's twin shows only there, as the tick sound plays only there.
+3. "Place a part first." is the reason line. It and a failed Run's line take the clock's place, so the bar never grows.
+4. Undo and Reset arena stay in place and turn off during a Run. Undo keeps 100 steps for the visit, starts again for another build, and has no Redo.
+5. Space never activates a focused button anywhere in the app (Enter does), so Space is always Run and Stop.
+6. Every Run that stepped at least once is kept, one cut short by the app closing too; a Run stopped in its spin-up is not (R-4.4 Q1). A Run that ends before the store has answered for its build's earlier Runs is not kept (only a stalled store does that). Hint use (task 4.6) and the challenge's verdict (task 4.5) are not in the record yet.
+7. packages/tools/src/gate/run.ts still has its own copy of the loop: `RunLoop` is not exported from `@servo/app`, and tools is not this task's to change.
+8. Run with nothing placed is `aria-disabled`, not `disabled`, so keyboard and screen-reader users reach it and hear its reason. A build emptied while the first Run loads is not run.
+
+## Sound
+
+Task 4.10, in [src/sound/](src/sound/). Sound is feedback about the machine (brief Section 11), never music, praise or a fanfare (ground rule 7), and every sound has a visual twin, so sound can be off with nothing lost.
+
+| Sound | Comes from | Its visual twin |
+| --- | --- | --- |
+| Motor whirr, rising in pitch and loudness with speed | each `sound` event `motor` (level = \|rpm\| ÷ no-load rpm) | the canvas's motor twin (task 3.5) |
+| Hum of a stalled motor or a servo motor holding with no signal | each `sound` event `hum` | the canvas's hum twin and stall shudder (task 3.5) |
+| Buzzer, at its part record's `hz` | each `sound` event `buzz` | the canvas's buzzer twin (task 3.5) |
+| Squeal of a slipping wheel | each `sound` event `squeal` | the canvas's squeal twin (task 3.5) |
+| Hollow knock on a collision | each `sound` event `knock` above 0 | the canvas's knock twin (task 3.5) |
+| Rising whir as Run starts | the run loop entering its spin-up | the spin-up itself: the wires light, Run turns to Stop |
+| Soft tick per step | each frame after tick 0 at 5 ticks a second or fewer | the Run bar's beat (task 4.4) |
+| Click as a wire lands | a canvas `edit` with a `connect`, alone or in a batch | the wire's elastic settle into its socket (task 3.3) |
+
+- **One for one** ([cues.ts](src/sound/cues.ts), [layer.ts](src/sound/layer.ts)). The layer listens to the run loop (App.tsx joins it with the spec card's frames) and hands every `sound` event of every frame to its sink as one machine cue, in order, with its tick, part, level and pitch: a recorded Run's sound events, run through `machineCuesOf`, are exactly what was played. Nothing else is inferred; sim-core's levels are used as they are. The layer plays nothing without a Run or an edit, and when a Run ends (Stop, a failed Run, the loop going) it hushes every machine sound.
+- **Synthesis** ([synth.ts](src/sound/synth.ts)). Web Audio oscillators, no audio files: one voice per part and held sound (motor, hum, buzz, squeal) following its level, and one-shots (knock, whir, tick, click) that stop by themselves, so nothing loops. The AudioContext is made at the child's first touch, click or key press (the browser's autoplay rules), and only while sound is on.
+- **Sound off** ([mute.ts](src/sound/mute.ts), [control.tsx](src/sound/control.tsx)). A switch in the header's sound slot: a native button with `role="switch"`, by tap, click, Enter or a screen reader (ground rule 8; Space stays Run and Stop, D42). The setting is this device's, in localStorage (`servo.sound.muted`) beside the tuck states, so it persists across a reload. Sound off stops every voice and suspends the context; the layer still hands the sink every cue, so sound coming back on mid-Run hears the motors at their speed. Reduced motion does not turn sound off.
+
+### Tests
+
+- **Unit, Node** ([test/sound/](test/sound/)), on the real sim-core and run loop with a stand-in canvas, a clock the test moves and a sink that writes cues down: for three fixtures that between them make all five machine sounds, the cues played equal `machineCuesOf(record.events)` and match the record's sound events one for one; the same cues for the same Run again and in slow motion; the whir once per Run, a tick per step only at 5 ticks a second or fewer, a hush on Stop and when the loop goes; a click per landing edit, by connect or batch, and none for other edits; nothing without a Run or an edit; sound off persisting across a new layer on the same storage, unreadable as on, a refusing storage; every cue still reaching the sink with sound off; the first-gesture listeners. The Web Audio sink on a stand-in AudioContext: nothing before a gesture or with sound off, one voice per part following its level, the buzzer's pitch, one-shots that stop, mute and back, close.
+- **Browser, Chromium** ([test/browser/sound.test.tsx](test/browser/sound.test.tsx)): the real app page's sound switch, on at first, off and on again across real reloads; the switch by pointer, touch (CDP) and Enter, with Space still Run; a wire landed through the canvas's command layer clicks once; the real sink's AudioContext made only at the first gesture, running, and suspended with sound off.
+
+### Decisions and open questions (task 4.10)
+
+1. Sound starts on; the brief gives no default.
+2. All five of sim-core's sounds play, squeal included, since the run record carries it and the canvas twins it; the brief's list names the other four.
+3. A mount (a part dropped onto a mount point) does not click: the brief's click is for a wire landing. Whether a part landing should click too (brief Section 10, "parts land with a click") is open.
+4. The whir's twin is the spin-up the Run bar already shows (the wires lighting, Run turning to Stop); no new twin was added.
+5. The brief's optional calm workshop ambience is not built: no music loop, and no ambience without a decision.
+6. A shared build's replay (task 5.6) plays no sound; whether it should is open.
+7. Volume is fixed; there is no slider, only on and off.
+
 ## Running it
 
 From the repository root, `pnpm dev` serves the app and `pnpm build` writes it to `packages/app/dist`; both run `pnpm art` first. `pnpm --filter @servo/app preview` serves the build, and `pnpm --filter @servo/app test` runs the unit and browser tests ([docs/shell.md](docs/shell.md), "Tests").
@@ -131,13 +193,51 @@ Taken conservatively, for Drew and the orchestrator:
 7. The replay starts on opening and runs until Stop, as a Run does; with reduced motion it waits for Run. Whether it should stop by itself is for Drew (and task 5.7).
 8. A link opened in a tester build still meets the invite gate first.
 
+## Feature flags
+
+Task 6.6, in [src/flags/](src/flags/) and [src/program-view/](src/program-view/). Flags are per device and every one is off by default. The app reads them once as it mounts (`deviceFlags()`) and never writes them; a flag is on only when the device's localStorage lists it under `servo.flags`, a JSON list of names. Anything missing, unreadable, blocked or unknown is off. An adult turns one on from the browser's developer tools and reloads:
+
+```js
+localStorage.setItem('servo.flags', JSON.stringify(['level-3-slot'])); // on
+localStorage.removeItem('servo.flags'); // off again
+```
+
+### `level-3-slot`: the Level 3 slot
+
+**The content has no microcontroller yet**, and no Level 1–2 part gives a signal, so in the app today a child cannot place a brain and nothing carries the servo motor's angle. The slot is exercised only with the schema's example microcontroller (`@servo/schema/fixtures`), in the tests below.
+
+Off, the app is exactly as before. On:
+
+- **One setting unlocks (rule 10).** `slotSetting(record, setting)` ([rules.ts](src/program-view/rules.ts)) names the one setting the slot opens before its unlock level: a number setting bound to a position actuator's `target`, which is the servo motor's angle and nothing else in the content. App.tsx passes it to the spec card (`unlocked`) and to the canvas (`unlockSettings`, an additive mount option, packages/canvas README), so the angle shows on the servo motor's card at the child's level as its native slider (touch, pointer, keyboard) and the canvas's list view offers it a step at a time (rule 8), each change one `set-setting`. The DC motor's speed and the LED's colour stay at Level 3. The card's text layers, the header and the canvas keep the child's level.
+- **The program view.** Under the spec card of a selected brain (a part with a `program` primitive), a section headed "Program" lists its rules as plain lines, such as "Always set out 1 to the servo motor’s angle, 45°." It is read-only: a rule changes when the setting it follows changes. With no rule it says "No output is wired to a part it can set."
+- **The rule.** `programsOf(blueprint, catalogue)` ([rules.ts](src/program-view/rules.ts)) gives each brain one rule per output wired to a position actuator's command port (the servo motor's signal in) whose part has a number setting bound to the actuator's `target` (the angle): always drive that output at the level that turns the actuator there. sim-core turns a position actuator commanded at level l to minDeg + l × (maxDeg − minDeg), so the level is (angle − minDeg) / (maxDeg − minDeg): 45° is 0.25. It reads only the records and the build (rule 1). An output reaching several such parts takes the first signal line's, in wire id order.
+- **The runtime.** `programFor(flags, blueprint, catalogue)` ([runtime.ts](src/program-view/runtime.ts)) is the `program` a Run passes to `createSimulation`: with the flag off it is `undefined`, so every brain stays the no-op brain (D41); on, it is a pure `ProgramRuntime` written against sim-core's interface (packages/sim-core/docs/program.md) that drives each brain's outputs at its rules' levels every tick the brain is on, and keeps no state. sim-core is unchanged: the slot turns the brain off below `onVolts` and the servo motor sweeps at its own `degPerSecond`.
+- **The Run loop.** App.tsx gives the Run bar `program`, which the run loop calls for each new Simulation and passes to `createSimulation` (task 4.4's loop gained this optional `program` option); with the flag off the Run bar gets none. The Run key covers the settings, so a new angle makes a new Simulation.
+
+### Tests
+
+- **Unit, Node** ([test/flags/](test/flags/), [test/program-view/](test/program-view/)). Flags: off by default, off for anything unreadable, unknown or a storage that throws, on when listed. What the slot unlocks: only the servo motor's angle among the content's three Level 3 settings, on the card at Level 1. The rules and the runtime on the real sim-core, with the schema's example microcontroller added to the real content, because no brain is authored yet ([fixtures.ts](test/program-view/fixtures.ts): the servo motor on two 2-cell battery packs, as broken-servo-without-signal, D50, with a microcontroller on the same packs and its out 1 on the servo motor's signal in). The angle is set with the canvas's own `applyEdit`. Flag off: the servo motor holds at 90° and hums (no-signal). Flag on: for 45°, 0°, 135° and 180° it sweeps there through the angles between, never going back, and holds; the signal line carries the level; a new angle is the next Run's; the same build gives the same events tick for tick; a microcontroller without power drives nothing. The level for the default, the ends of the range, an output reaching two servo motors, a renamed microcontroller (rule 1).
+- **Browser, Chromium** ([test/browser/program-view.test.tsx](test/browser/program-view.test.tsx)). The real app with the real canvas and Run bar at 1180 × 820, on the bench plus a loose DC motor and LED. With nothing stored: no angle on the card or in the list view, no program view, and Run on the Run bar leaves the servo motor at 90° with its no-signal line. With `servo.flags` set on the device: the DC motor's speed and the LED's colour stay locked on the card and in the list view; the program view's line at 90°; the angle by keyboard, mouse drag, finger drag (CDP touch) and the list view's action; the program view following it; the list view's step and the slider's step from the same build give byte-identical blueprints on the real canvas; Run on the real Run bar sweeps the servo motor's live angle from 90° down to 45°, never going back, with no failure line, and Stop returns to Build with the angle kept; no dialog.
+
+### Decisions and open questions (task 6.6)
+
+Taken conservatively, for Drew and the orchestrator:
+
+1. With the flag on, only the servo motor's angle unlocks early (rule 10), picked out by its data (a position actuator's target), not by the part's name.
+2. **No brain is in the content** (above). Authoring the microcontroller (a Level 3 part, packages/content) is for Drew and the content tasks (D64 is pending).
+3. The flag lives in localStorage, set from developer tools; no Settings row (task 6.3's `/settings`) turns it on. A row there is for Drew.
+4. The rule is fixed: "always set the output to the angle of the servo motor it reaches". Where a brain's rules are stored is open (packages/sim-core/docs/program.md: a schema minor bump), so nothing about the program is saved; it is worked out from the build each time.
+5. An output carries one level, so one wired to two servo motors takes the first line's angle, in wire id order.
+6. The program view sits under the brain's spec card in the card's panel, with no speak-it of its own; the card's speak-it reads only the card.
+7. The canvas gained one optional mount option, `unlockSettings`, fixed at mount: the flag is read once as the app mounts, so nothing needs to change it later.
+
 ## Areas and owners
 
 | Folder | Task | Does |
 | --- | --- | --- |
 | `shell/` | 4.1 | Layout, tucking, the header, the zoom control (`canvas.setZoom`) |
 | `tray/`, `library/` | 4.2 | Kit tiles by family; the catalogue overlay, browse-only before Level 3 |
-| `spec-card/` | 4.3 | Layers by level, settings with child-sized steps and real units, live readouts, speak-it |
+| `spec-card/` | 4.3 | Layers by level, settings with child-sized steps and real units, live readouts, speak-it ([README](src/spec-card/README.md)) |
 | `run-bar/` | 4.4 | Run and Stop, the clock, Undo, Reset arena, the spin-up |
 | `challenges/` | 4.5 | Goal line, arena preset, goal detection over the Run, the tick |
 | `hints/` | 4.6 | Which ladder and rung; the canvas draws them, and do-it is one `batch` |
@@ -148,4 +248,4 @@ Taken conservatively, for Drew and the orchestrator:
 | `a11y/`, `theme/` | 5.7 | WCAG 2.2 AA chrome, high contrast, dyslexia-friendly type, left-handed mirror |
 | `telemetry/` | 6.2 | Only the events the success measures need |
 | `release/` | 6.3 | What a release bakes in (`build-info.ts`), the page's start (`start.ts`: the invite gate first in a tester build, then Settings at `/settings` or the app), the invite gate, Settings, and the invite code's hash (`@servo/app/invite-code`) |
-| `flags/`, `program-view/` | 6.6 | The Level 3 slot, off by default |
+| `flags/`, `program-view/` | 6.6 | Feature flags, per device and off by default; the Level 3 slot's program view and program runtime ([above](#feature-flags)) |

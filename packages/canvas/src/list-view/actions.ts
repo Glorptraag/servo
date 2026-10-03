@@ -4,7 +4,7 @@
 // (ground rule 8). Pure. See README.md, "The list view".
 import { planWire } from '@servo/schema';
 import type { Blueprint, Catalogue, Level, PartTypeId, PlacedPartId, PortRef, Vec2 } from '@servo/schema';
-import type { CanvasMode, EditCommand, ListAction, ListSubject, PropTemplate, Selection } from '../interface.ts';
+import type { CanvasMode, EditCommand, ListAction, ListSubject, PropTemplate, Selection, UnlockSettings } from '../interface.ts';
 import { posesOf, readHolding, subtreeOf, takeOff } from '../placement/holding.ts';
 import { propSpot } from '../placement/props.ts';
 import { moveTargets, movedPartSpot, placeTargets, tileOutline } from '../placement/rules.ts';
@@ -18,6 +18,8 @@ export interface ListState {
   readonly blueprint: Blueprint | undefined;
   readonly catalogue: Catalogue;
   readonly level: Level;
+  /** Settings offered before their unlock level (CanvasOptions.unlockSettings). */
+  readonly unlockSettings?: UnlockSettings;
   readonly mode: CanvasMode;
   readonly readOnly: boolean;
   /** Run mode: whether a manual switch is closed now. */
@@ -129,9 +131,9 @@ const partActions = (state: ListState & { readonly blueprint: Blueprint }, names
     }),
   );
 
-  // Settings unlocked at the child's level, a child-sized step at a time.
+  // Settings unlocked at the child's level, or named by `unlockSettings`, a child-sized step at a time.
   for (const setting of record.settings) {
-    if (setting.unlockLevel > state.level) continue;
+    if (setting.unlockLevel > state.level && !(state.unlockSettings?.(record, setting) ?? false)) continue;
     const label = midSentence(setting.label);
     const current = part.settings[setting.id] ?? setting.default;
     if (setting.kind === 'number') {

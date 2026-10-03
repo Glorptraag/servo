@@ -8,9 +8,10 @@
     "./testing": "./src/testing.ts"
   },
   "scripts": {
-    "test": "vitest run",
+    "test": "vitest run --project unit --project browser --project 'hands*'",
+    "perf": "vitest run --project performance",
     "test:unit": "vitest run --project unit",
-    "test:browser": "vitest run --project browser --project performance",
+    "test:browser": "vitest run --project browser --project 'hands*'",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
