@@ -47,8 +47,10 @@ Outside `src/routing/`, kept small:
 - **What is routed.** Power and signal lines whose straight line crosses a part body.
   - A line that crosses nothing keeps its straight line, so tidying changes as little as it can.
   - Mechanical linkages and mounts are never routed: they lie under the parts and are almost always zero long.
-- **What a body is (D85).** The picture as the renderer draws it: the footprint box (`body.size`, x by y) scaled the way `views.ts` scales a picture to fit its tile less its 2 mm padding (`drawnBodySize`, renderer/picture.ts), centred on the tile and turned with the part.
-  - Placeholder art fills the footprint box in true proportions, so for small parts the drawn body is about the tile less its padding.
+- **What a body is (D85).** The picture as the renderer draws it, centred on the tile and turned with the part.
+  - The canvas passes the router each part's loaded picture (its texture, the same one `views.ts` draws), and both size it with one function, `drawnPictureSize` (renderer/picture.ts): the picture's own proportions fitted in the tile less its 2 mm padding.
+  - The placeholder pictures are three-quarter views, so their proportions are not the footprint's: a large wheel's picture is 18 × 22 mm, not the 55 × 22 mm its footprint box would give (review R-3.7, finding 11).
+  - While a part's picture is not loaded (no entry, loading or failed), its body is the whole room a picture takes, which holds any picture that comes.
   - The rest of the tile is a hit affordance a wire may pass over.
   - Frames (the chassis) are not bodies: they are the deck the parts stand on, and wires run over them as over a real chassis.
 - **What crossing means.** The wire as the child sees it. A socket is drawn over its wire's end (44 px, above the wires), so the stretch under a wire's own two sockets does not count.
@@ -123,7 +125,7 @@ Routes are kept in the canvas, never in the blueprint.
   - A wire is routed exactly when its straight line crosses: the router's exact check in one direction, the sampler in the other.
   - The same routes come out every time, in any order.
   - On the boxed-in synthetic build, the route crosses the least it can and is clean from there.
-  - The crossing check samples every path every 0.08 mm against the renderer's own `drawnBodySize`, not the router's shapes.
+  - The crossing check samples every path every 0.08 mm against the renderer's own `drawnPictureSize` for the real placeholder pictures (`test/fixtures/placeholder-art.json`, `pnpm art`'s output, which packages/tools checks against the generator), not the router's shapes. The same builds are checked before their pictures load.
   - A flood fill of the open workbench shows which sockets have a clean way.
   - The earlier "leaves each socket away from its own part" test is gone. With bodies now pictures, a route may start back under its own socket where the socket hides it, so the property no longer holds or matters.
 - **`test/routing/commands.test.ts`** (unit):
@@ -141,7 +143,7 @@ Routes are kept in the canvas, never in the blueprint.
 - **`test/browser/routing.test.ts`** (browser):
   - identical routes by every hand, and the list view counting route changes;
   - a routed wire drawn (by pixels) and hit along its route;
-  - the drawn picture's size matching `pictureSize`;
+  - the pictures Pixi draws: every part type of the five fixtures, with its real placeholder picture, measured from the sprite's own bounds (`getBounds`) and compared with the body the router keeps clear of; then, against those measured pictures, a wire is routed exactly when its straight line crosses one, and no route crosses one;
   - refused in Run mode;
   - routes kept and dropped as the build changes;
   - fit and `setZoom` in the uncovered canvas;
@@ -152,7 +154,7 @@ Routes are kept in the canvas, never in the blueprint.
 
 Settled by the coordinator for task 3.7 (D80 as superseded by D85), as defaults until Drew says otherwise:
 
-1. A part body is the picture as the renderer draws it (`drawnBodySize`), not its tile's padding; wires keep a clearance where one fits. Frames (the chassis) are not bodies: wires run over the deck.
+1. A part body is the picture as the renderer draws it (`drawnPictureSize` with the loaded picture), not its tile's padding; wires keep a clearance where one fits. Frames (the chassis) are not bodies: wires run over the deck.
 2. The stretch of wire under its own two sockets is exempt: it is hidden, so it does not count as crossing.
 3. Only crossing wires are routed; a wire that crosses nothing stays straight.
 4. Tidying makes no undo step. Routes are view state: kept while their sockets stay put, and dropped back to straight when a socket moves. Saving routes with the build would need a blueprint field, a schema question for after v1.

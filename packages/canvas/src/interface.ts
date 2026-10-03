@@ -175,7 +175,7 @@ export interface CanvasHandle {
   /**
    * How far in from each edge of the canvas the part the child can see begins: the app's panels where they overlap
    * the canvas (D66) and the device's safe-area insets (D70). `fit`, `setZoom` and the zoom limits work in what is
-   * left. It moves nothing on screen itself. Throws a RangeError for an inset that is not a finite number from 0.
+   * left. A view the new safe area leaves outside the zoom limits comes back within them; otherwise nothing moves. Throws a RangeError for an inset that is not a finite number from 0.
    * Task 3.7.
    */
   setSafeArea(safeArea: CanvasSafeArea): void;

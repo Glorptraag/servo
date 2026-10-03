@@ -7,9 +7,10 @@
 // the bodies in the way: a visibility graph over the corners of the bodies grown by a clearance, searched with
 // Dijkstra.
 //
-// A body is the part's picture as the renderer draws it (`drawnBodySize`, D85): its footprint box scaled to fill the
-// tile less its padding. The rest of the tile is a hit affordance a wire may pass over. Frames (the chassis) are the
-// deck the parts stand on, so wires run over them as over a real chassis.
+// A body is the part's picture as the renderer draws it (D85): the canvas passes each part's loaded picture, and the
+// router sizes it with the renderer's own `drawnPictureSize`; while no picture shows, the whole room a picture takes.
+// The rest of the tile is a hit affordance a wire may pass over. Frames (the chassis) are the deck the parts stand
+// on, so wires run over them as over a real chassis.
 //
 // What counts as crossing: the wire as the child sees it. A socket is drawn over the end of its wire, so the stretch
 // of wire under a wire's own two sockets is hidden; where a socket sits over another part's picture (the motor
@@ -18,7 +19,8 @@
 // one: its route crosses the least it can, straight out, and is clean from there on.
 import type { Vec2, WireId } from '@servo/schema';
 import { distance } from '../scene/geometry.ts';
-import type { Scene, ScenePort, SceneWire } from '../scene/scene.ts';
+import type { Proportions } from '../renderer/picture.ts';
+import type { Scene, ScenePart, ScenePort, SceneWire } from '../scene/scene.ts';
 import { PORT_MM, mmOf } from '../scene/units.ts';
 import { EPS, bodyShape, containsPoint, rayInside, segmentEnters, squareShape } from './shapes.ts';
 import type { Shape } from './shapes.ts';
@@ -71,8 +73,14 @@ interface Exit {
   readonly length: number;
 }
 
+/** Each part's picture, as the renderer has it: its proportions, or undefined while none shows. */
+export type ArtOf = (part: ScenePart) => Proportions | undefined;
+
+const noArt: ArtOf = () => undefined;
+
 /** The bodies a wire must not cross: every part's drawn picture but a frame's. */
-export const bodiesOf = (scene: Scene): readonly Shape[] => scene.parts.filter((part) => !part.frame).map((part) => bodyShape(part));
+export const bodiesOf = (scene: Scene, artOf: ArtOf = noArt): readonly Shape[] =>
+  scene.parts.filter((part) => !part.frame).map((part) => bodyShape(part, artOf(part)));
 
 /** The pieces of the segment from `a` to `b` that lie outside every disc, scraps dropped. */
 const outsideDiscs = (a: Vec2, b: Vec2, discs: readonly Vec2[], radius: number): [Vec2, Vec2][] => {
@@ -336,19 +344,20 @@ const cleanBeyondExits = (route: readonly Vec2[], from: Exit, to: Exit, bodies: 
 };
 
 /**
- * Routes every power and signal line that crosses a part body. A wire no pass can route keeps its straight line.
+ * Routes every power and signal line that crosses a part body, each part's body sized by `artOf`'s picture as the
+ * renderer draws it. A wire no pass can route keeps its straight line.
  * Mechanical linkages and mounts are never routed: they sit under the parts, and are almost always zero long.
  */
-export const routeWires = (scene: Scene): WireRoutes => {
+export const routeWires = (scene: Scene, artOf: ArtOf = noArt): WireRoutes => {
   const routes = new Map<WireId, Route>();
   const solid = scene.parts.filter((part) => !part.frame);
-  const bodies = solid.map((part) => bodyShape(part));
+  const bodies = solid.map((part) => bodyShape(part, artOf(part)));
   const crossing = scene.wires.filter((wire) => crossesBodies([wire.from.at, wire.to.at], bodies));
   if (crossing.length === 0) return routes;
 
   const bodyOf = new Map(solid.map((part, index) => [part.id, bodies[index] as Shape]));
   const sockets = solid.flatMap((part) => part.ports.filter((port) => port.layer === 'ports'));
-  const grown: Obstacle[] = solid.map((part, index) => ({ halo: bodyShape(part, CLEARANCE_MM), core: bodies[index] as Shape }));
+  const grown: Obstacle[] = solid.map((part, index) => ({ halo: bodyShape(part, artOf(part), CLEARANCE_MM), core: bodies[index] as Shape }));
   const makers: readonly (() => Pass)[] = [
     () => makePass([...grown, ...sockets.map((port) => ({ halo: squareShape(port.at, HIDDEN_MM + CLEARANCE_MM / 2) }))], bodies),
     () => makePass(grown, bodies),

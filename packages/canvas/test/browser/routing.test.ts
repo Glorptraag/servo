@@ -5,20 +5,25 @@
 // uncovered (D66, D70), re-held on a resize or a new safe area.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { userEvent } from 'vitest/browser';
-import type { Vec2 } from '@servo/schema';
+import { makeCatalogue } from '@servo/schema';
+import type { Blueprint, Catalogue, Vec2 } from '@servo/schema';
 import type { CanvasSurface } from '../../src/renderer/surface.ts';
-import { drawnBodySize, pictureSize } from '../../src/renderer/picture.ts';
 import { paletteFor } from '../../src/renderer/style.ts';
 import { TIDY_WIRES_ACTION } from '../../src/routing/commands.ts';
-import { routeWires } from '../../src/routing/router.ts';
+import { crossesBodies, routeWires } from '../../src/routing/router.ts';
+import { bodyShape, shapeOf } from '../../src/routing/shapes.ts';
+import type { Shape } from '../../src/routing/shapes.ts';
 import { NO_SAFE_AREA, screenCentre } from '../../src/routing/view.ts';
 import type { Polygon } from '../../src/routing/view.ts';
 import { distance, distanceToSegment, rectCentre } from '../../src/scene/geometry.ts';
 import type { Rect } from '../../src/scene/geometry.ts';
 import { WIRE_HIT_MM } from '../../src/scene/units.ts';
-import { fixture, twentyFiveParts } from '../helpers/catalogue.ts';
+import { placeholderResolver } from '../helpers/art.ts';
+import { benchCatalogue, busyWorkbench } from '../helpers/busy-workbench.ts';
+import { catalogue, fixture, twentyFiveParts } from '../helpers/catalogue.ts';
+import { crewCatalogue, crewRobot } from '../helpers/circuit-crew.ts';
 import { findable } from '../helpers/findable.ts';
-import { PREFS, colourDistance, describeRgb, listen, mount, mouse, pointer, reset, rgbOf, settle, shoot, svgArt, touch, unmountAll } from './helpers.ts';
+import { PREFS, colourDistance, describeRgb, listen, mount, mouse, pointer, reset, rgbOf, settle, shoot, touch, unmountAll } from './helpers.ts';
 
 /** The app shell's room in landscape: a header, a spec card on the right and the Run bar below (D66, D70). */
 const PANELS = { top: 64, right: 340, bottom: 96, left: 0 };
@@ -201,28 +206,73 @@ describe('one tidy for every hand (ground rule 8)', () => {
   });
 });
 
-describe('the body a route keeps off', () => {
-  it('is the picture as the renderer draws it, at the size `drawnBodySize` gives', async () => {
-    const art = svgArt('#3a7');
-    const { surface: drawn, unmount } = await mount({ resolveArt: () => ({ src: art, isPlaceholder: true }) });
+describe('the body a route keeps off: the picture Pixi draws', () => {
+  // The five fixtures' part types: the schema's examples (the 25-part fixture holds Rolling Start, the bumper robot,
+  // the LED circuit and a microcontroller) and content's records (the busy workbench and the Circuit Crew robot),
+  // each drawn with its real placeholder picture.
+  const sets: readonly [string, Catalogue, readonly Blueprint[]][] = [
+    ['the schema’s parts', catalogue, [twentyFiveParts, fixture('bumper-robot'), fixture('rolling-start')]],
+    [
+      'content’s parts',
+      makeCatalogue({ parts: [...benchCatalogue.parts.values()], arenas: [...(benchCatalogue.arenas?.values() ?? []), ...(crewCatalogue.arenas?.values() ?? [])] }),
+      [busyWorkbench, crewRobot],
+    ],
+  ];
+
+  it.each(sets)('is where Pixi draws each picture, for every part type of %s, and tidied wires keep off it', async (_name, parts, builds) => {
+    const { surface: drawn, unmount } = await mount({ catalogue: parts, resolveArt: placeholderResolver(parts) });
     try {
-      drawn.load(fixture('rolling-start'));
-      await settle(drawn);
-      for (const part of drawn.scene.parts) {
-        const picture = drawn.partView(part.id)?.drawnPicture;
-        if (!picture) throw new Error(`${part.id} shows no picture`);
-        // The test picture is 160 × 100; placeholder art keeps the footprint's proportions, which drawnBodySize uses.
-        const expected = pictureSize(part.tile, { width: 160, height: 100 });
-        expect(picture.w, part.id).toBeCloseTo(expected.w, 6);
-        expect(picture.h, part.id).toBeCloseTo(expected.h, 6);
-        const body = drawnBodySize(part.record, part.tile);
-        expect(body).toEqual(pictureSize(part.tile, { width: part.record.body.size.x, height: part.record.body.size.y }));
+      const seen = new Set<string>();
+      for (const build of builds) {
+        expect(drawn.load(build).ok).toBe(true);
+        drawn.fit();
+        await settle(drawn);
+        // Each picture's box as Pixi draws it, back on the plane: measured from the display object, not from the router.
+        const measured = new Map<string, Shape>();
+        for (const part of drawn.scene.parts) {
+          const box = drawn.partView(part.id)?.pictureBounds;
+          if (!box) throw new Error(`${part.id} shows no picture`);
+          seen.add(part.record.id);
+          const a = drawn.camera.screenToWorld({ x: box.x, y: box.y });
+          const b = drawn.camera.screenToWorld({ x: box.x + box.width, y: box.y + box.height });
+          if (part.frame) continue;
+          // What the router keeps clear of, through the canvas's own pictures, on screen.
+          const body = bodyShape(part, drawn.artOf(part)).corners.map((corner) => drawn.camera.worldToScreen(corner));
+          const xs = body.map((p) => p.x);
+          const ys = body.map((p) => p.y);
+          const what = `${part.id} (${part.record.id})`;
+          expect(Math.min(...xs), what).toBeCloseTo(box.x, 0);
+          expect(Math.max(...xs), what).toBeCloseTo(box.x + box.width, 0);
+          expect(Math.min(...ys), what).toBeCloseTo(box.y, 0);
+          expect(Math.max(...ys), what).toBeCloseTo(box.y + box.height, 0);
+          // Bounding boxes are the drawn picture itself for parts turned by quarter turns, as every fixture's are.
+          if (part.pose.rotation % 90 === 0) measured.set(part.id, squareOf(a, b));
+        }
+        drawn.tidyWires();
+        const pictures = [...measured.values()];
+        for (const wire of drawn.scene.wires) {
+          const route = drawn.routing.routeOf(wire.id);
+          // Routed exactly when its straight line crosses a picture as drawn; never crossing one once routed.
+          expect(route !== undefined, wire.id).toBe(crossesBodies([wire.from.at, wire.to.at], pictures));
+          if (route) expect(crossesBodies(route, pictures), wire.id).toBe(false);
+        }
       }
+      const types = new Set(builds.flatMap((build) => build.parts.map((part) => part.part)));
+      expect(seen).toEqual(types);
     } finally {
       unmount();
     }
-  }, MOUNT_MS);
+  }, LONG_MS);
 });
+
+/** An upright box on the plane from two opposite corners. */
+const squareOf = (a: Vec2, b: Vec2): Shape =>
+  shapeOf([
+    { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y) },
+    { x: Math.max(a.x, b.x), y: Math.min(a.y, b.y) },
+    { x: Math.max(a.x, b.x), y: Math.max(a.y, b.y) },
+    { x: Math.min(a.x, b.x), y: Math.max(a.y, b.y) },
+  ]);
 
 /** Each part's drawn tile, turned with it: what the limits keep on screen. */
 const tiles = (): Polygon[] => surface.scene.parts.map((part) => part.corners);

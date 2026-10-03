@@ -2,7 +2,8 @@
 // clearance, and the square kept clear round a socket. Touching a shape is allowed; only entering its inside counts.
 // Pure maths with the scene's geometry, no Pixi. See docs/routing.md.
 import type { Vec2 } from '@servo/schema';
-import { drawnBodySize } from '../renderer/picture.ts';
+import { drawnPictureSize } from '../renderer/picture.ts';
+import type { Proportions } from '../renderer/picture.ts';
 import { partToCanvas } from '../scene/geometry.ts';
 import type { Rect } from '../scene/geometry.ts';
 import type { ScenePart } from '../scene/scene.ts';
@@ -45,12 +46,13 @@ export const tileShape = (part: ScenePart, grow = 0): Shape => {
 };
 
 /**
- * A part's body as the child sees it: its picture as the renderer draws it (`drawnBodySize`, renderer/picture.ts),
- * centred on its tile, grown by `grow` mm on every side and turned with the part. The rest of the tile, its padding
- * and its sockets' room, is a hit affordance a wire may pass over.
+ * A part's body as the child sees it: its picture as the renderer draws it, sized by the renderer's own
+ * `drawnPictureSize` for the same picture (`art`, its proportions; undefined while none shows, which takes the whole
+ * room a picture may fill), centred on its tile, grown by `grow` mm on every side and turned with the part. The rest
+ * of the tile, its padding and its sockets' room, is a hit affordance a wire may pass over.
  */
-export const bodyShape = (part: ScenePart, grow = 0): Shape => {
-  const size = drawnBodySize(part.record, part.tile);
+export const bodyShape = (part: ScenePart, art: Proportions | undefined, grow = 0): Shape => {
+  const size = drawnPictureSize(part.tile, art);
   const w = size.w / 2 + grow;
   const h = size.h / 2 + grow;
   return shapeOf(

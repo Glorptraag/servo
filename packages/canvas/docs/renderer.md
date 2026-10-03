@@ -75,7 +75,7 @@ A Run starts the robot's root at the preset's start pose, and every other part k
 ## Pictures
 
 - Only through the injected `resolveArt(identity.art)`. A key with no entry, or a picture that fails to load, gets the neutral tile with the part's real name, in bold, upright whatever the part's turn. While a picture loads the tile stays plain.
-- A picture is fitted inside the tile less its 2 mm padding, keeping its proportions (`pictureSize`, src/renderer/picture.ts, which tidy wires also routes round). SVG placeholders are rasterised at 4× their 160 px (sharp on a 2× screen to about 200% zoom for a part tile). A frame's tile is bigger, so the chassis picture is already soft at 200%, and every picture and name blurs towards 400%. Rasterising by tile size and zoom is left for later (review R-3.1, finding 8).
+- A picture is fitted inside the tile less its 2 mm padding, keeping its proportions (`drawnPictureSize`, src/renderer/picture.ts: the one sizing tidy wires also routes round, D85). SVG placeholders are rasterised at 4× their 160 px (sharp on a 2× screen to about 200% zoom for a part tile). A frame's tile is bigger, so the chassis picture is already soft at 200%, and every picture and name blurs towards 400%. Rasterising by tile size and zoom is left for later (review R-3.1, finding 8).
 - A frame's name sits in its top-left corner, clear of the parts on it.
 
 ## The view

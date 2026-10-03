@@ -9,7 +9,7 @@ import type { PartPose } from '../scene/geometry.ts';
 import type { ScenePart, SceneWire } from '../scene/scene.ts';
 import { DASH_GAP_MM, DASH_MM, LINKAGE_MM, PX_PER_MM, WIRE_MM, mmOf } from '../scene/units.ts';
 import type { ArtState } from './art.ts';
-import { TILE_PADDING_MM, pictureRoom, pictureSize } from './picture.ts';
+import { TILE_PADDING_MM, drawnPictureSize, pictureRoom } from './picture.ts';
 import { drawSocket } from './sockets.ts';
 import { DIM_ALPHA, FONT_STACKS } from './style.ts';
 import type { Palette } from './style.ts';
@@ -144,6 +144,14 @@ export class PartView {
     return picture?.visible ? { w: picture.width, h: picture.height } : undefined;
   }
 
+  /** Where Pixi draws the picture, in the stage's CSS pixels (its bounding box), when the tile shows one: for tests. */
+  get pictureBounds(): { readonly x: number; readonly y: number; readonly width: number; readonly height: number } | undefined {
+    const picture = this.picture;
+    if (!picture?.visible) return undefined;
+    const { x, y, width, height } = picture.getBounds();
+    return { x, y, width, height };
+  }
+
   /** The font stack the name is written in, when the tile shows a name. */
   get labelFont(): string | undefined {
     if (!this.label?.visible) return undefined;
@@ -189,7 +197,7 @@ export class PartView {
         this.body.addChild(this.picture);
       }
       this.picture.texture = art.texture;
-      this.picture.scale.set(pictureSize(part.tile, art.texture).w / art.texture.width);
+      this.picture.scale.set(drawnPictureSize(part.tile, art.texture).w / art.texture.width);
       this.picture.visible = true;
       if (this.label) this.label.visible = false;
       return;

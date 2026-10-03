@@ -10,11 +10,12 @@ import type { Blueprint, Catalogue, Vec2 } from '@servo/schema';
 import { canvasToPart, distance } from '../../src/scene/geometry.ts';
 import { buildScene } from '../../src/scene/scene.ts';
 import type { Scene, ScenePart, SceneWire } from '../../src/scene/scene.ts';
-import { TILE_PADDING_MM, drawnBodySize } from '../../src/renderer/picture.ts';
+import { drawnPictureSize } from '../../src/renderer/picture.ts';
 import { PORT_MM } from '../../src/scene/units.ts';
 import { CLEARANCE_MM, bodiesOf, crossesBodies, crossingCount, pathOf, routeWires } from '../../src/routing/router.ts';
-import type { Route } from '../../src/routing/router.ts';
+import type { ArtOf, Route } from '../../src/routing/router.ts';
 import { bodyShape, rayInside, segmentEnters, squareShape, tileShape } from '../../src/routing/shapes.ts';
+import { noArt, placeholderArtOf } from '../helpers/art.ts';
 import { benchCatalogue, busyWorkbench } from '../helpers/busy-workbench.ts';
 import { blueprintOf, catalogue, fixture, twentyFiveParts } from '../helpers/catalogue.ts';
 import { crewCatalogue, crewRobot } from '../helpers/circuit-crew.ts';
@@ -26,15 +27,24 @@ const SLOW_MS = 60_000;
 const STEP_MM = 0.08;
 const HIDDEN_MM = PORT_MM / 2;
 
-/** Strictly inside a part's body as the renderer draws it: its picture, sized by the renderer's own `drawnBodySize`. */
-const insideBody = (part: ScenePart, point: Vec2): boolean => {
+/**
+ * Strictly inside a part's body as the renderer draws it: its picture (the real placeholder art, or with `noArt` the
+ * whole room a picture may take), sized by the renderer's own `drawnPictureSize`. The browser test ties this to the
+ * pictures Pixi actually draws.
+ */
+const insideBody = (part: ScenePart, point: Vec2, artOf: ArtOf): boolean => {
   const local = canvasToPart(part.pose, point);
-  const drawn = drawnBodySize(part.record, part.tile);
+  const drawn = drawnPictureSize(part.tile, artOf(part));
   return Math.abs(local.x) < drawn.w / 2 - 1e-6 && Math.abs(local.y) < drawn.h / 2 - 1e-6;
 };
 
 /** The bodies a path passes through where it shows, by sampling it: outside the sockets at `hidden` (its two ends). */
-const bodiesCrossed = (scene: Scene, path: readonly Vec2[], hidden: readonly Vec2[] = [path[0] as Vec2, path[path.length - 1] as Vec2]): string[] => {
+const bodiesCrossed = (
+  scene: Scene,
+  path: readonly Vec2[],
+  hidden: readonly Vec2[] = [path[0] as Vec2, path[path.length - 1] as Vec2],
+  artOf: ArtOf = placeholderArtOf,
+): string[] => {
   const crossed = new Set<string>();
   for (let i = 1; i < path.length; i++) {
     const a = path[i - 1] as Vec2;
@@ -44,7 +54,7 @@ const bodiesCrossed = (scene: Scene, path: readonly Vec2[], hidden: readonly Vec
       const t = k / steps;
       const at = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
       if (hidden.some((end) => distance(end, at) <= HIDDEN_MM + 1e-6)) continue;
-      for (const part of scene.parts) if (!part.frame && insideBody(part, at)) crossed.add(part.id);
+      for (const part of scene.parts) if (!part.frame && insideBody(part, at, artOf)) crossed.add(part.id);
     }
   }
   return [...crossed].sort();
@@ -56,7 +66,7 @@ const bodiesCrossed = (scene: Scene, path: readonly Vec2[], hidden: readonly Vec
  * of its sockets (a wire may pass under its own socket). False means a socket is boxed in, so every way between them
  * crosses a part.
  */
-const openSpace = (scene: Scene): ((wire: SceneWire) => boolean) => {
+const openSpace = (scene: Scene, artOf: ArtOf = placeholderArtOf): ((wire: SceneWire) => boolean) => {
   const cell = 0.25;
   const solid = scene.parts.filter((part) => !part.frame);
   const minX = Math.min(...solid.map((part) => part.bounds.minX)) - 40;
@@ -72,7 +82,7 @@ const openSpace = (scene: Scene): ((wire: SceneWire) => boolean) => {
     const i1 = Math.min(columns - 1, Math.ceil((part.bounds.maxX - minX) / cell));
     const j0 = Math.max(0, Math.floor((part.bounds.minY - minY) / cell));
     const j1 = Math.min(rows - 1, Math.ceil((part.bounds.maxY - minY) / cell));
-    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) if (insideBody(part, centre(i, j))) blocked[j * columns + i] = 1;
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) if (insideBody(part, centre(i, j), artOf)) blocked[j * columns + i] = 1;
   }
   const region = new Int32Array(columns * rows).fill(-1);
   let regions = 0;
@@ -131,7 +141,7 @@ const builds: readonly [string, Blueprint, Catalogue][] = [
 
 describe('the busy workbench', () => {
   const scene = buildScene(busyWorkbench, benchCatalogue);
-  const routes = routeWires(scene);
+  const routes = routeWires(scene, placeholderArtOf);
 
   /** All 43: power and signal lines, which tidying routes, and drive linkages and mounts, drawn straight under the parts. */
   const everyWire = [...scene.wires, ...scene.linkages];
@@ -155,14 +165,14 @@ describe('the busy workbench', () => {
 
 describe.each(builds)('routing %s', (_name, blueprint, parts) => {
   const scene = buildScene(blueprint, parts);
-  const routes = routeWires(scene);
+  const routes = routeWires(scene, placeholderArtOf);
 
   it('after tidying, no wire crosses a drawn part body', () => {
     for (const wire of [...scene.wires, ...scene.linkages]) expect(bodiesCrossed(scene, pathOf(wire, routes)), wire.id).toEqual([]);
   }, SLOW_MS);
 
   it('routes exactly the wires whose straight line crosses a body, from socket to socket, and leaves the rest straight', () => {
-    const bodies = bodiesOf(scene);
+    const bodies = bodiesOf(scene, placeholderArtOf);
     for (const wire of scene.wires) {
       const route = routes.get(wire.id);
       // Exactly the wires the router's exact check finds crossing; the 0.08 mm sampler, which can miss a graze,
@@ -178,11 +188,25 @@ describe.each(builds)('routing %s', (_name, blueprint, parts) => {
   }, SLOW_MS);
 
   it('gives the same routes every time, whatever order the blueprint lists things in', () => {
-    const again = routeWires(buildScene(blueprint, parts));
-    const shuffled = routeWires(buildScene({ ...blueprint, parts: [...blueprint.parts].reverse(), wires: [...blueprint.wires].reverse() }, parts));
+    const again = routeWires(buildScene(blueprint, parts), placeholderArtOf);
+    const shuffled = routeWires(buildScene({ ...blueprint, parts: [...blueprint.parts].reverse(), wires: [...blueprint.wires].reverse() }, parts), placeholderArtOf);
     const plain = (map: ReadonlyMap<string, Route>) => JSON.stringify([...map].sort(([a], [b]) => (a < b ? -1 : 1)));
     expect(plain(again)).toBe(plain(routes));
     expect(plain(shuffled)).toBe(plain(routes));
+  }, SLOW_MS);
+});
+
+describe.each(builds)('routing %s before its pictures load', (_name, blueprint, parts) => {
+  // With no picture showing yet, a part's body is the whole room a picture may take, which holds any picture that
+  // comes: routes made then never cross the picture once it loads.
+  const scene = buildScene(blueprint, parts);
+  const routes = routeWires(scene, noArt);
+
+  it('leaves no wire crossing the room a picture may take, nor the picture that loads', () => {
+    for (const wire of [...scene.wires, ...scene.linkages]) {
+      expect(bodiesCrossed(scene, pathOf(wire, routes), undefined, noArt), wire.id).toEqual([]);
+      expect(bodiesCrossed(scene, pathOf(wire, routes)), wire.id).toEqual([]);
+    }
   }, SLOW_MS);
 });
 
@@ -212,13 +236,13 @@ describe('a socket boxed in by other parts', () => {
   }, SLOW_MS);
 
   it('crosses the least it can, on one straight run out of the box, and is clean from there', () => {
-    const route = routeWires(scene).get(wire.id);
+    const route = routeWires(scene, placeholderArtOf).get(wire.id);
     if (!route) throw new Error('not routed');
     expect(route[0]).toEqual(wire.from.at);
     expect(route[route.length - 1]).toEqual(wire.to.at);
-    expect(crossingCount(route, bodiesOf(scene))).toBe(1);
+    expect(crossingCount(route, bodiesOf(scene, placeholderArtOf))).toBe(1);
     expect(bodiesCrossed(scene, route.slice(1), [wire.from.at, wire.to.at])).toEqual([]);
-    expect(bodiesCrossed(scene, route.slice(0, 2))).toHaveLength(1);
+    expect(bodiesCrossed(scene, route.slice(0, 2), [wire.from.at])).toHaveLength(1);
     // The run out crosses one battery pack's picture, the wall nearest the socket, and no further than it must.
     const out = distance(route[0] as Vec2, route[1] as Vec2);
     expect(out).toBeLessThanOrEqual(30 + PORT_MM);
@@ -257,17 +281,22 @@ describe('the shapes', () => {
         expect(corner.x).toBeCloseTo(expected.x, 9);
         expect(corner.y).toBeCloseTo(expected.y, 9);
       }
-      const body = bodyShape(part);
+      const art = placeholderArtOf(part);
+      if (!art) throw new Error(`no picture for ${part.id}`);
+      const body = bodyShape(part, art);
       const [a, b, c] = body.corners as [Vec2, Vec2, Vec2];
-      const drawn = drawnBodySize(part.record, part.tile);
+      const drawn = drawnPictureSize(part.tile, art);
       expect(distance(a, b)).toBeCloseTo(drawn.w, 9);
       expect(distance(b, c)).toBeCloseTo(drawn.h, 9);
-      // The picture keeps the footprint's proportions and fills the tile less its 2 mm padding on its tighter side.
-      expect(drawn.w / drawn.h).toBeCloseTo(part.record.body.size.x / part.record.body.size.y, 9);
-      expect(Math.min(part.tile.w - drawn.w, part.tile.h - drawn.h)).toBeCloseTo(2 * TILE_PADDING_MM, 9);
+      // The picture keeps its own proportions, inside the room, and with no picture the body is the whole room.
+      expect(drawn.w / drawn.h).toBeCloseTo(art.width / art.height, 9);
+      const room = drawnPictureSize(part.tile, undefined);
+      expect(drawn.w).toBeLessThanOrEqual(room.w + 1e-9);
+      expect(drawn.h).toBeLessThanOrEqual(room.h + 1e-9);
+      expect(Math.max(drawn.w / room.w, drawn.h / room.h)).toBeCloseTo(1, 9);
       expect(body.box.minX).toBeGreaterThanOrEqual(shape.box.minX - 1e-9);
       expect(body.box.maxX).toBeLessThanOrEqual(shape.box.maxX + 1e-9);
-      expect(bodyShape(part, CLEARANCE_MM).box.maxX - body.box.maxX).toBeGreaterThan(0);
+      expect(bodyShape(part, art, CLEARANCE_MM).box.maxX - body.box.maxX).toBeGreaterThan(0);
     }
   });
 });

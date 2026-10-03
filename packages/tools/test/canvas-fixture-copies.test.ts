@@ -1,11 +1,16 @@
-// The canvas never imports content (its package map), so its tests carry copies of content's fixtures: the busy
-// workbench (task 3.7's routing test) and the Circuit Crew kit robot (task 3.3). Tools may read both packages, so
-// this checks each copy still matches content: its blueprint, every part record and every arena (review R-3.7,
-// finding 7). When content changes, refresh the copy from it.
+// The canvas never imports content or tools (its package map), so its tests carry copies: content's busy workbench
+// (task 3.7's routing test) and Circuit Crew kit robot (task 3.3), and the placeholder pictures `pnpm art` draws for
+// the part records its tests use (task 3.7: tidy wires routes round the pictures as drawn). Tools may read every
+// package, so this checks each copy still matches its source (review R-3.7, findings 7 and 11). When a source
+// changes, refresh the copy; for the pictures, run this file with UPDATE_CANVAS_ART=1.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { validatePartRecord } from '@servo/schema';
+import type { PartRecord } from '@servo/schema';
+import { exampleParts } from '@servo/schema/fixtures';
+import { placeholderSvg } from '../src/placeholder-art/index.ts';
 
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 const read = (relative: string): unknown => JSON.parse(fs.readFileSync(path.join(root, relative), 'utf8'));
@@ -55,5 +60,28 @@ describe.each(copies)('the canvas test copy %s', (copyPath, blueprintPath) => {
   it('has its arenas as content has them', () => {
     const arenas = recordsIn('packages/content/arenas');
     for (const arena of copy.arenas) expect(arena, arena.id).toEqual(arenas.get(arena.id));
+  });
+});
+
+describe('the canvas test copy of the placeholder pictures', () => {
+  const artPath = 'packages/canvas/test/fixtures/placeholder-art.json';
+  const valid = (data: unknown): PartRecord => {
+    const result = validatePartRecord(data);
+    if (!result.ok) throw new Error(result.issues.map((issue) => issue.code).join(', '));
+    return result.value;
+  };
+  const pictures = (records: readonly PartRecord[]): Record<string, string> =>
+    Object.fromEntries(records.map((record) => [record.identity.art, placeholderSvg(record)] as const).sort(([a], [b]) => (a < b ? -1 : 1)));
+  const contentRecords = [...new Map(copies.flatMap(([copyPath]) => (read(copyPath) as Copy).parts.map((part) => [part.id, part] as const))).values()];
+  const expected = {
+    about:
+      "The placeholder pictures `pnpm art` draws (packages/tools, placeholderSvg) for the part records the canvas's tests use: the schema's example parts, and content's records in the canvas's fixture copies. Checked against the generator by packages/tools/test/canvas-fixture-copies.test.ts; refresh with UPDATE_CANVAS_ART=1.",
+    schema: pictures(exampleParts.map(valid)),
+    content: pictures(contentRecords.map(valid)),
+  };
+
+  it('has the picture the generator draws for every part record the canvas tests use', () => {
+    if (process.env.UPDATE_CANVAS_ART === '1') fs.writeFileSync(path.join(root, artPath), `${JSON.stringify(expected, null, 2)}\n`);
+    expect(read(artPath)).toEqual(expected);
   });
 });

@@ -23,6 +23,7 @@ import type {
 import { ListViewDom } from '../list-view/dom.ts';
 import { ListViewModel } from '../list-view/model.ts';
 import { applyEdit } from '../placement/apply.ts';
+import type { Proportions } from './picture.ts';
 import { PlacementController } from '../placement/controller.ts';
 import { RoutingController, tidies } from '../routing/controller.ts';
 import { checkSafeArea, screenCentre } from '../routing/view.ts';
@@ -34,7 +35,7 @@ import type { Rect } from '../scene/geometry.ts';
 import { hitTest } from '../scene/hit.ts';
 import type { Hit } from '../scene/hit.ts';
 import { buildScene } from '../scene/scene.ts';
-import type { Scene } from '../scene/scene.ts';
+import type { Scene, ScenePart } from '../scene/scene.ts';
 import { WiringController } from '../wiring/controller.ts';
 import { ArenaView } from './arena-view.ts';
 import { ArtStore } from './art.ts';
@@ -307,7 +308,7 @@ export class CanvasSurface implements CanvasHandle {
       this.emitter.emit('edit', { command, blueprint: result.blueprint });
     }
     if (result.ok && tidies(command)) {
-      this.routing.tidy(this.scene);
+      this.routing.tidy(this.scene, this.artOf);
       this.redrawWires();
     }
     return result;
@@ -471,6 +472,12 @@ export class CanvasSurface implements CanvasHandle {
     return targets;
   }
 
+  /** Each part's picture as this canvas draws it (its texture), for tidy wires to route round (task 3.7, D85). */
+  readonly artOf = (part: ScenePart): Proportions | undefined => {
+    const state = this.art.get(part.record.identity.art);
+    return state.status === 'ready' ? state.texture : undefined;
+  };
+
   /** Draws every wire again along its route or straight, after tidying. */
   private redrawWires(): void {
     const palette = this.palette;
@@ -557,7 +564,7 @@ export class CanvasSurface implements CanvasHandle {
     if (this.destroyed) return;
     this.scene = buildScene(this.current, this.options.catalogue);
     this.arena = layArena(this.current, this.options.catalogue, this.scene);
-    this.routing.refresh(this.scene);
+    this.routing.refresh(this.scene, this.artOf);
     this.list.changed();
     const layers = this.layers;
     const renderer = this.renderer;

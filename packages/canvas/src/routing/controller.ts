@@ -6,7 +6,7 @@ import type { Vec2, WireId } from '@servo/schema';
 import type { EditCommand } from '../interface.ts';
 import type { Scene, SceneWire } from '../scene/scene.ts';
 import { bodiesOf, crossingCount, pathOf, routeWires } from './router.ts';
-import type { Route, WireRoutes } from './router.ts';
+import type { ArtOf, Route, WireRoutes } from './router.ts';
 
 interface Kept {
   readonly route: Route;
@@ -41,10 +41,10 @@ export class RoutingController {
     return pathOf(wire, this.view);
   }
 
-  /** Routes every wire of the scene afresh. */
-  tidy(scene: Scene): void {
-    const bodies = bodiesOf(scene);
-    const routes = routeWires(scene);
+  /** Routes every wire of the scene afresh, round each part's picture as `artOf` says the renderer draws it. */
+  tidy(scene: Scene, artOf?: ArtOf): void {
+    const bodies = bodiesOf(scene, artOf);
+    const routes = routeWires(scene, artOf);
     this.kept = new Map();
     for (const wire of scene.wires) {
       const route = routes.get(wire.id);
@@ -54,9 +54,9 @@ export class RoutingController {
   }
 
   /** After the build changed: keeps the routes that still fit it. */
-  refresh(scene: Scene): void {
+  refresh(scene: Scene, artOf?: ArtOf): void {
     if (this.kept.size === 0) return;
-    const bodies = bodiesOf(scene);
+    const bodies = bodiesOf(scene, artOf);
     const next = new Map<WireId, Kept>();
     for (const wire of scene.wires) {
       const kept = this.kept.get(wire.id);
