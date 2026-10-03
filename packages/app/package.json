@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./store": "./src/store/index.ts",
+    "./goal": "./src/challenges/goal.ts",
     "./invite-code": "./src/release/invite-code.ts"
   },
   "scripts": {

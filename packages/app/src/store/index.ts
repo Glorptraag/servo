@@ -11,6 +11,8 @@ export type { ArtEntry, ArtRegistry, Content, ContentIssue, TerminologyFile } fr
 
 // Shared links (task 5.6): only the parent view, behind the parental gate, makes one (D28), and this is its one way in.
 export { SHARED_BUILD_NAME, shareLinkOf } from '../sharing/link.ts';
+/** A breakdown Run's named faults (D48), read from its record, for the parent view's progress (task 5.2). */
+export { namedFaultsShown } from '../challenges/goal.ts';
 export type { ShareOptions, ShareResult } from '../sharing/link.ts';
 
 export interface StoreOptions {
