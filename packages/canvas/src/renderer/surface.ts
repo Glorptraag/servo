@@ -24,6 +24,7 @@ import { ListViewModel } from '../list-view/model.ts';
 import { applyEdit } from '../placement/apply.ts';
 import { PlacementController } from '../placement/controller.ts';
 import { RunAnimator } from '../run-animation/animator.ts';
+import { readoutsDue } from '../run-animation/readouts.ts';
 import { layArena } from '../scene/arena.ts';
 import type { SceneArena } from '../scene/arena.ts';
 import { unionRect } from '../scene/geometry.ts';
@@ -109,6 +110,9 @@ export class CanvasSurface implements CanvasHandle {
   /** 0 is the Build look, 1 the Run look: the arena floor laid down and its features at full strength. */
   private readonly modeFade = new Fade(0);
   private renderer: Renderer | undefined;
+  /** Run mode: the latest frame, for the list view's live readouts, and the tick it last read them at. */
+  private lastFrame: RunFrame | undefined;
+  private listedTick: number | undefined;
   private current: Blueprint | undefined;
   private currentMode: CanvasMode = 'build';
   private level: Level;
@@ -187,6 +191,7 @@ export class CanvasSurface implements CanvasHandle {
       apply: (command) => this.apply(command),
       control: (input) => this.emitter.emit('control', { input }),
       select: (selection) => this.select(selection),
+      live: (subject) => (this.currentMode === 'run' ? this.lastFrame?.live.get(subject) : undefined),
     });
     this.listDom = new ListViewDom(host, this.list, { prefs: () => this.prefs });
     this.resizeObserver =
@@ -227,6 +232,8 @@ export class CanvasSurface implements CanvasHandle {
     if (mode !== 'build' && mode !== 'run') throw new RangeError(`Unknown mode '${String(mode)}'.`);
     if (mode === this.currentMode) return;
     this.currentMode = mode;
+    this.lastFrame = undefined;
+    this.listedTick = undefined;
     this.placement.modeChanged();
     this.wiring.modeChanged();
     if (mode === 'run') {
@@ -371,6 +378,12 @@ export class CanvasSurface implements CanvasHandle {
     if (this.currentMode !== 'run') return;
     this.run.apply(frame, performance.now());
     this.loop.request();
+    const before = this.lastFrame;
+    this.lastFrame = frame;
+    if (readoutsDue(before, frame, this.listedTick)) {
+      this.listedTick = frame.tick;
+      this.list.changed();
+    }
   }
 
   showHint(step: DrawnHintStep): boolean {

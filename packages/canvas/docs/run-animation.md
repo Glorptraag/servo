@@ -38,6 +38,7 @@ There is no idle animation: with no frame arriving and nothing tweening, the can
 - `setMode('run')` locks the build: `apply` refuses with `edit.locked`, wiring and placement take no pointer, and no `edit` fires.
 - Parts are hit-tested where Run mode draws them.
 - A tap or click on a manual switch fires `control` with the other position from the latest frame's. Enter flips the selected manual switch (D42), once task 3.4's selection lands. A read-only canvas fires none.
+- The list view (task 3.6) reads each part's and prop's live state from the latest frame (`ListPart.live`, `ListProp.live`), and a manual switch's position from its `closed` readout. Its DOM is rebuilt on every change, so it is told of frames only on the Run's first frame, when a switch flips or a fault starts or ends, and otherwise once every 30 ticks (a simulated second), counted in ticks (`readouts.ts`).
 - `setMode('build')` puts every node, line and prop back where the build has them and drops the Run's drawing. The canvas never writes to the blueprint (ground rule 4); the app restores the Simulation's snapshot.
 
 ## Files
@@ -52,6 +53,7 @@ There is no idle animation: with no frame arriving and nothing tweening, the can
 | `dots.ts` | Dots along live wires |
 | `marks.ts` | Scrape marks and shadows on the arena floor |
 | `animator.ts` | `RunAnimator`: takes frames, tweens, paints, hit-tests in Run mode |
+| `readouts.ts` | When the list view reads the live readouts again |
 
 Hooks added to the renderer for this task: `PartView.run` (a container above each part's body, in its layer), `ArenaView.drawProps(arena, palette, moved)`, and on the surface `run` (the animator), `flip(partId)`, Run-mode `hitAt`, the floor marks in the arena group and the dots in the wires layer. `run.tellsOf(partId)`, `run.dots.dotsOn(wireId)`, `run.dots.fillOf(type)`, `run.marks.scratches(bodyId)`, `run.partPoint` and `run.endsOf` say where things are drawn, for the e2e proof.
 
