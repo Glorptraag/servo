@@ -154,7 +154,9 @@ export const mountBench = async (options: BenchOptions = {}): Promise<Bench> => 
   const size = options.size ?? { width: IPAD.width - trayWidth, height: IPAD.height };
   const content = benchContent();
   const tray = document.createElement('div');
-  tray.style.cssText = `position: fixed; left: 0; top: 0; width: ${trayWidth}px; height: ${size.height}px; touch-action: none; background: #d8d4cc;`;
+  // Not selectable, as in the app's shell: a mouse drag from a selectable tray selects the list view's text, and the
+  // next press inside that selection drags it, so the browser cancels the pointer the canvas was carrying.
+  tray.style.cssText = `position: fixed; left: 0; top: 0; width: ${trayWidth}px; height: ${size.height}px; touch-action: none; user-select: none; background: #d8d4cc;`;
   const host = document.createElement('div');
   host.style.cssText = `position: fixed; left: ${trayWidth}px; top: 0; width: ${size.width}px; height: ${size.height}px; margin: 0; padding: 0;`;
   document.body.append(tray, host);

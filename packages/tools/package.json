@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:determinism": "SERVO_DETERMINISM=sweep vitest run test/sim-determinism.test.ts",
     "typecheck": "tsc --noEmit",
-    "e2e": "vitest run --config src/e2e/vitest.config.ts"
+    "e2e": "vitest run --config src/e2e/vitest.config.ts",
+    "e2e:run-animation": "vitest run --config test/e2e/run-animation.config.ts"
   },
   "dependencies": {
     "@servo/app": "workspace:*",

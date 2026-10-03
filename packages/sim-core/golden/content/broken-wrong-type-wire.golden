@@ -12,27 +12,47 @@ part dc-motor e80cd3eae3017bf6
 part motor-driver 7bba5ed414f432a1
 record a17bfaee83171925cee36202237a78ee6c1c05d87b5e2602a7d6f397a30ae23d
 faults none
-subjects battery driver motor
+subjects battery driver motor wire:w1 wire:w2 wire:w3 wire:w4
 tick 0 98b6509c
   battery volts=2.8 milliamps=500.9 charge=1 x=210 y=600 heading=0
   driver volts=2.8 milliamps=500.9 x=300 y=600 heading=0
   motor volts=2.495 milliamps=498.9 rpm=83.2 x=390 y=600 heading=0 sound.motor=0.416
+  wire:w1 milliamps=500.9
+  wire:w2 milliamps=-500.9
+  wire:w3 milliamps=498.9
+  wire:w4 milliamps=-498.9
 tick 1 23ff0246
   battery volts=2.94 milliamps=150.7
   driver volts=2.94 milliamps=150.7
   motor volts=2.638 milliamps=148.7 rpm=87.9 sound.motor=0.44
+  wire:w1 milliamps=150.7
+  wire:w2 milliamps=-150.7
+  wire:w3 milliamps=148.7
+  wire:w4 milliamps=-148.7
 tick 2 c00a2873
   battery volts=2.95 milliamps=124.2
   driver volts=2.95 milliamps=124.2
   motor volts=2.649 milliamps=122.2 rpm=88.3 sound.motor=0.442
+  wire:w1 milliamps=124.2
+  wire:w2 milliamps=-124.2
+  wire:w3 milliamps=122.2
+  wire:w4 milliamps=-122.2
 tick 3 6c7ea704
   battery volts=2.951 milliamps=122.2 charge=0.9999
   driver volts=2.951 milliamps=122.2
   motor volts=2.65 milliamps=120.2
+  wire:w1 milliamps=122.2
+  wire:w2 milliamps=-122.2
+  wire:w3 milliamps=120.2
+  wire:w4 milliamps=-120.2
 tick 4 cc37d97d
   battery milliamps=122
   driver milliamps=122
   motor milliamps=120
+  wire:w1 milliamps=122
+  wire:w2 milliamps=-122
+  wire:w3 milliamps=120
+  wire:w4 milliamps=-120
 tick 5 5aa5e5fe
 tick 6 5ce5cd75
 tick 7 88a23a18

@@ -3,7 +3,7 @@
 // real changes; each tick's hash and the run record's hash in the same file catch whatever the rounding hides.
 import { RUN_SOUNDS } from '@servo/schema';
 import type { EventSubject, MotionPayload, SoundPayload, ValuePayload } from '@servo/schema';
-import type { LiveState } from '@servo/sim-core';
+import type { LiveState, WireFlow } from '@servo/sim-core';
 
 /** One subject's summarized state: field name to text, in FIELD_ORDER. A field that is absent is silent or has no fault. */
 export type SubjectState = ReadonlyMap<string, string>;
@@ -70,6 +70,29 @@ export const summarizeSubject = (live: LiveState): SubjectState => {
   if (live.faults.length > 0) fields.set('faults', live.faults.join(','));
   return fields;
 };
+
+/** Wires are kept as subjects `wire:<id>`, after the parts and props: never a placed part's id or a prop's. */
+export const WIRE_PREFIX = 'wire:';
+
+const FLOW_FIELDS = ['milliamps', 'signal', 'rpm'] as const satisfies readonly (keyof WireFlow)[];
+
+/**
+ * What flows along one wire (D78): a power line's milliamps, signed from its `from` port to its `to` port, a signal
+ * line's level, a drive linkage's rpm. The canvas's moving dots follow these, so a change that reversed every power
+ * line's current now shows in a diff. A signal line carrying none has no field.
+ */
+export const summarizeFlow = (flow: WireFlow): SubjectState => {
+  const fields = new Map<string, string>();
+  for (const key of FLOW_FIELDS) {
+    const value = flow[key];
+    if (value !== undefined) fields.set(key, formatNumber(value, PRECISION[key] ?? 3));
+  }
+  return fields;
+};
+
+/** A frame's flows as the golden file keeps them, in `frame.flows`' order (wire id order). */
+export const summarizeFlows = (flows: ReadonlyMap<string, WireFlow>): TickState =>
+  new Map([...flows].map(([wire, flow]) => [`${WIRE_PREFIX}${wire}`, summarizeFlow(flow)]));
 
 /** A frame's live state as the golden file keeps it. */
 export const summarizeLive = (live: ReadonlyMap<EventSubject, LiveState>): TickState =>

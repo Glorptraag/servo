@@ -3,7 +3,7 @@
 // millimetres where `layArena` lays the floor. Task 3.5 moves the props in Run mode.
 import { Graphics } from 'pixi.js';
 import { cosSin } from '@servo/schema';
-import type { Prop, Vec2 } from '@servo/schema';
+import type { ArenaFeatureId, Pose, Prop, Vec2 } from '@servo/schema';
 import { arenaToCanvas } from '../scene/arena.ts';
 import type { ArenaMatrix, SceneArena } from '../scene/arena.ts';
 import { mmOf } from '../scene/units.ts';
@@ -94,7 +94,20 @@ export class ArenaView {
       features.poly(band(m, wall.from, wall.to, wall.thicknessMm), true).fill({ color: palette.wall });
     }
     features.poly(flat(arena.corners), true).stroke({ color: palette.floorEdge, width: EDGE_MM, alignment: 0 });
-    for (const prop of arena.props) {
+    this.drawProps(arena, palette);
+  }
+
+  /**
+   * The props, the preset's and the child's. In Run mode (task 3.5) a prop the robot pushed is drawn where the Run has
+   * it (`moved`, arena mm); the rest stay where the arena puts them.
+   */
+  drawProps(arena: SceneArena | undefined, palette: Palette, moved?: ReadonlyMap<ArenaFeatureId, Pose>): void {
+    this.props.clear();
+    if (!arena) return;
+    const { matrix: m } = arena;
+    for (const placed of arena.props) {
+      const at = moved?.get(placed.id);
+      const prop = at ? { ...placed, at } : placed;
       const fill = { color: prop.fixed ? palette.propFixed : palette.prop };
       const edge = { color: palette.propEdge, width: OUTLINE_MM, alignment: 1 };
       if (prop.shape === 'cylinder') {
