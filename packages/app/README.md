@@ -124,7 +124,7 @@ Taken conservatively, for Drew and the orchestrator:
 | --- | --- | --- |
 | `shell/` | 4.1 | Layout, tucking, the header, the zoom control (`canvas.setZoom`) |
 | `tray/`, `library/` | 4.2 | Kit tiles by family; the catalogue overlay, browse-only before Level 3 |
-| `spec-card/` | 4.3 | Layers by level, settings with child-sized steps and real units, live readouts, speak-it |
+| `spec-card/` | 4.3 | Layers by level, settings with child-sized steps and real units, live readouts, speak-it ([README](src/spec-card/README.md)) |
 | `run-bar/` | 4.4 | Run and Stop, the clock, Undo, Reset arena, the spin-up |
 | `challenges/` | 4.5 | Goal line, arena preset, goal detection over the Run, the tick |
 | `hints/` | 4.6 | Which ladder and rung; the canvas draws them, and do-it is one `batch` |
