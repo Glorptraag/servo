@@ -109,10 +109,14 @@ export const selectPart = async (app: MountedApp, partId?: string): Promise<void
     // The list view draws its buttons again on every change of the build, the selection or a hint, so each is found
     // again by its key at the moment it is focused (R-7.4 F1): a button found earlier may be gone.
     const toggle = (): HTMLButtonElement => app.one<HTMLButtonElement>(`.servo-list-view button[data-toggle="part:${id}"]`);
-    const select = (): HTMLButtonElement => app.one<HTMLButtonElement>(`.servo-list-view button[data-action="select:part:${id}"]`);
+    // The part's first action selects it, or clears the selection when it is selected already (task 7.3,
+    // `selectOrClear`); the action ids are the list view's own, which the canvas does not export.
+    const first = (): HTMLButtonElement => app.one<HTMLButtonElement>(`.servo-list-view button[data-subject="part:${id}"][data-action]`);
     if (toggle().getAttribute('aria-expanded') !== 'true') await keysOn(toggle);
-    await vi.waitFor(select, SOON);
-    await keysOn(select);
+    await vi.waitFor(first, SOON);
+    const action = first().dataset.action;
+    if (action === `select:part:${id}`) await keysOn(first);
+    else expect(action, `the first action on ${id}`).toBe('clear-selection');
     await vi.waitFor(() => expect(card().querySelector(`.spec-card`)).not.toBeNull(), SOON);
     await vi.waitFor(() => expect(card().dataset.shown).toBe('true'), SOON);
   };
