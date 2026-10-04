@@ -17,6 +17,15 @@ export type { ShareOptions, ShareResult } from '../sharing/link.ts';
 // Telemetry (task 6.2): the parent view emits its export events, and draws the data note, through here.
 export { DATA_NOTE, emitTelemetry, noteBlocks, telemetryOf } from '../telemetry/index.ts';
 export type { NoteBlock, NoteSpan, TelemetryEvent, TelemetryFields, TelemetryKind } from '../telemetry/index.ts';
+// The access options (task 5.7, task 7.5): the parent page follows this device's high contrast, dyslexia-friendly type,
+// left-handed layout and read-aloud, with the chrome's theme and read-aloud, through here.
+export { ACCESS_KEY, AccessStore, DEFAULT_ACCESS, readAccess } from '../a11y/prefs.ts';
+export type { AccessOption, AccessPrefs } from '../a11y/prefs.ts';
+export { ReadAloudScope } from '../a11y/scope.tsx';
+export type { ReadAloudScopeProps } from '../a11y/scope.tsx';
+export { accessTheme } from '../theme/index.ts';
+export type { ThemeAttributes } from '../theme/index.ts';
+export { pageStorage } from '../shell/edges.ts';
 
 export interface StoreOptions {
   /** The IndexedDB database name. Tests pass their own. Default 'servo'. */

@@ -6,3 +6,5 @@ export type { Accounts } from './model.ts';
 export { mountParentWith } from './mount.tsx';
 export type { ParentOptions } from './mount.tsx';
 export { PARENT_TEXT, ParentView } from './view.tsx';
+export { PARENT_ACCESS_CSS, PARENT_ROOT, ParentAccess, accessAttributes, applyAccess } from './access.tsx';
+export type { AccessAttributes, Hand, ParentAccessProps } from './access.tsx';

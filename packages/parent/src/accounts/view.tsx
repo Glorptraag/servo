@@ -6,7 +6,7 @@
 // removal is confirmed inline, and anything that goes wrong is one plain line. The view has no routes and writes nothing
 // to the address, so no address can open one child's records, and no profile id reaches the page. The data note (task
 // 6.2) closes the view.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, FormEvent, KeyboardEvent, RefObject } from 'react';
 import type { Profile, ServoStore } from '@servo/app/store';
 import { answers, gateQuestion } from './gate.ts';
@@ -75,19 +75,34 @@ export interface ParentViewProps {
 
 export const ParentView = ({ store, random }: ParentViewProps) => {
   const [open, setOpen] = useState(false);
+  // Whether the page has been hidden: when the gate asks again, focus goes to its field, never to the page's body.
+  const [closed, setClosed] = useState(false);
   // A parent page left open must not let a child in later (R-5.1 Q4): once the page is hidden, the view closes, and
   // when it is shown again the gate asks a new question.
   useEffect(() => {
     const onVisibility = () => {
-      if (document.visibilityState === 'hidden') setOpen(false);
+      if (document.visibilityState !== 'hidden') return;
+      setOpen(false);
+      setClosed(true);
     };
     document.addEventListener('visibilitychange', onVisibility);
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
-  return open ? <AccountsView store={store} /> : <Gate random={random} onPass={() => setOpen(true)} />;
+  return open ? <AccountsView store={store} /> : <Gate random={random} focus={closed} onPass={() => setOpen(true)} />;
 };
 
-const Gate = ({ random, onPass }: { readonly random: () => number; readonly onPass: () => void }) => {
+interface GateProps {
+  readonly random: () => number;
+  /** Focus the answer field as the gate shows: it has just taken the place of the view, which held the focus. */
+  readonly focus: boolean;
+  readonly onPass: () => void;
+}
+
+const Gate = ({ random, focus, onPass }: GateProps) => {
+  const field = useRef<HTMLInputElement>(null);
+  useLayoutEffect(() => {
+    if (focus) field.current?.focus();
+  }, [focus]);
   const [question, setQuestion] = useState(() => gateQuestion(random));
   const [text, setText] = useState('');
   const [wrong, setWrong] = useState(false);
@@ -105,10 +120,11 @@ const Gate = ({ random, onPass }: { readonly random: () => number; readonly onPa
     <main aria-labelledby="servo-parent-gate">
       <h1 id="servo-parent-gate">{PARENT_TEXT.gateTitle}</h1>
       <p>{PARENT_TEXT.gateIntro}</p>
-      <form onSubmit={submit} style={ROW}>
+      <form onSubmit={submit} className="servo-parent-row" style={ROW}>
         <label>
           {question.text} <span>{PARENT_TEXT.gateAnswer}</span>{' '}
           <input
+            ref={field}
             value={text}
             onChange={(event) => setText(event.target.value)}
             inputMode="numeric"
@@ -142,16 +158,28 @@ const AccountsView = ({ store }: { readonly store: ServoStore }) => {
   // watching, so no count, verdict or part name may be on screen (R-6.4 PAR-1, D40).
   const [inRound, setInRound] = useState(false);
   const live = useRef(true);
+  // The gate's Continue, which held the focus, is gone: focus goes to the loading line, then to the view's title.
+  const loadingRef = useRef<HTMLParagraphElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const loaded = accounts !== undefined;
+  useLayoutEffect(() => {
+    (loaded ? titleRef : loadingRef).current?.focus();
+  }, [loaded]);
   const switchRef = useRef<HTMLFieldSetElement>(null);
   const addRef = useRef<HTMLInputElement>(null);
-  // After a removal the focused row is gone: focus moves to the child in use, or the first child, or adding one.
-  const [refocus, setRefocus] = useState(0);
-  useEffect(() => {
-    if (refocus === 0) return;
+  // After a removal the focused row is gone: focus moves to the child in use, or the first child, or adding one. It
+  // moves in the same commit that takes the row away, so it never rests on the page's body (R-6.4 PAR-2).
+  const removing = useRef<string | undefined>(undefined);
+  useLayoutEffect(() => {
+    const gone = removing.current;
+    if (gone === undefined || accounts?.profiles.some((profile) => profile.id === gone)) return;
+    removing.current = undefined;
+    const active = document.activeElement;
+    if (active !== null && active !== document.body) return;
     const radios = switchRef.current?.querySelectorAll<HTMLInputElement>('input[type="radio"]');
     const target = [...(radios ?? [])].find((radio) => radio.checked) ?? radios?.[0] ?? addRef.current;
     target?.focus();
-  }, [refocus]);
+  }, [accounts]);
 
   const refresh = useCallback(async () => {
     const next = await readAccounts(store);
@@ -211,12 +239,19 @@ const AccountsView = ({ store }: { readonly store: ServoStore }) => {
     }
   };
 
-  if (!accounts) return <p role="status">{PARENT_TEXT.loading}</p>;
+  if (!accounts)
+    return (
+      <p ref={loadingRef} role="status" tabIndex={-1}>
+        {PARENT_TEXT.loading}
+      </p>
+    );
   const { profiles, current, builds } = accounts;
 
   return (
     <main aria-labelledby="servo-parent-title">
-      <h1 id="servo-parent-title">{PARENT_TEXT.title}</h1>
+      <h1 id="servo-parent-title" ref={titleRef} tabIndex={-1}>
+        {PARENT_TEXT.title}
+      </h1>
       <p hidden={inRound}>{PARENT_TEXT.intro}</p>
 
       <section aria-labelledby="servo-parent-children" hidden={inRound}>
@@ -241,8 +276,9 @@ const AccountsView = ({ store }: { readonly store: ServoStore }) => {
                 }
                 onRemove={() => {
                   setEditing(undefined);
-                  void act(() => removeChild(store, profile.id)).then(() => {
-                    if (live.current) setRefocus((count) => count + 1);
+                  removing.current = profile.id;
+                  void act(() => removeChild(store, profile.id)).then((done) => {
+                    if (!done) removing.current = undefined;
                   });
                 }}
               />
@@ -262,7 +298,7 @@ const AccountsView = ({ store }: { readonly store: ServoStore }) => {
           ) : (
             <>
               <p>{PARENT_TEXT.shareIntro}</p>
-              <label style={ROW}>
+              <label className="servo-parent-row" style={ROW}>
                 <input type="checkbox" checked={includeName} onChange={(event) => setIncludeName(event.target.checked)} style={TARGET} />
                 {PARENT_TEXT.includeName}
               </label>
@@ -278,7 +314,7 @@ const AccountsView = ({ store }: { readonly store: ServoStore }) => {
                       {PARENT_TEXT.copyLink}
                     </button>
                     {shown?.id === build.id && (
-                      <label style={{ ...ROW, marginBlock: 0 }}>
+                      <label className="servo-parent-row" style={{ ...ROW, marginBlock: 0 }}>
                         {PARENT_TEXT.link}{' '}
                         <input readOnly value={shown.url} autoFocus onFocus={(event) => event.target.select()} style={TARGET} />
                       </label>
@@ -334,7 +370,7 @@ const ChildRow = ({ index, profile, inUse, editing, onSwitch, onEdit, onRename, 
   const removeButton = useRef<HTMLButtonElement>(null);
   // When a rename or a removal ends without the row going, focus goes back to the button that started it.
   const was = useRef(editing);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (was.current === 'rename' && editing === undefined) renameButton.current?.focus();
     if (was.current === 'remove' && editing === undefined) removeButton.current?.focus();
     was.current = editing;
@@ -348,13 +384,13 @@ const ChildRow = ({ index, profile, inUse, editing, onSwitch, onEdit, onRename, 
   };
 
   return (
-    <div style={ROW}>
-      <label style={{ ...ROW, marginBlock: 0 }}>
+    <div className="servo-parent-row" style={ROW}>
+      <label className="servo-parent-row" style={{ ...ROW, marginBlock: 0 }}>
         <input type="radio" name="servo-parent-in-use" checked={inUse} onChange={onSwitch} style={TARGET} />
         {profile.name}
       </label>
       {editing === 'rename' ? (
-        <form onSubmit={rename} onKeyDown={escape} style={{ ...ROW, marginBlock: 0 }}>
+        <form onSubmit={rename} onKeyDown={escape} className="servo-parent-row" style={{ ...ROW, marginBlock: 0 }}>
           <label htmlFor={inputId}>{PARENT_TEXT.newName}</label>
           <input id={inputId} value={name} onChange={(event) => setName(event.target.value)} autoFocus autoComplete="off" style={TARGET} />
           <button type="submit" style={TARGET}>
@@ -370,7 +406,7 @@ const ChildRow = ({ index, profile, inUse, editing, onSwitch, onEdit, onRename, 
           aria-label={`${PARENT_TEXT.remove} ${profile.name}`}
           aria-describedby={warningId}
           onKeyDown={escape}
-          style={{ ...ROW, marginBlock: 0 }}
+          className="servo-parent-row" style={{ ...ROW, marginBlock: 0 }}
         >
           <p id={warningId}>{removeWarning(profile.name)}</p>
           <button type="button" onClick={onRemove} style={TARGET}>
@@ -417,7 +453,7 @@ const AddChild = ({ inputRef, onAdd }: AddChildProps) => {
     });
   };
   return (
-    <form onSubmit={submit} style={ROW}>
+    <form onSubmit={submit} className="servo-parent-row" style={ROW}>
       <label htmlFor="servo-parent-add">{PARENT_TEXT.addLabel}</label>
       <input ref={inputRef} id="servo-parent-add" value={name} onChange={(event) => setName(event.target.value)} autoComplete="off" style={TARGET} />
       <button type="submit" style={TARGET}>
