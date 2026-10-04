@@ -138,6 +138,9 @@ const AccountsView = ({ store }: { readonly store: ServoStore }) => {
   const [shown, setShown] = useState<{ readonly id: string; readonly url: string } | undefined>(undefined);
   // Each card-game round kept reads progress again, so it shows the latest round.
   const [rounds, setRounds] = useState(0);
+  // While a card-game round is on, from Start to its closing line, the round has the page to itself: the child is
+  // watching, so no count, verdict or part name may be on screen (R-6.4 PAR-1, D40).
+  const [inRound, setInRound] = useState(false);
   const live = useRef(true);
   const switchRef = useRef<HTMLFieldSetElement>(null);
   const addRef = useRef<HTMLInputElement>(null);
@@ -214,9 +217,9 @@ const AccountsView = ({ store }: { readonly store: ServoStore }) => {
   return (
     <main aria-labelledby="servo-parent-title">
       <h1 id="servo-parent-title">{PARENT_TEXT.title}</h1>
-      <p>{PARENT_TEXT.intro}</p>
+      <p hidden={inRound}>{PARENT_TEXT.intro}</p>
 
-      <section aria-labelledby="servo-parent-children">
+      <section aria-labelledby="servo-parent-children" hidden={inRound}>
         <h2 id="servo-parent-children">{PARENT_TEXT.children}</h2>
         {profiles.length > 0 && (
           <fieldset ref={switchRef}>
@@ -250,7 +253,7 @@ const AccountsView = ({ store }: { readonly store: ServoStore }) => {
       </section>
 
       {current && (
-        <section aria-labelledby="servo-parent-builds">
+        <section aria-labelledby="servo-parent-builds" hidden={inRound}>
           <h2 id="servo-parent-builds">
             {PARENT_TEXT.builds}: {current.name}
           </h2>
@@ -288,13 +291,24 @@ const AccountsView = ({ store }: { readonly store: ServoStore }) => {
         </section>
       )}
 
-      {current && <ProgressSection key={`${current.id} ${rounds}`} store={store} profile={current.id} name={current.name} />}
-
       {current && (
-        <CardGameSection key={current.id} store={store} profile={current.id} name={current.name} onKept={() => setRounds((count) => count + 1)} />
+        <div hidden={inRound}>
+          <ProgressSection key={`${current.id} ${rounds}`} store={store} profile={current.id} name={current.name} />
+        </div>
       )}
 
-      <DataNote />
+      {current && (
+        <CardGameSection
+          key={current.id}
+          store={store}
+          profile={current.id}
+          name={current.name}
+          onKept={() => setRounds((count) => count + 1)}
+          onActive={setInRound}
+        />
+      )}
+
+      <DataNote hidden={inRound} />
 
       <p role="status">{line}</p>
     </main>
