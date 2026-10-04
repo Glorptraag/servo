@@ -368,7 +368,7 @@ describe('golden runs: the cases', () => {
     const disk = readContentFixtures(CONTENT);
     expect(disk.issues).toEqual([]);
     expect(disk.fixtures).toEqual(fixtures);
-    expect(disk.fixtures).toHaveLength(19);
+    expect(disk.fixtures).toHaveLength(51);
     for (const kind of ['parts', 'arenas', 'kits', 'challenges'] as const) expect(disk.content[kind]).toEqual(content[kind]);
   });
 

@@ -1,0 +1,24 @@
+{
+  "arena": {
+    "preset": "wall-stop",
+    "props": []
+  },
+  "goal": {
+    "forTicks": 15,
+    "kind": "holds",
+    "when": {
+      "kind": "in-zone",
+      "target": {
+        "part": "chassis"
+      },
+      "zone": "far-side"
+    }
+  },
+  "goalLine": "Cross the arena to the far side",
+  "hints": [],
+  "id": "cross-the-arena",
+  "kind": "unscripted-build",
+  "kit": "rolling-start",
+  "level": 1,
+  "title": "Cross the arena"
+}

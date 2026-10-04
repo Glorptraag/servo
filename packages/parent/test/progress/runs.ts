@@ -21,11 +21,14 @@ export const fixture = (name: string): ContentFixture => {
   return found;
 };
 
-/** The schema's example challenges that validate against the shipped parts: content has none of its own yet. */
-export const challenges: readonly Challenge[] = exampleChallenges.flatMap((example) => {
-  const result = validateChallenge(example.data, shipped.catalogue);
-  return result.ok ? [result.value] : [];
-});
+/** Content's own challenges, then the schema's example challenges that validate against the shipped parts and share no id with them. */
+export const challenges: readonly Challenge[] = [
+  ...shipped.challenges,
+  ...exampleChallenges.flatMap((example) => {
+    const result = validateChallenge(example.data, shipped.catalogue);
+    return result.ok && !shipped.challenges.some((own) => own.id === result.value.id) ? [result.value] : [];
+  }),
+];
 
 /** The shipped content with the example challenges, as the parent view would read it once content has challenges. */
 export const content: Content = { ...shipped, challenges };

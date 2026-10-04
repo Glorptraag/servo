@@ -1,0 +1,282 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "goal": {
+    "forTicks": 30,
+    "kind": "holds",
+    "when": {
+      "kind": "and",
+      "of": [
+        {
+          "atLeast": 200,
+          "kind": "forward-speed",
+          "target": {
+            "placed": "chassis"
+          }
+        },
+        {
+          "atMost": 10,
+          "kind": "turn-rate",
+          "target": {
+            "placed": "chassis"
+          }
+        }
+      ]
+    }
+  },
+  "goalLine": "Put the large wheel on the DC motor's shaft so the robot drives straight",
+  "hints": [
+    {
+      "steps": [
+        {
+          "line": "This large wheel needs a shaft in its hub",
+          "step": "pulse-part",
+          "target": {
+            "placed": "wheel-right"
+          }
+        },
+        {
+          "line": "This DC motor's shaft turns with nothing on it",
+          "step": "pulse-port",
+          "target": {
+            "placed": "motor-right",
+            "port": "shaft"
+          }
+        },
+        {
+          "from": {
+            "placed": "motor-right",
+            "port": "shaft"
+          },
+          "line": "Shaft into the hub",
+          "step": "ghost-wire",
+          "to": {
+            "placed": "wheel-right",
+            "port": "hub"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "motor-right",
+                "port": "shaft"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "wheel-right",
+                "port": "hub"
+              }
+            }
+          ],
+          "line": "Put the large wheel on this DC motor's shaft",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "placed": "wheel-right",
+        "port": "hub"
+      }
+    }
+  ],
+  "id": "meet-the-large-wheel",
+  "introduces": "wheel-large",
+  "kind": "part-introduction",
+  "kit": "rolling-start",
+  "level": 1,
+  "start": {
+    "arena": {
+      "preset": "open-floor",
+      "props": []
+    },
+    "meta": {
+      "createdAt": "2026-10-03T09:00:00.000Z",
+      "highWater": {
+        "parts": 0,
+        "wires": 9
+      },
+      "id": "822922be-268c-45a1-a2ac-63d8edfa5c86",
+      "level": 1,
+      "name": "Meet the large wheel",
+      "updatedAt": "2026-10-03T09:00:00.000Z"
+    },
+    "parts": [
+      {
+        "id": "battery",
+        "part": "battery-pack-2-cell",
+        "position": {
+          "x": -45,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "caster",
+        "part": "caster",
+        "position": {
+          "x": -70,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "chassis",
+        "part": "chassis",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "motor-left",
+        "part": "dc-motor",
+        "position": {
+          "x": 19,
+          "y": -53
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "motor-right",
+        "part": "dc-motor",
+        "position": {
+          "x": 19,
+          "y": 53
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "wheel-left",
+        "part": "wheel-large",
+        "position": {
+          "x": 40,
+          "y": -79
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "wheel-right",
+        "part": "wheel-large",
+        "position": {
+          "x": 40,
+          "y": 140
+        },
+        "rotation": 0,
+        "settings": {}
+      }
+    ],
+    "version": 1,
+    "wires": [
+      {
+        "from": {
+          "part": "battery",
+          "port": "mount"
+        },
+        "id": "w1",
+        "to": {
+          "part": "chassis",
+          "port": "deck-rear"
+        }
+      },
+      {
+        "from": {
+          "part": "caster",
+          "port": "mount"
+        },
+        "id": "w2",
+        "to": {
+          "part": "chassis",
+          "port": "caster"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-left",
+          "port": "mount"
+        },
+        "id": "w3",
+        "to": {
+          "part": "chassis",
+          "port": "motor-left"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-right",
+          "port": "mount"
+        },
+        "id": "w4",
+        "to": {
+          "part": "chassis",
+          "port": "motor-right"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-left",
+          "port": "shaft"
+        },
+        "id": "w5",
+        "to": {
+          "part": "wheel-left",
+          "port": "hub"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "plus"
+        },
+        "id": "w6",
+        "to": {
+          "part": "motor-left",
+          "port": "plus"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "plus"
+        },
+        "id": "w7",
+        "to": {
+          "part": "motor-right",
+          "port": "plus"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w8",
+        "to": {
+          "part": "motor-left",
+          "port": "minus"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w9",
+        "to": {
+          "part": "motor-right",
+          "port": "minus"
+        }
+      }
+    ]
+  },
+  "title": "Meet the large wheel"
+}

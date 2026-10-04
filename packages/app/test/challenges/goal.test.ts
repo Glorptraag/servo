@@ -287,7 +287,7 @@ describe('content fixtures with a goal', () => {
       const { record } = await runOf(fixture.blueprint, content.catalogue, { ticks: fixture.ticks, inputs: fixture.inputs, seed: fixture.seed });
       expect(judge(record, fixture.challenge as string).met, fixture.name).toBe(fixture.expect.goal?.met);
     }
-  });
+  }, 30_000);
 
   it('never meets a challenge the content does not have', async () => {
     const roller = fixtureOf('level-1-roller');

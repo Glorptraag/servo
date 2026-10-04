@@ -1,0 +1,144 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/meet-the-switch-pressed
+seed 1
+ticks 75
+input 30 switch closed=false
+blueprint 9c11ce4557035cce
+arena open-floor 297edbfc7ad9a93c
+part battery-pack-2-cell ac49444ad3a2e166
+part dc-motor e80cd3eae3017bf6
+part switch 0a304ca511260dde
+record 1a90b821a4bdb42a4d529b0a8675a921c2a812ccdce6750f207a40b0df4294cb
+faults none
+subjects battery motor switch wire:w1 wire:w2 wire:w3
+tick 0 5e16c4b3
+  battery volts=2.778 milliamps=555.6 charge=1 x=200 y=600 heading=0
+  motor volts=2.778 milliamps=555.6 rpm=92.6 x=400 y=600 heading=0 sound.motor=0.463
+  switch volts=0 milliamps=555.6 closed=true x=300 y=680 heading=0
+  wire:w1 milliamps=-555.6
+  wire:w2 milliamps=555.6
+  wire:w3 milliamps=-555.6
+tick 1 67f00987
+  battery volts=2.939 milliamps=152.3
+  motor volts=2.939 milliamps=152.3 rpm=98 sound.motor=0.49
+  switch milliamps=152.3
+  wire:w1 milliamps=-152.3
+  wire:w2 milliamps=152.3
+  wire:w3 milliamps=-152.3
+tick 2 00949dd7
+  battery volts=2.951 milliamps=122.4
+  motor volts=2.951 milliamps=122.4 rpm=98.4 sound.motor=0.492
+  switch milliamps=122.4
+  wire:w1 milliamps=-122.4
+  wire:w2 milliamps=122.4
+  wire:w3 milliamps=-122.4
+tick 3 30dc7b5c
+  battery volts=2.952 milliamps=120.2 charge=0.9999
+  motor volts=2.952 milliamps=120.2
+  switch milliamps=120.2
+  wire:w1 milliamps=-120.2
+  wire:w2 milliamps=120.2
+  wire:w3 milliamps=-120.2
+tick 4 e02be439
+  battery milliamps=120
+  motor milliamps=120
+  switch milliamps=120
+  wire:w1 milliamps=-120
+  wire:w2 milliamps=120
+  wire:w3 milliamps=-120
+tick 5 cdd30ac0
+tick 6 a2739208
+tick 7 045c1de1
+  battery charge=0.9998
+tick 8 83fac8f6
+tick 9 e19d7916
+tick 10 fc6d6a77
+  battery charge=0.9997
+tick 11 6162233d
+tick 12 daf549b8
+tick 13 ee6472cf
+tick 14 b65e5410
+  battery charge=0.9996
+tick 15 a82c69f9
+tick 16 209aab24
+tick 17 38ad77fa
+  battery charge=0.9995
+tick 18 9ff55256
+tick 19 d3867edb
+  battery volts=2.951
+  motor volts=2.951
+tick 20 e514732a
+tick 21 a25dba28
+  battery charge=0.9994
+tick 22 be3462b0
+tick 23 47353b8d
+tick 24 954a71ed
+tick 25 6b40b410
+  battery charge=0.9993
+tick 26 b7101752
+tick 27 fac358f5
+tick 28 b97cae2f
+  battery charge=0.9992
+tick 29 b27fbe46
+tick 30 14f482d0
+tick 31 8604dbd2
+  battery volts=2.999 milliamps=0
+  motor volts=2.351 milliamps=0 rpm=78.4 sound.motor=0.392
+  switch volts=0.648 milliamps=0 closed=false
+  wire:w1 milliamps=0
+  wire:w2 milliamps=0
+  wire:w3 milliamps=0
+tick 32 06a3cc3f
+  motor volts=1.751 rpm=58.4 sound.motor=0.292
+  switch volts=1.248
+tick 33 69ab587f
+  motor volts=1.151 rpm=38.4 sound.motor=0.192
+  switch volts=1.848
+tick 34 73f4911d
+  motor volts=0.551 rpm=0 sound.motor=none
+  switch volts=2.448
+tick 35 82d88467
+  motor volts=0
+  switch volts=2.999
+tick 36 37517e5f
+tick 37 37517e5f
+tick 38 37517e5f
+tick 39 37517e5f
+tick 40 37517e5f
+tick 41 37517e5f
+tick 42 37517e5f
+tick 43 37517e5f
+tick 44 37517e5f
+tick 45 37517e5f
+tick 46 37517e5f
+tick 47 37517e5f
+tick 48 37517e5f
+tick 49 37517e5f
+tick 50 37517e5f
+tick 51 37517e5f
+tick 52 37517e5f
+tick 53 37517e5f
+tick 54 37517e5f
+tick 55 37517e5f
+tick 56 37517e5f
+tick 57 37517e5f
+tick 58 37517e5f
+tick 59 37517e5f
+tick 60 37517e5f
+tick 61 37517e5f
+tick 62 37517e5f
+tick 63 37517e5f
+tick 64 37517e5f
+tick 65 37517e5f
+tick 66 37517e5f
+tick 67 37517e5f
+tick 68 37517e5f
+tick 69 37517e5f
+tick 70 37517e5f
+tick 71 37517e5f
+tick 72 37517e5f
+tick 73 37517e5f
+tick 74 37517e5f
+tick 75 37517e5f

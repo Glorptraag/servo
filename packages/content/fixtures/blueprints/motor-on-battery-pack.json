@@ -1,0 +1,64 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "meta": {
+    "createdAt": "2026-10-03T09:00:00.000Z",
+    "highWater": {
+      "parts": 0,
+      "wires": 2
+    },
+    "id": "2e5492ae-b063-4912-aa13-bffd17ec3590",
+    "level": 1,
+    "name": "DC motor on a battery pack",
+    "updatedAt": "2026-10-03T09:00:00.000Z"
+  },
+  "parts": [
+    {
+      "id": "battery",
+      "part": "battery-pack-2-cell",
+      "position": {
+        "x": -100,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "motor",
+      "part": "dc-motor",
+      "position": {
+        "x": 100,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    }
+  ],
+  "version": 1,
+  "wires": [
+    {
+      "from": {
+        "part": "battery",
+        "port": "minus"
+      },
+      "id": "w1",
+      "to": {
+        "part": "motor",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "plus"
+      },
+      "id": "w2",
+      "to": {
+        "part": "motor",
+        "port": "plus"
+      }
+    }
+  ]
+}

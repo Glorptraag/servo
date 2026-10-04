@@ -1,0 +1,266 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "goal": {
+    "kind": "sequence",
+    "of": [
+      {
+        "forTicks": 15,
+        "kind": "holds",
+        "when": {
+          "kind": "state",
+          "state": "turning",
+          "target": {
+            "placed": "motor"
+          }
+        }
+      },
+      {
+        "forTicks": 15,
+        "kind": "holds",
+        "when": {
+          "kind": "and",
+          "of": [
+            {
+              "kind": "state",
+              "state": "open",
+              "target": {
+                "placed": "switch"
+              }
+            },
+            {
+              "kind": "state",
+              "state": "still",
+              "target": {
+                "placed": "motor"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "goalLine": "Put the switch in the power line, then press it",
+  "hints": [
+    {
+      "steps": [
+        {
+          "line": "The switch goes in the power line",
+          "step": "pulse-part",
+          "target": {
+            "placed": "switch"
+          }
+        },
+        {
+          "line": "Side A takes power from the battery pack",
+          "step": "pulse-port",
+          "target": {
+            "placed": "switch",
+            "port": "a"
+          }
+        },
+        {
+          "from": {
+            "placed": "battery",
+            "port": "plus"
+          },
+          "line": "Plus to side A",
+          "step": "ghost-wire",
+          "to": {
+            "placed": "switch",
+            "port": "a"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "switch",
+                "port": "a"
+              }
+            }
+          ],
+          "line": "Wired the battery pack's plus to side A",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "placed": "switch",
+        "port": "a"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This switch is not in a loop with the battery pack",
+          "step": "pulse-part",
+          "target": {
+            "placed": "switch"
+          }
+        },
+        {
+          "line": "Side B sends power on to the DC motor",
+          "step": "pulse-port",
+          "target": {
+            "placed": "switch",
+            "port": "b"
+          }
+        },
+        {
+          "from": {
+            "placed": "switch",
+            "port": "b"
+          },
+          "line": "Side B to the DC motor's plus",
+          "step": "ghost-wire",
+          "to": {
+            "placed": "motor",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "switch",
+                "port": "b"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "motor",
+                "port": "plus"
+              }
+            }
+          ],
+          "line": "Wired side B to the DC motor's plus",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "placed": "switch",
+        "port": "b"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This switch is not in a loop with the battery pack",
+          "step": "pulse-part",
+          "target": {
+            "placed": "switch"
+          }
+        },
+        {
+          "line": "The DC motor's plus also takes power straight from the battery pack",
+          "step": "pulse-port",
+          "target": {
+            "placed": "motor",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "motor",
+                "port": "plus"
+              }
+            }
+          ],
+          "line": "Took off the power line that goes round the switch",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "failure": "outside-loop",
+        "kind": "fault",
+        "target": {
+          "placed": "switch"
+        }
+      }
+    }
+  ],
+  "id": "meet-the-switch",
+  "introduces": "switch",
+  "kind": "part-introduction",
+  "kit": "rolling-start",
+  "level": 1,
+  "start": {
+    "arena": {
+      "preset": "open-floor",
+      "props": []
+    },
+    "meta": {
+      "createdAt": "2026-10-03T09:00:00.000Z",
+      "highWater": {
+        "parts": 0,
+        "wires": 1
+      },
+      "id": "8df92761-7155-4cb9-a475-d42f6a11d439",
+      "level": 1,
+      "name": "Meet the switch",
+      "updatedAt": "2026-10-03T09:00:00.000Z"
+    },
+    "parts": [
+      {
+        "id": "battery",
+        "part": "battery-pack-2-cell",
+        "position": {
+          "x": -100,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "motor",
+        "part": "dc-motor",
+        "position": {
+          "x": 100,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "switch",
+        "part": "switch",
+        "position": {
+          "x": 0,
+          "y": -80
+        },
+        "rotation": 0,
+        "settings": {}
+      }
+    ],
+    "version": 1,
+    "wires": [
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w1",
+        "to": {
+          "part": "motor",
+          "port": "minus"
+        }
+      }
+    ]
+  },
+  "title": "Meet the switch"
+}

@@ -171,6 +171,21 @@ const candidates = (change: HintChange, blueprint: Blueprint, catalogue: Catalog
   }
 };
 
+/**
+ * Whether the build already has a wire change: the two ports are joined for `add-wire`, or no such wire is left for
+ * `remove-wire`. The child may have made part of the fix by hand (review R-4.7 R1); do-it finishes the rest.
+ */
+const alreadyDone = (change: HintChange, blueprint: Blueprint): boolean => {
+  if (change.kind !== 'add-wire' && change.kind !== 'remove-wire') return false;
+  const froms = portRefs(blueprint, change.from);
+  const tos = portRefs(blueprint, change.to);
+  const joins = (a: PortRef, b: PortRef): boolean => froms.some((from) => samePort(from, a)) && tos.some((to) => samePort(to, b));
+  const joined = blueprint.wires.some((wire) => joins(wire.from, wire.to) || joins(wire.to, wire.from));
+  if (change.kind === 'add-wire') return joined;
+  // A wire to take off between parts that are still there, and is gone already.
+  return !joined && froms.length > 0 && tos.length > 0;
+};
+
 export type DoIt =
   | { readonly ok: true; readonly command: EditBatch; readonly blueprint: Blueprint }
   | { readonly ok: false; readonly change: number; readonly reason: string };
@@ -179,12 +194,15 @@ export type DoIt =
  * Do-it's changes as one `batch` the canvas applies as one Undo step (rule 8), made by the canvas's own pure
  * `applyEdit`, so every wire goes through the schema's wiring rules (rule 3). Each change resolves against the build
  * as the changes before it leave it, so a part do-it places can be wired by its type. A change with no command the
- * build accepts (the wire is already there, the part is gone) makes the whole step unusable: nothing half done.
+ * build accepts (the part is gone, the wiring rules refuse it) makes the whole step unusable: nothing half done. A wire
+ * change the build already has (the wire is there, or already taken off) is skipped, so do-it finishes a fix the child
+ * began; with nothing left to do, there is no step.
  */
 export const doItCommand = (changes: readonly HintChange[], blueprint: Blueprint, catalogue: Catalogue): DoIt => {
   const commands: SingleEdit[] = [];
   let build = blueprint;
   for (const [index, change] of changes.entries()) {
+    if (alreadyDone(change, build)) continue;
     let applied = false;
     let reason = 'Nothing on the canvas matches this change.';
     for (const command of candidates(change, build, catalogue)) {
@@ -200,6 +218,6 @@ export const doItCommand = (changes: readonly HintChange[], blueprint: Blueprint
     }
     if (!applied) return { ok: false, change: index, reason };
   }
-  if (commands.length === 0) return { ok: false, change: 0, reason: 'Do-it has no changes.' };
+  if (commands.length === 0) return { ok: false, change: 0, reason: 'The build already has every change do-it makes.' };
   return { ok: true, command: { kind: 'batch', commands }, blueprint: build };
 };

@@ -1,0 +1,74 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/meet-the-battery-pack-wired
+seed 1
+ticks 30
+inputs none
+blueprint 2e725d288f51efcc
+arena open-floor 297edbfc7ad9a93c
+part battery-pack-2-cell ac49444ad3a2e166
+part dc-motor e80cd3eae3017bf6
+record d366ec9fa76d0ad78ac0069281a583a3c45e7c4a06d320e78780f6dd5de33cef
+faults none
+subjects battery motor wire:w1 wire:w2
+tick 0 8392ff51
+  battery volts=2.778 milliamps=555.6 charge=1 x=200 y=600 heading=0
+  motor volts=2.778 milliamps=555.6 rpm=92.6 x=400 y=600 heading=0 sound.motor=0.463
+  wire:w1 milliamps=-555.6
+  wire:w2 milliamps=555.6
+tick 1 344ed28e
+  battery volts=2.939 milliamps=152.3
+  motor volts=2.939 milliamps=152.3 rpm=98 sound.motor=0.49
+  wire:w1 milliamps=-152.3
+  wire:w2 milliamps=152.3
+tick 2 1d4834fc
+  battery volts=2.951 milliamps=122.4
+  motor volts=2.951 milliamps=122.4 rpm=98.4 sound.motor=0.492
+  wire:w1 milliamps=-122.4
+  wire:w2 milliamps=122.4
+tick 3 72034dad
+  battery volts=2.952 milliamps=120.2 charge=0.9999
+  motor volts=2.952 milliamps=120.2
+  wire:w1 milliamps=-120.2
+  wire:w2 milliamps=120.2
+tick 4 04a6675c
+  battery milliamps=120
+  motor milliamps=120
+  wire:w1 milliamps=-120
+  wire:w2 milliamps=120
+tick 5 15924fc7
+tick 6 866fbd21
+tick 7 c734c8f0
+  battery charge=0.9998
+tick 8 ae14b152
+tick 9 67e16942
+tick 10 61b28f95
+  battery charge=0.9997
+tick 11 896b6980
+tick 12 b7501f63
+tick 13 d2c4ad95
+tick 14 0487d6ad
+  battery charge=0.9996
+tick 15 a82c69f9
+tick 16 37e9e0c3
+tick 17 13b25131
+  battery charge=0.9995
+tick 18 495b8dcc
+tick 19 853624dc
+  battery volts=2.951
+  motor volts=2.951
+tick 20 4c2154bf
+tick 21 a25dba28
+  battery charge=0.9994
+tick 22 3d78090b
+tick 23 0cbb3d0a
+tick 24 7cabdb59
+tick 25 bb986dfb
+  battery charge=0.9993
+tick 26 b7101752
+tick 27 fac358f5
+tick 28 576bb370
+  battery charge=0.9992
+tick 29 0401cd6f
+tick 30 14f482d0

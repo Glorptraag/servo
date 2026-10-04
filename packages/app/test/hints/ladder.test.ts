@@ -112,6 +112,21 @@ describe('do it for me', () => {
     expect(joined(doIt.blueprint, { part: 'switch', port: 'b' }, { part: 'motor-right', port: 'minus' })).toBe(false);
   });
 
+  it('finishes a fix the child began: wires already made and wires already taken off are skipped (R-4.7 R1)', () => {
+    const start = BACKWARDS.start as Blueprint;
+    const changes = lastStep(BACKWARDS.hints[0]?.steps.at(-1)).changes;
+    // The child makes the first two changes by hand; do-it makes only the rest.
+    const half = doItCommand(changes.slice(0, 2), start, catalogue);
+    if (!half.ok) throw new Error(half.reason);
+    const rest = doItCommand(changes, half.blueprint, catalogue);
+    if (!rest.ok) throw new Error(rest.reason);
+    expect(rest.command.commands).toHaveLength(changes.length - 2);
+    const whole = doItCommand(changes, start, catalogue);
+    if (!whole.ok) throw new Error(whole.reason);
+    const wires = (build: Blueprint): string[] => build.wires.map((wire) => `${wire.from.part}.${wire.from.port} ${wire.to.part}.${wire.to.port}`).sort();
+    expect(wires(rest.blueprint)).toEqual(wires(whole.blueprint));
+  });
+
   it('wires a part named by type, narrowed to the one the trigger found', () => {
     const withLed = edit(LIGHT.start as Blueprint, { kind: 'place-part', part: 'led' });
     const choice = chooseLadder(LIGHT, withLed, []);
@@ -147,7 +162,7 @@ describe('do it for me', () => {
     const doIt = doItCommand(
       [
         { kind: 'add-wire', from: { placed: 'battery', port: 'plus' }, to: { placed: 'switch', port: 'a' } },
-        { kind: 'add-wire', from: { placed: 'battery', port: 'plus' }, to: { placed: 'switch', port: 'a' } },
+        { kind: 'remove-part', target: { placed: 'no-such-part' } },
       ],
       start,
       catalogue,

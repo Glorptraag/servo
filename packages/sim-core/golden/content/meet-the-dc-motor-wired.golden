@@ -1,0 +1,106 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/meet-the-dc-motor-wired
+seed 1
+ticks 30
+inputs none
+blueprint 9ac20ce9a03197b0
+arena open-floor 297edbfc7ad9a93c
+part battery-pack-2-cell ac49444ad3a2e166
+part dc-motor e80cd3eae3017bf6
+record bf116cf23e9f44faba71525de660c570fb9f437431902cc8f3767f8cb07c982f
+faults none
+subjects battery motor-left motor-right wire:w1 wire:w2 wire:w3 wire:w4
+tick 0 a8e4397f
+  battery volts=2.586 milliamps=1034.5 charge=1 x=200 y=600 heading=0
+  motor-left volts=2.586 milliamps=517.2 rpm=86.2 x=400 y=660 heading=0 sound.motor=0.431
+  motor-right volts=2.586 milliamps=517.2 rpm=86.2 x=400 y=540 heading=0 sound.motor=0.431
+  wire:w1 milliamps=517.2
+  wire:w2 milliamps=-517.2
+  wire:w3 milliamps=517.2
+  wire:w4 milliamps=-517.2
+tick 1 1e105605
+  battery volts=2.86 milliamps=349.6
+  motor-left volts=2.86 milliamps=174.8 rpm=95.3 sound.motor=0.477
+  motor-right volts=2.86 milliamps=174.8 rpm=95.3 sound.motor=0.477
+  wire:w1 milliamps=174.8
+  wire:w2 milliamps=-174.8
+  wire:w3 milliamps=174.8
+  wire:w4 milliamps=-174.8
+tick 2 52b2e01f
+  battery volts=2.898 milliamps=255.1 charge=0.9999
+  motor-left volts=2.898 milliamps=127.5 rpm=96.6 sound.motor=0.483
+  motor-right volts=2.898 milliamps=127.5 rpm=96.6 sound.motor=0.483
+  wire:w1 milliamps=127.5
+  wire:w2 milliamps=-127.5
+  wire:w3 milliamps=127.5
+  wire:w4 milliamps=-127.5
+tick 3 ebd417ba
+  battery volts=2.903 milliamps=242.1
+  motor-left volts=2.903 milliamps=121 rpm=96.8 sound.motor=0.484
+  motor-right volts=2.903 milliamps=121 rpm=96.8 sound.motor=0.484
+  wire:w1 milliamps=121
+  wire:w2 milliamps=-121
+  wire:w3 milliamps=121
+  wire:w4 milliamps=-121
+tick 4 81c3ca51
+  battery volts=2.904 milliamps=240.3 charge=0.9998
+  motor-left volts=2.904 milliamps=120.1
+  motor-right volts=2.904 milliamps=120.1
+  wire:w1 milliamps=120.1
+  wire:w2 milliamps=-120.1
+  wire:w3 milliamps=120.1
+  wire:w4 milliamps=-120.1
+tick 5 cc598db1
+  battery milliamps=240 charge=0.9997
+  motor-left milliamps=120
+  motor-right milliamps=120
+  wire:w1 milliamps=120
+  wire:w2 milliamps=-120
+  wire:w3 milliamps=120
+  wire:w4 milliamps=-120
+tick 6 f0339dbf
+tick 7 e83f16b2
+  battery charge=0.9996
+tick 8 fa42427b
+tick 9 1444e968
+  battery charge=0.9995
+tick 10 bafda902
+  battery volts=2.903
+  motor-left volts=2.903
+  motor-right volts=2.903
+tick 11 6299a9b5
+  battery charge=0.9994
+tick 12 dc61dd5e
+tick 13 d98423d4
+  battery charge=0.9993
+tick 14 4ed3e8fe
+  battery charge=0.9992
+tick 15 059d498f
+tick 16 89b06710
+  battery charge=0.9991
+tick 17 30bff6af
+tick 18 06606693
+  battery charge=0.999
+tick 19 e81b3afb
+tick 20 ddaaa625
+  battery charge=0.9989
+tick 21 384b4475
+tick 22 33bc47df
+  battery charge=0.9988
+tick 23 24abb35d
+  battery charge=0.9987
+tick 24 2afa7e9b
+tick 25 183c560d
+  battery charge=0.9986
+tick 26 d945e56c
+tick 27 3eb4f1ad
+  battery charge=0.9985
+tick 28 4ef80690
+  battery volts=2.902
+  motor-left volts=2.902 rpm=96.7
+  motor-right volts=2.902 rpm=96.7
+tick 29 065ff57a
+  battery charge=0.9984
+tick 30 89b85df6
