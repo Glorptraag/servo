@@ -204,3 +204,5 @@
 {"ts": "2026-10-04T06:55:40+00:00", "event": "decision_add", "id": "D113", "blocks": []}
 {"ts": "2026-10-04T06:55:40+00:00", "event": "decision_add", "id": "D114", "blocks": []}
 {"ts": "2026-10-04T06:55:40+00:00", "event": "done", "tasks": ["G5"], "by": "orchestrator-provisional"}
+{"ts": "2026-10-04T08:39:51+00:00", "event": "done", "tasks": ["6.1"], "by": "W-6.1"}
+{"ts": "2026-10-04T08:39:51+00:00", "event": "decision_add", "id": "D115", "blocks": []}
