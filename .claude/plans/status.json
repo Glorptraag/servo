@@ -1266,7 +1266,7 @@
       "dispatched_at": "2026-10-04T09:01:59+00:00"
     },
     "7.3": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -1285,8 +1285,8 @@
       ],
       "done_when": "Each CAN-1 to CAN-10 finding has a failing-then-passing test; canvas suite green; the canvas interface is unchanged or the change is noted in the README.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-04T11:30:51+00:00",
+      "completed_by": "W-7.3",
       "dispatched_at": "2026-10-04T09:01:59+00:00"
     },
     "7.4": {
@@ -1336,7 +1336,7 @@
       "completed_by": null
     },
     "7.6": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1354,7 +1354,8 @@
       "done_when": "The parity suite covers every edit kind and is green in CI shards within the 10-minute budget.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-04T11:30:51+00:00"
     },
     "7.7": {
       "status": "pending",
