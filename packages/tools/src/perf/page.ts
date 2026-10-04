@@ -24,6 +24,8 @@ export interface FrameSample {
   readonly intervalP50: number;
   readonly intervalP95: number;
   readonly fps: number;
+  /** Every frame's busy time in the order the frames came, ms to 0.1. */
+  readonly busy: readonly number[];
 }
 
 /** Plays `gesture` on the app's canvas for `frames` frames, one step per frame, and times every frame. */
@@ -112,6 +114,7 @@ export const timeFrames = async ({ frames, gesture }: { readonly frames: number;
   }
   const sorted = (values: number[]): number[] => values.sort((a, b) => a - b);
   const quantile = (values: readonly number[], q: number): number => values[Math.min(values.length - 1, Math.floor(q * values.length))] ?? 0;
+  const inOrder = driven.map((time) => Math.round((busy.get(time) ?? 0) * 10) / 10);
   const works = sorted(driven.map((time) => work.get(time) ?? 0));
   const busies = sorted(driven.map((time) => busy.get(time) ?? 0));
   const intervals = sorted(driven.slice(1).map((time, index) => time - (driven[index] ?? time)));
@@ -125,6 +128,7 @@ export const timeFrames = async ({ frames, gesture }: { readonly frames: number;
     over16: busies.filter((value) => value > 16).length,
     intervalP50: quantile(intervals, 0.5),
     intervalP95: quantile(intervals, 0.95),
+    busy: inOrder,
     fps: ((driven.length - 1) * 1000) / Math.max((driven[driven.length - 1] ?? 0) - (driven[0] ?? 0), 1e-6),
   };
 };

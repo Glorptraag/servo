@@ -30,7 +30,7 @@ export const serveFolder = async (folder: string): Promise<StaticServer> => {
     const pathname = decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname);
     const relative = pathname.endsWith('/') ? `${pathname}index.html` : pathname;
     const file = path.join(folder, path.normalize(relative));
-    if (!file.startsWith(folder) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
+    if (!file.startsWith(`${folder}${path.sep}`) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
       response.writeHead(404).end();
       return;
     }
