@@ -1316,7 +1316,7 @@
       "dispatched_at": "2026-10-04T09:01:59+00:00"
     },
     "7.5": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1334,7 +1334,8 @@
       "done_when": "Every parent control has touch, pointer and keyboard tests; the parent view follows the four options; axe green over the parent view; focus never lands on body after an action.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-04T14:23:43+00:00"
     },
     "7.6": {
       "status": "dispatched",
@@ -1359,7 +1360,7 @@
       "dispatched_at": "2026-10-04T11:30:51+00:00"
     },
     "7.7": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1377,10 +1378,11 @@
       "done_when": "docs/data-note.md has no code spans; the emitter enumeration and note-sync tests pass; the note renders in one screen in the parent view test.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-04T14:23:43+00:00"
     },
     "7.8": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1400,7 +1402,8 @@
       "done_when": "A test wires under the open spec card by drag, by tap-then-tap and from the list view and sees the card step aside each time; canvas and app suites green; interface change noted in the canvas README.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-04T14:23:43+00:00"
     },
     "7.9": {
       "status": "pending",
