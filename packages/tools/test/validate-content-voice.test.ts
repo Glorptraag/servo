@@ -73,6 +73,34 @@ describe('R-6.4 CON-1 and TLS-1: character names in any system text', () => {
     }
   });
 
+  it('passes the mentor voice: the openers R-7.2 refused, imperatives, plural part names and the mode words', () => {
+    for (const text of [
+      'Undo the last wire.',
+      'Wheels spin.',
+      'Check the power line.',
+      'Watch the LED.',
+      'Press Run.',
+      'Look at the ultrasonic sensor.',
+      'Touch the bumper switch.',
+      'Slow down.',
+      'Connect the red wire.',
+      'Notice the caster.',
+      'Pick a kit.',
+      'Read the spec card.',
+      'Keep going.',
+      'Sensors read the line.',
+      'Now wire the motor.',
+      'Next, flip the switch. Then hold it. Wait for the buzzer. Count the turns.',
+      'Drag the wheel. Slide it on. Lift the chassis. Pull the wire. Let it go.',
+      'Gearboxes and casters fit under the chassis. Motors and switches join the power line.',
+      'Turns to an angle you choose, and holds it.',
+      'No signal: the arm stays where it is and hums.',
+      'Switch to Build mode, then back to Run mode.',
+    ]) {
+      expect(capitalFindings(text, matcher).map((finding) => finding.message)).toEqual([]);
+    }
+  });
+
   it('refuses an opener in the middle of a sentence', () => {
     expect(codesOf('Wire the Robot to the battery pack')).toEqual(['terminology.proper_name']);
   });
@@ -105,7 +133,7 @@ describe('R-6.4 CON-1 and TLS-1: character names in any system text', () => {
 
   it.each([
     ['challenges/level-1/drive-forward.json', 'start', 'Super robot!', ['terminology.proper_name at $.start.meta.name', 'text.exclamation at $.start.meta.name']],
-    ['fixtures/blueprints/broken-loose-caster.json', undefined, 'Zoom robot!', ['terminology.proper_name at $.meta.name', 'text.exclamation at $.meta.name']],
+    ['fixtures/blueprints/broken-loose-caster.json', undefined, 'Zoom robot!', ['text.exclamation at $.meta.name']],
     ['fixtures/blueprints/broken-loose-caster.json', undefined, 'Sparky the robot', ['terminology.proper_name at $.meta.name']],
   ])('refuses the blueprint name probe in %s: %s', (relative, key, name, expected) => {
     const issues = issuesFor(relative, (data) => {

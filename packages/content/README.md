@@ -63,3 +63,18 @@ Each has a passing and at least one failing fixture in `FIXTURES`. `push-the-hea
 ## Voice
 
 Every system-text field follows the voice rules: real component names, no character names, no praise, no exclamation marks (ground rule 7, brief Section 12). The schema refuses exclamation marks; the content validator checks terminology and banned words, capitalised words that read as a character's name, question marks, emoji and the word "level". A sentence that opens with a word not yet in `terminology/words.json` is refused until the word is added there.
+
+### Adding a word to words.json
+
+The list is seeded with every word that opens a sentence in this package, the brief's Section 12 examples, the mentor voice's common imperatives (check, watch, press, connect, keep, show, try and so on), the plural part names, the Build and Run mode words and the words of the app's and parent's UI copy. A word it does not hold is refused as `terminology.proper_name`. To see which word was refused, run this from the repo root:
+
+```sh
+pnpm validate-content packages/content | grep proper_name
+```
+
+Each line names the word, as in `'Wiggle' is capitalised and is not a listed term or name or an opener`. Then:
+- an ordinary word at the start of a sentence: add it to `openers`, in lower case, in alphabetical order (`"wiggle"`);
+- a name written with capitals wherever it stands, such as a kit's name or a screen's name: add it to `names` as written (`"Line Runner"`);
+- a character's or a mascot's name: reword the line instead (ground rule 7).
+
+A word that holds a banned word cannot be listed, so `point` is not an opener (D22): reword a line that opens with it. `packages/tools/test/ui-copy.test.ts` reads the same list for the app's and parent's copy.

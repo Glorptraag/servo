@@ -217,9 +217,9 @@ export const glossFindings = (text: string, matcher: TermMatcher): Finding[] => 
 
 const LETTER = /\p{L}/u;
 const PROPER_NAME = /^\p{Lu}\p{Ll}/u;
-/** Text before a word that opens a sentence ends in one of these, after spaces, quotes and brackets are dropped. */
+/** Text before a word that opens a sentence ends in one of these, after spaces, quotes, brackets and Markdown marks are dropped. */
 const SENTENCE_END = /[.:;?!·—–]$/u;
-const BEFORE_WORD = /[\s"'“‘([]+$/u;
+const BEFORE_WORD = /[\s"'“‘([#*•]+$/u;
 
 /** Left to levelFindings. */
 const LEVEL_WORDS = new Set(['level', 'levels']);
