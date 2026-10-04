@@ -1,4 +1,5 @@
 import { playwright } from '@vitest/browser-playwright';
+import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 import { sidePageCommands } from './test/browser/side-page.ts';
 
@@ -10,6 +11,19 @@ import { sidePageCommands } from './test/browser/side-page.ts';
 // The test page is the size of the canvas package's iPad profile. Headless Chromium stops drawing frames for a much
 // larger one, so the frames for bigger screens are scaled down to fit it (test/browser/frame.ts).
 const VIEWPORT = { width: 1180, height: 820 };
+
+/**
+ * Vitest's browser mode rewrites every dynamic `import()` the dev server serves into a call on the tester page's
+ * `__vitest_browser_runner__`. The app's own pages that tests open in frames (index.html, the test pages) have no such
+ * runner, so the run loop's import of sim-core at the first Run (D11, docs/perf.md) would throw there. This gives each
+ * served page the plain stand-in Vitest itself gives workers; the tester page sets its own runner after it.
+ */
+const dynamicImportsInFrames = (): Plugin => ({
+  name: 'servo:dynamic-imports-in-frames',
+  transformIndexHtml: () => [
+    { tag: 'script', children: 'globalThis.__vitest_browser_runner__ ??= { wrapDynamicImport: (load) => load() };', injectTo: 'head-prepend' },
+  ],
+});
 
 export default defineConfig({
   test: {
@@ -24,6 +38,7 @@ export default defineConfig({
         },
       },
       {
+        plugins: [dynamicImportsInFrames()],
         // The app page loads these in a frame; optimising them up front keeps Vite from reloading the page mid-test.
         optimizeDeps: {
           // Every third-party package the app reaches: one found late (rapier, through sim-core) reloads a running page.

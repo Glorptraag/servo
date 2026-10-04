@@ -27,9 +27,18 @@ export interface SpecCardProps {
 
 const NO_FRAMES = { subscribe: () => () => {}, frame: null };
 
-const useFrame = (frames: RunFrames | undefined): RunFrame | null => {
+/** What the card shows of a frame for one part: its exact values and faults. Frames that leave it alone draw nothing. */
+const liveKey = (frame: RunFrame | null, partId: PlacedPartId | null): string => {
+  if (!frame) return '';
+  const live = partId === null ? undefined : frame.live.get(partId);
+  return live ? JSON.stringify([live.values, live.faults]) : '-';
+};
+
+/** The latest frame, read again only when what it holds for `partId` changed (task 6.1, docs/perf.md). */
+const useFrame = (frames: RunFrames | undefined, partId: PlacedPartId | null): RunFrame | null => {
   const source = frames ?? NO_FRAMES;
-  return useSyncExternalStore(source.subscribe, () => source.frame);
+  useSyncExternalStore(source.subscribe, () => liveKey(source.frame, partId));
+  return source.frame;
 };
 
 /** The socket shape of each port type, as the canvas draws it (schema PORT_TYPE_STYLE), so colour is never the only cue. */
@@ -59,7 +68,7 @@ const useShownPart = (): PlacedPartId | null => {
 export const SpecCard = ({ frames, speech = pageSpeech(), unlocked }: SpecCardProps) => {
   const { content, level, canvas, mode, blueprint } = useShell();
   const partId = useShownPart();
-  const frame = useFrame(frames);
+  const frame = useFrame(frames, partId);
   const titleId = useId();
   const card = useRef<HTMLElement>(null);
 

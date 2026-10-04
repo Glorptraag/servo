@@ -4,13 +4,15 @@
 // `#share=` fragment, task 5.6) opens the shared build's page in place of the child's app, with no store opened.
 import { mountApp } from './index.ts';
 import { registerOffline } from './offline/index.ts';
+import { markInteractive } from './perf/marks.ts';
 import { BUILD_INFO } from './release/build-info.ts';
 import { startPage } from './release/start.ts';
 import { followShareFragment, isShareFragment, mountSharedPage } from './sharing/index.ts';
 
 const host = document.getElementById('app');
 if (!host) throw new Error('index.html has no element with the id "app".');
-const openApp = (page: HTMLElement): void => void (isShareFragment(location.hash) ? mountSharedPage(page, location.hash) : mountApp(page));
+// The app marks when it takes input, for the cold-start measurement (src/perf/, docs/perf.md).
+const openApp = (page: HTMLElement): void => void (isShareFragment(location.hash) ? mountSharedPage(page, location.hash) : mountApp(page).then(markInteractive));
 void startPage(host, { info: BUILD_INFO, pathname: location.pathname, openApp });
 followShareFragment(window);
 void registerOffline();

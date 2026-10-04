@@ -16,6 +16,7 @@
     "lint": "eslint --config eslint.config.js --max-warnings 0 .",
     "check": "pnpm lint && pnpm typecheck && pnpm test",
     "perf": "pnpm art && pnpm -r --workspace-concurrency=1 --if-present run perf",
+    "perf:app": "node packages/tools/src/perf/main.ts",
     "e2e": "pnpm art && pnpm --filter @servo/tools e2e",
     "gate:g3": "pnpm art && pnpm --filter @servo/tools gate:g3",
     "gate:g3:test": "pnpm art && pnpm --filter @servo/tools e2e:gate-g3",

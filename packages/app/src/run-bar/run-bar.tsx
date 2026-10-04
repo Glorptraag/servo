@@ -29,6 +29,7 @@ export const RUN_BAR_TEXT = {
   nothingPlaced: 'Place a part first.',
   cannotRun: 'This build could not be run.',
   cannotDraw: 'This Run could not be shown on this device.',
+  cannotLoad: 'The Run could not start. Try again once this device is online.',
 } as const;
 
 /** The clock's speed read aloud, with its real unit. */
@@ -92,7 +93,7 @@ export const RunBar = ({ clock, seed, now, onLoop, challenge = null, program, hi
       rate: given.rate,
       onStart: (build) => recorder.start(build),
       onEnd: (simulation) => recorder.end(simulation),
-      lines: { cannotRun: RUN_BAR_TEXT.cannotRun, cannotDraw: RUN_BAR_TEXT.cannotDraw },
+      lines: { cannotRun: RUN_BAR_TEXT.cannotRun, cannotDraw: RUN_BAR_TEXT.cannotDraw, cannotLoad: RUN_BAR_TEXT.cannotLoad },
     });
     const off = made.subscribe((state, frame) => {
       if (frame && !isSlowMotion(state.rate)) return;
