@@ -2081,6 +2081,22 @@
       "confidence": "high",
       "blocks": [],
       "resolved": false
+    },
+    {
+      "id": "D108",
+      "question": "Level 1 challenges (R-4.7 Q1-Q5): no chassis introduction (5 intros); 'Meet the switch' stays at Level 1 and 4.8 does not re-introduce it; a what-if counts toward the two-missed-Runs hint offer; Home orders a level by id so the unscripted build comes first (small follow-up to order by kind); a passing Run may carry faults and the progress view must not read that as a mistake. Accept defaults?",
+      "recommendation": "Accept all five; open one small app follow-up to order Home by kind (introduction, guided, breakdown, what-if, unscripted).",
+      "confidence": "0.8",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D109",
+      "question": "Telemetry (R-6.2 Q1-Q6): a session starts when the app opens for a child with the opening build's mode, overridden by a Home choice before the first Run; sandbox is one mode; breakdown fix time runs from the first Run; export counts when the list is shown and a link when it is made; events are kept until the profile is removed and read on the device in moderated sessions, with any path off the device its own task (D10, D13); the data note should use plain words instead of code names (F4). Accept defaults?",
+      "recommendation": "Accept; queue the plain-words data note rewrite into 6.5's copy pass.",
+      "confidence": "0.8",
+      "blocks": [],
+      "resolved": false
     }
   ]
 }
