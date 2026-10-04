@@ -1406,7 +1406,7 @@
       "dispatched_at": "2026-10-04T14:23:43+00:00"
     },
     "7.9": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -1426,8 +1426,8 @@
       ],
       "done_when": "Both cases pass byte-identically on all six parity paths with the workarounds removed from the e2e tours; canvas suite and parity shards green; screenshot references unchanged unless a visual change is intended and noted.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-04T19:01:15+00:00",
+      "completed_by": "W-7.9",
       "dispatched_at": "2026-10-04T15:55:54+00:00"
     }
   },
@@ -2404,6 +2404,22 @@
       "question": "Spec card and wiring (R-7.8): after a wire made on the canvas (drag or tap-then-tap) the socket press clears the part selection (task 3.4 rule), so the card returns only once a part is selected again; opening a port's Actions in the list view counts as a wire in progress and steps the card aside. Accept both defaults?",
       "recommendation": "Accept; watch at G4 whether children lose the card they were reading.",
       "confidence": "0.6",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D121",
+      "question": "Tap-path fixes (R-7.9): a tap on a moving part's own tile now places it when a mount point is in reach or the spot is free (placement.md decision 7 revised; props unchanged); a wire with no pressable point is drawn with a body-avoiding bend to the nearest clear spot (ties go away from the build's middle), which redrew four screenshot references including a V-shaped bend under the LED in kit-circuit-crew. Accept the revised decision 7 and the bends as drawn?",
+      "recommendation": "Accept; look at the kit-circuit-crew reference once and say if the LED bend reads as deliberate.",
+      "confidence": "0.6",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D122",
+      "question": "Gate G6 ready \u2014 five homeschool families run Levels 1-2 for two weeks (docs/gates/G6.md: pre-flight list, what each family does, how the Section 14 measures are read, a sheet per family). Every build task is done; 7.1-7.9 closed the sweep's rule-7 and rule-8 findings. Before the families start: restore GitHub billing and get CI green on main (D107), choose or defer the host (D10), and decide whether to run with G4/G5 provisional. This gate is Drew's; the orchestrator does not close it.",
+      "recommendation": "Run the G6 pre-flight, then the two weeks; findings become new tasks.",
+      "confidence": "0.5",
       "blocks": [],
       "resolved": false
     }
