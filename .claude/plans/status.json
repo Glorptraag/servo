@@ -1316,7 +1316,7 @@
       "dispatched_at": "2026-10-04T09:01:59+00:00"
     },
     "7.5": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1333,8 +1333,8 @@
       ],
       "done_when": "Every parent control has touch, pointer and keyboard tests; the parent view follows the four options; axe green over the parent view; focus never lands on body after an action.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-04T15:42:56+00:00",
+      "completed_by": "W-7.5",
       "dispatched_at": "2026-10-04T14:23:43+00:00"
     },
     "7.6": {
