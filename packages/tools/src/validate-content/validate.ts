@@ -11,11 +11,23 @@ import {
 import type { Catalogue, Issue, ValidationResult } from '@servo/schema';
 import { catalogueFromFixtures, catalogueFromFolder } from './catalogue.ts';
 import type { CatalogueSource } from './catalogue.ts';
-import type { ContentIssue } from './codes.ts';
+import type { ContentIssue, Finding } from './codes.ts';
 import { cachedReader, classify, field, findRecordFiles, KIND_FOLDERS, KIND_LABELS } from './records.ts';
 import type { RecordKind } from './records.ts';
 import { systemText } from './system-text.ts';
-import { bannedFindings, compileTerminology, glossFindings, loadTerminology, partNameFindings, TERMINOLOGY_FILES } from './terminology.ts';
+import type { TextField } from './system-text.ts';
+import {
+  bannedFindings,
+  capitalFindings,
+  compileTerminology,
+  glossFindings,
+  levelFindings,
+  loadTerminology,
+  partNameFindings,
+  TERMINOLOGY_FILES,
+} from './terminology.ts';
+import type { TermMatcher } from './terminology.ts';
+import { markFindings } from './voice.ts';
 
 export interface ValidateContentOptions {
   /** Record files, or folders to search for `.json` records: absolute, or relative to the process's working folder. */
@@ -61,6 +73,15 @@ const checkRecord = (kind: RecordKind, value: unknown, catalogue: () => Catalogu
   }
 };
 
+/** Everything the validator says about one system-text field beyond the schema: the terminology lists, levels and marks. */
+export const textFindings = (text: TextField, matcher: TermMatcher): Finding[] => [
+  ...bannedFindings(text.text, matcher),
+  ...glossFindings(text.text, matcher),
+  ...(text.partName ? partNameFindings(text.text, matcher) : capitalFindings(text.text, matcher)),
+  ...levelFindings(text.text, matcher),
+  ...markFindings(text.text, { exclamations: text.blueprintName === true }),
+];
+
 const unknownKind = (candidates: readonly RecordKind[]): string => {
   const folders = [...KIND_FOLDERS.keys()].map((name) => `${name}/`).join(', ');
   const what =
@@ -99,6 +120,7 @@ export const validateContent = (options: ValidateContentOptions): ContentReport 
   const matcher = compileTerminology(terminology.terminology);
   const componentsFile = path.join(options.terminology, TERMINOLOGY_FILES.components);
   const bannedFile = path.join(options.terminology, TERMINOLOGY_FILES.banned);
+  const wordsFile = path.join(options.terminology, TERMINOLOGY_FILES.words);
   // A file that cannot be read, is not JSON or is not an object has its issue at `$`.
   const unusable = (file: string): boolean => terminology.issues.some((issue) => issue.file === file && issue.path === '$');
   if (terminology.missing.includes(componentsFile)) {
@@ -114,6 +136,14 @@ export const validateContent = (options: ValidateContentOptions): ContentReport 
     notes.push(`The banned list at ${show(bannedFile)} cannot be used, so text is not checked for banned words.`);
   } else if (terminology.terminology.banned.length === 0) {
     notes.push(`The banned list at ${show(bannedFile)} bans nothing, so text is not checked for banned words.`);
+  }
+  const capitals = 'so capitalised words are checked only in part names';
+  if (terminology.missing.includes(wordsFile)) {
+    notes.push(`No words list at ${show(wordsFile)}, ${capitals}.`);
+  } else if (unusable(wordsFile)) {
+    notes.push(`The words list at ${show(wordsFile)} cannot be used, ${capitals}.`);
+  } else if (!matcher.checksCapitals) {
+    notes.push(`The words list at ${show(wordsFile)} lists no words, ${capitals}.`);
   }
 
   let source: CatalogueSource | undefined;
@@ -140,12 +170,7 @@ export const validateContent = (options: ValidateContentOptions): ContentReport 
     const checked = checkRecord(kind, result.value, catalogue);
     if (!checked.ok) issues.push(...checked.issues.map((issue: Issue) => ({ file, ...issue })));
     for (const text of systemText(kind, result.value)) {
-      const findings = [
-        ...bannedFindings(text.text, matcher),
-        ...glossFindings(text.text, matcher),
-        ...(text.partName ? partNameFindings(text.text, matcher) : []),
-      ];
-      issues.push(...findings.map((finding) => ({ file, path: text.path, ...finding })));
+      issues.push(...textFindings(text, matcher).map((finding) => ({ file, path: text.path, ...finding })));
     }
     // Only records that pass the schema claim their id, as only they can enter a catalogue.
     const id = checked.ok ? field(result.value, 'id') : undefined;

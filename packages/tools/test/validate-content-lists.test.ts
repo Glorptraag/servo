@@ -98,6 +98,32 @@ describe('the real lists', () => {
     expect(allowed).toEqual(expect.arrayContaining(['mount points', 'do it for me', 'place it for me']));
   });
 
+  it('ban the reward words, robot sounds and cheers R-6.4 CON-2 and TLS-2 name', () => {
+    const phrases = banned.map(({ phrase }) => phrase);
+    for (const phrase of [
+      'star',
+      'stars',
+      'trophy',
+      'reward',
+      'rewards',
+      'prize',
+      'medal',
+      'win',
+      'won',
+      'winner',
+      'confetti',
+      'unlock',
+      'unlocked',
+      'point',
+      'life',
+      'beep',
+      'boop',
+      'woo hoo',
+    ]) {
+      expect(phrases).toContain(phrase);
+    }
+  });
+
   it('give every ban a reason that cites ground rule 7, the brief or D22', () => {
     for (const { reason } of banned) expect(reason).toMatch(/ \((?:ground rule 7|brief Sections? \d+|D22)[^()]*\)\.$/);
   });
@@ -286,7 +312,12 @@ describe('done when: passes a record that uses only listed terms', () => {
   });
 });
 
-describe('the schema examples pass with the real lists', () => {
+// The schema's chassis example still says "move that point", which content's chassis rewords as "move that centre".
+// Since R-7.2 bans the singular `point` (R-6.4 TLS-2), the real lists refuse that one line; rewording the example is
+// a schema task. Every other example passes.
+const SCHEMA_CHASSIS_POINT = "parts/chassis.json: terminology.banned at $.failureModes[0].teachingNote: 'point' is on the banned list: Servo keeps no score (ground rule 7, D22).";
+
+describe('the schema examples pass with the real lists, but for the chassis example\'s point', () => {
   it.each(exampleParts.map((part) => [(part as { identity: { name: string } }).identity.name]))('accepts the part name %s', (name) => {
     expect(partNameFindings(name, matcher)).toEqual([]);
   });
@@ -295,16 +326,16 @@ describe('the schema examples pass with the real lists', () => {
     const folder = tempFolder();
     const files = writeSchemaFixtures(folder);
     const result = cli([folder, '--catalogue', folder, '--terminology', CONTENT_TERMINOLOGY]);
-    expect(issueLines(result.out)).toEqual([]);
-    expect(result.out).toContain(`validate-content: ${files.length} records checked, no issues.`);
-    expect(result.status).toBe(0);
+    expect(issueLines(result.out)).toEqual([`${shown(folder)}/${SCHEMA_CHASSIS_POINT}`]);
+    expect(result.out).toContain(`validate-content: ${files.length} records checked, 1 issue in 1 file.`);
+    expect(result.status).toBe(1);
   });
 
   it('reads the real lists by default when run as pnpm validate-content does', () => {
     const result = spawnCli(['packages/schema/fixtures/parts'], REPO_ROOT);
     expect(result.stderr).toBe('');
-    expect(result.stdout).toBe('validate-content: 14 records checked, no issues.\n');
-    expect(result.status).toBe(0);
+    expect(result.stdout).toBe(`packages/schema/fixtures/${SCHEMA_CHASSIS_POINT}\nvalidate-content: 14 records checked, 1 issue in 1 file.\n`);
+    expect(result.status).toBe(1);
   });
 });
 
@@ -312,10 +343,10 @@ describe('part names (ground rule 7)', () => {
   it.each([
     ['sparky the DC motor', ['terminology.not_qualifier', 'terminology.not_qualifier']],
     ['Sparky the DC motor', ['terminology.proper_name', 'terminology.not_qualifier']],
-    ['🤖', ['terminology.not_real_name']],
-    ['???', ['terminology.not_real_name']],
+    ['🤖', ['terminology.not_real_name', 'text.symbol']],
+    ['???', ['terminology.not_real_name', 'text.question']],
     ['Sparky', ['terminology.not_real_name']],
-    ['DC motor 🤖', ['terminology.not_qualifier']],
+    ['DC motor 🤖', ['terminology.not_qualifier', 'text.symbol']],
     ['turbo wheel', ['terminology.not_qualifier']],
   ])('refuses %s', (name, expected) => {
     const result = run(partFile('named', (part) => (identity(part).name = name)));

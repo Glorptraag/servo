@@ -27,10 +27,14 @@ export interface Terminology {
   readonly banned: readonly BannedPhrase[];
   /** Real terms that hold a banned word, such as `mount points`: the banned word is not refused inside them. */
   readonly allowed: readonly string[];
+  /** Capitalised names that are not characters, such as a kit's name or the Run button: `Rolling Start`, `Run`. */
+  readonly names?: readonly string[];
+  /** Ordinary words that may open a sentence with a capital, such as `this` or `wired`. */
+  readonly openers?: readonly string[];
 }
 
-/** The two files in a terminology folder. */
-export const TERMINOLOGY_FILES = { components: 'components.json', banned: 'banned.json' } as const;
+/** The three files in a terminology folder. */
+export const TERMINOLOGY_FILES = { components: 'components.json', banned: 'banned.json', words: 'words.json' } as const;
 
 export interface LoadedTerminology {
   readonly terminology: Terminology;
@@ -106,6 +110,12 @@ export interface TermMatcher {
   readonly allowed: readonly Phrase[];
   /** Each gloss once, with every component it is a gloss for. */
   readonly glosses: readonly { readonly gloss: Phrase; readonly owners: readonly { readonly component: ComponentTerm; readonly name: Phrase }[] }[];
+  /** The listed capitalised names. */
+  readonly names: readonly Phrase[];
+  /** Words that may open a sentence with a capital: the openers, and every word of a listed term or name. */
+  readonly openers: ReadonlySet<string>;
+  /** Whether the words list names anything, which turns the capitalised-word check on for all system text. */
+  readonly checksCapitals: boolean;
 }
 
 export const compileTerminology = (terminology: Terminology): TermMatcher => {
@@ -122,12 +132,23 @@ export const compileTerminology = (terminology: Terminology): TermMatcher => {
       else glosses.push({ gloss, owners: [{ component, name }] });
     }
   }
+  const names = (terminology.names ?? []).map(phraseOf);
+  const openers = terminology.openers ?? [];
+  const listedWords = [
+    ...components.flatMap(({ name, glosses: own }) => [name, ...own]),
+    ...terminology.qualifiers.map(phraseOf),
+    ...terminology.allowed.map(phraseOf),
+    ...names,
+  ].flatMap(({ keys }) => keys);
   return {
     components,
     qualifiers: terminology.qualifiers.map(phraseOf),
     banned: terminology.banned.map((entry) => ({ entry, phrase: phraseOf(entry.phrase) })),
     allowed: terminology.allowed.map(phraseOf),
     glosses,
+    names,
+    openers: new Set([...openers.map(keyOf), ...listedWords]),
+    checksCapitals: names.length > 0 || openers.length > 0,
   };
 };
 
@@ -196,6 +217,68 @@ export const glossFindings = (text: string, matcher: TermMatcher): Finding[] => 
 
 const LETTER = /\p{L}/u;
 const PROPER_NAME = /^\p{Lu}\p{Ll}/u;
+/** Text before a word that opens a sentence ends in one of these, after spaces, quotes, brackets and Markdown marks are dropped. */
+const SENTENCE_END = /[.:;?!·—–]$/u;
+const BEFORE_WORD = /[\s"'“‘([#*•]+$/u;
+
+/** Left to levelFindings. */
+const LEVEL_WORDS = new Set(['level', 'levels']);
+
+const opensSentence = (text: string, word: Word): boolean => {
+  const before = text.slice(0, word.start).replace(BEFORE_WORD, '');
+  return before === '' || SENTENCE_END.test(before);
+};
+
+/**
+ * Capitalised words in one line of system text that read as a character's name (ground rule 7). A word that
+ * starts with a capital and a lower-case letter passes inside a listed real name, gloss, qualifier, allowed
+ * phrase or capitalised name, and at the start of a sentence when it is an ordinary word: an opener, or a word
+ * of a listed term. Anything else is refused, as in `Buzzy says the wires are swapped` and `meet Buzzy`. Words
+ * inside a banned phrase are left to the banned list. One finding per word as written. A part's name has its
+ * own, stricter check (partNameFindings). With no words list, nothing is checked.
+ */
+export const capitalFindings = (text: string, matcher: TermMatcher): Finding[] => {
+  if (!matcher.checksCapitals) return [];
+  const words = wordsOf(text);
+  const shields = spansOf(words, [
+    ...matcher.components.flatMap(({ name, glosses }) => [name, ...glosses]),
+    ...matcher.qualifiers,
+    ...matcher.allowed,
+    ...matcher.names,
+    ...matcher.banned.map(({ phrase }) => phrase),
+  ]);
+  const seen = new Set<string>();
+  const findings: Finding[] = [];
+  words.forEach((word, index) => {
+    if (!PROPER_NAME.test(word.raw) || LEVEL_WORDS.has(word.key) || within(shields, index, index + 1) || seen.has(word.raw)) return;
+    if (opensSentence(text, word) && matcher.openers.has(word.key)) return;
+    seen.add(word.raw);
+    findings.push({
+      code: 'terminology.proper_name',
+      message: `${quoted(word.raw)} is capitalised and is not a listed term or name${opensSentence(text, word) ? ' or an opener' : ''}, so it reads as a character's name. If it is an ordinary word or a real name, add it to ${TERMINOLOGY_FILES.words}.`,
+    });
+  });
+  return findings;
+};
+
+/**
+ * `level` and `levels` in one line of system text. A level is a product word for adults and the app's shell,
+ * not for a child's card or hint (brief Section 12, R-6.5 F4). Words inside a banned phrase such as `level up`
+ * are left to the banned list. One finding per field.
+ */
+export const levelFindings = (text: string, matcher: TermMatcher): Finding[] => {
+  const words = wordsOf(text);
+  const banned = spansOf(words, matcher.banned.map(({ phrase }) => phrase));
+  const index = words.findIndex((word, at) => LEVEL_WORDS.has(word.key) && !within(banned, at, at + 1));
+  const word = words[index];
+  if (word === undefined) return [];
+  return [
+    {
+      code: 'text.level',
+      message: `${quoted(word.raw)} is a product word: system text never names levels to the child (brief Section 12).`,
+    },
+  ];
+};
 /** What may sit between the listed terms of a part's name: spaces, and brackets as in `chassis (frame)`. */
 const BETWEEN_TERMS = /[\s()]+/u;
 
@@ -427,6 +510,41 @@ const readBanned = (root: unknown, report: Report): BannedFile => {
   return { banned, allowed };
 };
 
+interface WordsFile {
+  readonly names: readonly Placed<string>[];
+  readonly openers: readonly Placed<string>[];
+}
+
+const readWords = (root: unknown, report: Report): WordsFile => {
+  const record = readFields(root, '$', report, [], ['names', 'openers']);
+  if (!record) return { names: [], openers: [] };
+  const names = readList(field(record, 'names'), '$.names', report, (item, where): Placed<string> | undefined => {
+    const text = readPhrase(item, where, report, 'a capitalised name');
+    return text === undefined ? undefined : { value: text, where };
+  });
+  const openers = readList(field(record, 'openers'), '$.openers', report, (item, where): Placed<string> | undefined => {
+    const text = readPhrase(item, where, report, 'an opener');
+    if (text === undefined) return undefined;
+    if (wordsOf(text).length !== 1 || text !== text.toLowerCase()) {
+      report(where, `Expected an opener as one word in lower case, found ${quoted(text)}.`);
+      return undefined;
+    }
+    return { value: text, where };
+  });
+  reportRepeats(names, report);
+  reportRepeats(openers, report);
+  return { names, openers };
+};
+
+/** A name or opener that is banned could never be used. */
+const reportBannedWords = (file: WordsFile, banned: readonly Placed<BannedPhrase>[], report: Report): void => {
+  const bans = banned.map(({ value }) => phraseOf(value.phrase));
+  for (const { value, where } of [...file.names, ...file.openers]) {
+    const words = phraseOf(value).words;
+    if (bans.some((ban) => findKeys(words, ban.keys).length > 0)) report(where, `${quoted(value)} holds a banned word, so it could never be used.`);
+  }
+};
+
 /**
  * A banned phrase that is also an allowed phrase, a real name or a gloss could never be refused. A qualifier
  * that holds a banned phrase, outside any of those, could never be used: the name check takes it, but the
@@ -462,7 +580,7 @@ const reportContradictions = (
 };
 
 /**
- * Reads the terminology folder: `components.json` and `banned.json`. A missing folder or file is an empty
+ * Reads the terminology folder: `components.json`, `banned.json` and `words.json`. A missing folder or file is an empty
  * list. Never throws: format problems come back as `terminology.bad_file` issues.
  */
 export const loadTerminology = (folder: string): LoadedTerminology => {
@@ -487,17 +605,23 @@ export const loadTerminology = (folder: string): LoadedTerminology => {
   const bannedFile = path.join(folder, TERMINOLOGY_FILES.banned);
   const componentsJson = load(componentsFile);
   const bannedJson = load(bannedFile);
+  const wordsFile = path.join(folder, TERMINOLOGY_FILES.words);
+  const wordsJson = load(wordsFile);
   const { components, qualifiers } = componentsJson
     ? readComponents(componentsJson.value, reporter(componentsFile))
     : { components: [], qualifiers: [] };
   const banned = bannedJson ? readBanned(bannedJson.value, reporter(bannedFile)) : { banned: [], allowed: [] };
   reportContradictions(banned, components, qualifiers, reporter(bannedFile));
+  const words = wordsJson ? readWords(wordsJson.value, reporter(wordsFile)) : { names: [], openers: [] };
+  reportBannedWords(words, banned.banned, reporter(wordsFile));
   return {
     terminology: {
       components,
       qualifiers,
       banned: banned.banned.map(({ value }) => value),
       allowed: banned.allowed.map(({ value }) => value),
+      names: words.names.map(({ value }) => value),
+      openers: words.openers.map(({ value }) => value),
     },
     issues,
     missing,

@@ -40,11 +40,11 @@ describe('loading the terminology folder', () => {
     expect(lists.terminology.allowed).toEqual(['mount point', 'mount points']);
   });
 
-  it('treats a missing folder as empty lists, with both files missing and no issues', () => {
+  it('treats a missing folder as empty lists, with every file missing and no issues', () => {
     const folder = path.join(tempFolder(), 'terminology');
     const loaded = loadTerminology(folder);
-    expect(loaded.terminology).toEqual({ components: [], qualifiers: [], banned: [], allowed: [] });
-    expect(loaded.missing).toEqual([path.join(folder, 'components.json'), path.join(folder, 'banned.json')]);
+    expect(loaded.terminology).toEqual({ components: [], qualifiers: [], banned: [], allowed: [], names: [], openers: [] });
+    expect(loaded.missing).toEqual([path.join(folder, 'components.json'), path.join(folder, 'banned.json'), path.join(folder, 'words.json')]);
     expect(loaded.issues).toEqual([]);
   });
 
@@ -52,7 +52,7 @@ describe('loading the terminology folder', () => {
     const folder = tempFolder();
     write(folder, 'banned.json', { banned: [{ phrase: 'coins', reason: 'No score.' }] });
     const loaded = loadTerminology(folder);
-    expect(loaded.missing).toEqual([path.join(folder, 'components.json')]);
+    expect(loaded.missing).toEqual([path.join(folder, 'components.json'), path.join(folder, 'words.json')]);
     expect(loaded.terminology.banned).toEqual([{ phrase: 'coins', reason: 'No score.' }]);
     expect(loaded.terminology.allowed).toEqual([]);
   });
