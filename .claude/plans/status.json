@@ -1382,7 +1382,7 @@
       "dispatched_at": "2026-10-04T14:23:43+00:00"
     },
     "7.8": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1401,8 +1401,8 @@
       ],
       "done_when": "A test wires under the open spec card by drag, by tap-then-tap and from the list view and sees the card step aside each time; canvas and app suites green; interface change noted in the canvas README.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-04T16:20:30+00:00",
+      "completed_by": "W-7.8",
       "dispatched_at": "2026-10-04T14:23:43+00:00"
     },
     "7.9": {
@@ -2396,6 +2396,14 @@
       "question": "Parent access options (R-7.5): the four accessibility options reach the parent view through additive exports on @servo/app/store (AccessStore, readAccess, accessTheme, pageStorage, ReadAloudScope, which is the first React component in the store export). Cleaner would be a separate @servo/app/access export, which also changes the ESLint package-map rule and CLAUDE.md. Also: the shared-build page is axe-green but still ignores the options; left-handed layout on a page with no tray moves rows to the right edge. Accept for launch and queue the export split and the shared-page options as follow-ups?",
       "recommendation": "Accept for launch; split the export after G6.",
       "confidence": "0.7",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D120",
+      "question": "Spec card and wiring (R-7.8): after a wire made on the canvas (drag or tap-then-tap) the socket press clears the part selection (task 3.4 rule), so the card returns only once a part is selected again; opening a port's Actions in the list view counts as a wire in progress and steps the card aside. Accept both defaults?",
+      "recommendation": "Accept; watch at G4 whether children lose the card they were reading.",
+      "confidence": "0.6",
       "blocks": [],
       "resolved": false
     }
