@@ -127,6 +127,25 @@ describe('a wheel moved off its shaft by tap-then-tap (R-7.6 finding 3)', () => 
   });
 });
 
+describe('a loose part tapped on its own tile after Move (R-7.9 finding 3)', () => {
+  it('stays where it is by touch and by mouse, never nudged by the tap’s offset', async () => {
+    const robot = fixture('rolling-start');
+    for (const hand of ['touch', 'mouse'] as const satisfies readonly Hand[]) {
+      load(robot, { x: 0, y: 0 });
+      const before = bytes();
+      const edits = listen(bench.surface, 'edit');
+      await tap(hand, client({ x: -45, y: 40 }));
+      expect(bench.surface.placement.selectedPart).toBe('chassis');
+      await tap(hand, client(partHandle('move')));
+      expect(bench.surface.placement.moving).toBe('chassis');
+      await tap(hand, client({ x: -40, y: 44 }));
+      expect(bench.surface.placement.moving, hand).toBeUndefined();
+      expect(edits, hand).toEqual([]);
+      expect(bytes(), hand).toBe(before);
+    }
+  });
+});
+
 describe('a line wholly under sockets (R-7.6 finding 2)', () => {
   // A battery pack with a DC motor beside it, wired minus to minus: straight, the line runs past the pack's plus socket
   // and sockets cover all of it.

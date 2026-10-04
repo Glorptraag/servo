@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest';
 import type { Vec2 } from '@servo/schema';
 import { RoutingController } from '../../src/routing/controller.ts';
 import { PRESS_SPARE_MM, exposeWires } from '../../src/routing/exposure.ts';
-import { routeWires } from '../../src/routing/router.ts';
+import { bodiesOf, crossingCount, routeWires } from '../../src/routing/router.ts';
+import { containsPoint } from '../../src/routing/shapes.ts';
 import type { WireRoutes } from '../../src/routing/router.ts';
 import { distance } from '../../src/scene/geometry.ts';
 import { hitTest } from '../../src/scene/hit.ts';
@@ -110,6 +111,62 @@ describe('exposeWires', () => {
     for (const part of scene.parts) {
       for (const port of part.ports) if (port.layer === 'ports') expect(distance(middle, port.at)).toBeGreaterThanOrEqual(PORT_MM / 2 + WIRE_HIT_MM / 2 - 1e-9);
     }
+  });
+
+  /** The middle of a bend's flat stretch. */
+  const topOf = (route: readonly Vec2[] | undefined): Vec2 => {
+    const [, a, b] = route ?? [];
+    if (!a || !b) throw new Error('no bend');
+    return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  };
+
+  it('keeps its bend off every part body: where the nearest clear spot lies in one, it goes on to the next (R-7.9)', () => {
+    const first = topOf(exposeWires(buildScene(buried, catalogue), new Map()).get('w1'));
+    // A caster, which has no socket, set down over that spot: its body takes the spot, not its sockets.
+    const covered = blueprintOf({
+      parts: [...buried.parts, { id: 'p3', part: 'caster', position: first, rotation: 0, settings: {} }],
+      wires: buried.wires,
+    });
+    const scene = buildScene(covered, catalogue);
+    const bodies = bodiesOf(scene);
+    const caster = bodies[scene.parts.filter((part) => !part.frame).findIndex((part) => part.id === 'p3')];
+    if (!caster) throw new Error('no caster body');
+    expect(containsPoint(caster, first)).toBe(true);
+    const route = exposeWires(scene, new Map()).get('w1');
+    const top = topOf(route);
+    expect(bodies.some((body) => containsPoint(body, top))).toBe(false);
+    expect(crossingCount(route ?? [], bodies)).toBeLessThanOrEqual(crossingCount([scene.wires[0]?.from.at as Vec2, scene.wires[0]?.to.at as Vec2], bodies));
+    expect(unpressable(scene, new Map([['w1', route ?? []]]))).toEqual([]);
+  });
+
+  it('never makes a tidied route cross a body it kept off', () => {
+    const scene = buildScene(busyWorkbench, benchCatalogue);
+    const bodies = bodiesOf(scene);
+    const tidied = routeWires(scene);
+    for (const [id, route] of exposeWires(scene, tidied)) {
+      const before = tidied.get(id) ?? [scene.wires.find((wire) => wire.id === id)?.from.at as Vec2, scene.wires.find((wire) => wire.id === id)?.to.at as Vec2];
+      expect(crossingCount(route, bodies), id).toBeLessThanOrEqual(crossingCount(before, bodies));
+    }
+  }, 60_000);
+
+  it('leans away from the build’s middle, and a small move of a part keeps it on that side', () => {
+    const at = (x: number): typeof buried =>
+      blueprintOf({ parts: buried.parts.map((part) => (part.id === 'p2' ? { ...part, position: { x, y: -30 } } : part)), wires: buried.wires });
+    /** +1 when the bend lies on the far side of the line from the build's middle, −1 on the near side. */
+    const outward = (build: typeof buried): number => {
+      const scene = buildScene(build, catalogue);
+      const wire = scene.wires[0];
+      if (!wire) throw new Error('no wire');
+      const top = topOf(exposeWires(scene, new Map()).get('w1'));
+      const xs = scene.parts.flatMap((part) => part.corners.map((corner) => corner.x));
+      const ys = scene.parts.flatMap((part) => part.corners.map((corner) => corner.y));
+      const middle = { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2 };
+      const n = { x: wire.to.at.y - wire.from.at.y, y: wire.from.at.x - wire.to.at.x };
+      const sideOf = (p: Vec2): number => Math.sign(n.x * (p.x - wire.from.at.x) + n.y * (p.y - wire.from.at.y));
+      return sideOf(top) === sideOf(middle) ? -1 : 1;
+    };
+    expect(outward(buried)).toBe(1);
+    for (const x of [-6.4, -6.2, -5.8, -5.6]) expect(outward(at(x)), `DC motor at x ${x}`).toBe(1);
   });
 
   it('is deterministic', () => {

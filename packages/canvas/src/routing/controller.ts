@@ -28,6 +28,8 @@ export class RoutingController {
   private kept = new Map<WireId, Kept>();
   private view: Map<WireId, Route> = new Map();
   private published = '[]';
+  /** Each part's picture as drawn, for the bends to keep off (D85). */
+  private artOf: ArtOf | undefined;
 
   /** The routes to draw and hit-test, by wire id. The same map until they change. */
   get routes(): WireRoutes {
@@ -50,6 +52,7 @@ export class RoutingController {
 
   /** Routes every wire of the scene afresh, round each part's picture as `artOf` says the renderer draws it. */
   tidy(scene: Scene, artOf?: ArtOf): void {
+    this.artOf = artOf;
     const bodies = bodiesOf(scene, artOf);
     const routes = routeWires(scene, artOf);
     this.kept = new Map();
@@ -62,6 +65,7 @@ export class RoutingController {
 
   /** After the build changed: keeps the routes that still fit it. */
   refresh(scene: Scene, artOf?: ArtOf): void {
+    this.artOf = artOf;
     if (this.kept.size === 0) {
       this.publish(scene);
       return;
@@ -84,7 +88,7 @@ export class RoutingController {
    */
   private publish(scene: Scene): void {
     const tidied = this.tidied;
-    const bends = exposeWires(scene, tidied);
+    const bends = exposeWires(scene, tidied, this.artOf);
     const next = new Map(scene.wires.flatMap((wire) => {
       const route = bends.get(wire.id) ?? tidied.get(wire.id);
       return route ? [[wire.id, route] as const] : [];

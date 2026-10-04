@@ -1,13 +1,16 @@
 // Every wire a hand can press (task 3.7's routing, task 7.9). Sockets are drawn above the wires and take a press first,
 // and a wire drawn later takes a press before one drawn under it (scene/hit.ts). Where parts sit close, a straight
 // line, or a tidied route, can lie wholly under sockets and the lines drawn over it, so no press reaches it and the
-// child cannot see it. Such a line is drawn with a bend out to the nearest clear spot beside it, so it shows and its
-// whole 24 px hit area reaches it there. Pure and deterministic, like the router. See docs/routing.md.
+// child cannot see it. Such a line is drawn with a bend out to the nearest clear spot beside it, outside every part
+// body, so it shows and its whole 24 px hit area reaches it there. Pure and deterministic, like the router. See docs/routing.md.
 import type { Vec2, WireId } from '@servo/schema';
 import { distance, distanceToSegment } from '../scene/geometry.ts';
 import type { Scene } from '../scene/scene.ts';
 import { PORT_MM, WIRE_HIT_MM } from '../scene/units.ts';
-import type { Route, WireRoutes } from './router.ts';
+import { bodiesOf, crossingCount } from './router.ts';
+import type { ArtOf, Route, WireRoutes } from './router.ts';
+import { containsPoint } from './shapes.ts';
+import type { Shape } from './shapes.ts';
 
 /**
  * A line counts as pressable when a point on it is this far clear of every socket's target and every hit area over it
@@ -50,13 +53,25 @@ const exposed = (path: Route, sockets: readonly Vec2[], above: readonly Route[])
   return false;
 };
 
+/** What a bend must keep to: the sockets and lines over it, and the part bodies the router keeps off (D85). */
+interface Room {
+  readonly sockets: readonly Vec2[];
+  readonly above: readonly Route[];
+  readonly bodies: readonly Shape[];
+  /** The middle of the build, so a bend leans outward, away from it. */
+  readonly middle: Vec2;
+}
+
 /**
- * The bend for a stretch of line from `a` to `b`: out from it to a flat stretch a wire's hit area long, whose middle is
- * clear. The nearest offset wins, then the fraction nearest the middle, then the left of the stretch as it runs from
- * `a` before the right. The two points to put between `a` and `b`, or undefined when nothing within EXPOSE_MAX_MM is
- * clear.
+ * The path with a bend in its stretch `k`: out from the stretch to a flat stretch a wire's hit area long, whose middle
+ * is clear by `spare` and outside every part body, and which crosses no more bodies than the path did. The nearest offset wins,
+ * then the fraction nearest the middle, then the side away from the build's middle (the left of the stretch as it runs
+ * when it points at the middle exactly), so a small move does not flip a bend that both sides could take. Undefined
+ * when nothing within EXPOSE_MAX_MM fits.
  */
-const bend = (a: Vec2, b: Vec2, sockets: readonly Vec2[], above: readonly Route[]): readonly [Vec2, Vec2] | undefined => {
+const bendAt = (path: Route, k: number, room: Room, crossings: number, spare: number): Route | undefined => {
+  const a = path[k] as Vec2;
+  const b = path[k + 1] as Vec2;
   const length = distance(a, b);
   if (length === 0) return undefined;
   const u = { x: (b.x - a.x) / length, y: (b.y - a.y) / length };
@@ -64,40 +79,64 @@ const bend = (a: Vec2, b: Vec2, sockets: readonly Vec2[], above: readonly Route[
   const half = Math.min(WIRE_HIT_MM / 2, length / 4);
   for (let step = 1; step * OFFSET_STEP_MM <= EXPOSE_MAX_MM; step++) {
     for (const fraction of FRACTIONS) {
-      for (const side of [1, -1]) {
+      const base = { x: a.x + (b.x - a.x) * fraction, y: a.y + (b.y - a.y) * fraction };
+      const outward = n.x * (base.x - room.middle.x) + n.y * (base.y - room.middle.y) < 0 ? -1 : 1;
+      for (const side of [outward, -outward]) {
         const h = side * step * OFFSET_STEP_MM;
-        const top = { x: a.x + (b.x - a.x) * fraction + n.x * h, y: a.y + (b.y - a.y) * fraction + n.y * h };
-        if (!clear(top, sockets, above, WIRE_HIT_MM / 2)) continue;
-        return [
+        const top = { x: base.x + n.x * h, y: base.y + n.y * h };
+        if (!clear(top, room.sockets, room.above, spare)) continue;
+        if (room.bodies.some((body) => containsPoint(body, top))) continue;
+        const next: Route = [
+          ...path.slice(0, k + 1),
           { x: top.x - u.x * half, y: top.y - u.y * half },
           { x: top.x + u.x * half, y: top.y + u.y * half },
+          ...path.slice(k + 1),
         ];
+        if (crossingCount(next, room.bodies) > crossings) continue;
+        return next;
       }
     }
   }
   return undefined;
 };
 
-/** A path with a bend in one stretch, the longest that can take one first; undefined when none can. */
-const bent = (path: Route, sockets: readonly Vec2[], above: readonly Route[]): Route | undefined => {
+/**
+ * A path with a bend in one stretch, the longest that can take one first; undefined when none can. A bend whose middle
+ * has a whole hit area clear is looked for first, then, where bodies leave no such room, one clear by PRESS_SPARE_MM.
+ */
+const bent = (path: Route, room: Room): Route | undefined => {
+  const crossings = crossingCount(path, room.bodies);
   const stretches = path
     .slice(1)
     .map((point, k) => ({ k, length: distance(path[k] as Vec2, point) }))
     .sort((p, q) => q.length - p.length || p.k - q.k);
-  for (const { k } of stretches) {
-    const points = bend(path[k] as Vec2, path[k + 1] as Vec2, sockets, above);
-    if (points) return [...path.slice(0, k + 1), ...points, ...path.slice(k + 1)];
+  for (const spare of [WIRE_HIT_MM / 2, PRESS_SPARE_MM]) {
+    for (const { k } of stretches) {
+      const next = bendAt(path, k, room, crossings, spare);
+      if (next) return next;
+    }
   }
   return undefined;
 };
 
+/** The middle of every part's tile together, or the origin with no parts. */
+const middleOf = (scene: Scene): Vec2 => {
+  const corners = scene.parts.flatMap((part) => part.corners);
+  if (corners.length === 0) return { x: 0, y: 0 };
+  const xs = corners.map((corner) => corner.x);
+  const ys = corners.map((corner) => corner.y);
+  return { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2 };
+};
+
 /**
  * The paths that make every power and signal line pressable, by wire id: each line no press reaches, along its tidied
- * route in `routes` or straight, with a bend in it. Lines are taken from the top of the draw order down, since a line
- * is covered only by those drawn over it.
+ * route in `routes` or straight, with a bend in it that keeps off the part bodies as `artOf` says they are drawn.
+ * Lines are taken from the top of the draw order down, since a line is covered only by those drawn over it.
  */
-export const exposeWires = (scene: Scene, routes: WireRoutes): WireRoutes => {
+export const exposeWires = (scene: Scene, routes: WireRoutes, artOf?: ArtOf): WireRoutes => {
   const sockets = scene.parts.flatMap((part) => part.ports.filter((port) => port.layer === 'ports').map((port) => port.at));
+  const bodies = bodiesOf(scene, artOf);
+  const middle = middleOf(scene);
   const bends = new Map<WireId, Route>();
   const above: Route[] = [];
   for (let i = scene.wires.length - 1; i >= 0; i--) {
@@ -105,7 +144,7 @@ export const exposeWires = (scene: Scene, routes: WireRoutes): WireRoutes => {
     if (!wire) continue;
     let path: Route = routes.get(wire.id) ?? [wire.from.at, wire.to.at];
     if (!exposed(path, sockets, above)) {
-      const next = bent(path, sockets, above);
+      const next = bent(path, { sockets, above, bodies, middle });
       if (next) {
         bends.set(wire.id, next);
         path = next;

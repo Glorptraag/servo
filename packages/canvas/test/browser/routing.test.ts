@@ -10,7 +10,7 @@ import type { Blueprint, Catalogue, Vec2 } from '@servo/schema';
 import type { CanvasSurface } from '../../src/renderer/surface.ts';
 import { paletteFor } from '../../src/renderer/style.ts';
 import { TIDY_WIRES_ACTION } from '../../src/routing/commands.ts';
-import { crossesBodies, routeWires } from '../../src/routing/router.ts';
+import { crossesBodies, crossingCount, routeWires } from '../../src/routing/router.ts';
 import { bodyShape, shapeOf } from '../../src/routing/shapes.ts';
 import type { Shape } from '../../src/routing/shapes.ts';
 import { NO_SAFE_AREA, screenCentre } from '../../src/routing/view.ts';
@@ -284,9 +284,12 @@ describe('the body a route keeps off: the picture Pixi draws', () => {
         const pictures = [...measured.values()];
         for (const wire of drawn.scene.wires) {
           const route = drawn.routing.tidied.get(wire.id);
-          // Routed exactly when its straight line crosses a picture as drawn; never crossing one once routed.
+          // Routed exactly when its straight line crosses a picture as drawn; never crossing one once routed, as drawn
+          // too, with any bend that makes it pressable (task 7.9, R-7.9 finding 1).
           expect(route !== undefined, wire.id).toBe(crossesBodies([wire.from.at, wire.to.at], pictures));
-          if (route) expect(crossesBodies(route, pictures), wire.id).toBe(false);
+          const shown = drawn.routing.routeOf(wire.id);
+          if (route) expect(crossesBodies(shown ?? route, pictures), wire.id).toBe(false);
+          else if (shown) expect(crossingCount(shown, pictures), wire.id).toBeLessThanOrEqual(crossingCount([wire.from.at, wire.to.at], pictures));
         }
       }
       const types = new Set(builds.flatMap((build) => build.parts.map((part) => part.part)));
