@@ -2389,6 +2389,14 @@
       "confidence": "0.7",
       "blocks": [],
       "resolved": false
+    },
+    {
+      "id": "D119",
+      "question": "Parent access options (R-7.5): the four accessibility options reach the parent view through additive exports on @servo/app/store (AccessStore, readAccess, accessTheme, pageStorage, ReadAloudScope, which is the first React component in the store export). Cleaner would be a separate @servo/app/access export, which also changes the ESLint package-map rule and CLAUDE.md. Also: the shared-build page is axe-green but still ignores the options; left-handed layout on a page with no tray moves rows to the right edge. Accept for launch and queue the export split and the shared-page options as follow-ups?",
+      "recommendation": "Accept for launch; split the export after G6.",
+      "confidence": "0.7",
+      "blocks": [],
+      "resolved": false
     }
   ]
 }
