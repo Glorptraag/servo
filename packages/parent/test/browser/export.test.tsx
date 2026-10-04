@@ -105,10 +105,14 @@ describe('the data note (task 6.2)', () => {
     await expect.poll(() => host.querySelector('section[aria-labelledby="servo-parent-data-note"]')).toBeTruthy();
     const section = host.querySelector('section[aria-labelledby="servo-parent-data-note"]') as HTMLElement;
     expect(section.querySelector('h2')?.textContent).toBe('What Servo keeps');
-    expect([...section.querySelectorAll('li > code:first-child')].map((code) => code.textContent)).toEqual(['session-start', 'run', 'hint', 'export']);
+    // Four events in plain words, with no code names (task 7.7).
+    expect(section.querySelectorAll('li')).toHaveLength(4);
+    expect(section.querySelector('code')).toBeNull();
     // Every word of docs/data-note.md, without its Markdown, in order.
-    const words = (text: string) => text.replace(/^#+ |^- |`/gm, '').split(/\s+/).filter(Boolean);
+    const words = (text: string) => text.replace(/^#+ |^- /gm, '').split(/\s+/).filter(Boolean);
     expect(words(section.innerText)).toEqual(words(DATA_NOTE));
+    // Brief Section 13: it explains in one screen, at this project's 1180 by 820 viewport.
+    expect(section.getBoundingClientRect().height).toBeLessThanOrEqual(window.innerHeight);
     expect(host.querySelector('main')?.lastElementChild?.previousElementSibling).toBe(section);
     expect(section.querySelector('button, input, a, [role="dialog"]')).toBeNull();
   });

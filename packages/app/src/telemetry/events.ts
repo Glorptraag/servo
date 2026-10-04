@@ -2,8 +2,8 @@
 // from. Each kind lists its fields; an event is its kind, when it happened (`at`) and those fields, and the child's
 // profile id is kept beside it on this device only, so it can be deleted with the profile. No field is free text, a
 // name, a build or a part: each is checked against a closed set or the content's challenge ids as it is emitted.
-// docs/data-note.md lists the same kinds and fields for the adult, and test/telemetry/emitters.test.ts holds the two,
-// and every emitter in the source, to one another.
+// docs/data-note.md describes the same kinds and fields to the adult in plain words, and test/telemetry/emitters.test.ts
+// holds the two (through its table of the words for each kind and field), and every emitter in the source, to one another.
 import type { Content } from '@servo/content';
 import type { ChallengeId, HintStepKind, Timestamp } from '@servo/schema';
 
@@ -15,7 +15,7 @@ export interface TelemetryFields {
   readonly run: { readonly challenge: ChallengeId; readonly runNumber: number; readonly goalMet: boolean };
   /** A hint step shown or done. */
   readonly hint: { readonly challenge: ChallengeId; readonly step: HintStepKind };
-  /** A parts list made in the parent view, or a link to a build copied there. */
+  /** A parts list made in the parent view, or a link to a build made there, whether or not the clipboard took it. */
   readonly export: { readonly what: 'parts-list' | 'share-link' };
 }
 
