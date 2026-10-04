@@ -90,7 +90,7 @@ const bandsOf = (model: Model, charge: readonly number[]): string =>
  * controls cannot fix (packages/schema/docs/parts.md).
  * - The wiring decides `open` and `shorted` and explains them (`wiredNeeds`, cached per control state).
  * - A power need the wiring meets is judged on the solved volts across its supply: `reversed`, `low`, `high`.
- * - A motor driver that browns out is `low` (its record: "the fault is the driver's"). Only a short or a
+ * - A motor driver that browns out is `low` (its record: "the fault is in the motor driver"). Only a short or a
  *   feeder can explain that: a child must see why its motors stopped, so the controls never do (D57). A supply
  *   that reads `reversed` or `high` stays so, whatever its channels do.
  * - Any other such need is explained in the schema's order: by a short that starves it (it would be met with
