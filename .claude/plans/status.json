@@ -1360,7 +1360,7 @@
       "dispatched_at": "2026-10-04T11:30:51+00:00"
     },
     "7.7": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1377,8 +1377,8 @@
       ],
       "done_when": "docs/data-note.md has no code spans; the emitter enumeration and note-sync tests pass; the note renders in one screen in the parent view test.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-04T14:50:48+00:00",
+      "completed_by": "W-7.7",
       "dispatched_at": "2026-10-04T14:23:43+00:00"
     },
     "7.8": {
