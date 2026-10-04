@@ -8,7 +8,7 @@ inputs none
 blueprint 9c11ce4557035cce
 arena open-floor 297edbfc7ad9a93c
 part battery-pack-2-cell ac49444ad3a2e166
-part dc-motor e80cd3eae3017bf6
+part dc-motor d05dc083bd1fa3f7
 part switch 0a304ca511260dde
 record a609614ac11db5c838019417d184c3821a1fb02e6837d214f50e2697ae377468
 faults none

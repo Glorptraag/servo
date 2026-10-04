@@ -10,9 +10,9 @@ arena wall-stop 1d8d0f6a65d48689
 part battery-pack-2-cell ac49444ad3a2e166
 part caster 85cad363c9f68e25
 part chassis 2b67875c3e879e19
-part dc-motor e80cd3eae3017bf6
+part dc-motor d05dc083bd1fa3f7
 part gearbox 36f60677ea150571
-part wheel-large c182e441f60c54e3
+part wheel-large fde3284299722f48
 record 5a6b368024cdd411813ffbee45318b610c4b0830b6ff425ad3e6ec85ff63d4e4
 fault gear-left not-driven first-tick=2
 fault gear-right not-driven first-tick=2

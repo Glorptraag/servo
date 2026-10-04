@@ -8,7 +8,7 @@ inputs none
 blueprint 2e725d288f51efcc
 arena open-floor 297edbfc7ad9a93c
 part battery-pack-2-cell ac49444ad3a2e166
-part dc-motor e80cd3eae3017bf6
+part dc-motor d05dc083bd1fa3f7
 record d366ec9fa76d0ad78ac0069281a583a3c45e7c4a06d320e78780f6dd5de33cef
 faults none
 subjects battery motor wire:w1 wire:w2

@@ -8,7 +8,7 @@ input 30 switch closed=false
 blueprint 1c061919ab96529f
 arena open-floor 297edbfc7ad9a93c
 part battery-pack-2-cell ac49444ad3a2e166
-part dc-motor e80cd3eae3017bf6
+part dc-motor d05dc083bd1fa3f7
 part switch 0a304ca511260dde
 record 9dbbf6f731f4150ad6472c89a0f083f4b16b729329e02398c8b08ae4fa04f45f
 fault switch outside-loop first-tick=2

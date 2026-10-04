@@ -11,10 +11,10 @@ part battery-pack-2-cell ac49444ad3a2e166
 part buzzer d100587ca3edbd2e
 part caster 85cad363c9f68e25
 part chassis 2b67875c3e879e19
-part dc-motor e80cd3eae3017bf6
+part dc-motor d05dc083bd1fa3f7
 part led f79a09a51f13bec4
 part switch 0a304ca511260dde
-part wheel-large c182e441f60c54e3
+part wheel-large fde3284299722f48
 record cd543d0ffecb2e3e2f2d3bd6274072b722c8b92ba94cb0ec662b6d7b5a9f30ef
 faults none
 subjects battery buzzer caster chassis led motor-left motor-right switch wheel-left wheel-right wire:w10 wire:w11 wire:w12 wire:w13 wire:w14 wire:w15 wire:w16 wire:w17 wire:w18 wire:w8 wire:w9

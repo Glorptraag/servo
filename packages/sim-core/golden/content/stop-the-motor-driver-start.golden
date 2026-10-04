@@ -10,10 +10,10 @@ arena open-floor 297edbfc7ad9a93c
 part battery-pack-2-cell ac49444ad3a2e166
 part caster 85cad363c9f68e25
 part chassis 2b67875c3e879e19
-part dc-motor e80cd3eae3017bf6
-part motor-driver 7bba5ed414f432a1
+part dc-motor d05dc083bd1fa3f7
+part motor-driver 98c60dcbbbebf818
 part switch 0a304ca511260dde
-part wheel-large c182e441f60c54e3
+part wheel-large fde3284299722f48
 record 59c9098a1b884aebc78f7575c3adaadc549806d33942a2558874abb732d9c788
 fault battery no-loop first-tick=2
 fault driver no-power first-tick=2

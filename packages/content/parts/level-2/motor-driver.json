@@ -51,8 +51,8 @@
     }
   },
   "card": {
-    "does": "Passes power from the battery pack to two motors, and sets each one forward, backward or stopped.",
-    "gives": "Gives: power (red) out to two motors.",
+    "does": "Passes power from the battery pack to two DC motors, and sets each one forward, backward or stopped.",
+    "gives": "Gives: power (red) out to two DC motors.",
     "needs": "Needs: power (red) in, and a setting or a signal (yellow) for each motor.",
     "popularMechanics": "A remote-control car has a motor driver inside, which runs its motor forward or backward.",
     "safetyNote": "Real motor drivers are small boards with sharp pins, so build with an adult nearby."
@@ -66,7 +66,7 @@
       "shows": [
         "off"
       ],
-      "teachingNote": "A motor driver passes power on to its motors, so it needs its own loop to the battery pack. With none, both outputs give nothing, and the motors wired to it stay still with no fault of their own: the fault is the driver's.",
+      "teachingNote": "A motor driver passes power on to its motors, so it needs its own loop to the battery pack. With none, both outputs give nothing, and the motors wired to it stay still with no fault of their own: the fault is in the motor driver.",
       "unmet": "open"
     },
     {
@@ -77,7 +77,7 @@
       "shows": [
         "off"
       ],
-      "teachingNote": "A motor driver needs at least 2.5 volts to switch its outputs. On less, such as a 1-cell battery pack, it gives its motors nothing, and they stay still with no fault of their own: the fault is the driver's.",
+      "teachingNote": "A motor driver needs at least 2.5 volts to switch its outputs. On less, such as a 1-cell battery pack, it gives its motors nothing, and they stay still with no fault of their own: the fault is in the motor driver.",
       "unmet": "low"
     },
     {
@@ -88,7 +88,7 @@
       "shows": [
         "off"
       ],
-      "teachingNote": "A motor driver works only with plus to plus at its power in. Wired the other way round it gives its motors nothing, and they stay still with no fault of their own: the fault is the driver's. A real one can be damaged this way.",
+      "teachingNote": "A motor driver works only with plus to plus at its power in. Wired the other way round it gives its motors nothing, and they stay still with no fault of their own: the fault is in the motor driver. A real one can be damaged this way.",
       "unmet": "reversed"
     }
   ],

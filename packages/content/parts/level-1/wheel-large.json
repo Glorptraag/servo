@@ -31,7 +31,7 @@
   "failureModes": [
     {
       "cardLine": "No shaft in its hub: the wheel stays still.",
-      "hint": "This wheel needs a shaft in its hub",
+      "hint": "This large wheel needs a shaft in its hub",
       "id": "not-driven",
       "need": "driven",
       "shows": [
@@ -42,7 +42,7 @@
     },
     {
       "cardLine": "Off the floor: the wheel spins in the air.",
-      "hint": "This wheel does not reach the floor",
+      "hint": "This large wheel does not reach the floor",
       "id": "lifted",
       "need": "on-floor",
       "shows": [
@@ -53,7 +53,7 @@
     },
     {
       "cardLine": "Slipping: the wheel spins but the robot stays put.",
-      "hint": "This wheel is spinning in place",
+      "hint": "This large wheel is spinning in place",
       "id": "slipping",
       "need": "on-floor",
       "shows": [

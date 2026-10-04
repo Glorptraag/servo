@@ -11,8 +11,8 @@ part battery-pack-2-cell ac49444ad3a2e166
 part bumper-switch 07e8a283c2f64a5b
 part caster 85cad363c9f68e25
 part chassis 2b67875c3e879e19
-part dc-motor e80cd3eae3017bf6
-part wheel-large c182e441f60c54e3
+part dc-motor d05dc083bd1fa3f7
+part wheel-large fde3284299722f48
 record b96fd09024a2e80d49e6a79e77b8dfa68f10f170f4669d28ea41e800214e51f2
 fault bumper outside-loop first-tick=2
 fault motor-left overload first-tick=153
