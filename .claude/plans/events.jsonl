@@ -200,3 +200,7 @@
 {"ts": "2026-10-04T03:55:03+00:00", "event": "dispatch", "tasks": ["5.7", "6.1", "6.5"]}
 {"ts": "2026-10-04T06:33:47+00:00", "event": "done", "tasks": ["6.5"], "by": "W-6.5"}
 {"ts": "2026-10-04T06:33:48+00:00", "event": "decision_add", "id": "D112", "blocks": []}
+{"ts": "2026-10-04T06:55:40+00:00", "event": "done", "tasks": ["5.7"], "by": "W-5.7"}
+{"ts": "2026-10-04T06:55:40+00:00", "event": "decision_add", "id": "D113", "blocks": []}
+{"ts": "2026-10-04T06:55:40+00:00", "event": "decision_add", "id": "D114", "blocks": []}
+{"ts": "2026-10-04T06:55:40+00:00", "event": "done", "tasks": ["G5"], "by": "orchestrator-provisional"}

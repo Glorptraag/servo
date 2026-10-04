@@ -1015,7 +1015,7 @@
       "dispatched_at": "2026-10-03T02:19:55+00:00"
     },
     "5.7": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1031,12 +1031,12 @@
       ],
       "done_when": "Automated a11y suite green; the manual checklist in docs/a11y-checklist.md is filled and signed by Drew (queue a decision for the sign-off).",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-04T06:55:40+00:00",
+      "completed_by": "W-5.7",
       "dispatched_at": "2026-10-04T03:55:03+00:00"
     },
     "G5": {
-      "status": "pending",
+      "status": "done",
       "model": "opus",
       "size": "micro",
       "batch": null,
@@ -1057,8 +1057,8 @@
       ],
       "done_when": "docs/gates/G5.md records the week's result and Drew's pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null
+      "completed_at": "2026-10-04T06:55:40+00:00",
+      "completed_by": "orchestrator-provisional"
     },
     "6.1": {
       "status": "dispatched",
@@ -2122,6 +2122,22 @@
       "question": "Copy pass sign-off (task 6.5): docs/reviews/copy-pass-6.5.md lists every spec card and challenge line changed, before and after, plus R-6.5 Q1-Q4 defaults (servo example line kept as the brief wrote it; LED hints say both legs and plus/minus; 'motor A / motor B' kept as the motor driver's setting labels; chassis 'frame' line unchanged because the validator wants 'chassis' beside it). Sign off each card?",
       "recommendation": "Read the Before/After tables and sign off; any card you change becomes a content fix task.",
       "confidence": "0.6",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D113",
+      "question": "Accessibility sign-off (task 5.7): fill docs/a11y-checklist.md Pass/Fail per item on iPad VoiceOver and a laptop screen reader (keyboard-only, 200% zoom, high contrast, left-handed layout, read-aloud) and sign. Also R-5.7 Q1-Q6 defaults: options per device in localStorage like Sound; switches on Home and /settings; device fonts, no shipped font; read-aloud speaks what is tapped or focused, no captions, independent of Sound; arena strip stops scrolling in Run; shared-build page and parent view do not follow the options yet. Accept?",
+      "recommendation": "Run the checklist on the release:preview build; accept the six defaults; open a follow-up for the parent view and shared page to take the options.",
+      "confidence": "0.6",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D114",
+      "question": "Gate G5 ready \u2014 a family with two child profiles uses Servo offline for a week (docs/gates/G5.md has the steps and the sheet). Closed PROVISIONALLY by the orchestrator on 2026-10-04 so 6.4 could start; pass or fail?",
+      "recommendation": "Run the week from docs/gates/G5.md; findings become new tasks.",
+      "confidence": "0.5",
       "blocks": [],
       "resolved": false
     }
