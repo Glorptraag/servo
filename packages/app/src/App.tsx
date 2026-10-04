@@ -2,11 +2,12 @@
 // (README, "How the packages meet"). Each slot holds its placeholder until the task that owns it lands; swap a
 // placeholder for the real part here. A challenge chosen on Home lays its goal line, kit, level and arena over the
 // same canvas (task 4.5), with the hint button beside the goal (task 4.6).
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { mountCanvas } from '@servo/canvas';
 import type { CanvasHandle, ResolveArt } from '@servo/canvas';
 import type { Content } from '@servo/content';
 import type { Blueprint, Challenge, Level } from '@servo/schema';
+import { AccessSettings, AccessStore, ReadAloudScope, canvasPrefsFor } from './a11y/index.ts';
 import { ArenaStrip, CHALLENGE_TEXT, GoalLine, Home, PARENT_PAGE } from './challenges/index.ts';
 import { deviceFlags } from './flags/index.ts';
 import type { Flags } from './flags/index.ts';
@@ -14,7 +15,7 @@ import { HintButton, HintLog } from './hints/index.ts';
 import { ProgramView, programFor, slotSetting } from './program-view/index.ts';
 import { RunBar } from './run-bar/index.ts';
 import type { RunLoop } from './run-bar/index.ts';
-import { PLACEHOLDER_SLOTS, SaveControl, Shell, pageStorage } from './shell/index.ts';
+import { DEFAULT_PREFS, PLACEHOLDER_SLOTS, SaveControl, Shell, pageStorage } from './shell/index.ts';
 import type { Autosaver, CanvasSetup, ShellSlots } from './shell/index.ts';
 import { SoundControl, SoundLayer, WebAudioSink } from './sound/index.ts';
 import { SpecCard, createRunFrames } from './spec-card/index.ts';
@@ -37,10 +38,20 @@ export interface AppProps {
   readonly onReady?: () => void;
   /** The feature flags (task 6.6). Default this device's, read once as the app mounts. */
   readonly flags?: Flags;
+  /** The access options (task 5.7). Default this device's, kept in its localStorage and followed across its pages. */
+  readonly access?: AccessStore;
 }
 
-export const App = ({ content, child = null, start, saving, onReady, flags: givenFlags }: AppProps) => {
+export const App = ({ content, child = null, start, saving, onReady, flags: givenFlags, access: givenAccess }: AppProps) => {
   const flags = useMemo(() => givenFlags ?? deviceFlags(), [givenFlags]);
+  // The access options (task 5.7): the shell's theme and typeface, the canvas's palette, typeface and handles, the
+  // left-handed mirror, and read-aloud round the whole shell. Home shows their switches.
+  const [ownAccess] = useState(() => new AccessStore(givenAccess ? null : pageStorage()));
+  const access = givenAccess ?? ownAccess;
+  const followsDevice = !givenAccess;
+  useEffect(() => (followsDevice ? ownAccess.follow(window) : undefined), [followsDevice, ownAccess]);
+  const accessPrefs = useSyncExternalStore(access.subscribe, () => access.prefs);
+  const prefs = useMemo(() => canvasPrefsFor(accessPrefs, DEFAULT_PREFS), [accessPrefs]);
   // The sandbox tray holds the kit at the child's level; a challenge brings its own kit (D68, task 4.5).
   const kit = useMemo(() => kitForLevel(content.kits, START_LEVEL), [content]);
   // The run loop (task 4.4) gives each Run frame to the spec card's live readouts, which clear whenever no Run plays:
@@ -96,9 +107,12 @@ export const App = ({ content, child = null, start, saving, onReady, flags: give
           loop={loop}
           saving={saving}
           parentEntry={
-            <a className="shell-button home-parent-link" href={`${import.meta.env.BASE_URL}${PARENT_PAGE}`}>
-              {CHALLENGE_TEXT.forAdults}
-            </a>
+            <>
+              <AccessSettings store={access} />
+              <a className="shell-button home-parent-link" href={`${import.meta.env.BASE_URL}${PARENT_PAGE}`}>
+                {CHALLENGE_TEXT.forAdults}
+              </a>
+            </>
           }
         />
       ),
@@ -115,7 +129,7 @@ export const App = ({ content, child = null, start, saving, onReady, flags: give
       save: <SaveControl saving={saving} />,
       runBar: <RunBar onLoop={joinRunLoop} challenge={challenge} hints={hints} {...(program ? { program } : {})} />,
     }),
-    [saving, runFrames, joinRunLoop, sound, slot, program, challenge, loop, hints],
+    [saving, runFrames, joinRunLoop, sound, slot, program, challenge, loop, hints, access],
   );
   // The swap registry: a key with no picture gives undefined, and the canvas draws a neutral tile.
   const resolveArt: ResolveArt = (key) => content.art.get(key);
@@ -123,16 +137,19 @@ export const App = ({ content, child = null, start, saving, onReady, flags: give
     mountCanvas(host, { catalogue: content.catalogue, resolveArt, level: setup.level, prefs: setup.prefs, ...(slot ? { unlockSettings: slotSetting } : {}) });
   // The canvas fits and zooms in the part of it the panels leave uncovered (D70, task 3.7).
   return (
-    <Shell
-      content={content}
-      level={challenge?.level ?? START_LEVEL}
-      kit={challenge ? content.catalogue.kits?.get(challenge.kit) : kit}
-      slots={slots}
-      mountCanvas={drawCanvas}
-      child={child}
-      start={start}
-      onReady={onReady}
-      onSafeArea={(safeArea, canvas) => canvas.setSafeArea(safeArea)}
-    />
+    <ReadAloudScope store={access}>
+      <Shell
+        content={content}
+        level={challenge?.level ?? START_LEVEL}
+        kit={challenge ? content.catalogue.kits?.get(challenge.kit) : kit}
+        slots={slots}
+        mountCanvas={drawCanvas}
+        child={child}
+        start={start}
+        onReady={onReady}
+        prefs={prefs}
+        onSafeArea={(safeArea, canvas) => canvas.setSafeArea(safeArea)}
+      />
+    </ReadAloudScope>
   );
 };

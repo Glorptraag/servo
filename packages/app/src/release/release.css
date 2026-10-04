@@ -107,3 +107,8 @@
   font-weight: 700;
   overflow-wrap: anywhere;
 }
+
+/* The access options (task 5.7) under the versions. */
+.release-access {
+  margin-top: 20px;
+}

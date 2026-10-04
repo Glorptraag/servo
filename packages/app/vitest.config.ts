@@ -34,6 +34,7 @@ export default defineConfig({
             'react-dom',
             'react-dom/client',
             'dexie',
+            'axe-core',
             '@servo/canvas > pixi.js',
             '@servo/sim-core > @dimforge/rapier2d-deterministic-compat',
           ],

@@ -1,0 +1,66 @@
+/*
+ * The access options' switches (task 5.7), on Home and on the Settings page, in the shell's palette (src/shell/shell.css,
+ * src/theme/theme.css). Every row is one 44 px target or taller; the shell's focus ring shows on the switch.
+ */
+
+/* Read-aloud's scope lays out nothing of its own. */
+.a11y-scope {
+  display: contents;
+}
+
+.a11y-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 12px 16px 16px;
+  border: 1px solid var(--shell-line, #d6d0c6);
+  border-radius: 16px;
+  background: var(--shell-panel, #fbfaf7);
+  color: var(--shell-ink, #2b2926);
+}
+
+.a11y-settings-heading {
+  padding: 0 4px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.a11y-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--shell-target, 44px);
+  padding: 6px 4px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.a11y-switch {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  accent-color: var(--shell-ink, #2b2926);
+  cursor: pointer;
+}
+
+.a11y-switch:focus-visible {
+  outline: 3px solid var(--shell-focus, #1d5fc4);
+  outline-offset: 2px;
+}
+
+.a11y-option-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.a11y-option-name {
+  font-weight: 700;
+}
+
+.a11y-option-line {
+  color: var(--shell-muted, #5e584f);
+}

@@ -1,0 +1,107 @@
+/*
+ * The chrome's themes (task 5.7). The shell (src/shell/shell.css) and every slot draw from the shell's colour tokens,
+ * so the high-contrast theme only swaps the tokens, on the shell and on the release pages (Settings, the invite form).
+ * The canvas keeps its own palette and colour twins, switched by its `highContrast` pref (packages/canvas).
+ */
+
+/* The release pages take the shell's tokens too, so the access options' switches look the same there. */
+.release-page {
+  --shell-workbench: #ebe8e3;
+  --shell-panel: #fbfaf7;
+  --shell-line: #d6d0c6;
+  --shell-ink: #2b2926;
+  --shell-muted: #5e584f;
+  --shell-focus: #1d5fc4;
+  --shell-target: 44px;
+}
+
+/*
+ * High contrast: white ground, black ink and edges, no soft shadows; every panel and control has a 2 px black edge.
+ * Ink on panel is 21:1, muted text 12.6:1, the focus ring 8.6:1 on white. Wire colours on the spec card darken and
+ * their sockets keep their shapes (round, square, hexagon) with a black rim, so colour is never the only cue.
+ */
+.servo-shell[data-contrast='high'],
+.release-page[data-contrast='high'] {
+  --shell-workbench: #fff;
+  --shell-panel: #fff;
+  --shell-line: #000;
+  --shell-ink: #000;
+  --shell-muted: #333;
+  --shell-focus: #0040b0;
+  --shell-shadow: none;
+}
+
+.servo-shell[data-contrast='high'] .shell-panel,
+.servo-shell[data-contrast='high'] .shell-run-pill,
+.servo-shell[data-contrast='high'] .home-column {
+  box-shadow: 0 0 0 2px var(--shell-line);
+}
+
+.servo-shell[data-contrast='high'] .shell-button,
+.servo-shell[data-contrast='high'] .shell-tab,
+.servo-shell[data-contrast='high'] .shell-zoom-button,
+.servo-shell[data-contrast='high'] .a11y-settings,
+.release-page[data-contrast='high'] .release-panel,
+.release-page[data-contrast='high'] .a11y-settings {
+  border-width: 2px;
+  border-color: var(--shell-line);
+}
+
+.servo-shell[data-contrast='high'] :focus-visible,
+.release-page[data-contrast='high'] :focus-visible {
+  outline-width: 4px;
+}
+
+.servo-shell[data-contrast='high'] .spec-card {
+  --spec-card-power: #b3141b;
+  --spec-card-signal: #d99a00;
+  --spec-card-mechanical: #555;
+  --spec-card-casing: #000;
+}
+
+.servo-shell[data-contrast='high'] .run-bar {
+  --run-bar-beat: #0040b0;
+}
+
+.release-page[data-contrast='high'] {
+  background: var(--shell-workbench);
+  color: var(--shell-ink);
+}
+
+.release-page[data-contrast='high'] .release-panel {
+  background: var(--shell-panel);
+  box-shadow: none;
+}
+
+.release-page[data-contrast='high'] .release-facts dt,
+.release-page[data-contrast='high'] .release-problem {
+  color: var(--shell-muted);
+}
+
+/*
+ * Dyslexia-friendly type: a face drawn for clear letter shapes where the device has one, then plain sans-serifs, with
+ * the British Dyslexia Association style guide's spacing (WCAG 1.4.12's figures for letters, words and lines). No font
+ * is downloaded: the app works offline and ships no font files.
+ */
+.servo-shell[data-typeface='dyslexia-friendly'],
+.release-page[data-typeface='dyslexia-friendly'] {
+  font-family: OpenDyslexic, Lexend, 'Atkinson Hyperlegible', Verdana, Tahoma, sans-serif;
+  letter-spacing: 0.06em;
+  word-spacing: 0.16em;
+  line-height: 1.5;
+}
+
+.servo-shell[data-typeface='dyslexia-friendly'] :is(button, input, select, textarea, output),
+.release-page[data-typeface='dyslexia-friendly'] :is(button, input, select, textarea, output) {
+  letter-spacing: inherit;
+  word-spacing: inherit;
+}
+
+/*
+ * In Run mode every control in the arena strip is disabled, so a strip that overflows (the dyslexia-friendly type's
+ * wider letters, a narrow screen) would be a scrolling region with nothing a keyboard can reach (WCAG 2.1.1). It stops
+ * scrolling for the Run instead; Stop brings the controls and the scrolling back.
+ */
+.servo-shell[data-mode='run'] .arena-strip {
+  overflow-x: hidden;
+}
