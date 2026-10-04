@@ -107,7 +107,7 @@
     {
       "steps": [
         {
-          "line": "This DC motor turns forward with plus from side B and minus back to the battery pack",
+          "line": "This DC motor turns forward with plus from side B and minus back to minus",
           "step": "pulse-part",
           "target": {
             "placed": "motor-right"
@@ -412,5 +412,5 @@
       }
     ]
   },
-  "title": "One motor backwards"
+  "title": "One DC motor backwards"
 }

@@ -14,7 +14,7 @@
       }
     }
   },
-  "goalLine": "Wire the battery pack's plus to the DC motor so the DC motor turns",
+  "goalLine": "Wire the battery pack's plus to the DC motor's plus so the DC motor turns",
   "hints": [
     {
       "steps": [

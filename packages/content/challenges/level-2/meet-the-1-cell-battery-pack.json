@@ -14,7 +14,7 @@
       }
     }
   },
-  "goalLine": "Wire the 1-cell battery pack's plus to the DC motor and watch how it turns",
+  "goalLine": "Wire the 1-cell battery pack's plus to the DC motor's plus and watch how the DC motor turns",
   "hints": [
     {
       "steps": [
