@@ -2353,6 +2353,14 @@
       "confidence": "0.6",
       "blocks": [],
       "resolved": false
+    },
+    {
+      "id": "D118",
+      "question": "True north (docs/true-north.md): the app was opened and driven for the first time on 2026-10-04. The loop works; Run framing the arena and Home's challenge order are fixed in branch true-north/run-view. Accept those two behaviours, resolve the ~100 engineering-default decisions in bulk as 'default stands', and hold tasks 7.4-7.8 behind the G3 and G4 hands-on sessions?",
+      "recommendation": "Accept; run G3 (pnpm release:dry, release:preview, docs/gates/G3-howto.md) before any further build work.",
+      "confidence": "0.7",
+      "blocks": [],
+      "resolved": false
     }
   ]
 }
