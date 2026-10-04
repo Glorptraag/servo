@@ -12,7 +12,7 @@ import { CARD_GAME_TEXT } from '../../src/card-game/index.ts';
 import { CONTROL_IDS, INTERACTIVE, controlsOf } from './controls.ts';
 import type { ControlId } from './controls.ts';
 import { SOON, finishRound, markAll, openGate, openParent, openPartsList, openRemove, openRename, showLinkField, startRound, unmountParents } from './harness.tsx';
-import { focusOn, keysOn, startOf, tabbable } from './input.ts';
+import { keysOn, pointer, startOf, tabbable } from './input.ts';
 
 afterEach(() => {
   unmountParents();
@@ -51,14 +51,19 @@ const walk = async (screen: string, root: HTMLElement, seen: Seen): Promise<void
     else if (ids.length > 1) seen.problems.push(`${ids.join(' and ')} both claim ${what}`);
     else if (ids[0] && tabbable(element)) seen.ids.add(ids[0]);
   }
-  // Chrome Tabs on from where focus last moved by script rather than from a radio focused by script, so the walk
-  // reaches its first control by the keyboard: Shift+Tab off it, then Tab back onto it.
-  const start = await focusOn(startOf(root));
-  await userEvent.keyboard('{Shift>}{Tab}{/Shift}');
+  // Real Tab presses from the screen's first control. The walk stops once every control Tab can land on is reached:
+  // a Tab past the last one leaves the test's frame, and the keys that follow would go elsewhere.
+  // The walk starts where a hand would: a click on the view's title sets where Tab goes on from, then Tab. (Chrome
+  // does not always Tab on from a control focused by script once Tab has been pressed elsewhere.)
+  const order = elements.filter(tabbable);
+  const start = startOf(root);
+  const title = root.querySelector('h1');
+  if (!title) throw new Error(`${screen} has no title`);
+  await pointer(title, 0.05);
   await userEvent.keyboard('{Tab}');
-  expect(document.activeElement, `${screen}: Tab back onto its first control`).toBe(start);
+  expect(document.activeElement, `${screen}: Tab from the title onto its first control`).toBe(start);
   const reached = new Set<Element>([start]);
-  for (let step = 0; step < 200; step += 1) {
+  for (let step = 0; step < 200 && order.some((element) => !reached.has(element)); step += 1) {
     await userEvent.keyboard('{Tab}');
     const active = document.activeElement;
     if (!active || !root.contains(active) || reached.has(active)) break;

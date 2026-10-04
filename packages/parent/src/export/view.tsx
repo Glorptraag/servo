@@ -158,7 +158,7 @@ export const PartsListPanel = ({ list, onClose }: PartsListPanelProps) => {
       </h3>
       <p>{EXPORT_TEXT.intro}</p>
       <table>
-        <caption style={{ textAlign: 'left' }}>{EXPORT_TEXT.parts}</caption>
+        <caption style={{ textAlign: 'inherit' }}>{EXPORT_TEXT.parts}</caption>
         <thead>
           <tr>
             <th scope="col">{EXPORT_TEXT.part}</th>

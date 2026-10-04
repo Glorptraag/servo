@@ -23,7 +23,6 @@ export const PARENT_ACCESS_CSS = `
 .${PARENT_ROOT}[data-hand='left'] { text-align: right; }
 .${PARENT_ROOT}[data-hand='left'] .${ROW_CLASS} { justify-content: flex-end; }
 .${PARENT_ROOT}[data-hand='left'] :is(ul, ol) { list-style-position: inside; padding-inline-start: 0; }
-.${PARENT_ROOT}[data-hand='left'] caption { text-align: right !important; }
 .${PARENT_ROOT}[data-contrast='high'] :is(button, input, fieldset) { border: 2px solid var(--shell-line); }
 .${PARENT_ROOT}[data-contrast='high'] :is(button, input) { background: var(--shell-panel); color: var(--shell-ink); }
 .${PARENT_ROOT}[data-typeface='dyslexia-friendly'] :is(button, input) { font-family: inherit; }
