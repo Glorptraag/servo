@@ -1,13 +1,14 @@
-// The parity check's plans (src/e2e/plan.ts): each content fixture as the steps that build it from an empty canvas.
-// The browser half (test/e2e/parity.e2e.ts) takes these steps on every input path; here, in Node, the plans themselves
-// are held to the fixtures: every part placed once after its holder, every wire made once, every setting set.
+// The parity check's plans (src/e2e/plan.ts): each content fixture as the steps that build it from an empty canvas,
+// then the edits a child makes on it (task 7.6). The browser half (test/e2e/parity-*.e2e.ts) takes these steps on
+// every input path; here, in Node, the plans themselves are held to the fixtures: every part placed once after its
+// holder, every wire made once, every setting set, and every kind of edit taken on several fixtures.
 import { describe, expect, it } from 'vitest';
 import { loadCatalogue } from '@servo/content';
 import { loadFixtures } from '@servo/content/fixtures';
 import { checkPortPair, indexPlacedParts, resolvePort, validateBlueprint } from '@servo/schema';
 import type { PortRef, Wire } from '@servo/schema';
-import { STEP_KINDS, commandFor, describeStep, mapPart, planFor } from '../src/e2e/plan.ts';
-import type { PlaceStep, Step } from '../src/e2e/plan.ts';
+import { EDIT_KINDS, PLAN_PROP, STEP_KINDS, TOURS, assignTours, commandFor, describeStep, isBuildStep, mapPart, planFor } from '../src/e2e/plan.ts';
+import type { PlaceStep, Step, StepKind } from '../src/e2e/plan.ts';
 
 const catalogue = loadCatalogue();
 const { fixtures, issues } = loadFixtures();
@@ -74,12 +75,107 @@ describe.each(fixtures.map((fixture) => [fixture.name, fixture] as const))('the 
     expect(settings.sort()).toEqual(expected.sort());
   });
 
-  it('places, then sets, then wires, then ends with the refused drop when the fixture has one', () => {
-    const order = plan.steps.map((step) => STEP_KINDS.indexOf(step.kind));
+  it('places, then sets, then wires, then ends the build with the refused drop when the fixture has one, then edits', () => {
+    const built = plan.steps.filter(isBuildStep);
+    const order = built.map((step) => STEP_KINDS.indexOf(step.kind));
     expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(plan.steps.slice(0, built.length)).toEqual(built);
     const refused = plan.steps.filter((step) => step.kind === 'refuse');
     const expected = fixture.expect.refused;
     expect(refused).toEqual(expected ? [{ kind: 'refuse', from: expected.from, to: expected.to, code: expected.code }] : []);
+    expect(planFor(fixture, catalogue, new Set()).steps).toEqual(built);
+  });
+
+  it('edits only parts it placed and a line it drew, and puts back what it removes before the next edit', () => {
+    const placed = new Set(places.map((step) => step.ref));
+    const lines = plan.steps.filter((step) => step.kind === 'connect' && (step.wire === 'power' || step.wire === 'signal'));
+    const edits = plan.steps.filter((step) => !isBuildStep(step));
+    for (const [index, step] of edits.entries()) {
+      if ('ref' in step) expect(placed.has(step.ref), describeStep(step)).toBe(true);
+      if (step.kind === 'disconnect') {
+        expect(step.lines).toHaveLength(lines.length);
+        for (const each of step.lines) expect(lines.some((line) => line.kind === 'connect' && samePort(line.from, each.from) && samePort(line.to, each.to))).toBe(true);
+      }
+      if (step.kind === 'disconnect' || step.kind === 'remove') expect(edits[index + 1], describeStep(step)).toEqual({ kind: 'undo' });
+    }
+  });
+});
+
+describe('the edits after the build', () => {
+  const fixtureNamed = (name: string) => {
+    const fixture = fixtures.find((candidate) => candidate.name === name);
+    if (!fixture) throw new Error(`No fixture '${name}'.`);
+    return fixture;
+  };
+
+  it('takes every tour on the Rolling Start robot: a line, a move, a turn, a removal, the props, a tidy, the selection and the switch', () => {
+    const plan = planFor(fixtureNamed('kit-rolling-start'), catalogue);
+    expect(plan.steps.filter((step) => !isBuildStep(step))).toEqual([
+      {
+        kind: 'disconnect',
+        lines: [
+          { from: { part: 'battery', port: 'plus' }, to: { part: 'switch', port: 'a' } },
+          { from: { part: 'battery', port: 'minus' }, to: { part: 'motor-left', port: 'minus' } },
+          { from: { part: 'battery', port: 'minus' }, to: { part: 'motor-right', port: 'minus' } },
+          { from: { part: 'motor-left', port: 'plus' }, to: { part: 'switch', port: 'b' } },
+          { from: { part: 'motor-right', port: 'plus' }, to: { part: 'switch', port: 'b' } },
+        ],
+      },
+      { kind: 'undo' },
+      { kind: 'move', ref: 'switch' },
+      { kind: 'turn', ref: 'chassis' },
+      { kind: 'remove', ref: 'battery' },
+      { kind: 'undo' },
+      { kind: 'place-prop', prop: PLAN_PROP },
+      { kind: 'place-prop', prop: PLAN_PROP },
+      { kind: 'remove-prop', index: 0 },
+      { kind: 'move-prop', index: 0 },
+      { kind: 'reset-arena' },
+      { kind: 'tidy' },
+      { kind: 'clear-selection', ref: 'chassis' },
+      { kind: 'flip', ref: 'switch' },
+    ]);
+  });
+
+  it('flips only a manual switch, places props only on an open floor with none, and moves only a part held by a mount', () => {
+    for (const fixture of fixtures) {
+      const kinds = new Set(planFor(fixture, catalogue).steps.map((step) => step.kind));
+      const parts = fixture.blueprint.parts;
+      expect(kinds.has('flip'), fixture.name).toBe(parts.some((part) => part.part === 'switch'));
+      expect(kinds.has('place-prop'), fixture.name).toBe(fixture.blueprint.arena.preset === 'open-floor' && fixture.blueprint.arena.props.length === 0);
+      const mounted = planFor(fixture, catalogue, new Set()).steps.some((step) => {
+        if (step.kind !== 'place' || !step.attach) return false;
+        const port = catalogue.parts.get(step.part)?.ports.find((candidate) => candidate.id === step.attach?.port);
+        return port?.type === 'mechanical' && port.role === 'mount';
+      });
+      expect(kinds.has('move'), fixture.name).toBe(mounted);
+    }
+  });
+});
+
+describe('assignTours', () => {
+  const tours = assignTours(fixtures, catalogue);
+  const kindsOf = (name: string): StepKind[] => {
+    const fixture = fixtures.find((candidate) => candidate.name === name);
+    return fixture ? planFor(fixture, catalogue, tours.get(name)).steps.filter((step) => !isBuildStep(step)).map((step) => step.kind) : [];
+  };
+
+  it('gives every fixture one tour that fits it, the same each time', () => {
+    expect([...tours.keys()].sort()).toEqual(fixtures.map((fixture) => fixture.name).sort());
+    for (const fixture of fixtures) {
+      expect(tours.get(fixture.name)?.size, fixture.name).toBe(1);
+      expect(kindsOf(fixture.name).length, fixture.name).toBeGreaterThan(0);
+    }
+    expect(assignTours([...fixtures].reverse(), catalogue)).toEqual(tours);
+  });
+
+  it('takes every tour on several fixtures, and so every kind of edit', () => {
+    for (const tour of TOURS) {
+      const taking = [...tours].filter(([, chosen]) => chosen.has(tour)).length;
+      expect(taking, tour).toBeGreaterThanOrEqual(5);
+    }
+    const kinds = new Set(fixtures.flatMap((fixture) => kindsOf(fixture.name)));
+    expect([...kinds].sort()).toEqual([...EDIT_KINDS].sort());
   });
 });
 

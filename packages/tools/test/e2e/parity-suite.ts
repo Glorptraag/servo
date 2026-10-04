@@ -1,9 +1,9 @@
-// Ground rule 8 on the content fixtures (task 3.8), one group of them per test file (parity-1 … parity-3.e2e.ts), so CI
+// Ground rule 8 on the content fixtures (task 3.8), one group of them per test file (parity-1 … parity-4.e2e.ts), so CI
 // runs the groups as parallel shards and `pnpm e2e` runs them all. Built from an empty canvas by touch, by pointer and
-// by the list view, each path must give the same canonical blueprint as plain commands, byte for byte. Touch and
-// pointer each place by a drag from the tray and by tap-then-tap (click-click), and wire by a drag and by a tap on
-// each socket. A step no path can take yet is left out with the task it waits for, and only a real difference fails,
-// unless SERVO_PARITY_STRICT=1 (for gate G3) makes a step left out or a path waiting fail too. The report prints one
+// by the list view, and then edited (task 7.6: each fixture takes one tour of edits, `assignTours`), each path must
+// give the same canonical blueprint as plain commands, byte for byte, and observe the same selections, switch flips
+// and routes. Touch and pointer each go by drag and by tap-then-tap (click-click). A step left out or a path waiting
+// fails as a difference does, unless SERVO_PARITY_STRICT=0 lets only a real difference fail. The report prints one
 // line per fixture when the run ends (src/e2e/reporter.ts).
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
 import { loadFixtures } from '@servo/content/fixtures';
@@ -12,11 +12,11 @@ import type { Bench } from '../../src/e2e/bench.ts';
 import { checkParity, fixtureGroups, passes, reportLine } from '../../src/e2e/parity.ts';
 import type { InputPath } from '../../src/e2e/parity.ts';
 import { discoverPaths } from '../../src/e2e/paths.ts';
-import { planFor } from '../../src/e2e/plan.ts';
+import { assignTours, planFor } from '../../src/e2e/plan.ts';
 import { PARITY_ANNOTATION } from '../../src/e2e/reporter.ts';
 
 /** The parity files the fixtures are split between, by work (their plans' steps). */
-export const PARITY_GROUPS = 3;
+export const PARITY_GROUPS = 4;
 
 /**
  * A canvas smaller than the profile: each input waits for a drawn frame, and a software GPU (SwiftShader, as on CI)
@@ -35,7 +35,8 @@ const FIXTURE_TIMEOUT = 360_000;
 export const parityTests = (group: number): void => {
   const { fixtures, issues } = loadFixtures();
   const { catalogue } = benchContent();
-  const planned = fixtures.map((fixture) => ({ fixture, plan: planFor(fixture, catalogue) }));
+  const tours = inject('parityAllTours') ? undefined : assignTours(fixtures, catalogue);
+  const planned = fixtures.map((fixture) => ({ fixture, plan: planFor(fixture, catalogue, tours?.get(fixture.name)) }));
   const groups = fixtureGroups(planned, PARITY_GROUPS, ({ plan }) => plan.steps.length);
   const mine = groups[group - 1] ?? [];
   const strict = inject('parityStrict');
@@ -50,7 +51,7 @@ export const parityTests = (group: number): void => {
     bench = await mountBench({ size: CANVAS });
     const probe = fixtures.find((fixture) => fixture.blueprint.wires.length > 0);
     if (!probe) throw new Error('No content fixture has a wire to probe the paths with.');
-    ({ reference, others } = discoverPaths(bench, catalogue, { start: planFor(probe, catalogue).start, built: probe.blueprint }));
+    ({ reference, others } = discoverPaths(bench, catalogue, { start: planFor(probe, catalogue, new Set()).start, built: probe.blueprint }));
   });
 
   afterAll(async () => {

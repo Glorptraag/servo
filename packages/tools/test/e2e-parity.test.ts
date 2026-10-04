@@ -3,9 +3,22 @@
 import { describe, expect, it, vi } from 'vitest';
 import { loadFixtures } from '@servo/content/fixtures';
 import type { Blueprint } from '@servo/schema';
-import { BUILT_BY, READY, attempt, checkParity, describeDifference, fixtureGroups, passes, pendingTasks, reportLine, waitingLike } from '../src/e2e/parity.ts';
+import {
+  BUILT_BY,
+  READY,
+  attempt,
+  checkParity,
+  describeDifference,
+  describeObserved,
+  fixtureGroups,
+  passes,
+  pendingTasks,
+  reportLine,
+  waitingLike,
+} from '../src/e2e/parity.ts';
 import { reportSummary } from '../src/e2e/report.ts';
 import type { Capability, InputPath, PathBuild, PathFamily } from '../src/e2e/parity.ts';
+import { STEP_KINDS } from '../src/e2e/plan.ts';
 import type { BuildPlan, Step, StepKind } from '../src/e2e/plan.ts';
 
 const [fixture] = loadFixtures().fixtures;
@@ -38,7 +51,15 @@ const buildOf = (taken: readonly Step[], nudge?: { readonly index: number; reado
   };
 };
 
-const all = (capability: Capability): Record<StepKind, Capability> => ({ place: capability, setting: capability, connect: capability, refuse: capability });
+const all = (capability: Capability): Record<StepKind, Capability> =>
+  Object.fromEntries(STEP_KINDS.map((kind) => [kind, capability])) as Record<StepKind, Capability>;
+
+/** Every kind of step ready but those given. */
+const readyBut = (given: Partial<Record<StepKind, Capability>>): Record<StepKind, Capability> => ({ ...all(READY), ...given });
+
+/** The count of each kind of step, every other kind 0. */
+const counts = (given: Partial<Record<StepKind, number>>): Record<StepKind, number> =>
+  ({ ...Object.fromEntries(STEP_KINDS.map((kind) => [kind, 0])), ...given }) as Record<StepKind, number>;
 const waiting = (...tasks: string[]): Capability => ({ ready: false, tasks });
 
 const fake = (
@@ -68,7 +89,7 @@ describe('checkParity', () => {
     const result = await checkParity(plan, reference, [touch, pointer]);
     expect(result.verdict).toBe('identical');
     expect(result.identical).toEqual(['commands', 'touch drag', 'pointer click-click']);
-    expect(result.compared).toEqual({ place: 3, setting: 1, connect: 1, refuse: 1 });
+    expect(result.compared).toEqual(counts({ place: 3, setting: 1, connect: 1, refuse: 1 }));
     expect(touch.calls).toEqual([steps]);
     expect(reportLine(result)).toBe(
       'test-robot: identical on commands, touch drag and pointer click-click (3 placements, 1 setting, 1 wire and 1 refused drop)',
@@ -76,7 +97,7 @@ describe('checkParity', () => {
   });
 
   it('leaves out every step the reference cannot take yet, for every path, by the tasks it waits for: partial', async () => {
-    const can = { place: READY, setting: READY, connect: waiting('3.3'), refuse: waiting('3.3') };
+    const can = readyBut({ connect: waiting('3.3'), refuse: waiting('3.3') });
     const reference = fake('commands', 'commands', can);
     const touch = fake('touch drag', 'touch', can);
     const result = await checkParity(plan, reference, [touch]);
@@ -92,7 +113,7 @@ describe('checkParity', () => {
   });
 
   it('leaves out a step that names a part left out, waiting for the task that part waits for', async () => {
-    const can = { place: waiting('3.2'), setting: READY, connect: waiting('3.2', '3.3'), refuse: waiting('3.2', '3.3') };
+    const can = readyBut({ place: waiting('3.2'), connect: waiting('3.2', '3.3'), refuse: waiting('3.2', '3.3') });
     const reference = fake('commands', 'commands', can);
     const list = fake('list view', 'list view', all(waiting('3.6')));
     const result = await checkParity(plan, reference, [list]);
@@ -144,6 +165,18 @@ describe('checkParity', () => {
     expect(reportLine(result)).toBe(
       'test-robot: MISMATCH: touch drag: p2 position (10.1, 0) here, (10, 0) in commands; identical on commands and pointer drag (3 placements, 1 setting, 1 wire and 1 refused drop)',
     );
+  });
+
+  it('compares what each path observed besides the build, and names the first lines that differ', async () => {
+    const observed = (lines: readonly string[]) => (taken: readonly Step[]): PathBuild => ({ ok: true, blueprint: buildOf(taken), observed: lines });
+    const reference = fake('commands', 'commands', all(READY), observed(['selection: part p1', 'selection: none']));
+    const same = fake('touch drag', 'touch', all(READY), observed(['selection: part p1', 'selection: none']));
+    const differs = fake('list view', 'list view', all(READY), observed(['selection: part p1', 'selection: part p1']));
+    const result = await checkParity(plan, reference, [same, differs]);
+    expect(result.verdict).toBe('mismatch');
+    expect(result.identical).toEqual(['commands', 'touch drag']);
+    expect(result.mismatches).toEqual([{ path: 'list view', detail: 'observed "selection: part p1" here, "selection: none" in commands' }]);
+    expect(describeObserved(['a', 'b', 'c'], ['x', 'y', 'z'], 'commands')).toBe('observed "a" here, "x" in commands; observed "b" here, "y" in commands; and 1 more');
   });
 
   it('reports a path that fails a step, naming the step', async () => {
