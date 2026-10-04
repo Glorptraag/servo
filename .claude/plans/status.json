@@ -1406,7 +1406,7 @@
       "dispatched_at": "2026-10-04T14:23:43+00:00"
     },
     "7.9": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -1427,7 +1427,8 @@
       "done_when": "Both cases pass byte-identically on all six parity paths with the workarounds removed from the e2e tours; canvas suite and parity shards green; screenshot references unchanged unless a visual change is intended and noted.",
       "contracts": "",
       "completed_at": null,
-      "completed_by": null
+      "completed_by": null,
+      "dispatched_at": "2026-10-04T15:55:54+00:00"
     }
   },
   "human_gates": [
