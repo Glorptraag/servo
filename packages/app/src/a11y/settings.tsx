@@ -26,11 +26,14 @@ export const AccessSettings = ({ store }: AccessSettingsProps) => {
               role="switch"
               className="a11y-switch"
               checked={prefs[option]}
+              aria-labelledby={`${id}-${option}-name`}
               aria-describedby={`${id}-${option}`}
               onChange={(event) => store.set(option, event.currentTarget.checked)}
             />
             <span className="a11y-option-text">
-              <span className="a11y-option-name">{text.name}</span>
+              <span id={`${id}-${option}-name`} className="a11y-option-name">
+                {text.name}
+              </span>
               <span id={`${id}-${option}`} className="a11y-option-line">
                 {text.line}
               </span>

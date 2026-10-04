@@ -134,8 +134,10 @@ describe('Home', () => {
     expect(homeButton(app, 'Cross and stop').textContent).toContain('Unscripted build');
     expect(homeButton(app, 'Meet the switch').textContent).toContain('Part introduction');
     // The gated parent entry (D91, task 5.2): a plain link to the parent page, whose parental gate asks first (D28).
+    // Beside it, the access options' switches (task 5.7), and no other link.
     const entry = home.querySelector('[data-slot="parent-entry"]');
-    expect(entry?.childElementCount).toBe(1);
+    expect(entry?.querySelectorAll('a')).toHaveLength(1);
+    expect(entry?.querySelectorAll('[data-region="access"] input[role="switch"]')).toHaveLength(4);
     const link = entry?.querySelector('a');
     expect(link?.textContent).toBe(CHALLENGE_TEXT.forAdults);
     expect(new URL(link?.href ?? '').pathname).toBe('/parent.html');

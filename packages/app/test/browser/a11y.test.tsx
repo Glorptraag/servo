@@ -203,6 +203,7 @@ describe('the access switches', () => {
     for (const option of ACCESS_OPTIONS) {
       const control = switchOf(host, option);
       expect(control.labels?.[0]?.textContent).toContain(ACCESS_TEXT.options[option].name);
+      expect(document.getElementById(control.getAttribute('aria-labelledby') ?? '')?.textContent).toBe(ACCESS_TEXT.options[option].name);
       const described = document.getElementById(control.getAttribute('aria-describedby') ?? '');
       expect(described?.textContent).toBe(ACCESS_TEXT.options[option].line);
       expect(rowOf(host, option).getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
