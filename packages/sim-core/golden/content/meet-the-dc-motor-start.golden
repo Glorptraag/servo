@@ -8,7 +8,7 @@ inputs none
 blueprint 61ca34c9790e76f3
 arena open-floor 297edbfc7ad9a93c
 part battery-pack-2-cell ac49444ad3a2e166
-part dc-motor e80cd3eae3017bf6
+part dc-motor d05dc083bd1fa3f7
 record 2c4fd5d86e7a3235e16c771de424f5778d413893ab594d692666093543ff7b04
 fault motor-right no-circuit first-tick=2
 subjects battery motor-left motor-right wire:w1 wire:w2

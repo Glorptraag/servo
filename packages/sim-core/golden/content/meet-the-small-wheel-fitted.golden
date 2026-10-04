@@ -10,8 +10,8 @@ arena open-floor 297edbfc7ad9a93c
 part battery-pack-2-cell ac49444ad3a2e166
 part caster 85cad363c9f68e25
 part chassis 2b67875c3e879e19
-part dc-motor e80cd3eae3017bf6
-part wheel-small 6fb561055a07023a
+part dc-motor d05dc083bd1fa3f7
+part wheel-small 84a6a1df09a73ea8
 record 236e2b412d8c98dfcac25b241f73406d49417e4261c4774ca3ba60a832c5ee84
 faults none
 subjects battery caster chassis motor-left motor-right wheel-left wheel-right wire:w10 wire:w5 wire:w6 wire:w7 wire:w8 wire:w9

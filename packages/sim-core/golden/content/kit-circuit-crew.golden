@@ -12,11 +12,11 @@ part bumper-switch 07e8a283c2f64a5b
 part buzzer d100587ca3edbd2e
 part caster 85cad363c9f68e25
 part chassis 2b67875c3e879e19
-part dc-motor e80cd3eae3017bf6
+part dc-motor d05dc083bd1fa3f7
 part led f79a09a51f13bec4
-part motor-driver 7bba5ed414f432a1
+part motor-driver f982b4d3fbc54d67
 part switch 0a304ca511260dde
-part wheel-large c182e441f60c54e3
+part wheel-large fde3284299722f48
 record 3daf8f7c4e8bf8f8f1f7c51e0acafbba598eeaadd9e07fd2efcf8febd4826d04
 faults none
 subjects battery bumper buzzer caster chassis driver led motor-left motor-right switch wheel-left wheel-right wire:w10 wire:w11 wire:w12 wire:w13 wire:w14 wire:w15 wire:w16 wire:w17 wire:w18 wire:w19 wire:w20 wire:w21 wire:w22 wire:w23

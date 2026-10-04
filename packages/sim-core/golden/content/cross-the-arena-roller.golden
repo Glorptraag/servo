@@ -10,8 +10,8 @@ arena wall-stop 1d8d0f6a65d48689
 part battery-pack-2-cell ac49444ad3a2e166
 part caster 85cad363c9f68e25
 part chassis 2b67875c3e879e19
-part dc-motor e80cd3eae3017bf6
-part wheel-large c182e441f60c54e3
+part dc-motor d05dc083bd1fa3f7
+part wheel-large fde3284299722f48
 record 65935c840be1e92041ea2e6d686c224dd82f667bbf129a7ae581d2ec343a2087
 faults none
 subjects battery caster chassis motor-left motor-right wheel-left wheel-right wire:w10 wire:w5 wire:w6 wire:w7 wire:w8 wire:w9

@@ -10,8 +10,8 @@ arena wall-stop 1d8d0f6a65d48689
 part battery-pack-2-cell ac49444ad3a2e166
 part caster 85cad363c9f68e25
 part chassis 2b67875c3e879e19
-part dc-motor e80cd3eae3017bf6
-part wheel-large c182e441f60c54e3
+part dc-motor d05dc083bd1fa3f7
+part wheel-large fde3284299722f48
 record 55502822e774def87d15325322a105099ce7fd42a70cc5221196264d44a73835
 fault motor-left overload first-tick=154
 fault motor-right overload first-tick=154

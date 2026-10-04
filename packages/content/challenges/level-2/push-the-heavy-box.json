@@ -334,7 +334,7 @@
     {
       "steps": [
         {
-          "line": "This DC motor turns its wheel with no gearbox, too weakly to push the heavy box",
+          "line": "This DC motor is too weak to push the heavy box without a gearbox",
           "step": "pulse-part",
           "target": {
             "part": "dc-motor"

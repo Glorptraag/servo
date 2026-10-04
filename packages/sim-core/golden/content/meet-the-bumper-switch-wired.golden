@@ -11,8 +11,8 @@ part battery-pack-2-cell ac49444ad3a2e166
 part bumper-switch 07e8a283c2f64a5b
 part caster 85cad363c9f68e25
 part chassis 2b67875c3e879e19
-part dc-motor e80cd3eae3017bf6
-part wheel-large c182e441f60c54e3
+part dc-motor d05dc083bd1fa3f7
+part wheel-large fde3284299722f48
 record 6cf9142f47de363eea6195833bc546af82d8255343934c36087205ea34cd4cde
 faults none
 subjects battery bumper caster chassis motor-left motor-right wheel-left wheel-right wire:w10 wire:w11 wire:w12 wire:w5 wire:w6 wire:w8 wire:w9

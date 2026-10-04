@@ -10,9 +10,9 @@ arena open-floor 297edbfc7ad9a93c
 part battery-pack-2-cell ac49444ad3a2e166
 part caster 85cad363c9f68e25
 part chassis 2b67875c3e879e19
-part dc-motor e80cd3eae3017bf6
+part dc-motor d05dc083bd1fa3f7
 part gearbox 36f60677ea150571
-part wheel-large c182e441f60c54e3
+part wheel-large fde3284299722f48
 record 47274f251b6d5bcca98c4a46ee55bf833d90b3cc4afd533fba9ed81aa30c4206
 fault chassis scraping first-tick=2
 fault wheel-right not-driven first-tick=2

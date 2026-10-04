@@ -8,7 +8,7 @@ inputs none
 blueprint 3eee5166e2525048
 arena open-floor 297edbfc7ad9a93c
 part battery-pack-2-cell ac49444ad3a2e166
-part dc-motor e80cd3eae3017bf6
+part dc-motor d05dc083bd1fa3f7
 record cf0dfdb552f485412d704272ea7e16694e4bc2251606a3ebd3bd0cae5be4ba06
 fault battery no-loop first-tick=2
 fault motor no-circuit first-tick=2

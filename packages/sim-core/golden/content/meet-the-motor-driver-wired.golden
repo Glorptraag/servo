@@ -8,8 +8,8 @@ inputs none
 blueprint ef1e47f1e0b29b2d
 arena open-floor 297edbfc7ad9a93c
 part battery-pack-2-cell ac49444ad3a2e166
-part dc-motor e80cd3eae3017bf6
-part motor-driver 7bba5ed414f432a1
+part dc-motor d05dc083bd1fa3f7
+part motor-driver f982b4d3fbc54d67
 record b7d10123d1eb9c349830270b28c24ec858817dac08f087f0dd0d37db49252c2a
 faults none
 subjects battery driver motor wire:w1 wire:w2 wire:w3 wire:w4

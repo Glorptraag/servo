@@ -10,8 +10,8 @@ arena wall-stop 1d8d0f6a65d48689
 part battery-pack-2-cell ac49444ad3a2e166
 part caster 85cad363c9f68e25
 part chassis 2b67875c3e879e19
-part dc-motor e80cd3eae3017bf6
-part wheel-large c182e441f60c54e3
+part dc-motor d05dc083bd1fa3f7
+part wheel-large fde3284299722f48
 record 63279f3cf1a0b86a113a1789ab8deeaa4303dce71229040a33e075c751848647
 fault chassis scraping first-tick=2
 fault wheel-left not-driven first-tick=2

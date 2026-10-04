@@ -101,7 +101,7 @@
           }
         },
         {
-          "line": "This servo motor's plus takes one battery pack only",
+          "line": "This servo motor's plus takes power from one battery pack only",
           "step": "pulse-port",
           "target": {
             "placed": "servo",

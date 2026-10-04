@@ -10,9 +10,9 @@ arena wall-stop 1d8d0f6a65d48689
 part battery-pack-2-cell ac49444ad3a2e166
 part caster 85cad363c9f68e25
 part chassis 2b67875c3e879e19
-part dc-motor e80cd3eae3017bf6
+part dc-motor d05dc083bd1fa3f7
 part gearbox 36f60677ea150571
-part wheel-large c182e441f60c54e3
+part wheel-large fde3284299722f48
 record 9fc7b18bd318379d7a656f0c2b63b0ec1eaf6abdd31a688bd6c9a3a5a3b405bf
 fault wheel-left slipping first-tick=622
 fault wheel-right slipping first-tick=622

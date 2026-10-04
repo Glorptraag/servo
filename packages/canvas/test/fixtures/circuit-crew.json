@@ -730,7 +730,7 @@
       "failureModes": [
         {
           "cardLine": "No complete circuit: the shaft stays still.",
-          "hint": "This motor is not in a loop with the battery pack",
+          "hint": "This DC motor is not in a loop with the battery pack",
           "id": "no-circuit",
           "need": "power",
           "shows": [
@@ -741,7 +741,7 @@
         },
         {
           "cardLine": "Too little power: it turns slowly.",
-          "hint": "This motor is not getting enough power",
+          "hint": "This DC motor is not getting enough power",
           "id": "low-voltage",
           "need": "power",
           "shows": [
@@ -753,7 +753,7 @@
         },
         {
           "cardLine": "Too much to turn: it stops and hums.",
-          "hint": "This motor cannot turn its load",
+          "hint": "This DC motor cannot turn its load",
           "id": "overload",
           "need": "load",
           "shows": [
@@ -761,12 +761,12 @@
             "hum",
             "drain"
           ],
-          "teachingNote": "A motor can turn only so much load. Asked for more, such as up a steep ramp or against a wall, the shaft stops and the motor hums while it draws the most current it ever draws, so the battery pack drains fast.",
+          "teachingNote": "A DC motor can turn only so much load. Asked for more, such as up a steep ramp or against a wall, the shaft stops and the motor hums while it draws the most current it ever draws, so the battery pack drains fast.",
           "unmet": "exceeded"
         },
         {
           "cardLine": "Wires swapped: it turns the other way.",
-          "hint": "This motor's plus and minus are swapped",
+          "hint": "This DC motor's plus and minus are swapped",
           "id": "reversed",
           "need": "power",
           "shows": [
@@ -1101,44 +1101,44 @@
         }
       },
       "card": {
-        "does": "Passes power from the battery pack to two motors, and sets each one forward, backward or stopped.",
-        "gives": "Gives: power (red) out to two motors.",
-        "needs": "Needs: power (red) in, and a setting or a signal (yellow) for each motor.",
-        "popularMechanics": "A remote-control car has a motor driver inside, which runs its motor forward or backward.",
+        "does": "Passes power from the battery pack to two DC motors, and sets each one forward, backward or stopped.",
+        "gives": "Gives: power (red) out to two DC motors.",
+        "needs": "Needs: power (red) in, and a setting or a signal (yellow) for each DC motor.",
+        "popularMechanics": "A remote-control car has a motor driver inside, which runs its DC motor forward or backward.",
         "safetyNote": "Real motor drivers are small boards with sharp pins, so build with an adult nearby."
       },
       "failureModes": [
         {
-          "cardLine": "No power in: its motors stay still.",
+          "cardLine": "No power in: its DC motors stay still.",
           "hint": "This motor driver has no power in",
           "id": "no-power",
           "need": "power",
           "shows": [
             "off"
           ],
-          "teachingNote": "A motor driver passes power on to its motors, so it needs its own loop to the battery pack. With none, both outputs give nothing, and the motors wired to it stay still with no fault of their own: the fault is the driver's.",
+          "teachingNote": "A motor driver passes power on to its DC motors, so it needs its own loop to the battery pack. With none, both outputs give nothing, and the DC motors wired to it stay still with no fault of their own: the fault is in the motor driver.",
           "unmet": "open"
         },
         {
-          "cardLine": "Too little power: it gives its motors nothing.",
+          "cardLine": "Too little power: it gives its DC motors nothing.",
           "hint": "This motor driver is not getting enough power",
           "id": "low-voltage",
           "need": "power",
           "shows": [
             "off"
           ],
-          "teachingNote": "A motor driver needs at least 2.5 volts to switch its outputs. On less, such as a 1-cell battery pack, it gives its motors nothing, and they stay still with no fault of their own: the fault is the driver's.",
+          "teachingNote": "A motor driver needs at least 2.5 volts to switch its outputs. On less, such as a 1-cell battery pack, it gives its DC motors nothing, and they stay still with no fault of their own: the fault is in the motor driver.",
           "unmet": "low"
         },
         {
-          "cardLine": "Power in swapped: it gives its motors nothing.",
+          "cardLine": "Power in swapped: it gives its DC motors nothing.",
           "hint": "This motor driver's plus and minus are swapped",
           "id": "reversed",
           "need": "power",
           "shows": [
             "off"
           ],
-          "teachingNote": "A motor driver works only with plus to plus at its power in. Wired the other way round it gives its motors nothing, and they stay still with no fault of their own: the fault is the driver's. A real one can be damaged this way.",
+          "teachingNote": "A motor driver works only with plus to plus at its power in. Wired the other way round it gives its DC motors nothing, and they stay still with no fault of their own: the fault is in the motor driver. A real one can be damaged this way.",
           "unmet": "reversed"
         }
       ],
@@ -1442,7 +1442,7 @@
       "failureModes": [
         {
           "cardLine": "No shaft in its hub: the wheel stays still.",
-          "hint": "This wheel needs a shaft in its hub",
+          "hint": "This large wheel needs a shaft in its hub",
           "id": "not-driven",
           "need": "driven",
           "shows": [
@@ -1453,7 +1453,7 @@
         },
         {
           "cardLine": "Off the floor: the wheel spins in the air.",
-          "hint": "This wheel does not reach the floor",
+          "hint": "This large wheel does not reach the floor",
           "id": "lifted",
           "need": "on-floor",
           "shows": [
@@ -1464,7 +1464,7 @@
         },
         {
           "cardLine": "Slipping: the wheel spins but the robot stays put.",
-          "hint": "This wheel is spinning in place",
+          "hint": "This large wheel is spinning in place",
           "id": "slipping",
           "need": "on-floor",
           "shows": [
