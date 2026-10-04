@@ -23,6 +23,7 @@ Run `pnpm dev` (or open a tester release). Use the Level 1 roller (`level-1-roll
 | 1.9 | Goal met, Save's line and a hint's line are read when they appear, without moving focus. | | |
 | 1.10 | The parental gate (Home, For adults) reads its heading, its question, the answer field's label and Continue; a wrong answer's line is read. | | |
 | 1.11 | In a challenge, the hint button reads its name, and each hint step's line is read as it shows. | | |
+| 1.12 | Double-tapping a tray tile opens the list of places it can go (not a waiting tile), and double-tapping a choice there places the part; double-tapping Box or Post in the arena strip puts it on the floor at once. Both take the screen-reader path, which the app picks for a click with no pointer behind it (`detail` 0); only Chromium's Enter is checked by tests (review R-6.4 APP-6). If a double-tap gives a waiting tile instead, write Fail. | | |
 
 ## 2. Screen reader on a laptop (VoiceOver with Safari on macOS, or NVDA with Chrome or Firefox on Windows)
 

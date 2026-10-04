@@ -56,7 +56,7 @@ export interface AppFrame {
   tab(edge: string): HTMLButtonElement;
   /** The canvas element the canvas package draws in. */
   canvasElement(): HTMLCanvasElement;
-  /** Clicks a control, as a tap does, and waits for every panel to finish moving. */
+  /** A DOM click on a control, then waits for every panel to finish moving. Not a touch, pointer or keyboard path: controls-*.test.tsx test those. */
   press(element: HTMLElement): Promise<void>;
   /** Waits until nothing in the page is animating. */
   settle(): Promise<void>;
