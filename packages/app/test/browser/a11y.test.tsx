@@ -1,10 +1,11 @@
 // The accessibility pass (task 5.7) in Chromium. axe-core checks the app's main screens against WCAG 2.2 A and AA,
 // through the real App with the real canvas, content, sim-core and run loop: the build with nothing selected, a part
-// selected through the list view (its screen-reader path) with the spec card out, Home, and a Run. Each screen is
-// checked with every access option off, then with high contrast, the dyslexia-friendly type and the left-handed
-// mirror each on, and then all on together; Settings and the invite form are checked too. Then the options themselves:
-// each switch by pointer, touch and keyboard, named for a screen reader (ground rule 8); each reaching the shell, the
-// spec card, the canvas and the layout as soon as it changes; and read-aloud through the spec card's speech.
+// selected through the list view (its screen-reader path) with the spec card out, Home, a Run, and a challenge's hint
+// step with its line. Each screen is checked with every access option off, then with high contrast, the
+// dyslexia-friendly type and the left-handed mirror each on, and then all on together; Settings, the parental gate
+// and the invite form are checked too. Then the options themselves: each switch by pointer, touch and keyboard, named
+// for a screen reader (ground rule 8); each reaching the shell, the spec card, the hint line, the canvas and the
+// layout as soon as it changes; and read-aloud through the spec card's speech, silent while the child types.
 import axe from 'axe-core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cdp, userEvent } from 'vitest/browser';
@@ -111,7 +112,25 @@ const selectFirstPart = async (app: MountedApp): Promise<void> => {
   await vi.waitFor(() => expect(app.host.querySelector('[data-region="specCard"] .spec-card')).not.toBeNull(), SOON);
 };
 
-/** The four screens, each checked by axe; returns every violation, named by screen. */
+/** A challenge from Home whose first ladder fits its start (a switch not yet wired), and its first hint step shown, with its line beside the hint button. */
+const HINTED = 'Meet the switch';
+const openHint = async (app: MountedApp): Promise<HTMLElement> => {
+  headerButton(app, 'Home').click();
+  await vi.waitFor(() => expect(app.host.querySelector('.servo-home')).not.toBeNull(), SOON);
+  const choice = [...app.host.querySelectorAll<HTMLButtonElement>('.servo-home button.home-choice')].find(
+    (each) => each.querySelector('.home-choice-name')?.textContent === HINTED,
+  );
+  if (!choice) throw new Error(`no ${HINTED} on Home`);
+  choice.click();
+  await vi.waitFor(() => expect(app.host.querySelector('.servo-home')).toBeNull(), SOON);
+  await vi.waitFor(() => expect(app.host.querySelector('.hint-button')).not.toBeNull(), SOON);
+  await vi.waitFor(() => expect(app.host.querySelector('.hint-button')?.getAttribute('aria-disabled')).toBe('false'), SOON);
+  button(app.host, '.hint-button').click();
+  await vi.waitFor(() => expect(app.host.querySelector('.hint-spoken')?.textContent).not.toBe(''), SOON);
+  return app.host.querySelector('.hint-ladder') as HTMLElement;
+};
+
+/** The five screens, each checked by axe; returns every violation, named by screen. */
 const auditScreens = async (app: MountedApp): Promise<string[]> => {
   const found: string[] = [];
   const check = async (screen: string): Promise<void> => {
@@ -136,6 +155,9 @@ const auditScreens = async (app: MountedApp): Promise<string[]> => {
   await check('Run');
   button(app.host, '.run-bar-toggle').click();
   await vi.waitFor(() => expect(toggle()).toBe('run'), RUN);
+
+  await openHint(app);
+  await check('hint');
   return found;
 };
 
@@ -164,6 +186,26 @@ describe('WCAG 2.2 AA on the chrome (axe-core)', () => {
       expect(await violations(host)).toEqual([]);
     });
   }
+
+  it('finds no violation on the parental gate in front of the parent view', async () => {
+    const frame = document.createElement('iframe');
+    frame.style.cssText = 'position: fixed; left: 0; top: 0; width: 1180px; height: 820px; border: 0;';
+    frame.src = '/parent.html';
+    document.body.appendChild(frame);
+    try {
+      await vi.waitFor(() => expect(frame.contentDocument?.querySelector('#parent h1')?.textContent).toBe('For adults'), SOON);
+      const doc = frame.contentDocument as Document;
+      const view = frame.contentWindow as Window & { axe?: typeof axe };
+      // axe checks the document it runs in, so its source goes into the gate's page.
+      const script = doc.createElement('script');
+      script.textContent = axe.source;
+      doc.head.appendChild(script);
+      const result = await (view.axe as typeof axe).run(doc, { runOnly: { type: 'tag', values: WCAG_AA }, resultTypes: ['violations'] });
+      expect(result.violations.map((violation) => `${violation.id}: ${violation.nodes.map((node) => node.target.join(' ')).join(', ')}`)).toEqual([]);
+    } finally {
+      frame.remove();
+    }
+  });
 
   it('finds no violation on the invite form', async () => {
     const host = document.createElement('div');
@@ -242,6 +284,15 @@ describe('the access switches', () => {
 });
 
 describe('the options reach the chrome, the spec card, the layout and the canvas', () => {
+  it('the hint button and its line take the dyslexia-friendly type', async () => {
+    const app = await mountApp(storeWith({ dyslexiaType: true }));
+    const ladder = await openHint(app);
+    for (const element of [button(ladder, '.hint-button'), ladder.querySelector('.hint-spoken') as HTMLElement]) {
+      expect(getComputedStyle(element).fontFamily).toMatch(/OpenDyslexic/);
+      expect(Number.parseFloat(getComputedStyle(element).letterSpacing)).toBeGreaterThan(0);
+    }
+  });
+
   it('high contrast swaps the chrome to black on white, and darkens the spec card while keeping socket shapes', async () => {
     const app = await mountApp(storeWith({}));
     await selectFirstPart(app);
@@ -392,6 +443,26 @@ describe('read-aloud', () => {
     await userEvent.click(rowOf(host, 'readAloud'));
     await expect.poll(() => store.prefs.readAloud).toBe(false);
     expect(cancelled.count).toBeGreaterThan(before);
+  });
+
+  it('reads nothing aloud while the child types or presses Space in the rename field', async () => {
+    const speak = vi.spyOn(window.speechSynthesis, 'speak').mockImplementation(() => undefined);
+    vi.spyOn(window.speechSynthesis, 'cancel').mockImplementation(() => undefined);
+    const app = await mountApp(storeWith({ readAloud: true }));
+    await userEvent.click(button(app.host, '.shell-blueprint-name'));
+    const field = await vi.waitFor(() => {
+      const found = app.host.querySelector<HTMLInputElement>('.shell-blueprint-name-input');
+      if (!found) throw new Error('no rename field');
+      return found;
+    }, SOON);
+    expect(document.activeElement).toBe(field);
+    await new Promise((settle) => setTimeout(settle, 100));
+    const before = speak.mock.calls.length;
+    await userEvent.keyboard('Rover two');
+    await userEvent.keyboard(' ');
+    await new Promise((settle) => setTimeout(settle, 200));
+    expect(field.value).toContain('Rover two');
+    expect(speak.mock.calls.length).toBe(before);
   });
 
   it('in the App, reads through the page speech that the spec card uses', async () => {

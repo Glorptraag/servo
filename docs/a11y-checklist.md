@@ -1,6 +1,6 @@
 # Accessibility checklist (task 5.7)
 
-The manual half of the accessibility pass. The automated half is `packages/app/test/browser/a11y.test.tsx`: axe-core finds no WCAG 2.2 A or AA violation on the build, the spec card, Home and a Run, with each access option and with all of them, nor on Settings and the invite form. What axe cannot judge is below: a person with the device in hand.
+The manual half of the accessibility pass. The automated half is `packages/app/test/browser/a11y.test.tsx`: axe-core finds no WCAG 2.2 A or AA violation on the build, the spec card, Home, a Run and a challenge's hint step, with each access option and with all of them, nor on Settings, the parental gate and the invite form. What axe cannot judge is below: a person with the device in hand.
 
 The bar (brief Section 13): WCAG 2.2 AA for everything that is not the canvas, and a documented equivalent path for every canvas action. The access options are on Home, under "Display and reading", and on the Settings page (`/settings`).
 
@@ -21,6 +21,8 @@ Run `pnpm dev` (or open a tester release). Use the Level 1 roller (`level-1-roll
 | 1.7 | Home opens, reads its heading, builds and challenges; Back to the build closes it and focus returns to Home. | | |
 | 1.8 | Each switch under "Display and reading" reads its name, its description and on or off, and turns by double-tap. | | |
 | 1.9 | Goal met, Save's line and a hint's line are read when they appear, without moving focus. | | |
+| 1.10 | The parental gate (Home, For adults) reads its heading, its question, the answer field's label and Continue; a wrong answer's line is read. | | |
+| 1.11 | In a challenge, the hint button reads its name, and each hint step's line is read as it shows. | | |
 
 ## 2. Screen reader on a laptop (VoiceOver with Safari on macOS, or NVDA with Chrome or Firefox on Windows)
 
@@ -41,6 +43,8 @@ Run `pnpm dev` (or open a tester release). Use the Level 1 roller (`level-1-roll
 | 3.4 | Escape closes Home and the list view; focus goes back to where it was. | | |
 | 3.5 | Every canvas action (place, wire, move, rotate, remove, set, select) can be done from the list view by keyboard alone. | | |
 | 3.6 | Each "Display and reading" switch turns with Space, on Home and on Settings. | | |
+| 3.7 | The parental gate is answered and passed by keyboard alone, with a visible focus ring. | | |
+| 3.8 | The hint button is reached and pressed by keyboard; each press shows the next step. | | |
 
 ## 4. Zoom to 200%, and text spacing
 
@@ -60,6 +64,7 @@ Run `pnpm dev` (or open a tester release). Use the Level 1 roller (`level-1-roll
 | 5.3 | On the spec card, each port's socket shape and colour match the canvas's. | | |
 | 5.4 | Disabled controls (Run with nothing placed, the arena strip in Run) still read as disabled and their words are legible. | | |
 | 5.5 | It survives a reload and shows on the Settings page too. | | |
+| 5.6 | The hint button and its line are legible and their focus ring visible. | | |
 
 ## 6. Left-handed layout
 
@@ -83,12 +88,14 @@ Run `pnpm dev` (or open a tester release). Use the Level 1 roller (`level-1-roll
 | 7.5 | Tapping on the canvas reads nothing (the canvas speaks through the list view). | | |
 | 7.6 | Turning it off stops a line being read. | | |
 | 7.7 | On iPad with VoiceOver on as well, the two do not talk over each other badly enough to confuse. | | |
+| 7.8 | With Sound off in the header, read-aloud still reads (it is an access aid, independent of Sound), and its switch's line says "even with Sound off". | | |
+| 7.9 | Typing a new name for the build reads nothing aloud. | | |
 
 ## 8. Dyslexia-friendly type
 
 | # | Check | Pass/Fail | Note |
 | --- | --- | --- | --- |
-| 8.1 | Turning it on changes the face and spacing of the header, tray, spec card, Run bar, Home and the canvas's labels and list view at once. | | |
+| 8.1 | Turning it on changes the face and spacing of the header, tray, spec card, Run bar, Home, the hint button and its line, and the canvas's labels and list view at once. | | |
 | 8.2 | The face shown on the iPad and on the laptop is acceptable for a 6 to 8 year old early reader (note which face each device used). | | |
 | 8.3 | No line of the Level 1 and 2 spec cards is cut off; a long card scrolls inside its panel. | | |
 
@@ -97,7 +104,7 @@ Run `pnpm dev` (or open a tester release). Use the Level 1 roller (`level-1-roll
 | # | Check | Pass/Fail | Note |
 | --- | --- | --- | --- |
 | 9.1 | No new words use exclamation marks, praise, a character voice or a mascot name (ground rule 7). | | |
-| 9.2 | The option names and their lines ("Display and reading", "High contrast", "Dyslexia-friendly type", "Left-handed layout", "Read aloud") are words Drew is happy with. | | |
+| 9.2 | The option names and their lines ("Tap any words to hear them, even with Sound off." included) ("Display and reading", "High contrast", "Dyslexia-friendly type", "Left-handed layout", "Read aloud") are words Drew is happy with. | | |
 
 ## Sign-off
 

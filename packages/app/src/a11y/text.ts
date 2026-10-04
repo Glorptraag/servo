@@ -8,6 +8,6 @@ export const ACCESS_TEXT = {
     highContrast: { name: 'High contrast', line: 'Stronger colours and darker edges.' },
     dyslexiaType: { name: 'Dyslexia-friendly type', line: 'A clearer typeface with more space between letters and lines.' },
     leftHanded: { name: 'Left-handed layout', line: 'The part tray and the spec card swap sides.' },
-    readAloud: { name: 'Read aloud', line: 'Tap any words to hear them.' },
+    readAloud: { name: 'Read aloud', line: 'Tap any words to hear them, even with Sound off.' },
   } satisfies Record<AccessOption, { readonly name: string; readonly line: string }>,
 } as const;
