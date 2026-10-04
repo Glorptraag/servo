@@ -10,7 +10,7 @@ import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { Content } from '@servo/content';
 import { BLUEPRINT_VERSION, LEVELS } from '@servo/schema';
-import type { ArenaRef, Blueprint, Challenge, Level } from '@servo/schema';
+import type { ArenaRef, Blueprint, Challenge, ChallengeKind, Level } from '@servo/schema';
 import type { RunLoop } from '../run-bar/run-loop.ts';
 import { useShell } from '../shell/context.ts';
 import type { Autosaver } from '../shell/index.ts';
@@ -34,9 +34,27 @@ export const sandboxArena = (content: Content): ArenaRef | undefined => {
   return preset ? { preset: preset.id, props: [] } : undefined;
 };
 
-/** Challenges grouped by level, levels in order, each level's challenges in content order. */
+/**
+ * The order a level's challenges are listed in: the brief's path through a level (Section 5), meet each part, then
+ * the guided challenges, the breakdowns, the what-ifs, and the unscripted build that closes the level.
+ */
+export const KIND_ORDER: readonly ChallengeKind[] = ['part-introduction', 'guided', 'breakdown', 'what-if', 'unscripted-build'];
+
+const kindRank = (challenge: Challenge): number => {
+  const rank = KIND_ORDER.indexOf(challenge.kind);
+  return rank === -1 ? KIND_ORDER.length : rank;
+};
+
+/** Challenges grouped by level, levels in order, each level's challenges by kind (KIND_ORDER), then in content order. */
 export const challengesByLevel = (challenges: readonly Challenge[]): readonly { readonly level: Level; readonly challenges: readonly Challenge[] }[] =>
-  LEVELS.map(({ level }) => ({ level, challenges: challenges.filter((challenge) => challenge.level === level) })).filter((group) => group.challenges.length > 0);
+  LEVELS.map(({ level }) => ({
+    level,
+    challenges: challenges
+      .map((challenge, index) => ({ challenge, index }))
+      .filter(({ challenge }) => challenge.level === level)
+      .sort((a, b) => kindRank(a.challenge) - kindRank(b.challenge) || a.index - b.index)
+      .map(({ challenge }) => challenge),
+  })).filter((group) => group.challenges.length > 0);
 
 /** A build kept only in this page, for a device that keeps no builds. */
 const pageBuild = (init: { readonly name: string; readonly level: Level; readonly arena: ArenaRef }): Blueprint => {

@@ -358,7 +358,8 @@ describe('the shell', () => {
     const storage = memoryStorage();
     const app = await mountShell({ storage });
     flushSync(() => app.shell.setMode('run'));
-    expect(app.canvas.calls).toEqual(['setMode run']);
+    // Run frames the arena, so the robot stays in view as it drives (renderer.md: the app calls `fit` on Run).
+    expect(app.canvas.calls).toEqual(['setMode run', 'fit']);
     expect(app.region('tray').dataset.shown).toBe('false');
     expect(app.tab('tray').hidden).toBe(true);
     expect(app.shell.tucked.tray).toBe(false);
@@ -366,6 +367,8 @@ describe('the shell', () => {
     expect(getComputedStyle(app.region('runBar')).visibility).toBe('visible');
     expect(app.host.querySelector('button.shell-tab[data-edge="runBar"]')).toBeNull();
     flushSync(() => app.shell.setMode('build'));
+    // Stop frames the build again.
+    expect(app.canvas.calls).toEqual(['setMode run', 'fit', 'setMode build', 'fit']);
     expect(app.region('tray').dataset.shown).toBe('true');
     expect(app.tab('tray').hidden).toBe(false);
     expect(storage.getItem(TUCKED_KEY)).toBeNull();

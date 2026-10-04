@@ -10,6 +10,7 @@ A digital robotics kit for children: real parts, wired together on a big canvas,
 | `docs/brief.md` | Product and design brief (export of the Claude doc). The product's source of truth. |
 | `docs/plan.md` | Agentic build plan (export of the Claude doc): phases, work packages, gates, testing, session protocol. |
 | `docs/decisions.md` | The eight decisions held for Drew, with the default the build proceeds on. |
+| `docs/true-north.md` | Where the build stands against the one-minute loop, with screenshots from the first run of the app, and what to do next. |
 | `docs/images/` | The three drawings from the docs: canvas layout, package map, roadmap. |
 | `docs/gates/` | Written by the orchestrator as each gate G0–G6 comes up (checklists, results). Empty until then. |
 | `.claude/plans/PLAN-servo.md` | The executable decomposition: 57 tasks across 7 phases with model labels, files, done-when lines and gates. |

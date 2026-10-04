@@ -55,7 +55,7 @@ The unit tests check every combination of tucked edges, Build and Run, a part se
 
 ## The safe area (task 3.7)
 
-`layout.safeArea` says how far in from each side the canvas a child can see begins: past the header, the tray and the card where they show, the Run bar's room at the bottom, and the zoom control's column on the card's side when the card is away. The shell calls `onSafeArea(safeArea, canvas)` with it once the canvas is up and whenever it changes, and App.tsx passes it on to `canvas.setSafeArea` (task 3.7), so Fit, the zoom buttons and the canvas's zoom limits work in the canvas a child can see. The shell's `load` calls `canvas.fit()` after the first build it loads into a canvas, so that build starts framed there; later loads (Undo) keep the view.
+`layout.safeArea` says how far in from each side the canvas a child can see begins: past the header, the tray and the card where they show, the Run bar's room at the bottom, and the zoom control's column on the card's side when the card is away. The shell calls `onSafeArea(safeArea, canvas)` with it once the canvas is up and whenever it changes, and App.tsx passes it on to `canvas.setSafeArea` (task 3.7), so Fit, the zoom buttons and the canvas's zoom limits work in the canvas a child can see. The shell's `load` calls `canvas.fit()` after the first build it loads into a canvas, so that build starts framed there; later loads (Undo) keep the view. The shell also calls `canvas.fit()` whenever the mode changes, after the safe area for the new layout has gone out: Run frames the whole arena so the robot stays in view as it drives (brief Section 9, "the arena expands around the chassis"; packages/canvas/docs/renderer.md, decision 9), and Stop frames the build again.
 
 ## Motion
 

@@ -279,6 +279,22 @@ export const Shell = ({
     if (canvas) latest.current.onSafeArea?.({ top, right, bottom, left }, canvas);
   }, [canvas, top, right, bottom, left]);
 
+  // Run frames the arena, Stop frames the build (brief Section 9: on Run "the arena expands around the chassis";
+  // packages/canvas/docs/renderer.md: the view does not move on Run, the app calls `fit` to show the whole arena).
+  // Without this the robot drives out of the Build view within a second or two and the child watches an empty floor.
+  // After the safe-area effect above, so the fit works in the canvas the Run layout (tray away) leaves uncovered.
+  const framedMode = useRef<CanvasMode | null>(null);
+  useEffect(() => {
+    if (!canvas) return;
+    if (framedMode.current === null) {
+      framedMode.current = mode;
+      return;
+    }
+    if (framedMode.current === mode) return;
+    framedMode.current = mode;
+    canvas.fit();
+  }, [canvas, mode]);
+
   const shell = useMemo<ShellApi>(
     () => ({
       content,
