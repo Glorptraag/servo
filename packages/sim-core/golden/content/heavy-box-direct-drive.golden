@@ -12,7 +12,7 @@ part caster 85cad363c9f68e25
 part chassis 2b67875c3e879e19
 part dc-motor e80cd3eae3017bf6
 part wheel-large c182e441f60c54e3
-record fd61fe7b577abfcf9ee0566a97ba7f18df940407dd3f7f25d64f4afacb6eedf9
+record c1200579f9ea8446f806ec6c3c7f0b7357f9c4b6cb2a0b9d02062817dd54695b
 fault motor-left overload first-tick=93
 fault motor-right overload first-tick=93
 subjects battery caster chassis motor-left motor-right wheel-left wheel-right arena:heavy-box wire:w10 wire:w5 wire:w6 wire:w7 wire:w8 wire:w9

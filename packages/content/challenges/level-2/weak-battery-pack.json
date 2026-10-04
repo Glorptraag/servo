@@ -31,6 +31,42 @@
     {
       "steps": [
         {
+          "line": "This 2-cell battery pack is not fixed to the chassis",
+          "step": "pulse-part",
+          "target": {
+            "part": "battery-pack-2-cell"
+          }
+        },
+        {
+          "line": "The 1-cell battery pack comes off the rear deck first",
+          "step": "pulse-port",
+          "target": {
+            "placed": "chassis",
+            "port": "deck-rear"
+          }
+        },
+        {
+          "changes": [
+            {
+              "kind": "remove-part",
+              "target": {
+                "part": "battery-pack-2-cell"
+              }
+            }
+          ],
+          "line": "Put the loose 2-cell battery pack back in the tray, ready to swap",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "part": "battery-pack-2-cell",
+        "port": "mount"
+      }
+    },
+    {
+      "steps": [
+        {
           "line": "This motor driver is not getting enough power",
           "step": "pulse-part",
           "target": {
@@ -117,17 +153,6 @@
           "changes": [
             {
               "from": {
-                "placed": "driver",
-                "port": "minus"
-              },
-              "kind": "add-wire",
-              "to": {
-                "part": "battery-pack-2-cell",
-                "port": "minus"
-              }
-            },
-            {
-              "from": {
                 "part": "battery-pack-2-cell",
                 "port": "plus"
               },
@@ -138,7 +163,7 @@
               }
             }
           ],
-          "line": "Wired the 2-cell battery pack to side A of the switch and to the motor driver",
+          "line": "Wired the 2-cell battery pack's plus to side A of the switch",
           "step": "do-it"
         }
       ],
@@ -177,20 +202,9 @@
                 "part": "battery-pack-2-cell",
                 "port": "minus"
               }
-            },
-            {
-              "from": {
-                "part": "battery-pack-2-cell",
-                "port": "plus"
-              },
-              "kind": "add-wire",
-              "to": {
-                "placed": "switch",
-                "port": "a"
-              }
             }
           ],
-          "line": "Wired the 2-cell battery pack to side A of the switch and to the motor driver",
+          "line": "Wired the motor driver's power in minus back to the 2-cell battery pack's minus",
           "step": "do-it"
         }
       ],

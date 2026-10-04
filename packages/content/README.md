@@ -58,7 +58,7 @@ Nineteen challenges in `challenges/level-2/`, all on the Circuit Crew kit:
 - what-ifs `what-if-one-cell` and `what-if-one-small-wheel` (brief Sections 4 and 5);
 - the unscripted build `stop-at-the-wall`: stopped near the far wall with no DC motor powered, so a robot stalled against the wall does not pass (D26).
 
-Each has a passing and at least one failing fixture in `FIXTURES`. `push-the-heavy-box-into-the-wall` runs on until the box meets the wall and both large wheels slip (R-1.7), and `heavy-box-direct-drive`, with no challenge, pins the stall without gearboxes. packages/tools/test/level-2-hint-ladders.test.ts walks every Level 2 ladder as the Level 1 test does, and also from each do-it that swaps a part or changes a setting made partway by hand.
+Each has a passing and at least one failing fixture in `FIXTURES`. `push-the-heavy-box-into-the-wall` runs on until the box meets the wall and both large wheels slip (R-1.7), `heavy-box-direct-drive` pins the stall without gearboxes, and `push-the-heavy-box-gearboxes-off` the robot with its gearboxes taken off; small one-move ladders lead back to the geared build from both. A part placed loose is put back in the tray by its own ladder before any swap, so a hint never wires two battery packs together (R-4.8 F1). packages/tools/test/level-2-hint-ladders.test.ts walks every Level 2 ladder as the Level 1 test does, also from each do-it that swaps a part or changes a setting made partway by hand, and from each new part placed first, loose or mounted; a walk that reaches the goal with a fault no passing fixture shows (in a what-if, a short circuit) fails. The Level 1 test makes the same last two checks.
 
 ## Voice
 

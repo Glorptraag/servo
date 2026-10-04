@@ -487,7 +487,7 @@ export const FIXTURES: Readonly<Record<string, FixtureSpec>> = {
     ticks: 150,
     expect: { goal: { met: false }, faults: [{ partId: 'motor-right', failure: 'no-circuit' }] },
   },
-  // Task 4.8: each Level 2 challenge's passing and failing Runs, and the heavy box against direct drive (D52).
+  // Task 4.8: each Level 2 challenge's passing and failing Runs.
   'meet-the-motor-driver-wired': {
     description: 'Meet the motor driver, done: power in from the battery pack, so the DC motor on motor A turns.',
     blueprint: 'motor-on-motor-driver',
@@ -809,9 +809,18 @@ export const FIXTURES: Readonly<Record<string, FixtureSpec>> = {
   'heavy-box-direct-drive': {
     description: 'The heavy box against a robot without gearboxes: both DC motors stall against the 160 g box short of the far side, which is why push-the-heavy-box needs its gearboxes (D52; direct drive stalls from 143 g).',
     blueprint: 'direct-robot-heavy-box',
+    challenge: 'push-the-heavy-box',
     inputs: [],
     ticks: 540,
-    expect: { faults: [{ partId: 'motor-left', failure: 'overload' }, { partId: 'motor-right', failure: 'overload' }] },
+    expect: { goal: { met: false }, faults: [{ partId: 'motor-left', failure: 'overload' }, { partId: 'motor-right', failure: 'overload' }] },
+  },
+  'push-the-heavy-box-gearboxes-off': {
+    description: 'Push the heavy box with both gearboxes taken off: the large wheels lie beside the robot, so it rests on the chassis and stays at the start.',
+    blueprint: 'geared-robot-gearboxes-off',
+    challenge: 'push-the-heavy-box',
+    inputs: [],
+    ticks: 540,
+    expect: { goal: { met: false }, faults: [{ partId: 'chassis', failure: 'scraping' }, { partId: 'wheel-left', failure: 'not-driven' }, { partId: 'wheel-right', failure: 'not-driven' }] },
   },
   'light-until-the-wall-wired': {
     description: 'Light until the wall, done: the LED\'s long leg on side B of the bumper switch, so it goes dark as the robot stops at the wall.',

@@ -20,66 +20,37 @@
     {
       "steps": [
         {
-          "line": "This battery pack has no loop back to minus",
+          "line": "This 1-cell battery pack is not fixed to the chassis",
           "step": "pulse-part",
           "target": {
             "part": "battery-pack-1-cell"
           }
         },
         {
-          "line": "Its plus feeds side A of the switch",
+          "line": "The 2-cell battery pack comes off the rear deck first",
           "step": "pulse-port",
           "target": {
-            "part": "battery-pack-1-cell",
-            "port": "plus"
+            "placed": "chassis",
+            "port": "deck-rear"
           }
         },
         {
           "changes": [
             {
-              "from": {
-                "placed": "motor-left",
-                "port": "minus"
-              },
-              "kind": "add-wire",
-              "to": {
-                "part": "battery-pack-1-cell",
-                "port": "minus"
-              }
-            },
-            {
-              "from": {
-                "placed": "motor-right",
-                "port": "minus"
-              },
-              "kind": "add-wire",
-              "to": {
-                "part": "battery-pack-1-cell",
-                "port": "minus"
-              }
-            },
-            {
-              "from": {
-                "part": "battery-pack-1-cell",
-                "port": "plus"
-              },
-              "kind": "add-wire",
-              "to": {
-                "placed": "switch",
-                "port": "a"
+              "kind": "remove-part",
+              "target": {
+                "part": "battery-pack-1-cell"
               }
             }
           ],
-          "line": "Wired the 1-cell battery pack to side A of the switch and to both DC motors",
+          "line": "Put the loose 1-cell battery pack back in the tray, ready to swap",
           "step": "do-it"
         }
       ],
       "when": {
-        "failure": "no-loop",
-        "kind": "fault",
-        "target": {
-          "part": "battery-pack-1-cell"
-        }
+        "kind": "unwired",
+        "part": "battery-pack-1-cell",
+        "port": "mount"
       }
     },
     {
@@ -148,6 +119,69 @@
         }
       ],
       "when": {
+        "kind": "unwired",
+        "placed": "chassis",
+        "port": "deck-rear"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This battery pack has no loop back to minus",
+          "step": "pulse-part",
+          "target": {
+            "part": "battery-pack-1-cell"
+          }
+        },
+        {
+          "line": "Its plus feeds side A of the switch",
+          "step": "pulse-port",
+          "target": {
+            "part": "battery-pack-1-cell",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "motor-left",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "part": "battery-pack-1-cell",
+                "port": "minus"
+              }
+            },
+            {
+              "from": {
+                "placed": "motor-right",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "part": "battery-pack-1-cell",
+                "port": "minus"
+              }
+            },
+            {
+              "from": {
+                "part": "battery-pack-1-cell",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "switch",
+                "port": "a"
+              }
+            }
+          ],
+          "line": "Wired the 1-cell battery pack to side A of the switch and to both DC motors",
+          "step": "do-it"
+        }
+      ],
+      "when": {
         "kind": "missing",
         "part": "battery-pack-2-cell"
       }
@@ -174,7 +208,7 @@
             {
               "kind": "remove-part",
               "target": {
-                "placed": "battery"
+                "part": "battery-pack-2-cell"
               }
             },
             {

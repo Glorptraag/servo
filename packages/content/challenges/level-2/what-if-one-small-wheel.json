@@ -19,14 +19,14 @@
     {
       "steps": [
         {
-          "line": "This small wheel needs a shaft in its hub",
+          "line": "This small wheel is not on a shaft",
           "step": "pulse-part",
           "target": {
             "part": "wheel-small"
           }
         },
         {
-          "line": "This DC motor's shaft takes the small wheel",
+          "line": "The small wheel goes on this shaft once the large wheel is off",
           "step": "pulse-port",
           "target": {
             "placed": "motor-right",
@@ -36,38 +36,20 @@
         {
           "changes": [
             {
-              "from": {
-                "placed": "motor-right",
-                "port": "shaft"
-              },
-              "kind": "remove-wire",
-              "to": {
-                "part": "wheel-large",
-                "port": "hub"
-              }
-            },
-            {
-              "from": {
-                "placed": "motor-right",
-                "port": "shaft"
-              },
-              "kind": "add-wire",
-              "to": {
-                "part": "wheel-small",
-                "port": "hub"
+              "kind": "remove-part",
+              "target": {
+                "part": "wheel-small"
               }
             }
           ],
-          "line": "Put the small wheel on this DC motor's shaft",
+          "line": "Put the loose small wheel back in the tray, ready to swap",
           "step": "do-it"
         }
       ],
       "when": {
-        "failure": "not-driven",
-        "kind": "fault",
-        "target": {
-          "part": "wheel-small"
-        }
+        "kind": "unwired",
+        "part": "wheel-small",
+        "port": "hub"
       }
     },
     {

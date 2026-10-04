@@ -63,15 +63,18 @@
         {
           "changes": [
             {
-              "from": {
-                "part": "caster",
-                "port": "mount"
-              },
-              "kind": "add-wire",
-              "to": {
+              "kind": "remove-part",
+              "target": {
+                "part": "caster"
+              }
+            },
+            {
+              "kind": "add-part",
+              "mountOn": {
                 "placed": "chassis",
                 "port": "caster"
-              }
+              },
+              "part": "caster"
             }
           ],
           "line": "Fixed the caster to its mount point under the chassis",
