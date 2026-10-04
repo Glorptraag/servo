@@ -17,7 +17,7 @@ import type { RunLoop } from './run-bar/index.ts';
 import { PLACEHOLDER_SLOTS, SaveControl, Shell, pageStorage } from './shell/index.ts';
 import type { Autosaver, CanvasSetup, ShellSlots } from './shell/index.ts';
 import { SoundControl, SoundLayer, WebAudioSink } from './sound/index.ts';
-import { SpecCard, createRunFrames } from './spec-card/index.ts';
+import { SpecCard, createRunFrames, readoutFrameDue } from './spec-card/index.ts';
 import type { ProfileStore } from './store/index.ts';
 import { emitTelemetry } from './telemetry/emit.ts';
 import { Tray, kitForLevel } from './tray/index.ts';
@@ -43,7 +43,8 @@ export const App = ({ content, child = null, start, saving, onReady, flags: give
   const flags = useMemo(() => givenFlags ?? deviceFlags(), [givenFlags]);
   // The sandbox tray holds the kit at the child's level; a challenge brings its own kit (D68, task 4.5).
   const kit = useMemo(() => kitForLevel(content.kits, START_LEVEL), [content]);
-  // The run loop (task 4.4) gives each Run frame to the spec card's live readouts, which clear whenever no Run plays:
+  // The run loop (task 4.4) gives Run frames to the spec card's live readouts, every third tick and any tick a switch
+  // or a fault changes (readoutFrameDue, task 6.1), which clear whenever no Run plays:
   // on Stop, on a failed Run, and while the next one loads.
   // The goal line judges the same loop's frames (task 4.5).
   const runFrames = useMemo(createRunFrames, []);
@@ -59,7 +60,9 @@ export const App = ({ content, child = null, start, saving, onReady, flags: give
       setLoop(joined);
       sound.follow(joined);
       off = joined?.subscribe((state, frame) => {
-        if (frame) runFrames.push(frame);
+        if (frame) {
+          if (readoutFrameDue(runFrames.frame, frame)) runFrames.push(frame);
+        }
         else if (state.phase !== 'spin-up' && state.phase !== 'running') runFrames.clear();
       });
     };

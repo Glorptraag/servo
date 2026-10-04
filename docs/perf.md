@@ -123,6 +123,52 @@ Two smaller costs, also outside this task's files:
 - The canvas list view rebuilds its whole DOM once a simulated second during a Run (`readoutsDue`, packages/canvas/src/run-animation/readouts.ts). With 25 parts and 43 wires that shows up as single frames of 30–60 ms at 4×, roughly once a second.
 - Pinch at 4× sits at the edge of the budget in the canvas renderer.
 
+## Round 2: readouts, the canvas draw, the sim step (orchestrator ruling)
+
+The orchestrator allowed canvas render-scheduling changes for this round, as long as the drawing output stayed the same and sim-core stayed untouched. Every figure is `pnpm perf:app --no-budget --json …`: the median of 3 runs per profile at load averages of 17–20, the quietest this machine got. "Before" is e209f8f. "After" is this round's commit, measured twice to show the spread.
+
+### 1. Readouts and spec card (kept)
+
+- **Every third tick.** App.tsx hands the spec card a Run frame every third tick (10 a simulated second). It also hands over every tick where a switch opens or closes or a fault starts or ends, so those show at their tick (`readoutFrameDue`, `packages/app/src/spec-card/frames.ts`).
+- **No unchanged renders.** The card subscribes to a key of the selected part's exact values and faults, so a frame that leaves them alone renders nothing. This covers the card with nothing selected too: before, it re-rendered (to nothing) on every tick of every Run.
+- **What a child sees.** Readouts may lag a frame by up to two ticks (66 ms). Each value shown is still exactly the run record's value at its tick.
+- **Tests.** `packages/app/test/spec-card/readout-pace.test.ts`.
+
+| Profile | Mode | Before p50 / p95 ms, fps | After (two sets) p50 / p95 ms, fps |
+| --- | --- | --- | --- |
+| ipad-2020 | Run, 30 tps | 5.8 / 16.7, 59 | 4.9 / **13.6**, 59 · 5.2 / **13.1**, 59 |
+| ipad-2020 | Run, spec card open | 6.1 / 17.6, 58 | 5.9 / **14.6**, 58 · 6.2 / **14.7**, 58 |
+| chromebook-low | Run, 30 tps | 10.2 / 26.7, 55 | 10.9 / 25.5, 57 · 10.8 / 27.4, 55 |
+| chromebook-low | Run, spec card open | 12.1 / 27.1, 55 | 9.0 / 25.5, 56 · 13.8 / 29.5, 54 |
+
+On the iPad stand-in, Run frames are now within the 16 ms p95 budget at this load, with and without the card. Under heavier load (25–40) the same code measured 18.6 and 23.4 ms (table above), so the margin is small. On the Chromebook stand-in nothing changed beyond the noise: Run is still about 26–29 ms at p95. Cold start in the same runs: iPad 1100–1152 ms first visit and 956–972 ms cached; Chromebook 1684–1928 ms and 1692–1864 ms.
+
+### 2. Canvas per-frame draw (no change)
+
+Nothing was changed, because the canvas already does what this item asks, within what the ruling allows:
+
+- **Already incremental.** `world` and `arena` are Pixi render groups, so a pan or zoom moves one transform. `RunAnimator.paint` sets a part's or wire's transform only when it changed, and redraws a crossing wire only when its ends moved. Overlays redraw a tread, gauge or lever only when its value changed.
+- **Already one draw per frame.** `FrameLoop` draws at most once per display frame, on request.
+- **Every Run frame really differs.** Parts tween between ticks and the dots flow along live wires, so skipping a draw "when nothing changed" would drop animation frames.
+- **A cached static layer would change pixels.** It would need Pixi's `cacheAsTexture`, which resamples the parts it caches. It would also need static and moving parts separated, where today they are interleaved in the scene's layer order. Either way the screenshot references would change, which the ruling rules out.
+
+### 3. The sim step on busy-workbench (measured, not changed)
+
+Node 26, unthrottled, on the loaded M1 Max: 20 × 90 ticks of busy-workbench from tick 0, under the V8 sampling profiler. Measured with a throwaway Vitest file using `node:inspector`; the numbers are recorded here.
+
+| Per tick | ms | Share |
+| --- | --- | --- |
+| `step()`, unprofiled | 2.93 | |
+| mechanical solver | 0.90 | 42% |
+|  of which Rapier restore (`openWorld`) / Rapier step / outputs / stance | 0.12 / 0.18 / 0.19 / 0.16 | |
+| electrical solver | 0.34 | 16% |
+|  of which the circuit solve / fault judging (`judgeNeeds`) | 0.18 / 0.17 | 8% / 8% |
+| behaviour runtime | 0.24 | 11% |
+| frame events and `live` (`eventsOf`, `liveOf`) | 0.13 | 6% |
+| readouts | 0.11 | 5% |
+
+No control search shows in the profile: Levels 1–2 run the no-op brain. Fault judging is 8% of a tick. At 4× that is about 12 ms of step per tick, half the frame budget before any drawing. This is why the Chromebook stand-in stays over budget. Only question 2 (a) or (b) below can change that.
+
 ## Still to confirm on devices
 
 All the figures above are stand-ins. These need a real run, with `pnpm release:dry && pnpm release:preview` served on the local Wi-Fi, or the perf page on a dev server:
@@ -138,7 +184,7 @@ Safari has no CDP, so on the iPad the figures come from Web Inspector's timeline
 2. **Run frames over budget on both profiles.** Pick one:
    - (a) sim-core keeps the live Rapier world between ticks and serialises it only when a snapshot is asked for (Stop, records). This is the biggest single saving, but every golden must stay byte-identical, which needs proving with `pnpm golden` and the determinism sweep, since a live world may not step bit-identically to a restored one;
    - (b) run the Simulation in a Web Worker, so main-thread frames carry only the canvas. This removes the cost on any device, at the price of the run loop stepping one tick ahead (a switch flip lands up to one tick, 33 ms, later) and an asynchronous Simulation API in the run loop, the recorder and the shared-build replay;
-   - (c) hold the spec card's readouts and the list view's rebuild to a few times a second during a Run (measured: p95 33.8 → 29.8 ms at 4×; not enough alone);
+   - (c) hold the readouts down during a Run. The spec card's part was done in round 2: the iPad stand-in is now within budget, the Chromebook one is not. The list view's once-a-second rebuild remains;
    - (d) accept Run mode at under 60 fps on low-end devices, with Build mode held to 60.
 
    Default taken: none built. The figures are recorded, and the decision waits. (a) needs a sim-core task and (b) an app task of their own.

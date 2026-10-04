@@ -30,3 +30,24 @@ export const createRunFrames = (): RunFrames => {
     },
   };
 };
+
+/**
+ * The readouts move every third tick, ten times a simulated second: quick enough to read, and the card is not drawn
+ * again at every tick of a Run (task 6.1, docs/perf.md).
+ */
+export const READOUT_EVERY_TICKS = 3;
+
+const sameFaults = (a: readonly string[], b: readonly string[]): boolean => a.length === b.length && a.every((fault, i) => fault === b[i]);
+
+/**
+ * Whether the run loop's next frame goes to the card: the Run's first frame, a Run that started again, every third
+ * tick, and any tick where a switch opened or closed or a fault started or ended, so those always show at their tick.
+ */
+export const readoutFrameDue = (shown: RunFrame | null, frame: RunFrame): boolean => {
+  if (!shown || frame.tick <= shown.tick || frame.tick % READOUT_EVERY_TICKS === 0) return true;
+  for (const [subject, live] of frame.live) {
+    const was = shown.live.get(subject);
+    if (!was || live.values.closed !== was.values.closed || !sameFaults(live.faults, was.faults)) return true;
+  }
+  return false;
+};

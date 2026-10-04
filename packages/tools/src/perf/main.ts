@@ -214,8 +214,13 @@ const showWholeBuild = async (page: Page): Promise<void> => {
  * so the selection never depends on where a tap lands.
  */
 const selectPart = async (page: Page): Promise<void> => {
-  await page.getByRole('button', { name: 'Select motor driver 2', exact: true }).evaluate((button: HTMLElement) => button.click());
-  await page.locator('article.spec-card[data-part="motor-driver"]').waitFor({ timeout: 10_000 });
+  // The list view rebuilds once a simulated second in a Run, so a button found just before may be gone: try again.
+  const card = page.locator('article.spec-card[data-part="motor-driver"]');
+  for (let attempt = 0; attempt < 5 && !(await card.isVisible()); attempt += 1) {
+    await page.getByRole('button', { name: 'Select motor driver 2', exact: true }).evaluate((button: HTMLElement) => button.click());
+    await card.waitFor({ timeout: 3000 }).catch(() => undefined);
+  }
+  await card.waitFor({ timeout: 10_000 });
 };
 
 // Reporting.

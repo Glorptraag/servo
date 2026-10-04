@@ -37,7 +37,7 @@ A change is `canvas.apply({ kind: 'set-setting', partId, setting, value })`, so 
 
 ## Live readouts
 
-The run loop (task 4.4) pushes every frame it gives the canvas into the `RunFrames` App.tsx makes (`runFrames.push(frame)`, `runFrames.clear()` on Stop). In Run mode the card shows `frame.live` for its part: exactly the fold of the RunEvents so far, which is the run record's value at that tick. Each row keeps the exact value in `data-value`; the text rounds it for reading:
+The run loop (task 4.4) gives App.tsx every frame it gives the canvas. App.tsx pushes into the `RunFrames` it makes every third tick, and every tick where a switch or a fault changes (`readoutFrameDue`, task 6.1, [docs/perf.md](../../../../docs/perf.md)), and `runFrames.clear()` on Stop. The card renders again only when its part's values or faults changed. In Run mode the card shows `frame.live` for its part: exactly the fold of the RunEvents so far, which is the run record's value at that tick. Each row keeps the exact value in `data-value`; the text rounds it for reading:
 
 | Value | Label | Shown |
 | --- | --- | --- |
