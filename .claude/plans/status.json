@@ -1243,7 +1243,7 @@
       "dispatched_at": "2026-10-04T09:01:59+00:00"
     },
     "7.2": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1260,8 +1260,8 @@
       ],
       "done_when": "Every probe string listed in docs/reviews/content.md and docs/reviews/tools.md is refused by the validator; a planted banned word in app or parent UI copy fails the new tools test; pnpm validate-content passes on the content as merged.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-04T10:29:12+00:00",
+      "completed_by": "W-7.2",
       "dispatched_at": "2026-10-04T09:01:59+00:00"
     },
     "7.3": {
