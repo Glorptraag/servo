@@ -16,7 +16,7 @@ import { loadFixtures } from '@servo/content/fixtures'; // for tests and tools
 | `arenas/` | Arena presets | 2.4 |
 | `kits/` | Kits | 2.3 |
 | `challenges/level-1/`, `challenges/level-2/` | Challenges | 4.7, 4.8 |
-| `terminology/` | `components.json` and `banned.json`, in the content validator's format | 2.5 |
+| `terminology/` | `components.json`, `banned.json` and `words.json` (capitalised names and sentence openers, task 7.2), in the content validator's format | 2.5, 7.2 |
 | `fixtures/blueprints/` | Bare blueprints the fixtures in `FIXTURES` (src/fixtures.ts) start from | 2.6, 4.7, 4.8 |
 | `art/final/` | Final renders, dropped in by hand (D6) | later |
 | `art/generated/` | Placeholders and `registry.json` from `pnpm art`; gitignored | 0.6 |
@@ -62,4 +62,4 @@ Each has a passing and at least one failing fixture in `FIXTURES`. `push-the-hea
 
 ## Voice
 
-Every system-text field follows the voice rules: real component names, no character names, no praise, no exclamation marks (ground rule 7, brief Section 12). The schema refuses exclamation marks; the content validator checks terminology and banned words.
+Every system-text field follows the voice rules: real component names, no character names, no praise, no exclamation marks (ground rule 7, brief Section 12). The schema refuses exclamation marks; the content validator checks terminology and banned words, capitalised words that read as a character's name, question marks, emoji and the word "level". A sentence that opens with a word not yet in `terminology/words.json` is refused until the word is added there.

@@ -113,7 +113,7 @@ describe('the content bundle of packages/content', () => {
       expect(file).toMatch(/\.json$/);
       expect(file).not.toMatch(/^(?:fixtures|test|art|terminology|node_modules)\/|(?:^|\/)package\.json$|\\/);
     }
-    expect(Object.keys(files.terminology)).toEqual(['terminology/banned.json', 'terminology/components.json']);
+    expect(Object.keys(files.terminology)).toEqual(['terminology/banned.json', 'terminology/components.json', 'terminology/words.json']);
   });
 
   it("passes the release's content check, and is versioned from packages/content/package.json", () => {

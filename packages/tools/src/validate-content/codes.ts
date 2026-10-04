@@ -14,7 +14,10 @@ export const CONTENT_ISSUE_CODES = {
   'terminology.not_real_name': "A part's name has no letters, or contains no real component name from the components list.",
   'terminology.name_form': "A part's name writes a real component name, a qualifier or a gloss differently from the list: another case, spacing or hyphen.",
   'terminology.not_qualifier': "A part's name holds a word or symbol beside its real name that is not a listed qualifier or gloss.",
-  'terminology.proper_name': "A part's name holds a capitalised word beside its real name that is not a listed qualifier or gloss, which reads as a character's name.",
+  'terminology.proper_name': "System text holds a capitalised word that is not a listed term or name, or not an opener at the start of a sentence, which reads as a character's name.",
+  'text.question': 'System text holds a question mark.',
+  'text.symbol': 'System text holds an emoji or another celebratory symbol, such as the interrobang.',
+  'text.level': 'System text names a level, which is a product word.',
   'terminology.bad_file': 'A terminology file is not valid JSON or does not follow the terminology format.',
 } as const;
 
@@ -33,6 +36,7 @@ export interface ContentIssue {
 
 /** A finding about one place in a file, before the file is attached. */
 export interface Finding {
-  readonly code: ContentIssueCode;
+  /** One of CONTENT_ISSUE_CODES, or the schema's `text.exclamation` for authored text the schema does not read. */
+  readonly code: ContentIssueCode | 'text.exclamation';
   readonly message: string;
 }

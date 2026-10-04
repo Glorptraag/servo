@@ -88,7 +88,12 @@ A file with the fields of no kind, or of more than one, is refused as `file.unkn
 
    These are exactly the fields the schema reads as system text, plus blueprint names, and a test keeps the two equal. In the app, a blueprint's name is the child's own text, so voice rules do not apply. A content blueprint's name is authored, though, and children see it, so the terminology lists apply to it.
 3. **Part names.** A part record's `identity.name` is checked against the components list and its qualifiers. See [Part names](#part-names).
-4. **Ids.** No two records of the same kind may share an `id`. Only records that pass the schema claim their id, because only they can enter a catalogue.
+4. **Voice beyond words.** Every other system-text field above is checked for capitalised words that read as a character's name (`terminology.proper_name`, see [Capitalised words](#capitalised-words)). Every field, the part's name included, is checked for:
+   - a question mark (`?`, `¿`, `？`, `⁇`, `⁈`) as `text.question`, because system text never asks a rhetorical question (brief Section 12). What-if titles are prompts written without one;
+   - an emoji, a flag or the interrobang `‽` as `text.symbol`, because Servo never celebrates (ground rule 7, brief Section 8). `©`, `®`, `™`, `°` and `·` pass;
+   - the word `level` or `levels`, in any case, as `text.level`. A level is a product word for adults and the app's shell, not for a child's card, hint or goal (brief Section 12, R-6.5 F4). Inside a banned phrase such as `level up`, it is left to the banned list. One issue per field;
+   - in a blueprint's name only (`meta.name` and a challenge's `start.meta.name`), an exclamation mark, with the schema's code `text.exclamation`. The schema checks every other field itself, but does not read a blueprint's name as system text.
+5. **Ids.** No two records of the same kind may share an `id`. Only records that pass the schema claim their id, because only they can enter a catalogue.
 
 ## The catalogue
 
@@ -100,7 +105,7 @@ Kits, challenges, blueprints and run records name parts, arenas and kits, and th
 
 ## Terminology format
 
-The real lists are in `packages/content/terminology/`, and the app may read them later. There are two JSON files. A missing file is an empty list, and an empty list turns its checks off, with a note. A file that cannot be read, is not JSON or is not an object is refused as `terminology.bad_file` at `$`, and its checks are off too, with a note that it cannot be used. Unknown fields are refused, as in the schema.
+The real lists are in `packages/content/terminology/`, and the app may read them later. There are three JSON files. A missing file is an empty list, and an empty list turns its checks off, with a note. A file that cannot be read, is not JSON or is not an object is refused as `terminology.bad_file` at `$`, and its checks are off too, with a note that it cannot be used. Unknown fields are refused, as in the schema.
 
 `components.json` holds the real names, the plain-language glosses that may sit beside them (brief Section 12), and the qualifiers a part's name may use:
 
@@ -148,6 +153,19 @@ Every name, gloss, qualifier, phrase and reason must be one line with no spaces 
 
 A malformed entry is left out of the run, and the rest of its file is still used.
 
+`words.json` holds the capitalised names that are not characters, and the ordinary words that may open a sentence with a capital:
+
+```json
+{
+  "names": ["Circuit Crew", "Rolling Start", "Run"],
+  "openers": ["the", "this", "wired"]
+}
+```
+
+- `names` lists names written with capitals wherever they stand: the kits' names (D5, brief Section 4) and `Run`, the button the goal lines name.
+- `openers` lists ordinary words, one each, in lower case. The real list holds every word that opens a sentence in content and in the schema's examples, and common short words such as `if` and `you`. A new line that opens with an unlisted word is refused until the word is added: the message says so.
+- Both fields are optional. A file that lists nothing turns the [capitalised-word check](#capitalised-words) off, with a note, as a missing file does. An opener that is not one lower-case word, a repeat, and a name or opener that holds a banned word are refused as `terminology.bad_file`.
+
 ### Matching
 
 - A **word** is a run of letters and digits. Spaces, hyphens, apostrophes and punctuation only separate words. Words compare without case, accents or full-width forms, so `brain-y bit`, `Brain-Y bit` and `brain y bit` match the same entry.
@@ -165,6 +183,14 @@ A gloss explains a real name and never replaces it (brief Section 12). So in sys
 - Words inside a real name, an allowed phrase or a banned phrase are not a gloss's use. The `motor` in `servo motor` is part of the real name, and a banned phrase reports its own words.
 - There is one issue per gloss per field.
 - Only listed glosses are checked. Short forms such as `servo` and colour words such as `red` are not glosses (see [Terminology format](#terminology-format)), so they pass on their own.
+
+### Capitalised words
+
+In every system-text field but a part's name, a word that starts with a capital and a lower-case letter reads as a character's name unless it is one of these. It is refused as `terminology.proper_name` otherwise, once per word as written:
+- inside a listed real name, gloss, qualifier, allowed phrase or capitalised name, wherever it stands: `Rolling Start`, `then Run the robot`;
+- at the start of a sentence, an opener or a word of a listed term or name: `This motor`, `Motor and wheel`. A sentence starts at the start of the field, or after `.`, `:`, `;`, `?`, `!`, `·` or a dash, with spaces, quotes and brackets skipped.
+
+So `Buzzy says the wires are swapped`, `Sparky the robot` and `meet Buzzy` are refused, and so is an opener in mid-sentence, as in `Wire the Robot to the pack`. Capitals such as `DC` and `LED` start no lower-case letter, so they pass. Words inside a banned phrase, and `level`, are left to their own checks. A part's name has the stricter check in [Part names](#part-names).
 
 ### Part names
 
@@ -196,20 +222,25 @@ Schema codes are listed in [validation.md](../../../schema/docs/validation.md). 
 | `terminology.not_real_name` | A part's name has no letters, or contains no real component name from the components list. |
 | `terminology.name_form` | A part's name writes a real component name, a qualifier or a gloss differently from the list: another case, spacing or hyphen. |
 | `terminology.not_qualifier` | A part's name holds a word or symbol beside its real name that is not a listed qualifier or gloss. |
-| `terminology.proper_name` | A part's name holds a capitalised word beside its real name that is not a listed qualifier or gloss, which reads as a character's name. |
+| `terminology.proper_name` | System text holds a capitalised word that is not a listed term or name, or not an opener at the start of a sentence, which reads as a character's name. |
+| `text.question` | System text holds a question mark. |
+| `text.symbol` | System text holds an emoji or another celebratory symbol, such as the interrobang. |
+| `text.level` | System text names a level, which is a product word. |
 | `terminology.bad_file` | A terminology file is not valid JSON or does not follow the terminology format. |
 
 ## From code
 
 `@servo/tools` exports these:
 - `validateContent(options)`, which returns `{ files, issues, notes }` and never throws on bad content;
-- `loadTerminology(folder)`, which returns the lists (`components`, `qualifiers`, `banned` and `allowed`), their format issues and the files that are missing;
+- `loadTerminology(folder)`, which returns the lists (`components`, `qualifiers`, `banned`, `allowed`, `names` and `openers`), their format issues and the files that are missing;
 - `runValidateContent(argv, environment)`, the command itself with its folders and output passed in;
 - `CONTENT_ISSUE_CODES`.
 
 `main.ts` is the entry that `pnpm validate-content` runs with Node 24+, with no build step.
 
-Tests are in `packages/tools/test/validate-content*.test.ts`. `validate-content-lists.test.ts` checks the real lists. The other tests use the lists in `packages/tools/test/validate-content/terminology/`, which are modelled on CLAUDE.md's terminology and stay fixed while the real lists grow.
+Tests are in `packages/tools/test/validate-content*.test.ts`. `validate-content-lists.test.ts` checks the real lists, and `validate-content-voice.test.ts` refuses every probe string of the 6.4 reviews (R-6.4 CON-1 to CON-3, TLS-1 and TLS-2) through them. The other tests use the lists in `packages/tools/test/validate-content/terminology/`, which are modelled on CLAUDE.md's terminology and stay fixed while the real lists grow. Their `words.json` is the real one as task 7.2 wrote it, plus `score` and `spins` for the tests' own lines.
+
+`packages/tools/test/ui-copy.test.ts` applies the real banned list and the exclamation rule to UI copy (R-6.4 TLS-3): every string literal, template text and JSX text in `packages/app/src` and `packages/parent/src`, aria-labels and text tables such as `CARD_GAME_TEXT` included. It skips code: module paths, literal types, property keys and the JSX attributes that are never shown, such as `className`, `id`, `role` and `data-*`. Its exceptions list names each banned word that is right where it stands, with a reason, and fails when one is no longer used. Levels and questions are not checked there, because the app's shell shows "Level 1" and adult copy may ask.
 
 ## Decisions and open questions
 
@@ -236,3 +267,5 @@ The real lists take these readings, for review:
 6. Bans list the forms that matter beyond the words CLAUDE.md and the task name: `mascots`, `brain-y`, `brainy`, `zappy`, `coin`, `streak`, `scores`, `scored`, `scoring`, `earns`, `earned`, `earning`, `levels up`, `levelled up` and `levelling up`. `badge` and `badges` come from brief Section 8.
 7. Praise and cheering go beyond the task's five phrases (task 2.5 review, finding 2). `great` is banned on its own, so descriptive uses such as "a great weight" or "a brilliant white LED" are refused too; reword them. Left off, because build text uses them literally: `spot on` ("the spot on the floor"), `way to go` ("which way to go"), `keep it up` ("keep it up off the floor"), and `nice`, `super` and `cool` alone ("let the motor cool").
 8. Whole-word bans also refuse verbs, as D22's default keeps them: "the arm points forward" and "the battery pack lives under the chassis" are refused. Reword such lines.
+9. Task 7.2 (R-6.4 CON-2, TLS-2) bans `star(s)`, `reward(s)`, `rewarded`, `trophy`, `trophies`, `prize(s)`, `medal(s)`, `confetti`, `win`, `wins`, `won`, `winner(s)`, `winning`, `unlock`, `unlocks`, `unlocked`, `unlocking`, the singular `point` and `life`, `beep`, `boop`, `boops` and `woo hoo`. `mount point` stays allowed as a real name (D22). `beeps` is left off, because the buzzer's card says "A washing machine beeps with a buzzer like this". The schema's chassis example says "move that point", so it is refused; content's chassis says "move that centre".
+10. `text.level` and `text.question` are rules in code, not banned words, so UI copy may still show "Level 1" and ask an adult a question.

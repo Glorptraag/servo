@@ -8,6 +8,8 @@ export interface TextField {
   readonly text: string;
   /** The part's name (`identity.name`), which is also checked against the components list. */
   readonly partName?: true;
+  /** An authored blueprint's name, which the schema does not read as system text, so the validator checks its marks. */
+  readonly blueprintName?: true;
 }
 
 const items = (value: unknown): readonly unknown[] => (Array.isArray(value) ? value : []);
@@ -25,6 +27,9 @@ export const systemText = (kind: RecordKind, record: unknown): TextField[] => {
   const out: TextField[] = [];
   const take = (value: unknown, path: string): void => {
     if (typeof value === 'string') out.push({ path, text: value });
+  };
+  const takeName = (value: unknown, path: string): void => {
+    if (typeof value === 'string') out.push({ path, text: value, blueprintName: true });
   };
   switch (kind) {
     case 'part': {
@@ -51,10 +56,10 @@ export const systemText = (kind: RecordKind, record: unknown): TextField[] => {
       items(field(record, 'hints')).forEach((ladder, index) => {
         items(field(ladder, 'steps')).forEach((step, at) => take(field(step, 'line'), `$.hints[${index}].steps[${at}].line`));
       });
-      take(field(field(field(record, 'start'), 'meta'), 'name'), '$.start.meta.name');
+      takeName(field(field(field(record, 'start'), 'meta'), 'name'), '$.start.meta.name');
       break;
     case 'blueprint':
-      take(field(field(record, 'meta'), 'name'), '$.meta.name');
+      takeName(field(field(record, 'meta'), 'name'), '$.meta.name');
       break;
     case 'run-record':
       // A run record is made by sim-core from a child's build, so its text is not content.

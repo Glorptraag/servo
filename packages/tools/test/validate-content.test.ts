@@ -82,10 +82,16 @@ describe('done when: rejects a character-style name or a missing port type, with
   });
 
   it('rejects a name with no letters', () => {
-    for (const name of ['🤖', '???']) {
+    for (const [name, mark] of [
+      ['🤖', 'text.symbol'],
+      ['???', 'text.question'],
+    ]) {
       const run = cli([partFile('face', (part) => (identity(part).name = name)), '--terminology', TERMINOLOGY]);
       expect(run.status).toBe(1);
-      expect(issueLines(run.out)).toEqual([expect.stringContaining(`: terminology.not_real_name at $.identity.name: '${name}' has no letters`)]);
+      expect(issueLines(run.out)).toEqual([
+        expect.stringContaining(`: terminology.not_real_name at $.identity.name: '${name}' has no letters`),
+        expect.stringContaining(`: ${mark} at $.identity.name: `),
+      ]);
     }
   });
 
@@ -272,6 +278,7 @@ describe('terminology files', () => {
     expect(run.out).toEqual([
       `note: No components list at ${shown(path.join(content, 'terminology/components.json'))}, so part names are not checked against real component names.`,
       `note: No banned list at ${shown(path.join(content, 'terminology/banned.json'))}, so text is not checked for banned words.`,
+      `note: No words list at ${shown(path.join(content, 'terminology/words.json'))}, so capitalised words are checked only in part names.`,
       'validate-content: 1 record checked, no issues.',
     ]);
   });
@@ -303,6 +310,7 @@ describe('terminology files', () => {
     expect(run.out.filter((line) => line.startsWith('note: '))).toEqual([
       `note: The components list at ${shown(components)} cannot be used, so part names are not checked.`,
       `note: The banned list at ${shown(banned)} cannot be used, so text is not checked for banned words.`,
+      `note: No words list at ${shown(path.join(terms, 'words.json'))}, so capitalised words are checked only in part names.`,
     ]);
     write(terms, 'components.json', { components: [] });
     expect(cli([partFile('dc-motor', () => undefined), '--terminology', terms]).out).toContain(
@@ -323,6 +331,7 @@ describe('the command', () => {
       "parts/sparky.json: value.missing at $.ports[0].type: Missing 'type'.",
       expect.stringMatching(/^note: No components list at /),
       expect.stringMatching(/^note: No banned list at /),
+      expect.stringMatching(/^note: No words list at /),
       'validate-content: 1 record checked, 1 issue in 1 file.',
     ]);
   });
