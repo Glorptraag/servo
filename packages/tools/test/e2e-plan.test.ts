@@ -93,8 +93,7 @@ describe.each(fixtures.map((fixture) => [fixture.name, fixture] as const))('the 
     for (const [index, step] of edits.entries()) {
       if ('ref' in step) expect(placed.has(step.ref), describeStep(step)).toBe(true);
       if (step.kind === 'disconnect') {
-        expect(step.lines).toHaveLength(lines.length);
-        for (const each of step.lines) expect(lines.some((line) => line.kind === 'connect' && samePort(line.from, each.from) && samePort(line.to, each.to))).toBe(true);
+        expect(lines.some((line) => line.kind === 'connect' && samePort(line.from, step.from) && samePort(line.to, step.to))).toBe(true);
       }
       if (step.kind === 'disconnect' || step.kind === 'remove') expect(edits[index + 1], describeStep(step)).toEqual({ kind: 'undo' });
     }
@@ -108,21 +107,17 @@ describe('the edits after the build', () => {
     return fixture;
   };
 
+  it('moves a wheel off its shaft where the last held part is one', () => {
+    const steps = planFor(fixtureNamed('meet-the-small-wheel-start'), catalogue).steps.filter((step) => !isBuildStep(step));
+    expect(steps).toContainEqual({ kind: 'move', ref: 'wheel-left' });
+  });
+
   it('takes every tour on the Rolling Start robot: a line, a move, a turn, a removal, the props, a tidy, the selection and the switch', () => {
     const plan = planFor(fixtureNamed('kit-rolling-start'), catalogue);
     expect(plan.steps.filter((step) => !isBuildStep(step))).toEqual([
-      {
-        kind: 'disconnect',
-        lines: [
-          { from: { part: 'battery', port: 'plus' }, to: { part: 'switch', port: 'a' } },
-          { from: { part: 'battery', port: 'minus' }, to: { part: 'motor-left', port: 'minus' } },
-          { from: { part: 'battery', port: 'minus' }, to: { part: 'motor-right', port: 'minus' } },
-          { from: { part: 'motor-left', port: 'plus' }, to: { part: 'switch', port: 'b' } },
-          { from: { part: 'motor-right', port: 'plus' }, to: { part: 'switch', port: 'b' } },
-        ],
-      },
+      { kind: 'disconnect', from: { part: 'battery', port: 'plus' }, to: { part: 'switch', port: 'a' } },
       { kind: 'undo' },
-      { kind: 'move', ref: 'switch' },
+      { kind: 'move', ref: 'wheel-right' },
       { kind: 'turn', ref: 'chassis' },
       { kind: 'remove', ref: 'battery' },
       { kind: 'undo' },
@@ -137,18 +132,14 @@ describe('the edits after the build', () => {
     ]);
   });
 
-  it('flips only a manual switch, places props only on an open floor with none, and moves only a part held by a mount', () => {
+  it('flips only a manual switch, places props only on an open floor with none, and moves only a held part', () => {
     for (const fixture of fixtures) {
       const kinds = new Set(planFor(fixture, catalogue).steps.map((step) => step.kind));
       const parts = fixture.blueprint.parts;
       expect(kinds.has('flip'), fixture.name).toBe(parts.some((part) => part.part === 'switch'));
       expect(kinds.has('place-prop'), fixture.name).toBe(fixture.blueprint.arena.preset === 'open-floor' && fixture.blueprint.arena.props.length === 0);
-      const mounted = planFor(fixture, catalogue, new Set()).steps.some((step) => {
-        if (step.kind !== 'place' || !step.attach) return false;
-        const port = catalogue.parts.get(step.part)?.ports.find((candidate) => candidate.id === step.attach?.port);
-        return port?.type === 'mechanical' && port.role === 'mount';
-      });
-      expect(kinds.has('move'), fixture.name).toBe(mounted);
+      const held = planFor(fixture, catalogue, new Set()).steps.some((step) => step.kind === 'place' && step.attach !== undefined);
+      expect(kinds.has('move'), fixture.name).toBe(held);
     }
   });
 });

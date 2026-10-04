@@ -186,19 +186,9 @@ const canvasOfArena = (build: Blueprint, catalogue: Catalogue, at: Vec2): Vec2 =
   return { x: a * at.x + cc * at.y + tx, y: b * at.x + d * at.y + ty };
 };
 
-/** The first of `lines` a hand can press on the canvas now (`onLine`), by its id: the line every path removes. */
-const pressableLine = (bench: Bench, ids: IdMap, lines: readonly { readonly from: PortRef; readonly to: PortRef }[]): WireId => {
-  for (const line of lines) {
-    const wireId = wireBetween(bench, mapPort(ids, line.from), mapPort(ids, line.to));
-    try {
-      onLine(bench, wireId);
-      return wireId;
-    } catch {
-      continue;
-    }
-  }
-  throw new Error(`none of its ${lines.length} lines can be pressed clear of sockets and of the lines drawn over it`);
-};
+/** The line a disconnect step names, by its id now. */
+const stepLine = (bench: Bench, ids: IdMap, step: { readonly from: PortRef; readonly to: PortRef }): WireId =>
+  wireBetween(bench, mapPort(ids, step.from), mapPort(ids, step.to));
 
 /** The wire joining two ports now, in either order. */
 const wireBetween = (bench: Bench, from: PortRef, to: PortRef): WireId => {
@@ -333,6 +323,28 @@ const handleAt = async (bench: Bench, kind: 'move' | 'rotate' | 'bin'): Promise<
   return (bench.probe.handles().get(kind) as { readonly world: Vec2 }).world;
 };
 
+/** Whether a canvas point (mm) shows on the canvas at the current view. */
+const inView = (bench: Bench, world: Vec2): boolean => {
+  const at = pageOf(bench, world);
+  const box = bench.hooks.canvas.getBoundingClientRect();
+  return at.x > box.left && at.x < box.right && at.y > box.top && at.y < box.bottom;
+};
+
+/**
+ * Where a handle sits once the view shows it with `points`: framed as close as `showPoints` allows, a part's handles
+ * can fall beside the view (a wheel's tile at 400%), where a child would zoom out to reach them, as this does.
+ */
+const handleInView = async (bench: Bench, kind: 'move' | 'rotate' | 'bin', points: readonly Vec2[]): Promise<Vec2> => {
+  const first = await handleAt(bench, kind);
+  if (inView(bench, first)) return first;
+  showPoints(bench, [...points, first], 96, 4);
+  await until(() => {
+    const handle = bench.probe.handles().get(kind);
+    return handle !== undefined && inView(bench, handle.world);
+  }, `the ${kind} handle stays outside the view`);
+  return handleAt(bench, kind);
+};
+
 /** Where a part's port sits relative to its frame origin while the part rides under a finger: turned 0, not mirrored. */
 const portOffset = (catalogue: Catalogue, part: PartTypeId, port: PortId): Vec2 => {
   const spec = catalogue.parts.get(part)?.ports.find((candidate) => candidate.id === port);
@@ -432,7 +444,7 @@ export const commandsPath = (bench: Bench, catalogue: Catalogue, can: Readonly<R
         case 'remove':
           return accepted(handle.apply({ kind: 'remove-part', partId: mapPart(ids, step.ref) }));
         case 'disconnect':
-          return accepted(handle.apply({ kind: 'disconnect', wireId: pressableLine(bench, ids, step.lines) }));
+          return accepted(handle.apply({ kind: 'disconnect', wireId: stepLine(bench, ids, step) }));
         case 'place-prop':
           return accepted(handle.apply({ kind: 'place-prop', prop: step.prop }));
         case 'move-prop': {
@@ -610,7 +622,7 @@ export const gesturePath = (bench: Bench, catalogue: Catalogue, style: GestureSt
     } else {
       showPoints(bench, [grab, spot], 96, 4);
       await tap(hand, page(grab));
-      await tap(hand, page(await handleAt(bench, 'move')));
+      await tap(hand, page(await handleInView(bench, 'move', [grab, spot])));
       await tap(hand, page(spot));
     }
     await landed(bench, before, `${partId} did not move`);
@@ -774,7 +786,7 @@ export const gesturePath = (bench: Bench, catalogue: Catalogue, style: GestureSt
           case 'remove':
             return removePart(mapPart(ids, step.ref));
           case 'disconnect':
-            return removeLine(pressableLine(bench, ids, step.lines));
+            return removeLine(stepLine(bench, ids, step));
           case 'place-prop':
             return placeProp(step.prop);
           case 'move-prop':
@@ -909,7 +921,7 @@ export const listViewPath = (bench: Bench, catalogue: Catalogue, can: Readonly<R
           return pressListAction(bench, { kind: 'part', partId }, `remove:${partId}`);
         }
         case 'disconnect': {
-          const wireId = pressableLine(bench, ids, step.lines);
+          const wireId = stepLine(bench, ids, step);
           return pressListAction(bench, { kind: 'wire', wireId }, `disconnect:${wireId}`);
         }
         case 'place-prop':
