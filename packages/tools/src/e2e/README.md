@@ -6,7 +6,8 @@ Back to the [tools README](../../README.md). The harness drives the real canvas 
 pnpm e2e                                   # at the repo root: pnpm art, then every harness file but the timing (packages/tools: vitest run --config src/e2e/vitest.config.ts --project e2e)
 pnpm e2e test/e2e/parity-1.e2e.ts          # some files only, as a CI shard runs them
 pnpm e2e -u                                # rewrite the screenshot references
-SERVO_PARITY_STRICT=1 pnpm e2e             # gate G3: a parity fixture with a step left out or a path waiting fails
+SERVO_PARITY_STRICT=0 pnpm e2e             # only a real difference fails a parity fixture, not a step left out or a path waiting
+SERVO_PARITY_TOURS=all pnpm e2e test/e2e/parity-1.e2e.ts   # every tour of edits on every fixture in the group, not one each
 pnpm perf                                  # at the repo root: every package's timing tests, this harness's performance project among them
 ```
 
@@ -18,16 +19,16 @@ Chromium must be installed once per machine: `pnpm --filter @servo/tools exec pl
 | --- | --- |
 | `vitest.config.ts` | Two browser projects in the iPad profile, one after the other: `e2e` on SwiftShader (parity, screenshots and their mutation test, gestures), then `performance` on the machine's own GPU, alone. `pnpm e2e` runs `e2e`; `pnpm perf` runs `performance`. The reporters, and `provide` for the strict switch |
 | `profile.ts` | The iPad profile (1180 × 820 CSS pixels at device scale factor 2, with touch), the 4× CPU slowdown, the 16 ms budget, the Chromium flags |
-| `bench.ts` | Mounts the canvas as the app lays it out, with a part tray at its left, the content catalogue and `resolveArt` from the art registry; waits for it to settle; moves the view; turns canvas millimetres into page points |
+| `bench.ts` | Mounts the canvas as the app lays it out, with a part tray at its left (also the arena strip, and the canvas's remove target), the content catalogue and `resolveArt` from the art registry, and the canvas's testing entry (`probe`); waits for it to settle; moves the view; turns canvas millimetres into page points |
 | `input.ts` | Real input through CDP: touch tap, drag and pinch; mouse click, drag and wheel |
 | `pixels.ts` | The screenshot rule, a readable diff, and colour names (pure, Node-safe) |
 | `screenshots.ts` | Screenshots compared with stored references by that rule, diffs written on failure, pixel probes |
 | `probes.ts` | Probes on every power and signal line and every part a build must show, against a model of each tile and its picture (`expectedColour`, pure) |
 | `mutations.ts` | Builds with a wire, or a part and its wires, taken out, for the mutation test (pure) |
 | `performance.ts` | Frame-time measurement with the CPU slowed, and the pan, wheel and pinch a hand plays one input per frame |
-| `plan.ts` | A content fixture as the steps that build it from an empty canvas (pure) |
+| `plan.ts` | A content fixture as the steps that build it from an empty canvas, then the edits a child makes on it, and which fixtures take which edits (pure) |
 | `parity.ts` | The parity check: what each path can do, which steps are compared, the comparison, verdicts, report lines and fixture groups (pure) |
-| `paths.ts` | The input paths on the bench: commands (the reference), touch and pointer (each by drag and by tap-then-tap), the list view; and finding what each can do |
+| `paths.ts` | The input paths on the bench: commands (the reference), touch and pointer (each by drag and by tap-then-tap), the list view through its DOM; where a hand presses to reach a part or a line; and finding what each can do |
 | `report.ts`, `reporter.ts`, `merge-report.ts` | The parity report: its lines and summary (dependency-free), printed and written when a run ends, and merged from CI's shards |
 | `env.d.ts`, `provided.d.ts` | The DOM library and the Playwright provider's types for tools' Node-only types; the strict switch's type |
 
@@ -35,7 +36,7 @@ Tests: `test/e2e/*.e2e.ts` run in the browser under this config, and are not pic
 
 | Test | Proves |
 | --- | --- |
-| `test/e2e/parity-1.e2e.ts` … `parity-3.e2e.ts` (`parity-suite.ts`) | Ground rule 8 on every content fixture, a third of them in each file; the per-fixture report |
+| `test/e2e/parity-1.e2e.ts` … `parity-4.e2e.ts` (`parity-suite.ts`) | Ground rule 8 on every content fixture and every edit, a quarter of the fixtures in each file; the per-fixture report |
 | `test/e2e/screenshots.e2e.ts` | Every content fixture in Build mode with its real pictures matches its reference, and its probes see every line and part; the two arena presets the fixtures use, in Run mode |
 | `test/e2e/screenshot-mutations.e2e.ts` | Each fixture without one wire, and without one part, fails both its reference and its probe |
 | `test/e2e/gestures.e2e.ts` | The harness's hands reach the canvas as a child's would: a touch drag and a mouse drag pan exactly with the hand, a pinch and the wheel zoom about the right point, taps and clicks change nothing |
@@ -43,7 +44,7 @@ Tests: `test/e2e/*.e2e.ts` run in the browser under this config, and are not pic
 
 ## The bench
 
-`mountBench(options)` mounts the canvas in a host at the page's left edge plus a tray (`TRAY_WIDTH`, 200 px), as brief Section 9 lays them out, and resolves once the renderer is up. `bench.offer(part)` makes the tray hand the next pointer pressed on it to `beginPlacement(part, pointer)`, as the app's tray does for a drag; a tap on the tray is the app's `beginPlacement(part)` with no pointer. `settle(bench)` waits until every picture has loaded, every fade has finished and the grid is at rest. `reduceMotion(true)` makes fades and slides instant through CDP.
+`mountBench(options)` mounts the canvas in a host at the page's left edge plus a tray (`TRAY_WIDTH`, 200 px), as brief Section 9 lays them out, and resolves once the renderer is up. `bench.offer(part)` makes the tray hand the next pointer pressed on it to `beginPlacement(part, pointer)`, as the app's tray does for a drag; a tap on the tray is the app's `beginPlacement(part)` with no pointer. Offered a prop template, the tray stands for the arena strip and calls `beginPropPlacement`. The tray is the canvas's remove target (`setRemoveTargets`), as the app's tray and strip are, so a part, wire or prop let go over it is removed. `bench.probe` is the canvas's tools-only testing entry (`@servo/canvas/testing`, packages/canvas/README.md "Testing entry"): the edits read the handles, the lines as drawn and Run-mode places from it. `settle(bench)` waits until every picture has loaded, every fade has finished and the grid is at rest. `reduceMotion(true)` makes fades and slides instant through CDP.
 
 **The renderer's members.** The canvas interface has no way to say where a canvas point or a socket is on screen, or when a frame is final, and a hand needs all three. The harness reads them from the renderer's surface as built (task 3.1's `CanvasSurface`), through one cast in `hooksOf`, never by importing canvas internals, so it stays inside the package map: `ready`, `settled`, `gridOpacity`, `canvas`, `camera`, `scene` (its sockets, tiles and lines) and `requestFrame`. [renderer.md](../../../canvas/docs/renderer.md) lists only `scene` and `requestFrame` among its hooks for later canvas tasks; the rest are the surface's own. `hooksOf` names any that go missing. Between gestures the harness moves the view by writing the camera's centre and zoom (`setView`, `showPoints`), as a hand pans and zooms; the view is not part of the blueprint. One more member is optional: `wiring.fanned`, where the sockets of a crowd that fanned out went, as task 3.3's work in progress names it. Review R-3.8 (finding 5) asks for a tools-only testing entry on the canvas to replace all of these; a later canvas task gives it.
 
@@ -86,6 +87,17 @@ The profile is task 3.1's: a 1180 × 820 viewport at device scale factor 2, with
 2. Settings the fixture changes.
 3. Every wire a placement did not make: power and signal lines, and drive linkages between held parts, in wire order.
 4. A broken fixture's impossible drop, which every path must refuse, leaving the build as it was.
+5. The edits a child makes on the build (task 7.6, `editTour`), in tours a plan takes whole:
+   - `disconnect`: the power or signal line whose parts sit furthest apart in the fixture is removed, then Undo puts it back;
+   - `move`: the last held part is moved to the free spot the list view names for it (`Move X to a free spot`), off its mount or shaft with what it holds;
+   - `turn`: the first loose part (a robot's chassis) is turned a quarter turn clockwise;
+   - `remove`: the first held part is removed with its wires, leaving what it held loose (D35), then Undo puts it all back;
+   - `props` (on the open floor with no props): two of the arena strip's boxes are placed on the floor's free spot, the first is removed, the other is moved to the spot that frees, and Reset arena drops it;
+   - `tidy`: Tidy wires; the routes every line is drawn along are compared, since the build does not change and no edit fires;
+   - `clear-selection`: the first loose part is selected, then the selection cleared; the selection after each is compared;
+   - `flip` (where the build has a manual switch): a Run starts, held at the Simulation's tick 0 frame, the switch is flipped, and the `control` the canvas fires is compared; Stop gives the build back unchanged.
+
+   Every edit costs a gesture per path, so each fixture takes one tour (`assignTours`): fixtures in name order each take the tour that fits them and has been taken least so far. Every tour is taken on five fixtures or more (`test/e2e-plan.test.ts`). `SERVO_PARITY_TOURS=all` gives every fixture every tour that fits it, a sweep for a change to the canvas's edits that takes about four times as long.
 
 **The paths** (`discoverPaths`). The reference is plain commands through the handle's `apply`, as the app, the spec card and the hint ladder send them: the third path until the list view exists. Then:
 
@@ -96,18 +108,31 @@ The profile is task 3.1's: a 1180 × 820 viewport at device scale factor 2, with
 
 A setting goes through `apply` on the touch and pointer paths, as the spec card sends it (task 4.3). The free spot a gesture aims at comes from a dry run of the canvas's own `applyEdit`.
 
+The edits go by hand on the touch and pointer paths, with nothing waiting and nothing selected before each:
+
+- move: dragged by a point on the part so its frame origin lands on the spot; or tapped, its Move handle tapped, and the spot tapped. Framed as close as the canvas allows (up to 400%), as a child zooms in to set a part down beside the chassis rather than on a mount point: forgiveness radii are screen pixels;
+- turn: the part tapped, then its rotate handle tapped, or dragged a quarter turn round the part's origin;
+- remove a part, a line or a prop: dragged to the tray; or tapped and its bin tapped;
+- place a prop: dragged from the strip to the floor's free spot, or offered by a tap and placed by a tap there; move a prop: dragged by its middle, or tapped, its Move handle tapped (task 7.3), and the spot tapped;
+- tidy: the app's Tidy wires button (`tidyWires`); clear the selection: a tap on the part, then on empty workbench beside the build; flip: a tap on the switch where the Run draws it;
+- Undo and Reset arena are the Run bar's buttons, the same on every path: Undo loads the build before the last `edit` the path fired, as the app's history does (packages/app/src/run-bar/history.ts), so a gesture that made two edits where the reference made one gives other bytes after its Undo.
+
+A press goes where the canvas's own order of what lies on top (packages/canvas/src/scene/hit.ts) reaches what it means: on a part, the point nearest its middle with no socket or line within reach and no other part drawn over it; on a line, the point nearest halfway with no socket within reach and no line drawn over it within reach.
+
+The list view does each step with the list action that does it, pressed in its DOM as a screen-reader user presses it: the subject's Actions button, the action's button, and the Actions button again to close it (in Run mode the actions show at once). A placement from the tray or the arena strip is the action the app's tray and strip perform through the model (`placementsFor`, `propPlacementsFor`). Clear selection is the `select` action with no selection (task 7.3); a flip is Open or Close. A spot the canvas's rules pick (a part's or a prop's free spot) is read from the list action that names it, so every path aims at the same spot.
+
 **Finding what a path can do.** Before any fixture, each path tries one member per kind of step on a probe build: `apply` of a placement, a setting and a wire; `beginPlacement`; `listView`. A member a later task builds throws an error naming that task, and that kind of step waits on that path, for the tasks the error names and the task that builds the step there (packages/canvas/README.md, "Who builds what"). Gestures draw wires through the command layer task 3.3 builds with the sockets, so a wire waits on a gesture path while `connect` waits. A member that fails any other way counts as ready, so the path meets the failure on its step and the check fails.
 
-**Comparing.** A step the reference cannot take yet, or one naming a part left out, is left out for every path. A path that cannot take every remaining step waits. The reference and each other path build the same steps from the same start, and their canonical blueprints (`serializeBlueprint`) must be the same bytes. A fixture is:
+**Comparing.** A step the reference cannot take yet, or one naming a part left out, is left out for every path. A path that cannot take every remaining step waits. The reference and each other path build the same steps from the same start, and their canonical blueprints (`serializeBlueprint`), with what they observed besides the build (the selections, the switch's control, the routes), must be the same bytes. A fixture is:
 
 - `identical` when every path built every step of its plan to the reference's bytes;
 - `partial` when the paths compared were identical but steps were left out or a path waited;
 - `mismatch` when a path's bytes differ or it could not take a step it said it could;
 - `pending` when no step could be compared on two paths yet.
 
-Only a mismatch fails, unless `SERVO_PARITY_STRICT=1` (gate G3, and CI's parity shards), which fails a partial or pending fixture too. A failure shows the canonical JSON diff, and the report line names the parts and wires that differ. A fixture's test has six minutes, a guard against a hang rather than a budget; once it times out, its paths stop between steps (Vitest's `signal`), so an abandoned build never sends input into the next fixture.
+A partial or pending fixture fails as a mismatch does: every canvas task has merged, so every path takes every step (task 7.6). `SERVO_PARITY_STRICT=0` lets only a mismatch fail, for a canvas change under way. A failure shows the canonical JSON diff, and the report line names the parts and wires that differ. A fixture's test has six minutes, a guard against a hang rather than a budget; once it times out, its paths stop between steps (Vitest's `signal`), so an abandoned build never sends input into the next fixture.
 
-**Files.** The fixtures are split between `parity-1.e2e.ts`, `parity-2.e2e.ts` and `parity-3.e2e.ts` by `fixtureGroups`: heaviest first, each to the group with the fewest plan steps so far. Each file mounts its own bench, so CI runs them as separate shards; a new fixture joins a group by itself.
+**Files.** The fixtures are split between `parity-1.e2e.ts` … `parity-4.e2e.ts` by `fixtureGroups`: heaviest first, each to the group with the fewest plan steps so far. Each file mounts its own bench, so CI runs them as separate shards; a new fixture joins a group by itself.
 
 **The report.** One line per fixture, sorted, then the summary, printed when a run ends; the lines also go to `packages/tools/node_modules/e2e-report/parity.json`, which CI merges across shards:
 
@@ -120,17 +145,22 @@ kit-rolling-start: MISMATCH: touch drag: p3 position (40, -53) here, (40, -52.9)
 
 The first line is the check on main with placement (3.2), wiring (3.3) and the list view (3.6) merged: every step compared on all six paths, crowded sockets included, with no change to the harness, and the summary is parity-1's shard. The second is how a fixture read while a canvas task was still to come. Plain commands stay the reference: the command layer every path ends in.
 
-**Not covered yet.** Plans build fixtures, so they never move, turn or remove a part, and never place a prop or flip a switch in Run mode: no content fixture needs it, and rule 8 for those rests on tasks 3.2's and 3.6's own tests (review R-3.8, Question 2). A loose part always lands unturned, which every content fixture's loose parts are.
+**Not covered.** Redo: the app has none (packages/app/README.md, the Run bar). Renaming and the arena preset picker: the app's name field and strip send `rename` and `set-arena` through `apply` on every path, with no canvas gesture, as a setting goes through the spec card. Re-snapping a part onto another mount point, taking it off its mount (`unmount`) and carrying a wheel onto another shaft: each has a list action and a gesture, but no tour takes them yet. The Delete key, which removes a selected part, wire or prop as its bin does. A loose part always lands unturned, which every content fixture's loose parts are.
+
+**Findings** (task 7.6's sweep, every tour on every fixture). Every edit is identical on every path but two, where the canvas leaves a hand no way to match the list view. The tours step round both, and these are left for a canvas task:
+
+1. Tap-then-tap cannot move a carried wheel to its free spot. A wheel moved off its shaft has a free spot that overlaps its own tile (meet-the-small-wheel-start, meet-the-large-wheel-start, meet-the-gearbox-one-wheel: `wheel-left`). The list view moves it there, and so does a drag. On touch tap-then-tap and pointer click-click, the tap after the Move handle lands on the wheel itself, and the canvas leaves it where it is (placement.md, decision 7). Any other tap lands at the free spot nearest that tap, not at this one. So the `move` tour takes a part held by a mount.
+2. A line drawn wholly under other lines and sockets cannot be pressed. In meet-the-1-cell-battery-pack-start, the battery pack's minus line to the DC motor is covered along its length by sockets and by the line drawn over it. Touch and pointer cannot select it, bin it or drag it to the tray, while the list view removes it. The plus line in meet-the-dc-motor-wired is covered the same way. In meet-the-led-wired, only a window about 2 mm wide on the plus line is clear. So `disconnect` removes the first of the fixture's lines that a hand can press.
 
 ## CI
 
-The `e2e` job in `.github/workflows/ci.yml` is a matrix of five shards that run side by side, each with a 10-minute timeout, Playwright's Chromium cached by Playwright's version, its parity lines uploaded as `e2e-report-<shard>`, and its screenshot diffs uploaded when it fails:
+The `e2e` job in `.github/workflows/ci.yml` is a matrix of six shards that run side by side, each with a 10-minute timeout, Playwright's Chromium cached by Playwright's version, its parity lines uploaded as `e2e-report-<shard>`, and its screenshot diffs uploaded when it fails:
 
 | Shard | Files |
 | --- | --- |
 | `views` | screenshots, their mutation test, gestures, frame time |
 | `run-animation` | Run mode's recorded fixture Runs (task 3.5, packages/canvas/docs/run-animation.md) |
-| `parity-1`, `parity-2`, `parity-3` | one parity group each |
+| `parity-1` … `parity-4` | one parity group each |
 
 The parity shards run with `SERVO_PARITY_STRICT=1`, so a fixture left partial or pending fails CI. `test/e2e-ci-shards.test.ts` checks that every `test/e2e/*.e2e.ts` file is in exactly one shard. The `e2e-report` job then prints one report from the shards' lines with plain Node (`node packages/tools/src/e2e/merge-report.ts <folder>`). Within a shard the projects run one after the other: the runner has two cores, and SwiftShader would use both for each. The parity check runs on a 480 × 360 canvas with reduced motion, and the gestures on a 640 × 480 one, so a software GPU has few pixels to draw for each event. Every gesture step is real input, and a touch press waits for a frame with the canvas on the page (about 120 ms on a laptop), so parity's time grows with each canvas task; when it outgrows a shard, raise `PARITY_GROUPS` and add the files and shards.
 
@@ -147,3 +177,12 @@ Taken here, conservatively, for Drew and the orchestrator:
 7. Chromium only. Real input goes through CDP, which WebKit lacks, so Safari's trackpad pinch (renderer.md, "Input") stays unverified; a WebKit project would need Playwright's own touchscreen and mouse through custom commands.
 8. Screenshot references cover the content fixtures in Build mode and the arena presets in Run mode. Focus states, hints and the app's layouts at three screen sizes come with tasks 3.4, 4.1 and 4.6.
 9. The screenshot references come from SwiftShader on macOS arm64 and have not yet been compared on CI's x86_64 (review R-3.8, finding 11). If the first CI run finds a few hundred anti-aliased pixels changed, its diff artifact shows them; raise the rule's 400 just above that noise, still far below the 1,110 of the smallest real change.
+
+Taken in task 7.6, for Drew and the orchestrator:
+
+10. Undo is the app's Run bar button on every path, modelled on the app's history (the builds the `edit` events carry, loaded back with `load`). The app has no Redo, so neither does the check.
+11. Settings, renaming, the preset picker and Reset arena go through `apply` on the touch and pointer paths, as the spec card, the name field and the Run bar send them; the list view has settings of its own and no Reset arena.
+12. A spot the canvas's rules pick (a moved part's or prop's free spot) is read from the list action that names it, and the hands aim there; a new prop's spot comes from a dry run of `applyEdit`.
+13. Each fixture takes one tour of edits, so the edits cost each parity shard a minute or two rather than doubling it; `SERVO_PARITY_TOURS=all` takes them all. The fixtures are split into four parity groups (CI shards), up from three.
+14. A partial or pending fixture fails by default (`SERVO_PARITY_STRICT=0` to relax), since every canvas task has merged.
+15. A move is framed at up to 400%, so a part let go beside the chassis is not caught by a mount point's 48 px forgiveness, as a child zooms in to set a part down there. The tidy waits for the pictures to load, since routes go round each picture as drawn.

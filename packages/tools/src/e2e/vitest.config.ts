@@ -4,8 +4,9 @@
 //   between a laptop and CI: the parity check, screenshots, their mutation test and gestures.
 // - `performance` runs the frame-time measurement on the machine's own GPU where it has one, last and alone.
 // `pnpm e2e` runs the `e2e` project only: CI runs its files as shards (.github/workflows/ci.yml), and with no files it
-// runs them all. `pnpm perf` runs `performance`, as CI's perf job does. SERVO_PARITY_STRICT=1 makes a parity fixture
-// with a step left out or a path waiting fail (gate G3). See README.md.
+// runs them all. `pnpm perf` runs `performance`, as CI's perf job does. A parity fixture with a step left out or a path
+// waiting fails, as a difference does, unless SERVO_PARITY_STRICT=0 (task 7.6: every canvas task has merged).
+// SERVO_PARITY_TOURS=all gives every parity fixture every tour of edits, not one. See README.md.
 import { fileURLToPath } from 'node:url';
 import { playwright } from '@vitest/browser-playwright';
 import { defineConfig } from 'vitest/config';
@@ -52,7 +53,7 @@ const browserProject = (name: string, include: string[], exclude: string[], flag
       // Screenshots are compared by the harness's own rule (src/e2e/pixels.ts, screenshots.ts), not Vitest's.
       screenshotFailures: false,
     },
-    provide: { parityStrict: process.env.SERVO_PARITY_STRICT === '1' },
+    provide: { parityStrict: process.env.SERVO_PARITY_STRICT !== '0', parityAllTours: process.env.SERVO_PARITY_TOURS === 'all' },
   },
 });
 

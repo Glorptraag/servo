@@ -34,10 +34,10 @@ jobs:
       - run: pnpm golden
 
   e2e:
-    # The canvas e2e harness (packages/tools/src/e2e/README.md) in five shards that run side by side, each within the
+    # The canvas e2e harness (packages/tools/src/e2e/README.md) in six shards that run side by side, each within the
     # ten-minute budget: the screenshots, their mutation test and the gestures; Run mode's recorded fixture
     # Runs (task 3.5), which take about five minutes on a software GPU and so have their own; and the parity check's
-    # three fixture groups. The e2e-report job prints one parity report from the shards' reports. Frame time is the perf
+    # four fixture groups. The e2e-report job prints one parity report from the shards' reports. Frame time is the perf
     # job's.
     name: e2e (${{ matrix.shard }})
     runs-on: ubuntu-latest
@@ -58,6 +58,9 @@ jobs:
             strict: '1'
           - shard: parity-3
             files: test/e2e/parity-3.e2e.ts
+            strict: '1'
+          - shard: parity-4
+            files: test/e2e/parity-4.e2e.ts
             strict: '1'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

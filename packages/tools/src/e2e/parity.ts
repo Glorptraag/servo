@@ -28,7 +28,15 @@ export interface InputPath {
 }
 
 export type PathBuild =
-  | { readonly ok: true; readonly blueprint: Blueprint }
+  | {
+      readonly ok: true;
+      readonly blueprint: Blueprint;
+      /**
+       * What the steps did besides the build, one line each, compared as the bytes are: the selection a step leaves,
+       * a switch flip's control, the routes a tidy gives.
+       */
+      readonly observed?: readonly string[];
+    }
   | { readonly ok: false; readonly step: number; readonly reason: string };
 
 export interface PendingSteps {
@@ -65,12 +73,49 @@ const compareTasks = (a: string, b: string): number => {
 /** Task ids once each, in order. */
 export const uniqueTasks = (tasks: Iterable<string>): string[] => [...new Set(tasks)].sort(compareTasks);
 
-/** Which canvas task builds each kind of step on each path: packages/canvas/README.md, "Who builds what". */
+/**
+ * Which task builds each kind of step on each path: packages/canvas/README.md, "Who builds what". Undo and Reset arena
+ * are the Run bar's (task 4.4), the same button on every path.
+ */
+const HANDS: Readonly<Record<StepKind, string>> = {
+  place: '3.2',
+  setting: '3.2',
+  connect: '3.3',
+  refuse: '3.3',
+  move: '3.2',
+  turn: '3.2',
+  remove: '3.2',
+  disconnect: '3.3',
+  'place-prop': '3.2',
+  'move-prop': '7.3',
+  'remove-prop': '3.4',
+  'reset-arena': '4.4',
+  tidy: '3.7',
+  undo: '4.4',
+  'clear-selection': '3.4',
+  flip: '3.5',
+};
+
 export const BUILT_BY: Readonly<Record<PathFamily, Readonly<Record<StepKind, string>>>> = {
-  commands: { place: '3.2', setting: '3.2', connect: '3.3', refuse: '3.3' },
-  touch: { place: '3.2', setting: '3.2', connect: '3.3', refuse: '3.3' },
-  pointer: { place: '3.2', setting: '3.2', connect: '3.3', refuse: '3.3' },
-  'list view': { place: '3.6', setting: '3.6', connect: '3.6', refuse: '3.6' },
+  commands: { ...HANDS, 'move-prop': '3.2', 'remove-prop': '3.2' },
+  touch: HANDS,
+  pointer: HANDS,
+  'list view': {
+    ...HANDS,
+    place: '3.6',
+    setting: '3.6',
+    connect: '3.6',
+    refuse: '3.6',
+    move: '3.6',
+    turn: '3.6',
+    remove: '3.6',
+    disconnect: '3.6',
+    'place-prop': '3.6',
+    'move-prop': '3.6',
+    'remove-prop': '3.6',
+    'clear-selection': '7.3',
+    flip: '3.6',
+  },
 };
 
 /** The tasks a canvas "not implemented yet" error names (`(task 3.2)`, `(tasks 3.2 and 3.3)`); undefined for any other error. */
@@ -109,10 +154,28 @@ const partsNamed = (step: Step): PlacedPartId[] => {
     case 'connect':
     case 'refuse':
       return [step.from.part, step.to.part];
+    case 'disconnect':
+      return step.lines.flatMap((line) => [line.from.part, line.to.part]);
+    case 'move':
+    case 'turn':
+    case 'remove':
+    case 'clear-selection':
+    case 'flip':
+      return [step.ref];
+    case 'place-prop':
+    case 'move-prop':
+    case 'remove-prop':
+    case 'reset-arena':
+    case 'tidy':
+    case 'undo':
+      return [];
   }
 };
 
-const noSteps = (): Record<StepKind, number> => ({ place: 0, setting: 0, connect: 0, refuse: 0 });
+const noSteps = (): Record<StepKind, number> => Object.fromEntries(STEP_KINDS.map((kind) => [kind, 0])) as Record<StepKind, number>;
+
+/** A path's canonical blueprint, then what it observed, one line each: the bytes compared. */
+const bytesOf = (build: Extract<PathBuild, { ok: true }>): string => [serializeBlueprint(build.blueprint), ...(build.observed ?? [])].join('\n');
 
 /**
  * Builds `plan` on the reference and on every other path that can take the same steps, and compares the canonical
@@ -179,7 +242,7 @@ export const checkParity = async (plan: BuildPlan, reference: InputPath, others:
     if (!expected.ok) {
       mismatches.push({ path: reference.name, detail: failure(expected) });
     } else {
-      const want = serializeBlueprint(expected.blueprint);
+      const want = bytesOf(expected);
       bytes.set(reference.name, want);
       identical.push(reference.name);
       for (const path of comparing) {
@@ -188,10 +251,12 @@ export const checkParity = async (plan: BuildPlan, reference: InputPath, others:
           mismatches.push({ path: path.name, detail: failure(got) });
           continue;
         }
-        const gotBytes = serializeBlueprint(got.blueprint);
+        const gotBytes = bytesOf(got);
         bytes.set(path.name, gotBytes);
         if (gotBytes === want) identical.push(path.name);
-        else mismatches.push({ path: path.name, detail: describeDifference(got.blueprint, expected.blueprint, reference.name) });
+        else if (serializeBlueprint(got.blueprint) !== serializeBlueprint(expected.blueprint)) {
+          mismatches.push({ path: path.name, detail: describeDifference(got.blueprint, expected.blueprint, reference.name) });
+        } else mismatches.push({ path: path.name, detail: describeObserved(got.observed ?? [], expected.observed ?? [], reference.name) });
       }
     }
   }
@@ -252,11 +317,34 @@ export const describeDifference = (got: Blueprint, want: Blueprint, referenceNam
   return differences.length > shown.length ? `${shown.join('; ')}; and ${differences.length - shown.length} more` : shown.join('; ');
 };
 
+/** What a path observed besides the build that the reference did not, line by line: `observed "…" here, "…" in commands`. */
+export const describeObserved = (got: readonly string[], want: readonly string[], referenceName: string): string => {
+  const differences: string[] = [];
+  for (let index = 0; index < Math.max(got.length, want.length); index += 1) {
+    if (got[index] !== want[index]) differences.push(`observed ${json(got[index])} here, ${json(want[index])} in ${referenceName}`);
+  }
+  if (differences.length === 0) return `the same build in different bytes from ${referenceName}`;
+  const shown = differences.slice(0, 2);
+  return differences.length > shown.length ? `${shown.join('; ')}; and ${differences.length - shown.length} more` : shown.join('; ');
+};
+
 const NOUNS: Readonly<Record<StepKind, readonly [string, string]>> = {
   place: ['placement', 'placements'],
   setting: ['setting', 'settings'],
   connect: ['wire', 'wires'],
   refuse: ['refused drop', 'refused drops'],
+  move: ['move', 'moves'],
+  turn: ['turn', 'turns'],
+  remove: ['removed part', 'removed parts'],
+  disconnect: ['removed wire', 'removed wires'],
+  'place-prop': ['placed prop', 'placed props'],
+  'move-prop': ['moved prop', 'moved props'],
+  'remove-prop': ['removed prop', 'removed props'],
+  'reset-arena': ['arena reset', 'arena resets'],
+  tidy: ['tidy', 'tidies'],
+  undo: ['undo', 'undos'],
+  'clear-selection': ['cleared selection', 'cleared selections'],
+  flip: ['switch flip', 'switch flips'],
 };
 
 const counted = (kind: StepKind, count: number): string => `${count} ${NOUNS[kind][count === 1 ? 0 : 1]}`;
@@ -294,7 +382,7 @@ export const reportLine = (result: ParityResult): string => {
 };
 
 /**
- * Strict mode (`SERVO_PARITY_STRICT=1`, for gate G3): a fixture passes only when every path built every step to the
+ * Strict mode (the default; `SERVO_PARITY_STRICT=0` turns it off): a fixture passes only when every path built every step to the
  * same bytes, so a step left out or a path waiting fails it as a difference would.
  */
 export const passes = (result: ParityResult, strict: boolean): boolean => result.verdict !== 'mismatch' && (!strict || result.verdict === 'identical');

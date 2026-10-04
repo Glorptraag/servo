@@ -4,7 +4,9 @@
 import { vi } from 'vitest';
 import { cdp } from 'vitest/browser';
 import { mountCanvas } from '@servo/canvas';
-import type { CanvasHandle, CanvasPrefs, ResolveArt } from '@servo/canvas';
+import type { CanvasHandle, CanvasPrefs, PropTemplate, ResolveArt } from '@servo/canvas';
+import { probeCanvas } from '@servo/canvas/testing';
+import type { CanvasProbe } from '@servo/canvas/testing';
 import { loadContent } from '@servo/content';
 import type { Content } from '@servo/content';
 import type { Level, PartTypeId, Vec2 } from '@servo/schema';
@@ -127,11 +129,17 @@ export interface BenchOptions {
 export interface Bench {
   readonly handle: CanvasHandle;
   readonly hooks: RendererHooks;
+  /** The canvas's tools-only testing entry (`@servo/canvas/testing`): handles, wires' routes, Run-mode places. */
+  readonly probe: CanvasProbe;
   readonly host: HTMLElement;
-  /** The app's part tray: pressing it with a part offered hands that pointer to `beginPlacement` (a drag from the tray). */
+  /**
+   * The app's part tray, and its arena strip: pressing it with a part offered hands that pointer to `beginPlacement`
+   * (a drag from the tray), with a prop offered to `beginPropPlacement`. It is the canvas's remove target, as the
+   * app's tray and strip are: a part, wire or prop let go over it is removed.
+   */
   readonly tray: HTMLElement;
   /** What the tray holds for the next press; undefined holds nothing. */
-  offer(part: PartTypeId | undefined): void;
+  offer(item: PartTypeId | PropTemplate | undefined): void;
   /** Errors the tray met handing a pointer over, oldest first; reading empties the list. */
   trayErrors(): unknown[];
   destroy(): void;
@@ -168,12 +176,14 @@ export const mountBench = async (options: BenchOptions = {}): Promise<Bench> => 
     ...(options.readOnly === undefined ? {} : { readOnly: options.readOnly }),
   });
   const hooks = hooksOf(handle);
-  let offered: PartTypeId | undefined;
+  if (trayWidth > 0) handle.setRemoveTargets([tray]);
+  let offered: PartTypeId | PropTemplate | undefined;
   let errors: unknown[] = [];
   tray.addEventListener('pointerdown', (event) => {
     if (offered === undefined) return;
     try {
-      handle.beginPlacement(offered, event);
+      if (typeof offered === 'string') handle.beginPlacement(offered, event);
+      else handle.beginPropPlacement(offered, event);
     } catch (error) {
       errors.push(error);
     }
@@ -184,10 +194,11 @@ export const mountBench = async (options: BenchOptions = {}): Promise<Bench> => 
   return {
     handle,
     hooks,
+    probe: probeCanvas(handle),
     host,
     tray,
-    offer: (part) => {
-      offered = part;
+    offer: (item) => {
+      offered = item;
     },
     trayErrors: () => {
       const seen = errors;
@@ -231,15 +242,18 @@ export const setView = (bench: Bench, centre: Vec2, zoom: number): void => {
   bench.hooks.requestFrame();
 };
 
-/** Frames `points` (canvas mm) in the middle of the canvas, at the default zoom or less, with `margin` pixels to spare. */
-export const showPoints = (bench: Bench, points: readonly Vec2[], margin = 64): void => {
+/**
+ * Frames `points` (canvas mm) in the middle of the canvas, at `maxZoom` (the default zoom unless given) or less, with
+ * `margin` pixels to spare.
+ */
+export const showPoints = (bench: Bench, points: readonly Vec2[], margin = 64, maxZoom = 1): void => {
   const xs = points.map((point) => point.x);
   const ys = points.map((point) => point.y);
   const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
   const { width, height } = bench.hooks.camera;
   const perMm = pixelsPerMm(bench);
   const room = (span: number, pixels: number): number => (span <= 0 ? 1 : Math.max(pixels - 2 * margin, pixels / 2) / (span * perMm));
-  setView(bench, { x: (minX + maxX) / 2, y: (minY + maxY) / 2 }, Math.min(1, room(maxX - minX, width), room(maxY - minY, height)));
+  setView(bench, { x: (minX + maxX) / 2, y: (minY + maxY) / 2 }, Math.min(maxZoom, room(maxX - minX, width), room(maxY - minY, height)));
 };
 
 /** A canvas point (mm) in page coordinates (CSS pixels from the test page's top left), at the current view. */
