@@ -6,6 +6,7 @@ import type { Vec2 } from '@servo/schema';
 import { applyEdit } from '../../src/placement/apply.ts';
 import { TIDY_WIRES_ACTION } from '../../src/routing/commands.ts';
 import { RoutingController, tidies } from '../../src/routing/controller.ts';
+import { exposeWires } from '../../src/routing/exposure.ts';
 import { routeWires } from '../../src/routing/router.ts';
 import { distance, distanceToSegment } from '../../src/scene/geometry.ts';
 import { hitTest } from '../../src/scene/hit.ts';
@@ -39,17 +40,19 @@ describe('the routes the canvas keeps', () => {
     const routing = new RoutingController();
     expect(routing.routes.size).toBe(0);
     routing.tidy(scene);
-    expect([...routing.routes]).toEqual([...routeWires(scene)]);
+    expect([...routing.tidied]).toEqual([...routeWires(scene)]);
+    const drawn = [...routing.routes];
     const renamed = applyEdit(busyWorkbench, { kind: 'rename', name: 'Still busy' }, benchCatalogue);
     if (!renamed.ok) throw new Error(renamed.refusal.message);
     routing.refresh(buildScene(renamed.blueprint, benchCatalogue));
-    expect([...routing.routes]).toEqual([...routeWires(scene)]);
+    expect([...routing.tidied]).toEqual([...routeWires(scene)]);
+    expect([...routing.routes]).toEqual(drawn);
   }, 60_000);
 
   it('let a wire go back to a straight line when a socket at its end moves, or a part lands on its route', () => {
     const routing = new RoutingController();
     routing.tidy(scene);
-    const wire = scene.wires.find((each) => routing.routeOf(each.id) && each.from.ref.part === 'bench-battery');
+    const wire = scene.wires.find((each) => routing.tidied.has(each.id) && each.from.ref.part === 'bench-battery');
     if (!wire) throw new Error('no routed wire from the bench battery pack');
     const moved = applyEdit(busyWorkbench, { kind: 'move-part', partId: 'bench-battery', position: { x: -200, y: 260 } }, benchCatalogue);
     if (!moved.ok) throw new Error(moved.refusal.message);
@@ -57,24 +60,25 @@ describe('the routes the canvas keeps', () => {
     routing.refresh(after);
     for (const each of after.wires) {
       const touches = each.from.ref.part === 'bench-battery' || each.to.ref.part === 'bench-battery';
-      if (touches) expect(routing.routeOf(each.id), each.id).toBeUndefined();
+      if (touches) expect(routing.tidied.get(each.id), each.id).toBeUndefined();
     }
-    expect(routing.pathOf(after.wires.find((each) => each.id === wire.id) ?? wire)).toHaveLength(2);
+    const straight = after.wires.find((each) => each.id === wire.id) ?? wire;
+    expect(routing.pathOf(straight)).toEqual(exposeWires(after, routing.tidied).get(wire.id) ?? [straight.from.at, straight.to.at]);
 
     // A new part dropped on a route sends that wire back to straight; routes it does not touch stay.
     routing.tidy(scene);
     // A bend well clear of both sockets, where nothing hides the wire.
     const clearBend = (points: readonly Vec2[]): Vec2 | undefined =>
       points.slice(1, -1).find((point) => distance(point, points[0] as Vec2) > 30 && distance(point, points[points.length - 1] as Vec2) > 30);
-    const [id, route] = [...routing.routes].find(([, points]) => clearBend(points)) ?? [];
+    const [id, route] = [...routing.tidied].find(([, points]) => clearBend(points)) ?? [];
     if (!id || !route) throw new Error('no bent route');
     const bend = clearBend(route) as Vec2;
     const placed = applyEdit(busyWorkbench, { kind: 'place-part', part: 'led', position: bend }, benchCatalogue);
     if (!placed.ok) throw new Error(placed.refusal.message);
-    const kept = new Map(routing.routes);
+    const kept = routing.tidied;
     routing.refresh(buildScene(placed.blueprint, benchCatalogue));
-    expect(routing.routeOf(id)).toBeUndefined();
-    for (const [other, points] of routing.routes) expect(points).toEqual(kept.get(other));
+    expect(routing.tidied.get(id)).toBeUndefined();
+    for (const [other, points] of routing.tidied) expect(points).toEqual(kept.get(other));
   }, 60_000);
 });
 

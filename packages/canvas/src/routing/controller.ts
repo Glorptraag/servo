@@ -1,10 +1,12 @@
 // The routes the canvas draws (task 3.7): set by a `tidy-wires` command, kept while they still fit the build. Routes
 // are view state, never written to the blueprint. After any change to the build a route is kept only while both its
 // sockets stay where they were and it crosses no more parts than when it was tidied; otherwise its wire goes back to
-// a straight line, like any new wire, until the child tidies again. See docs/routing.md.
+// a straight line, like any new wire, until the child tidies again. A line no press could reach is drawn with a bend
+// out to a clear spot (task 7.9, exposure.ts). See docs/routing.md.
 import type { Vec2, WireId } from '@servo/schema';
 import type { EditCommand } from '../interface.ts';
 import type { Scene, SceneWire } from '../scene/scene.ts';
+import { exposeWires } from './exposure.ts';
 import { bodiesOf, crossingCount, pathOf, routeWires } from './router.ts';
 import type { ArtOf, Route, WireRoutes } from './router.ts';
 
@@ -32,6 +34,11 @@ export class RoutingController {
     return this.view;
   }
 
+  /** The routes tidying gave that still fit the build, without the bends that make a covered line pressable. */
+  get tidied(): WireRoutes {
+    return new Map([...this.kept].map(([id, kept]) => [id, kept.route]));
+  }
+
   routeOf(id: WireId): Route | undefined {
     return this.view.get(id);
   }
@@ -50,12 +57,15 @@ export class RoutingController {
       const route = routes.get(wire.id);
       if (route) this.kept.set(wire.id, { route, from: wire.from.at, to: wire.to.at, crossings: crossingCount(route, bodies) });
     }
-    this.publish();
+    this.publish(scene);
   }
 
   /** After the build changed: keeps the routes that still fit it. */
   refresh(scene: Scene, artOf?: ArtOf): void {
-    if (this.kept.size === 0) return;
+    if (this.kept.size === 0) {
+      this.publish(scene);
+      return;
+    }
     const bodies = bodiesOf(scene, artOf);
     const next = new Map<WireId, Kept>();
     for (const wire of scene.wires) {
@@ -65,12 +75,20 @@ export class RoutingController {
       next.set(wire.id, kept);
     }
     this.kept = next;
-    this.publish();
+    this.publish(scene);
   }
 
-  /** Replaces the routes drawn, as a new map only when they changed, so a caller can tell a tidy that changed nothing. */
-  private publish(): void {
-    const next = new Map([...this.kept].map(([id, kept]) => [id, kept.route]));
+  /**
+   * Replaces the routes drawn, as a new map only when they changed, so a caller can tell a tidy that changed nothing:
+   * the kept routes, with a bend in each line no press reaches.
+   */
+  private publish(scene: Scene): void {
+    const tidied = this.tidied;
+    const bends = exposeWires(scene, tidied);
+    const next = new Map(scene.wires.flatMap((wire) => {
+      const route = bends.get(wire.id) ?? tidied.get(wire.id);
+      return route ? [[wire.id, route] as const] : [];
+    }));
     const text = JSON.stringify([...next]);
     if (text === this.published) return;
     this.published = text;
