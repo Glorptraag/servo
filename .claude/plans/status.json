@@ -1208,7 +1208,8 @@
         "7.4",
         "7.5",
         "7.6",
-        "7.7"
+        "7.7",
+        "7.8"
       ],
       "title": "Gate G6 \u00b7 Five families, two weeks",
       "description": "HUMAN GATE. Orchestrator ships the tester release, prepares the observation and measures sheet in docs/gates/G6.md, queues a decision and waits. Drew runs Levels 1\u20132 with five homeschool families for two weeks and reads the Section 14 measures for the first time. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
@@ -1372,6 +1373,29 @@
         "packages/app/test/telemetry/"
       ],
       "done_when": "docs/data-note.md has no code spans; the emitter enumeration and note-sync tests pass; the note renders in one screen in the parent view test.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "7.8": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.3",
+        "7.4"
+      ],
+      "title": "Spec card steps aside on every wiring path",
+      "description": "R-6.4 APP-7 (rule 8): the spec card steps aside for a wire dragged under it, but not when the wire is made by tap-then-tap or from the list view. Add an additive wire-in-progress event to the canvas interface (packages/canvas/src/interface.ts, noted in the README) and have the app's spec card step aside on it for all three paths, tested together. Honour CLAUDE.md ground rules 1\u201314.",
+      "files": [
+        "packages/canvas/src/interface.ts",
+        "packages/canvas/src/wiring/",
+        "packages/canvas/README.md",
+        "packages/app/src/spec-card/",
+        "packages/app/test/spec-card/"
+      ],
+      "done_when": "A test wires under the open spec card by drag, by tap-then-tap and from the list view and sees the card step aside each time; canvas and app suites green; interface change noted in the canvas README.",
       "contracts": "",
       "completed_at": null,
       "completed_by": null
@@ -2318,6 +2342,14 @@
       "question": "Reviewer sweep (task 6.4, docs/reviews/<package>.md): 85 findings (1 high, 14 medium, 57 low, 13 nit). Rule-7 and rule-8 findings became tasks 7.1-7.7, which now block G6: card-game count off the child's screen (PAR-1 high), validator voice gaps and a UI-copy terminology test, list-view parity and tap-then-tap for props, three-path tests for every app control, parent paths and access options, e2e parity for every edit, data note in plain words. The remaining low and nit findings (docs drift, unapplied earlier defaults such as PAR-5/7/8, build guards for parent.html and the perf page, short-circuit refusal in the goal judge) are left in the review files for Drew to pick from. Accept the task split?",
       "recommendation": "Accept; the orchestrator runs 7.1-7.7 now.",
       "confidence": "0.7",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D117",
+      "question": "Icon-only buttons (R-6.4 APP-8, R-7.4): the zoom column and card header buttons name themselves by aria-label only, visible on hover; captions would widen the zoom column. Keep icon-only for Levels 1-2 and revisit after the G3/G4 hands-on sessions?",
+      "recommendation": "Keep icon-only; watch at G4 whether children find the zoom and card buttons without a word.",
+      "confidence": "0.6",
       "blocks": [],
       "resolved": false
     }
