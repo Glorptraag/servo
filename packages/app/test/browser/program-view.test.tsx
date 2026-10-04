@@ -153,7 +153,8 @@ describe('the Level 3 slot', () => {
     // Rule 10: the DC motor's speed and the LED's colour stay locked at Level 1, on the card and in the list view.
     await select(host, 'motor');
     expect(settingIds(host)).not.toContain('speed');
-    expect(await listAction(host, 'motor', 'select:part:motor')).not.toBeNull();
+    // The motor is selected, so its first action clears the selection (task 7.3, `selectOrClear`).
+    expect(await listAction(host, 'motor', 'clear-selection')).not.toBeNull();
     expect(host.querySelector('[data-action^="setting:motor:speed:"]')).toBeNull();
     expect(await listAction(host, 'lamp', 'select:part:lamp')).not.toBeNull();
     expect(host.querySelector('[data-action^="setting:lamp:colour:"]')).toBeNull();
