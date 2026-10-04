@@ -1080,7 +1080,7 @@
       "completed_by": null
     },
     "6.2": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1095,8 +1095,8 @@
       ],
       "done_when": "Every emitted event is listed in the data note and nothing else is emitted (test enumerates emitters); tests pass.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-04T01:41:33+00:00",
+      "completed_by": "W-6.2",
       "dispatched_at": "2026-10-03T15:13:20+00:00"
     },
     "6.3": {
