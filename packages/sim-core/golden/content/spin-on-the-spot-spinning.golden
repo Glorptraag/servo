@@ -11,7 +11,7 @@ part battery-pack-2-cell ac49444ad3a2e166
 part caster 85cad363c9f68e25
 part chassis 2b67875c3e879e19
 part dc-motor d05dc083bd1fa3f7
-part motor-driver 98c60dcbbbebf818
+part motor-driver f982b4d3fbc54d67
 part switch 0a304ca511260dde
 part wheel-large fde3284299722f48
 record aa6b48c06966d049640298092c14e88ecd6cae56193091654693c8b200d2fa0f

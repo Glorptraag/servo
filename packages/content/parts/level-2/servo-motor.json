@@ -52,7 +52,7 @@
         "hold",
         "hum"
       ],
-      "teachingNote": "A servo motor turns to the angle its signal asks for. With power but no signal it has nothing to follow, so it holds where it is and hums. A microcontroller gives that signal on a signal line (yellow), and no Level 2 part gives one.",
+      "teachingNote": "A servo motor turns to the angle its signal asks for. With power but no signal it has nothing to follow, so it holds where it is and hums. The signal comes from a microcontroller on a signal line (yellow), and nothing in this kit gives one yet.",
       "unmet": "absent"
     },
     {

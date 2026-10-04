@@ -14,7 +14,7 @@ part caster 85cad363c9f68e25
 part chassis 2b67875c3e879e19
 part dc-motor d05dc083bd1fa3f7
 part led f79a09a51f13bec4
-part motor-driver 98c60dcbbbebf818
+part motor-driver f982b4d3fbc54d67
 part switch 0a304ca511260dde
 part wheel-large fde3284299722f48
 record 3daf8f7c4e8bf8f8f1f7c51e0acafbba598eeaadd9e07fd2efcf8febd4826d04

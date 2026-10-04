@@ -8,7 +8,7 @@ inputs none
 blueprint 4f77ea249f15fa73
 arena open-floor 297edbfc7ad9a93c
 part battery-pack-2-cell ac49444ad3a2e166
-part servo-motor 254c335aaef24a80
+part servo-motor 1c2fe1bdf3275c09
 record e7f81e8979cc259a44ab65dfe8bcc5a169eee70ed9544dab7d253ff3e9d7d9e5
 fault servo no-signal first-tick=2
 subjects battery-1 battery-2 servo wire:w1 wire:w2 wire:w3

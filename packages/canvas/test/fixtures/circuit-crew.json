@@ -1103,42 +1103,42 @@
       "card": {
         "does": "Passes power from the battery pack to two DC motors, and sets each one forward, backward or stopped.",
         "gives": "Gives: power (red) out to two DC motors.",
-        "needs": "Needs: power (red) in, and a setting or a signal (yellow) for each motor.",
-        "popularMechanics": "A remote-control car has a motor driver inside, which runs its motor forward or backward.",
+        "needs": "Needs: power (red) in, and a setting or a signal (yellow) for each DC motor.",
+        "popularMechanics": "A remote-control car has a motor driver inside, which runs its DC motor forward or backward.",
         "safetyNote": "Real motor drivers are small boards with sharp pins, so build with an adult nearby."
       },
       "failureModes": [
         {
-          "cardLine": "No power in: its motors stay still.",
+          "cardLine": "No power in: its DC motors stay still.",
           "hint": "This motor driver has no power in",
           "id": "no-power",
           "need": "power",
           "shows": [
             "off"
           ],
-          "teachingNote": "A motor driver passes power on to its motors, so it needs its own loop to the battery pack. With none, both outputs give nothing, and the motors wired to it stay still with no fault of their own: the fault is in the motor driver.",
+          "teachingNote": "A motor driver passes power on to its DC motors, so it needs its own loop to the battery pack. With none, both outputs give nothing, and the DC motors wired to it stay still with no fault of their own: the fault is in the motor driver.",
           "unmet": "open"
         },
         {
-          "cardLine": "Too little power: it gives its motors nothing.",
+          "cardLine": "Too little power: it gives its DC motors nothing.",
           "hint": "This motor driver is not getting enough power",
           "id": "low-voltage",
           "need": "power",
           "shows": [
             "off"
           ],
-          "teachingNote": "A motor driver needs at least 2.5 volts to switch its outputs. On less, such as a 1-cell battery pack, it gives its motors nothing, and they stay still with no fault of their own: the fault is in the motor driver.",
+          "teachingNote": "A motor driver needs at least 2.5 volts to switch its outputs. On less, such as a 1-cell battery pack, it gives its DC motors nothing, and they stay still with no fault of their own: the fault is in the motor driver.",
           "unmet": "low"
         },
         {
-          "cardLine": "Power in swapped: it gives its motors nothing.",
+          "cardLine": "Power in swapped: it gives its DC motors nothing.",
           "hint": "This motor driver's plus and minus are swapped",
           "id": "reversed",
           "need": "power",
           "shows": [
             "off"
           ],
-          "teachingNote": "A motor driver works only with plus to plus at its power in. Wired the other way round it gives its motors nothing, and they stay still with no fault of their own: the fault is in the motor driver. A real one can be damaged this way.",
+          "teachingNote": "A motor driver works only with plus to plus at its power in. Wired the other way round it gives its DC motors nothing, and they stay still with no fault of their own: the fault is in the motor driver. A real one can be damaged this way.",
           "unmet": "reversed"
         }
       ],

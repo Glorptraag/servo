@@ -12,7 +12,7 @@ part bumper-switch 07e8a283c2f64a5b
 part caster 85cad363c9f68e25
 part chassis 2b67875c3e879e19
 part dc-motor d05dc083bd1fa3f7
-part motor-driver 98c60dcbbbebf818
+part motor-driver f982b4d3fbc54d67
 part wheel-large fde3284299722f48
 record 2d3dc9e8f35d19179ae9479efcaabfb304ecdd482e050ea2c92396e9e206c03a
 faults none
