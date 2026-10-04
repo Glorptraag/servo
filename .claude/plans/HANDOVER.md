@@ -246,3 +246,11 @@ Notes for later tasks:
 
 **Open decisions.** D1–D106, each with a default the build uses. Drew's sign-offs are D64 (G2 cards) and D95 (G3 hands-on). The settings change is D103 (make perf a required check).
 - CI BLOCKED by GitHub billing from run 37135558516 (D107). Local checks are the authority until fixed; re-run CI on main afterwards.
+
+## Session 2026-10-04 (orchestrator resumed in worktree servo-build-orchestration-426089)
+
+- 4.7 re-reviewed PASS at 79d11b3 (R1 closed), merged 09a6057, done. 6.2 re-reviewed PASS at 6dcc535 (F1–F3 closed), merged 1f686dc, done. Both worktrees and task branches removed. D108 (R-4.7 Q1–Q5) and D109 (R-6.2 Q1–Q6) queued.
+- 4.8 built at be00086 (19 Level 2 challenges, 50 fixtures, 50 goldens, 50 screenshot refs). R-4.8 FAIL: F1 what-if-one-cell ladder wires both packs in parallel (short, still met) — rule 9; F2 push-the-heavy-box has no ladder for the direct-drive stall or gearboxes-removed start; F3/F4 low. Builder (worktree agent-a01f59dc0c0ec6656) is fixing; re-review, merge, done, then G4 provisional → dispatch 5.7, 6.1, 6.5 together → G5 provisional → 6.4 → G6 stays Drew's.
+- Gate drafts committed: docs/gates/G4.md (observation sheet), G5.md (family week), G6.md (five families). Fill the 4.8 row in G4.md at merge.
+- Stray Finder duplicates removed: docs/reviews/tasks/"6.3 2.md", dist/release/"release 2.json" (the latter made `pnpm release:dry` refuse to write).
+- CI still blocked by billing (D107); local checks are the authority. Load-induced 5 s timeouts recur in release-cli.test.ts and run-bar/record.test.ts; both pass alone.
