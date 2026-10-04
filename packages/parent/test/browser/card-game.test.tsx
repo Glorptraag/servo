@@ -2,9 +2,10 @@
 // only; ten pictures of Level 1–2 parts with each name hidden until the adult shows it; marked by pointer, by touch and
 // by keyboard (ground rule 8); the round kept for that child alone and read by progress, while the game screen the child
 // watches ends on a neutral line with no count, verdict, id, praise or exclamation mark (ground rule 7, D40). A round
-// stopped, left by a child switch or by the page being hidden keeps nothing.
+// stopped, left by a child switch or by the page being hidden keeps nothing. From Start to Back to the parent view the
+// round has the page to itself: no count, verdict or part name is on screen anywhere on the page (R-6.4 PAR-1).
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cdp, userEvent } from 'vitest/browser';
+import { cdp, page, userEvent } from 'vitest/browser';
 import { openStore } from '@servo/app/store';
 import type { ServoStore } from '@servo/app/store';
 import { PARENT_TEXT, mountParentWith } from '../../src/accounts/index.ts';
@@ -56,6 +57,7 @@ const cardHeading = (host: HTMLElement): string | null | undefined => game(host)
 const hiddenName = (host: HTMLElement): HTMLElement | null => game(host)?.querySelector<HTMLElement>('[role="group"] p[id]') ?? null;
 
 const tap = async (element: Element): Promise<void> => {
+  element.scrollIntoView({ block: 'center' });
   const frame = window.frameElement?.getBoundingClientRect();
   const scale = frame ? frame.width / window.innerWidth : 1;
   const box = element.getBoundingClientRect();
@@ -85,6 +87,35 @@ const hideAndShow = (): void => {
   } finally {
     delete (document as { visibilityState?: unknown }).visibilityState;
   }
+};
+
+/** Every piece of text the page renders where it can be seen, other than a button's own label, anywhere on the page. */
+const seenText = (): string => {
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const seen: string[] = [];
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const parent = node.parentElement;
+    if (!parent || parent.closest('button, script, style')) continue;
+    if (!parent.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
+    if ((node.textContent ?? '').trim() !== '') seen.push(node.textContent ?? '');
+  }
+  return seen.join('\n');
+};
+
+const escape = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** While a round is on, and on its closing line: no count, verdict or part name anywhere the child can see. */
+const expectNothingToRead = (store: ServoStore): void => {
+  const text = seenText();
+  expect(text).not.toMatch(VERDICT);
+  expect(text).not.toMatch(/\d+\s+of\s+\d+\s+parts|named in the card game|parts met|first used/i);
+  // Names as the page writes them, plain or capitalised, so the intro's "led by you" is not taken for the LED.
+  for (const { identity } of store.content.parts) {
+    const name = identity.name;
+    const capitalised = name.charAt(0).toUpperCase() + name.slice(1);
+    expect(text).not.toMatch(new RegExp(`\\b(${escape(name)}|${escape(capitalised)})\\b`));
+  }
+  expect([...document.querySelectorAll('ul, ol')].filter((list) => list.checkVisibility())).toEqual([]);
 };
 
 const radioFor = (host: HTMLElement, name: string): HTMLInputElement => {
@@ -165,7 +196,7 @@ describe('the card game', () => {
     expect(host.textContent).not.toContain('!');
   }, 600_000);
 
-  it('keeps nothing from a round stopped part way, or left by a child switch', async () => {
+  it('keeps nothing from a round stopped part way, or left by a child switch after it', async () => {
     const { store, robin, sam } = await family();
     const host = mount(store);
     await passGate(host);
@@ -182,6 +213,9 @@ describe('the card game', () => {
     await userEvent.keyboard('{Enter}');
     await expect.poll(() => cardHeading(host)).toBe(CARD_GAME_TEXT.card(1, DECK_SIZE));
     await userEvent.click(button(host, CARD_GAME_TEXT.notNamed));
+    // The switch is put away with the rest of the page while the round is on (R-6.4 PAR-1).
+    expect(radioFor(host, 'Sam').checkVisibility()).toBe(false);
+    await userEvent.click(button(host, CARD_GAME_TEXT.stop));
     await userEvent.click(radioFor(host, 'Sam'));
     await expect.poll(() => game(host)?.querySelector('h2')?.textContent).toBe(CARD_GAME_TEXT.title('Sam'));
     expect(game(host)?.querySelector('h3')).toBeNull();
@@ -238,4 +272,88 @@ describe('the card game', () => {
     await expect.poll(() => document.activeElement?.textContent).toBe(CARD_GAME_TEXT.done);
     expect(await scope(robin.id).cardGames.list()).toHaveLength(1);
   }, 600_000);
+
+  describe.each([
+    { width: 1180, height: 820 },
+    { width: 820, height: 1180 },
+  ])('at $width × $height', ({ width, height }) => {
+    afterEach(async () => {
+      await page.viewport(1180, 820);
+    });
+
+    it('keeps every count, verdict and part name off the page during a round and on its closing line, after a remount too', async () => {
+      const { store, robin } = await family();
+      const earlier = store.content.parts.filter((record) => record.identity.level <= 2).slice(0, DECK_SIZE);
+      await store.forProfile(robin.id).cardGames.add(earlier.map((record, index) => ({ part: record.id, named: index < 7 })));
+      await page.viewport(width, height);
+      let host = mount(store);
+      await passGate(host);
+      // The adult's record is on the page before a round, so the checks below have something to miss.
+      await expect.poll(() => seenText()).toContain(`7 of ${earlier.length} parts named`);
+      expect(() => expectNothingToRead(store)).toThrow();
+
+      const playTo = async (last: number): Promise<number> => {
+        let named = 0;
+        for (let n = 1; n <= last; n += 1) {
+          await expect.poll(() => cardHeading(host)).toBe(CARD_GAME_TEXT.card(n, DECK_SIZE));
+          expectNothingToRead(store);
+          const yes = n % 2 === 1;
+          if (yes) named += 1;
+          await userEvent.click(button(host, yes ? CARD_GAME_TEXT.named : CARD_GAME_TEXT.notNamed));
+        }
+        if (last < DECK_SIZE) return named;
+        await expect.poll(() => document.activeElement?.textContent).toBe(CARD_GAME_TEXT.done);
+        // Progress is read again as the round is kept, and stays put away on the closing line.
+        await expect.poll(() => host.querySelector('section.servo-progress')?.textContent ?? '').toContain(`${named} of ${DECK_SIZE} parts named`);
+        expectNothingToRead(store);
+        return named;
+      };
+      const expectResultBack = async (named: number): Promise<void> => {
+        await expect.poll(() => seenText()).toContain(`${named} of ${DECK_SIZE} parts named`);
+        expect(document.activeElement?.textContent).toBe(CARD_GAME_TEXT.start);
+      };
+
+      // Started by pointer, left by pointer.
+      await userEvent.click(button(host, CARD_GAME_TEXT.start));
+      const first = await playTo(DECK_SIZE);
+      await userEvent.click(button(host, CARD_GAME_TEXT.leave));
+      await expectResultBack(first);
+
+      // Started by touch; Play another round by keyboard, after progress was remounted; then left by touch.
+      await tap(button(host, CARD_GAME_TEXT.start));
+      await playTo(DECK_SIZE);
+      button(host, CARD_GAME_TEXT.again).focus();
+      await userEvent.keyboard('{Enter}');
+      const third = await playTo(DECK_SIZE);
+      await tap(button(host, CARD_GAME_TEXT.leave));
+      await expectResultBack(third);
+
+      // The gate opens the view again after the page was hidden: started and left by keyboard.
+      hideAndShow();
+      await expect.poll(() => game(host)).toBeNull();
+      await passGate(host);
+      await expect.poll(() => seenText()).toContain(`${third} of ${DECK_SIZE} parts named`);
+      button(host, CARD_GAME_TEXT.start).focus();
+      await userEvent.keyboard(' ');
+      const fourth = await playTo(DECK_SIZE);
+      button(host, CARD_GAME_TEXT.leave).focus();
+      await userEvent.keyboard('{Enter}');
+      await expectResultBack(fourth);
+
+      // The whole parent view mounted afresh.
+      mounted?.handle.destroy();
+      mounted?.host.remove();
+      host = mount(store);
+      await passGate(host);
+      await expect.poll(() => seenText()).toContain(`${fourth} of ${DECK_SIZE} parts named`);
+      await userEvent.click(button(host, CARD_GAME_TEXT.start));
+      await playTo(2);
+      // Stopping the round gives the page back.
+      await expect.poll(() => cardHeading(host)).toBe(CARD_GAME_TEXT.card(3, DECK_SIZE));
+      expectNothingToRead(store);
+      await userEvent.click(button(host, CARD_GAME_TEXT.stop));
+      await expect.poll(() => seenText()).toContain(`${fourth} of ${DECK_SIZE} parts named`);
+      expect(host.textContent).not.toContain('!');
+    }, 600_000);
+  });
 });

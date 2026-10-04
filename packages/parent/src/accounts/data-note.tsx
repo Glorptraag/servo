@@ -8,10 +8,11 @@ import type { NoteSpan } from '@servo/app/store';
 const spans = (parts: readonly NoteSpan[]): ReactNode[] =>
   parts.map((part, index) => (part.code ? <code key={index}>{part.text}</code> : part.text));
 
-export const DataNote = () => {
+/** `hidden` puts the note away while a card-game round has the page. */
+export const DataNote = ({ hidden = false }: { readonly hidden?: boolean }) => {
   const blocks = noteBlocks();
   return (
-    <section aria-labelledby="servo-parent-data-note">
+    <section aria-labelledby="servo-parent-data-note" hidden={hidden}>
       {blocks.map((block, index) => {
         if (block.kind === 'heading') {
           // The note's own title is a section of the parent view, so its headings sit one level below the view's.
