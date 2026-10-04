@@ -6,9 +6,10 @@
 // (D42). It says what each change did in a polite live region, which parts a removal left loose among it (D35),
 // whichever path made it: the list's own actions, and touch and pointer on the canvas, with the canvas's own line
 // (a removal, a held part) in the canvas's words (task 7.3). An action that has gone stale says so.
-import type { Blueprint, PlacedPartId, ValuePayload } from '@servo/schema';
+import type { Blueprint, PlacedPartId, PortRef, ValuePayload } from '@servo/schema';
 import type { LiveState } from '@servo/sim-core/interface';
-import type { CanvasPrefs, EditCommand, ListAction, ListSubject, ListWire, Selection } from '../interface.ts';
+import type { CanvasPrefs, EditCommand, ListAction, ListSubject, ListWire, Selection, WireInProgress } from '../interface.ts';
+import { towardsOf } from '../wiring/progress.ts';
 import { FONT_STACKS } from '../renderer/style.ts';
 import { listOf } from './words.ts';
 import type { ListViewModel } from './model.ts';
@@ -86,6 +87,11 @@ const sameSelection = (a: Selection | null, subject: ListSubject): boolean =>
 
 export interface ListViewDomOptions {
   prefs(): CanvasPrefs;
+  /**
+   * A wire begun from a port's actions, or ended (null): the handle's `wire` event (task 7.8). It begins when a port's
+   * Actions open on wires it can make, and ends when they close, an action is done, the panel hides or Run begins.
+   */
+  wiring?(wire: WireInProgress | null): void;
 }
 
 export class ListViewDom {
@@ -108,6 +114,8 @@ export class ListViewDom {
   private previous: Before | undefined;
   /** The canvas's line said with the last edit: a change of selection after it does not say it again. */
   private saidLine: string | undefined;
+  /** The port whose Actions began the wire on its way, by subject key (task 7.8). */
+  private wiringFrom: string | undefined;
 
   constructor(host: HTMLElement, model: ListViewModel, options: ListViewDomOptions) {
     this.host = host;
@@ -154,6 +162,7 @@ export class ListViewDom {
     this.element.removeEventListener('click', this.clicked);
     this.element.ownerDocument.removeEventListener('pointerdown', this.pressedOutside, true);
     this.element.remove();
+    this.endWire();
   }
 
   /** Draws the model again, keeping which subjects are open and where focus was. */
@@ -221,6 +230,7 @@ export class ListViewDom {
       sections.push(props);
     }
     for (const key of [...this.expanded]) if (!keep.has(key)) this.expanded.delete(key);
+    if (this.wiringFrom !== undefined && (this.model.mode !== 'build' || !this.expanded.has(this.wiringFrom))) this.endWire();
     this.body.replaceChildren(...sections);
     if (active) this.refocus(focusKey, focusSubject);
     this.place();
@@ -322,14 +332,21 @@ export class ListViewDom {
     if (!button || !this.element.contains(button)) return;
     const toggle = button.dataset.toggle;
     if (toggle !== undefined) {
-      if (this.expanded.has(toggle)) this.expanded.delete(toggle);
-      else this.expanded.add(toggle);
+      if (this.expanded.has(toggle)) {
+        this.expanded.delete(toggle);
+        if (toggle === this.wiringFrom) this.endWire();
+      } else {
+        this.expanded.add(toggle);
+        this.beginWire(toggle);
+      }
       this.render();
       return;
     }
     const subject = button.dataset.subject;
     const id = button.dataset.action;
     if (subject === undefined || id === undefined) return;
+    // Whatever the action, the wire begun here is done with: landed, or the child chose something else.
+    this.endWire();
     const action = this.findAction(subject, id);
     if (!action) {
       this.say(NOTHING_CHANGED);
@@ -416,8 +433,33 @@ export class ListViewDom {
     });
   };
 
+  /**
+   * A port's Actions opened: when they offer wires to make, a wire is on its way from that port to the ports they
+   * name, as a socket tapped on the canvas waits for its second tap (task 7.8).
+   */
+  private beginWire(key: string): void {
+    const subject = this.subjectOf(key);
+    if (subject?.kind !== 'port' || this.model.mode !== 'build' || this.model.readOnly) return;
+    const from = subject.port;
+    const towards: PortRef[] = [];
+    for (const action of this.model.actionsFor(subject)) {
+      const command = action.does.kind === 'edit' ? action.does.command : undefined;
+      if (command?.kind === 'connect' && command.from.part === from.part && command.from.port === from.port) towards.push(command.to);
+    }
+    if (towards.length === 0) return;
+    this.wiringFrom = key;
+    this.options.wiring?.({ path: 'list', from: { part: from.part, port: from.port }, towards: towardsOf(towards) });
+  }
+
+  private endWire(): void {
+    if (this.wiringFrom === undefined) return;
+    this.wiringFrom = undefined;
+    this.options.wiring?.(null);
+  }
+
   /** Hides the panel, and takes focus out of it so focus is never on a hidden button. */
   private close(): void {
+    this.endWire();
     if (!this.open) return;
     this.open = false;
     this.element.toggleAttribute('data-open', false);

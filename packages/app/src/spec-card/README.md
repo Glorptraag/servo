@@ -31,6 +31,10 @@ In this order. Layers follow the schema's `SPEC_CARD_LAYERS`, so the level decid
 
 Nothing is cut off: every line wraps, and a card taller than the panel scrolls inside it. At the 10-inch landscape size (1180 × 820) the panel is 320 × 308 px. With macOS's system face every Level 1 card fits without scrolling, and at Level 2 the wheels fit and the rest scroll; how much fits depends on the typeface, which task 5.7 chooses, so the test reports it rather than asserting it.
 
+## Stepping aside for a wire
+
+While a wire is on its way by any path, a drag, tap-then-tap or a port's actions in the list view, the card steps aside (`setSpecCardAside`), so it never covers a port being wired (D66, task 7.8, R-6.4 APP-7). It listens for the canvas's `wire` event and comes back when the event clears: the wire landed, was let go, or Run began. The shell's own watch for drags on the canvas stays as it was. Pressing a socket on the canvas clears the part selection (the canvas's rule, task 3.4), so after a canvas wire the card shows again once a part is selected; a list-view wire keeps the selection, and the card comes straight back. Tested in [test/browser/spec-card-aside.test.tsx](../../test/browser/spec-card-aside.test.tsx) on all three paths with the target socket under the open card.
+
 ## Settings
 
 A change is `canvas.apply({ kind: 'set-setting', partId, setting, value })`, so it is one Undo step, the list view follows it (rule 8), and the card shows the value the build then holds. A choice is a group of native radio buttons drawn as one row of 44 px buttons: tap, click, the arrow keys and screen readers all work it. A number is a native range input in the record's `min`, `max` and `step`, its value with the real unit beside it (`90°`, `50%`, `6 V`), 44 px tall: drag, click, arrows. A drag changes the build once, when it lets go; a refused change goes back. In Run mode the settings show but are disabled, and the canvas refuses edits anyway (ground rule 4).
@@ -72,4 +76,4 @@ Taken conservatively, for Drew and the orchestrator:
 5. One speak-it button for the whole card, not one per line (Section 12 says every line of system text has one). Units are read as written (`V`, `mA`, `rpm`).
 6. Failure lines show only in Run, while the failure lasts.
 7. The labels `Voltage`, `Current`, `Charge`, `Speed`, `Angle`, `Light`, `Signal`, `Switch`, `Closed`, `Open` and `Read aloud` are app text, not content.
-8. Not built: flipping a switch from the card in Run (docs/run-loop.md mentions it; the canvas's tap, Enter and list view already do it), and keeping the card aside while tap-then-tap wiring is in progress (the canvas reports no wire in progress).
+8. Not built: flipping a switch from the card in Run (docs/run-loop.md mentions it; the canvas's tap, Enter and list view already do it).

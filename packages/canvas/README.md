@@ -30,7 +30,7 @@ Every canvas responsibility belongs to a Phase 3 task, so no app task writes can
 
 `load(blueprint)` validates, canonicalises and redraws, firing no `edit`. `apply(command)` takes the same path as touch, pointer and the list view. `setMode('build' | 'run')`: Run locks the build, and Build returns to it exactly as it was. `applyRunFrame(frame)` takes a `RunFrame` from `Simulation.step`. A read-only canvas (D43) refuses every edit and fires no `control`, for shared links and phone replay.
 
-Events out: `edit` (the command and the resulting canonical blueprint), `select` (a part selection opens the spec card), `placement` (a tray part or prop landed or not), `control` (Run mode: a manual switch flipped by tap, click, Enter or the list view, D42) and `zoom`.
+Events out: `edit` (the command and the resulting canonical blueprint), `select` (a part selection opens the spec card), `placement` (a tray part or prop landed or not), `control` (Run mode: a manual switch flipped by tap, click, Enter or the list view, D42), `zoom` and `wire` (a wire on its way by any path, task 7.8, [below](#the-wire-event-task-78)).
 
 ## One command layer (ground rule 8)
 
@@ -63,6 +63,16 @@ Tests: `test/list-view/model.test.ts` builds Rolling Start, Reversed Motor and S
 - Starting Move on a part hides the held line, so a tap where it sat is where the part goes (CAN-8). `beginPlacement`, `beginPropPlacement` and the Move handle let a waiting wire go, with its glows, an open fan, a refusal's cue and a wire's bin (`wiring.yieldToPlacement`, CAN-10).
 
 Tests: `test/browser/list-view-parity.test.ts` (one or more per finding, CAN-1 to CAN-10 but CAN-9, which is task 7.6's) and the `R-6.4 list-view parity` block of `test/list-view/model.test.ts`.
+
+## The wire event (task 7.8)
+
+Interface change, additive: `CanvasEventMap` gains `wire`, a `WireEvent` carrying `{ wire: WireInProgress | null }`, where a `WireInProgress` is `{ path: 'drag' | 'tap' | 'list', from: PortRef, towards: PortRef[] }`: where the wire starts and every port `planWire` lets it join, legal-but-wrong ones included, sorted by `part.port`. The app's spec card steps aside on it, so it never covers a port being wired on any path (R-6.4 APP-7, D66). Nothing else in the interface changed.
+
+- On the canvas (`wiring/controller.ts`): it fires as a drag draws a wire from a socket, or as a tapped socket's wire waits for its second tap, and again when a waiting wire is picked up and dragged (path `tap` to `drag`). It fires null when the wire lands, springs back, is let go by a tap elsewhere or by a placement (`yieldToPlacement`), when the build changes under it, and when Run begins. Drag behaviour is unchanged.
+- In the list view (`list-view/dom.ts`): opening a port's Actions in Build mode, when they offer wires to make (`connect` from that port), begins a wire towards the ports they name. It ends when those Actions close, when any list action is done (the wire landed, or the child chose something else), when the panel hides (Escape, focus leaving, a press outside) and when Run begins. The Actions stay open after a wire lands, as before; they begin a new wire only when opened again.
+- One wire at a time (`wiring/progress.ts`): the latest still on its way is reported. Repeated reports of the same path and source fire nothing. Never fires on a read-only canvas.
+
+Tests: `test/browser/wire-event.test.ts` (drag and tap-then-tap by touch and mouse, landed and let go; the list view by keyboard, landed, closed and hidden; Run). The app's `test/browser/spec-card-aside.test.tsx` makes a wire to a socket under the open card on all three paths.
 
 ## Testing entry (task 3.4)
 
