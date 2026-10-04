@@ -198,3 +198,5 @@
 {"ts": "2026-10-04T03:55:03+00:00", "event": "decision_add", "id": "D111", "blocks": []}
 {"ts": "2026-10-04T03:55:03+00:00", "event": "done", "tasks": ["G4"], "by": "orchestrator-provisional"}
 {"ts": "2026-10-04T03:55:03+00:00", "event": "dispatch", "tasks": ["5.7", "6.1", "6.5"]}
+{"ts": "2026-10-04T06:33:47+00:00", "event": "done", "tasks": ["6.5"], "by": "W-6.5"}
+{"ts": "2026-10-04T06:33:48+00:00", "event": "decision_add", "id": "D112", "blocks": []}
