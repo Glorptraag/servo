@@ -7,7 +7,7 @@
 // child sees on top is what a press reaches, and a socket beats a handle, as for placement (task 3.2). No long-press,
 // no double-tap, no text: what is wrong shows at the socket (brief Section 10). See docs/wiring.md.
 import type { Blueprint, Catalogue, IssueCode, PortRef, Vec2, WireId } from '@servo/schema';
-import type { CanvasPrefs, EditCommand, EditResult } from '../interface.ts';
+import type { CanvasPrefs, EditCommand, EditResult, WireInProgress } from '../interface.ts';
 import { Press, SOCKET_REACH_MM } from '../placement/controller.ts';
 import type { Gesture } from '../placement/controller.ts';
 import { layOutHandles } from '../placement/overlays.ts';
@@ -26,6 +26,7 @@ import { PORT_MM, PX_PER_MM, WIRE_HIT_MM, mmOf } from '../scene/units.ts';
 import { crowdsOf, drawnSockets, fanFor } from './crowds.ts';
 import type { Crowd, CrowdMember, Crowds } from './crowds.ts';
 import { FAN_MS, REACH_MS, SETTLE_MS, SPRING_BACK_MS, easeOut, elastic } from './motion.ts';
+import { legalTowards, sameWire } from './progress.ts';
 import { WIRE_REACH_PX, judgeSockets, landingAt, socketsFrom, wireEndAt } from './rules.ts';
 import type { Socket, Verdict } from './rules.ts';
 import { WireMarks } from './views.ts';
@@ -39,6 +40,8 @@ export interface WiringHost {
   readonly catalogue: Catalogue;
   readonly readOnly: boolean;
   prefs(): CanvasPrefs;
+  /** A wire started by drag or tap-then-tap, moved to the other path, or ended (null): the handle's `wire` event (task 7.8). */
+  progress?(wire: WireInProgress | null): void;
 }
 
 /** What wiring shows after a socket refused a wire, until the next touch: the right colour glowing (brief Section 10). */
@@ -117,6 +120,8 @@ export class WiringController {
   private live: { readonly view: WireView; readonly wire: SceneWire; end: Vec2 } | undefined;
   private readonly motions = new Map<string, Motion>();
   private frame: number | undefined;
+  /** The wire last reported on its way (task 7.8). */
+  private reported: WireInProgress | null = null;
 
   constructor(host: WiringHost) {
     this.host = host;
@@ -384,6 +389,7 @@ export class WiringController {
   private letGo(): void {
     this.waiting = undefined;
     this.closeFan();
+    this.report();
   }
 
   private pickAt(pending: Pending, world: Vec2): void {
@@ -414,6 +420,7 @@ export class WiringController {
     this.surface.placement.selectPart(undefined);
     this.clearSelection();
     this.showLive(pending.source, from);
+    this.report();
   }
 
   private dragTo(world: Vec2): void {
@@ -889,6 +896,17 @@ export class WiringController {
     this.marks.draw(this.currentMarks(), this.palette);
     this.drawBin();
     this.surface.requestFrame();
+    this.report();
+  }
+
+  /** Reports the wire on its way, by drag or tap-then-tap, when it starts, changes path or source, or ends (task 7.8). */
+  private report(): void {
+    const drag = this.dragging;
+    const pending = drag ?? this.waiting;
+    const next: WireInProgress | null = pending ? { path: drag ? 'drag' : 'tap', from: refOf(pending.source), towards: [] } : null;
+    if (sameWire(this.reported, next)) return;
+    this.reported = next && pending ? { ...next, towards: legalTowards(this.socketsFor(pending)) } : null;
+    this.host.progress?.(this.reported);
   }
 
   /**

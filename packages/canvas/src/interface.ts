@@ -225,6 +225,13 @@ export interface CanvasEventMap {
   readonly control: ControlEvent;
   /** The zoom changed, by pinch, wheel, `fit` or `setZoom`, so the app's zoom control can follow it. Task 3.1. */
   readonly zoom: ZoomEvent;
+  /**
+   * A wire started or ended, by any path (task 7.8): drawn by drag, waiting for its second tap (tap-then-tap), or
+   * begun from a port's actions in the list view. Fires with the wire as it starts, again if it moves to another path
+   * or source, and with null once it lands, is let go, or Run mode begins. The app's spec card steps aside while one
+   * is on its way, so it never covers a port being wired (D66). Never fires when read-only.
+   */
+  readonly wire: WireEvent;
 }
 
 export interface EditEvent {
@@ -247,6 +254,22 @@ export interface ControlEvent {
 
 export interface ZoomEvent {
   readonly zoom: number;
+}
+
+export interface WireEvent {
+  /** The wire on its way now, or null when none is. */
+  readonly wire: WireInProgress | null;
+}
+
+/** How a wire is being made: a drag on the canvas, tap-then-tap on the canvas, or the list view's actions. */
+export type WirePath = 'drag' | 'tap' | 'list';
+
+/** A wire on its way from one socket: where it starts and every socket it can go to. */
+export interface WireInProgress {
+  readonly path: WirePath;
+  readonly from: PortRef;
+  /** Every port `planWire` lets it join, legal-but-wrong ones included, sorted by `part.port` as text. */
+  readonly towards: readonly PortRef[];
 }
 
 // ---------------------------------------------------------------------------------------------------------

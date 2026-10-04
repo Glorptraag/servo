@@ -2,7 +2,7 @@
 // text by the child's level, its ports, its settings, and in Run mode its live readouts and the card line of each
 // failure happening now. Everything on it comes from the part record (ground rule 1). It sits in the shell's
 // `specCard` slot, which slides in while a part is selected; see README.md beside this file.
-import { useId, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useId, useRef, useSyncExternalStore } from 'react';
 import type { PlacedPartId, PortType, SettingValue } from '@servo/schema';
 import type { RunFrame } from '@servo/sim-core';
 import { useShell } from '../shell/index.ts';
@@ -65,8 +65,26 @@ const useShownPart = (): PlacedPartId | null => {
   return last.current;
 };
 
+/**
+ * The card steps aside while a wire is on its way by any path, drag, tap-then-tap or the list view, so it never covers
+ * a port being wired (D66, task 7.8), and comes back once the wire lands or is let go. The shell's own drag watch
+ * stays as it was.
+ */
+const useStepAsideForWires = (): void => {
+  const { canvas, setSpecCardAside } = useShell();
+  useEffect(() => {
+    if (!canvas) return;
+    const off = canvas.on('wire', (event) => setSpecCardAside(event.wire !== null));
+    return () => {
+      off();
+      setSpecCardAside(false);
+    };
+  }, [canvas, setSpecCardAside]);
+};
+
 export const SpecCard = ({ frames, speech = pageSpeech(), unlocked }: SpecCardProps) => {
   const { content, level, canvas, mode, blueprint } = useShell();
+  useStepAsideForWires();
   const partId = useShownPart();
   const frame = useFrame(frames, partId);
   const titleId = useId();

@@ -21,6 +21,7 @@ import type {
   Selection,
 } from '../interface.ts';
 import { ListViewDom } from '../list-view/dom.ts';
+import { WireProgress } from '../wiring/progress.ts';
 import { ListViewModel } from '../list-view/model.ts';
 import { applyEdit } from '../placement/apply.ts';
 import type { Proportions } from './picture.ts';
@@ -109,6 +110,8 @@ export class CanvasSurface implements CanvasHandle {
 
   private readonly options: CanvasOptions;
   private readonly emitter = new Emitter<CanvasEventMap>();
+  /** The wire on its way by any path, for the `wire` event (task 7.8). */
+  private readonly wireProgress = new WireProgress((event) => this.emitter.emit('wire', event));
   private readonly loop: FrameLoop;
   private readonly art: ArtStore;
   private readonly resizeObserver: ResizeObserver | undefined;
@@ -186,6 +189,7 @@ export class CanvasSurface implements CanvasHandle {
       catalogue: options.catalogue,
       readOnly: options.readOnly === true,
       prefs: () => this.prefs,
+      progress: (wire) => this.wireProgress.report('canvas', wire),
     });
     // Last, so its pointer handler comes first: it sees every press, and claims only the selected prop's bin.
     this.selecting = new SelectionController({
@@ -237,7 +241,7 @@ export class CanvasSurface implements CanvasHandle {
       },
       live: (subject) => (this.currentMode === 'run' ? this.lastFrame?.live.get(subject) : undefined),
     });
-    this.listDom = new ListViewDom(host, this.list, { prefs: () => this.prefs });
+    this.listDom = new ListViewDom(host, this.list, { prefs: () => this.prefs, wiring: (wire) => this.wireProgress.report('list', wire) });
     this.resizeObserver =
       typeof ResizeObserver === 'function' ? new ResizeObserver(() => this.resized()) : undefined;
     this.resizeObserver?.observe(this.canvas);
