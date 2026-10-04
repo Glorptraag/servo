@@ -176,8 +176,16 @@ const touch = async (element: HTMLElement): Promise<void> => {
   await cdp().send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
 };
 
+/**
+ * The Run is in its spin-up and the page shows it. The first Run of a page loads sim-core (D11), so it reaches the
+ * spin-up in a task after the press, and the page draws it in the render after that: wait for both.
+ */
 const playing = async (app: Mounted): Promise<void> => {
   await expect.poll(() => app.loop().phase, { timeout: 30_000 }).toBe('spin-up');
+  await vi.waitFor(() => {
+    expect(app.host.querySelector('.servo-shell')?.getAttribute('data-mode')).toBe('run');
+    expect(toggle(app).textContent).toBe(RUN_BAR_TEXT.stop);
+  }, SOON);
 };
 
 const SOON = { timeout: 10_000 };

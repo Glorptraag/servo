@@ -12,11 +12,21 @@ import type { Blueprint, Catalogue } from '@servo/schema';
 import type { ControlInput, CreateSimulation, ProgramRuntime, RunFrame, SimSnapshot, Simulation } from '@servo/sim-core';
 
 /**
+ * sim-core's createSimulation once the first Run has loaded it. Later Runs take it from here without awaiting the
+ * import again: an import, even of a module already loaded, resolves in a task of its own, so a Run pressed by a click
+ * would otherwise reach its spin-up outside the click's task, after the page has drawn (R-6.1 follow-up).
+ */
+let loadedCreateSimulation: CreateSimulation | undefined;
+
+/**
  * sim-core, with the physics engine and its inlined WebAssembly (about 1.4 MB gzipped), imported at the first Run, so the
  * bundle splits it into a chunk of its own that cold start never downloads or parses (D11, docs/perf.md). The service
  * worker keeps the chunk for offline Runs (task 5.5). Later calls reuse the first import.
  */
-export const loadCreateSimulation = async (): Promise<CreateSimulation> => (await import('@servo/sim-core')).createSimulation;
+export const loadCreateSimulation = async (): Promise<CreateSimulation> => {
+  loadedCreateSimulation ??= (await import('@servo/sim-core')).createSimulation;
+  return loadedCreateSimulation;
+};
 
 /** sim-core's chunk did not load: offline before the service worker had it, or a tab older than the release it asks for. */
 class EngineUnavailable extends Error {
@@ -215,9 +225,11 @@ export class RunLoop {
           if (!arena) throw new Error(`The catalogue has no arena '${blueprint.arena.preset}'.`);
           const seed = (this.options.seed ?? freshSeed)(blueprint);
           const program = this.options.program?.(blueprint);
-          const createSimulation = await loadCreateSimulation().catch((error: unknown) => {
-            throw new EngineUnavailable('sim-core could not be loaded.', { cause: error });
-          });
+          const createSimulation =
+            loadedCreateSimulation ??
+            (await loadCreateSimulation().catch((error: unknown) => {
+              throw new EngineUnavailable('sim-core could not be loaded.', { cause: error });
+            }));
           const made = await createSimulation({ blueprint, catalogue: this.options.catalogue, arena, seed, ...(program ? { program } : {}) });
           if (overtaken() || this.simulation) {
             made.dispose();
