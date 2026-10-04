@@ -1123,7 +1123,7 @@
       "dispatched_at": "2026-10-01T11:34:37+00:00"
     },
     "6.4": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -1142,8 +1142,8 @@
       ],
       "done_when": "A review file per package exists; no open rule-7 or rule-8 findings.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-04T09:01:46+00:00",
+      "completed_by": "W-6.4",
       "dispatched_at": "2026-10-04T08:40:08+00:00"
     },
     "6.5": {
@@ -1201,7 +1201,14 @@
         "6.4",
         "6.5",
         "6.6",
-        "G5"
+        "G5",
+        "7.1",
+        "7.2",
+        "7.3",
+        "7.4",
+        "7.5",
+        "7.6",
+        "7.7"
       ],
       "title": "Gate G6 \u00b7 Five families, two weeks",
       "description": "HUMAN GATE. Orchestrator ships the tester release, prepares the observation and measures sheet in docs/gates/G6.md, queues a decision and waits. Drew runs Levels 1\u20132 with five homeschool families for two weeks and reads the Section 14 measures for the first time. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
@@ -1209,6 +1216,158 @@
         "docs/gates/G6.md"
       ],
       "done_when": "docs/gates/G6.md records the two-week results and the measures.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "7.1": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "6.4"
+      ],
+      "title": "Card-game count off the child\u2019s screen",
+      "description": "R-6.4 PAR-1 (high, rule 7, D40): the progress section\u2019s \"n of 10 parts named\" line renders about 140 px above the card the child is looking at, and reappears after a round. No count, verdict or list may be on screen while a round is in progress or on the closing screen; the adult reaches the result through a deliberate step (a separate Progress section or a \"Show the result\" press) after the child has handed the device back. Fix in packages/parent only; keep D38 (results per child, removed with the profile). Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/parent/src/progress/",
+        "packages/parent/src/card-game/",
+        "packages/parent/src/accounts/",
+        "packages/parent/test/"
+      ],
+      "done_when": "A browser test at the suite viewport asserts no count, verdict or part name is visible anywhere on the page during a round and on the closing screen, including after a remount; existing card-game and progress tests pass.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "7.2": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "6.4"
+      ],
+      "title": "Validator voice gaps and UI-copy terminology test",
+      "description": "R-6.4 CON-1\u20133, TLS-1\u20133 (rule 7): the content validator lets character names and \"!\" pass in prose and blueprint names, banned.json lacks reward words and emoji, questions and the word \"Level\" in child-facing text are not flagged, and UI copy in app and parent is never checked against banned.json. Extend the terminology lists and validator so each probe string is refused (with the existing content still passing, or fixed), and add a tools test that scans every child-visible string in packages/app and packages/parent src against the lists so a planted banned word fails. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/content/terminology/",
+        "packages/tools/src/validate-content/",
+        "packages/tools/test/",
+        "packages/content/src/"
+      ],
+      "done_when": "Every probe string listed in docs/reviews/content.md and docs/reviews/tools.md is refused by the validator; a planted banned word in app or parent UI copy fails the new tools test; pnpm validate-content passes on the content as merged.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "7.3": {
+      "status": "pending",
+      "model": "opus",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "6.4"
+      ],
+      "title": "List-view parity and tap-then-tap for props",
+      "description": "R-6.4 CAN-1\u201310 (rule 8): the list view turns a held (mounted) part, never announces canvas lines, gives props identical names, has no keyboard pan, no clear-selection, silent no-ops and a held line during Move; props have no tap-then-tap move path; a waiting wire is inert. Make every canvas edit reachable and announced on the list-view path and the tap-then-tap path, with tests for each finding. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/canvas/src/list-view/",
+        "packages/canvas/src/placement/",
+        "packages/canvas/src/selection/",
+        "packages/canvas/src/wiring/",
+        "packages/canvas/test/",
+        "packages/canvas/README.md"
+      ],
+      "done_when": "Each CAN-1 to CAN-10 finding has a failing-then-passing test; canvas suite green; the canvas interface is unchanged or the change is noted in the README.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "7.4": {
+      "status": "pending",
+      "model": "opus",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "6.4"
+      ],
+      "title": "Three-path tests for every app control",
+      "description": "R-6.4 APP-1\u20138 (rule 8): do-it is tested by mouse only; arena props and presets have no touch or keyboard tests; some tests count synthetic clicks as a path; shell controls and Home are untested on some paths; tidy wires has no e2e; the spec card does not step aside; icon-only buttons name themselves on hover only. Every app control gets a touch (CDP touch), pointer and keyboard/screen-reader test, with the fixes those tests expose. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/test/",
+        "packages/app/src/shell/",
+        "packages/app/src/hints/",
+        "packages/app/src/challenges/",
+        "packages/app/src/spec-card/",
+        "packages/app/src/run-bar/",
+        "packages/app/src/tray/"
+      ],
+      "done_when": "A test enumerates every interactive control in the app and asserts each has a touch, pointer and keyboard test; app suite green; axe suite green.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "7.5": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.1",
+        "7.4"
+      ],
+      "title": "Parent view paths and access options",
+      "description": "R-6.4 PAR-2, PAR-3, PAR-11 and R-5.7 Q6 (rule 8): about a dozen parent control-and-path pairs are untested; the parent view and shared-build page do not take the accessibility options (high contrast, dyslexia-friendly type, left-handed, read-aloud) and the axe suite stops at the gate; focus is lost after some actions. Add the tests and the options to packages/parent (via @servo/app/store only), and extend the axe suite over the parent view. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/parent/src/",
+        "packages/parent/test/",
+        "packages/app/test/a11y/"
+      ],
+      "done_when": "Every parent control has touch, pointer and keyboard tests; the parent view follows the four options; axe green over the parent view; focus never lands on body after an action.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "7.6": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.3",
+        "7.2"
+      ],
+      "title": "E2E parity for every edit",
+      "description": "R-6.4 TLS-4, CAN-9 (rule 8): the e2e parity harness covers only place, mount and wire. Extend it so every edit (move, remove, configure a setting, flip a switch, tidy wires, Reset arena, undo) is performed on the command, touch, pointer and list-view paths and the resulting blueprint is byte-identical across them. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/tools/src/e2e/",
+        "packages/tools/test/",
+        "packages/tools/README.md"
+      ],
+      "done_when": "The parity suite covers every edit kind and is green in CI shards within the 10-minute budget.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null
+    },
+    "7.7": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "6.4",
+        "7.4"
+      ],
+      "title": "Data note in plain words",
+      "description": "R-6.4 APP-9, R-6.2 F4, D109 (rule 7, brief Section 13): the parent view\u2019s data note shows code identifiers (session-start, runNumber, goalMet) to the adult. Rewrite docs/data-note.md in plain words, keep the registry-to-note sync test by moving identifiers into a test-only mapping, and keep the note to one screen. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "docs/data-note.md",
+        "packages/app/src/telemetry/",
+        "packages/app/test/telemetry/"
+      ],
+      "done_when": "docs/data-note.md has no code spans; the emitter enumeration and note-sync tests pass; the note renders in one screen in the parent view test.",
       "contracts": "",
       "completed_at": null,
       "completed_by": null
@@ -2147,6 +2306,14 @@
       "question": "Performance (task 6.1, docs/perf.md): cold start and Build frames meet budget on both stand-ins (Chromium CPU throttled 2x and 4x on an M1 Max); Run p95 on the 25-part build meets 16 ms on the iPad stand-in only at moderate load (13-15 ms; 18-23 ms under heavy load) and NOT on the Chromebook stand-in (~26 ms; the sim step alone is ~2.9 ms per tick unthrottled, mechanical solver 42%). Nothing has run on a real 2020 iPad or Chromebook. Options: (a) a Web Worker for the sim step; (b) mechanical solver optimisation in sim-core (goldens must stay byte-identical); (c) a lower default tick rate on low-end devices; (d) accept for Levels 1-2 testing and measure on real devices at G6. Which?",
       "recommendation": "Measure on the real devices first (add to the G6 pre-flight), then (a) if the Chromebook is really over budget. Task 6.1 is marked done with this gap recorded; its done-when is only partly met.",
       "confidence": "0.5",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D116",
+      "question": "Reviewer sweep (task 6.4, docs/reviews/<package>.md): 85 findings (1 high, 14 medium, 57 low, 13 nit). Rule-7 and rule-8 findings became tasks 7.1-7.7, which now block G6: card-game count off the child's screen (PAR-1 high), validator voice gaps and a UI-copy terminology test, list-view parity and tap-then-tap for props, three-path tests for every app control, parent paths and access options, e2e parity for every edit, data note in plain words. The remaining low and nit findings (docs drift, unapplied earlier defaults such as PAR-5/7/8, build guards for parent.html and the perf page, short-circuit refusal in the goal judge) are left in the review files for Drew to pick from. Accept the task split?",
+      "recommendation": "Accept; the orchestrator runs 7.1-7.7 now.",
+      "confidence": "0.7",
       "blocks": [],
       "resolved": false
     }
