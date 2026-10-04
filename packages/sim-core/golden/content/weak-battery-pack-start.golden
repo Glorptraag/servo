@@ -1,0 +1,98 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/weak-battery-pack-start
+seed 1
+ticks 60
+inputs none
+blueprint 76aaa0a7394fe85a
+arena open-floor 297edbfc7ad9a93c
+part battery-pack-1-cell 81b516900e0aa151
+part caster 85cad363c9f68e25
+part chassis 2b67875c3e879e19
+part dc-motor e80cd3eae3017bf6
+part motor-driver 7bba5ed414f432a1
+part switch 0a304ca511260dde
+part wheel-large c182e441f60c54e3
+record aaee3358a50427f68bf6cc894e1bb5f4c3fdcd3521ec1f2bcc1bdb4d86ba0992
+fault driver low-voltage first-tick=2
+subjects battery caster chassis driver motor-left motor-right switch wheel-left wheel-right wire:w10 wire:w11 wire:w12 wire:w13 wire:w14 wire:w15 wire:w5 wire:w6 wire:w9
+tick 0 34ed7221
+  battery volts=1.5 milliamps=1.2 charge=1
+  chassis x=300 y=600 heading=0 pitch=0 roll=0
+  driver volts=1.5 milliamps=1.2
+  motor-left volts=0 milliamps=0 rpm=0
+  motor-right volts=0 milliamps=0 rpm=0
+  switch volts=0 milliamps=1.2 closed=true
+  wheel-left rpm=0
+  wheel-right rpm=0
+  wire:w10 milliamps=-1.2
+  wire:w11 milliamps=-1.2
+  wire:w12 milliamps=0
+  wire:w13 milliamps=0
+  wire:w14 milliamps=0
+  wire:w15 milliamps=0
+  wire:w5 rpm=0
+  wire:w6 rpm=0
+  wire:w9 milliamps=1.2
+tick 1 37517e5f
+tick 2 2c33297b
+  driver faults=low-voltage
+tick 3 7fa9cf0f
+tick 4 f02af89c
+tick 5 59831783
+tick 6 900a9326
+tick 7 28c37100
+tick 8 c71eab6d
+tick 9 4b3f8e67
+tick 10 dea99ed5
+tick 11 07f5c522
+tick 12 454ff6a9
+tick 13 4824b0bc
+tick 14 642b7af5
+tick 15 989a1671
+tick 16 20be9113
+tick 17 e90b5229
+tick 18 02f1dbf7
+tick 19 dcb92c28
+tick 20 cdaeb5e8
+tick 21 ddba2d6a
+tick 22 f4a97252
+tick 23 5e5d770a
+tick 24 0b14c77a
+tick 25 5ddbb366
+tick 26 60ad4c04
+tick 27 44d4b7c8
+tick 28 980cc2d8
+tick 29 ffa00878
+tick 30 9e85cf17
+tick 31 11f5131c
+tick 32 fcd642a0
+tick 33 2e68b751
+tick 34 495a7ca7
+tick 35 bfd8e6e7
+tick 36 cb1c030c
+tick 37 6e44108c
+tick 38 172b9957
+tick 39 0e641f66
+tick 40 c7e0442a
+tick 41 cdefc1c4
+tick 42 371ae84c
+tick 43 d0152701
+tick 44 2c81d580
+tick 45 e693b21e
+tick 46 d0ba3843
+tick 47 44558745
+tick 48 5605279f
+tick 49 d21bdd77
+tick 50 49d104de
+tick 51 b35e267f
+tick 52 e700073a
+tick 53 3790e297
+tick 54 1b12e69b
+tick 55 c733b5e0
+tick 56 5d53c4b6
+tick 57 7abc9b8e
+tick 58 6b385bf0
+tick 59 fe871b74
+tick 60 80509a88

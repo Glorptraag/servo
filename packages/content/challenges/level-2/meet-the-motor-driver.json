@@ -1,0 +1,362 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "goal": {
+    "forTicks": 15,
+    "kind": "holds",
+    "when": {
+      "kind": "state",
+      "state": "turning",
+      "target": {
+        "placed": "motor"
+      }
+    }
+  },
+  "goalLine": "Give the motor driver power in, so the DC motor on it turns",
+  "hints": [
+    {
+      "steps": [
+        {
+          "line": "This motor driver has no power in",
+          "step": "pulse-part",
+          "target": {
+            "placed": "driver"
+          }
+        },
+        {
+          "line": "Power in takes plus from the battery pack",
+          "step": "pulse-port",
+          "target": {
+            "placed": "driver",
+            "port": "plus"
+          }
+        },
+        {
+          "from": {
+            "placed": "battery",
+            "port": "plus"
+          },
+          "line": "Plus to power in",
+          "step": "ghost-wire",
+          "to": {
+            "placed": "driver",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "driver",
+                "port": "plus"
+              }
+            }
+          ],
+          "line": "Wired the battery pack's plus to the motor driver's power in",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "placed": "driver",
+        "port": "plus"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This motor driver has no way back to the battery pack",
+          "step": "pulse-part",
+          "target": {
+            "placed": "driver"
+          }
+        },
+        {
+          "line": "Power in comes back to the battery pack's minus",
+          "step": "pulse-port",
+          "target": {
+            "placed": "driver",
+            "port": "minus"
+          }
+        },
+        {
+          "from": {
+            "placed": "driver",
+            "port": "minus"
+          },
+          "line": "Minus back to minus",
+          "step": "ghost-wire",
+          "to": {
+            "placed": "battery",
+            "port": "minus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "driver",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "battery",
+                "port": "minus"
+              }
+            }
+          ],
+          "line": "Wired the motor driver's power in minus back to the battery pack's minus",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "placed": "driver",
+        "port": "minus"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This motor driver's plus and minus are swapped",
+          "step": "pulse-part",
+          "target": {
+            "placed": "driver"
+          }
+        },
+        {
+          "line": "The motor driver's power in plus takes the battery pack's plus",
+          "step": "pulse-port",
+          "target": {
+            "placed": "driver",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "minus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "driver",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "driver",
+                "port": "minus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "driver",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "driver",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "battery",
+                "port": "minus"
+              }
+            }
+          ],
+          "line": "Swapped the motor driver's power in lines",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "failure": "reversed",
+        "kind": "fault",
+        "target": {
+          "placed": "driver"
+        }
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This motor driver passes power on to the DC motor",
+          "step": "pulse-part",
+          "target": {
+            "placed": "driver"
+          }
+        },
+        {
+          "line": "Power in takes plus from the battery pack",
+          "step": "pulse-port",
+          "target": {
+            "placed": "driver",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "minus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "driver",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "driver",
+                "port": "minus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "driver",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "driver",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "battery",
+                "port": "minus"
+              }
+            }
+          ],
+          "line": "Wired the motor driver's power in to the battery pack, plus to plus and minus to minus",
+          "step": "do-it"
+        }
+      ]
+    }
+  ],
+  "id": "meet-the-motor-driver",
+  "introduces": "motor-driver",
+  "kind": "part-introduction",
+  "kit": "circuit-crew",
+  "level": 2,
+  "start": {
+    "arena": {
+      "preset": "open-floor",
+      "props": []
+    },
+    "meta": {
+      "createdAt": "2026-10-04T09:00:00.000Z",
+      "highWater": {
+        "parts": 0,
+        "wires": 3
+      },
+      "id": "88387f3b-669f-4cf4-91f7-f6ac85279864",
+      "level": 2,
+      "name": "Meet the motor driver",
+      "updatedAt": "2026-10-04T09:00:00.000Z"
+    },
+    "parts": [
+      {
+        "id": "battery",
+        "part": "battery-pack-2-cell",
+        "position": {
+          "x": -120,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "driver",
+        "part": "motor-driver",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "motor",
+        "part": "dc-motor",
+        "position": {
+          "x": 120,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      }
+    ],
+    "version": 1,
+    "wires": [
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w1",
+        "to": {
+          "part": "driver",
+          "port": "minus"
+        }
+      },
+      {
+        "from": {
+          "part": "driver",
+          "port": "a-plus"
+        },
+        "id": "w2",
+        "to": {
+          "part": "motor",
+          "port": "plus"
+        }
+      },
+      {
+        "from": {
+          "part": "driver",
+          "port": "a-minus"
+        },
+        "id": "w3",
+        "to": {
+          "part": "motor",
+          "port": "minus"
+        }
+      }
+    ]
+  },
+  "title": "Meet the motor driver"
+}

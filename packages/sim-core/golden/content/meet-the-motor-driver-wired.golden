@@ -1,0 +1,91 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/meet-the-motor-driver-wired
+seed 1
+ticks 30
+inputs none
+blueprint ef1e47f1e0b29b2d
+arena open-floor 297edbfc7ad9a93c
+part battery-pack-2-cell ac49444ad3a2e166
+part dc-motor e80cd3eae3017bf6
+part motor-driver 7bba5ed414f432a1
+record b7d10123d1eb9c349830270b28c24ec858817dac08f087f0dd0d37db49252c2a
+faults none
+subjects battery driver motor wire:w1 wire:w2 wire:w3 wire:w4
+tick 0 d5f2cbfe
+  battery volts=2.8 milliamps=500.9 charge=1 x=180 y=600 heading=0
+  driver volts=2.8 milliamps=500.9 x=300 y=600 heading=0
+  motor volts=2.495 milliamps=498.9 rpm=83.2 x=420 y=600 heading=0 sound.motor=0.416
+  wire:w1 milliamps=500.9
+  wire:w2 milliamps=-500.9
+  wire:w3 milliamps=498.9
+  wire:w4 milliamps=-498.9
+tick 1 23ff0246
+  battery volts=2.94 milliamps=150.7
+  driver volts=2.94 milliamps=150.7
+  motor volts=2.638 milliamps=148.7 rpm=87.9 sound.motor=0.44
+  wire:w1 milliamps=150.7
+  wire:w2 milliamps=-150.7
+  wire:w3 milliamps=148.7
+  wire:w4 milliamps=-148.7
+tick 2 c00a2873
+  battery volts=2.95 milliamps=124.2
+  driver volts=2.95 milliamps=124.2
+  motor volts=2.649 milliamps=122.2 rpm=88.3 sound.motor=0.442
+  wire:w1 milliamps=124.2
+  wire:w2 milliamps=-124.2
+  wire:w3 milliamps=122.2
+  wire:w4 milliamps=-122.2
+tick 3 6c7ea704
+  battery volts=2.951 milliamps=122.2 charge=0.9999
+  driver volts=2.951 milliamps=122.2
+  motor volts=2.65 milliamps=120.2
+  wire:w1 milliamps=122.2
+  wire:w2 milliamps=-122.2
+  wire:w3 milliamps=120.2
+  wire:w4 milliamps=-120.2
+tick 4 cc37d97d
+  battery milliamps=122
+  driver milliamps=122
+  motor milliamps=120
+  wire:w1 milliamps=122
+  wire:w2 milliamps=-122
+  wire:w3 milliamps=120
+  wire:w4 milliamps=-120
+tick 5 5aa5e5fe
+tick 6 5ce5cd75
+tick 7 88a23a18
+  battery charge=0.9998
+tick 8 71bea501
+tick 9 23389880
+tick 10 5d1f1523
+  battery charge=0.9997
+tick 11 071863a8
+tick 12 9f0e690e
+tick 13 357a6a7b
+tick 14 50fa5d44
+  battery charge=0.9996
+tick 15 9c2a7a41
+tick 16 9b4bb187
+tick 17 f0621fde
+  battery charge=0.9995
+tick 18 3e0f6fd6
+tick 19 a85348f7
+  motor volts=2.649
+tick 20 4d5d7c4e
+tick 21 00913b05
+  battery charge=0.9994
+tick 22 7f768683
+tick 23 8fac9fa0
+tick 24 f13c5010
+  battery charge=0.9993
+tick 25 654b2c97
+tick 26 141ecdf4
+  battery volts=2.95
+  driver volts=2.95
+tick 27 8debc65e
+tick 28 40a1ecf9
+  battery charge=0.9992
+tick 29 db214634
+tick 30 a94460ca

@@ -1,0 +1,51 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/meet-the-1-cell-battery-pack-start
+seed 1
+ticks 30
+inputs none
+blueprint 123738c437885adf
+arena open-floor 297edbfc7ad9a93c
+part battery-pack-1-cell 81b516900e0aa151
+part dc-motor e80cd3eae3017bf6
+record 3e868af813dedc88d4900d46a24edc68e8433dd0aaa3a3728cda3e4244d253c9
+fault battery no-loop first-tick=2
+fault motor no-circuit first-tick=2
+subjects battery motor wire:w1
+tick 0 e3c1b2ab
+  battery volts=1.5 milliamps=0 charge=1 x=200 y=600 heading=0
+  motor volts=0 milliamps=0 rpm=0 x=400 y=600 heading=0
+  wire:w1 milliamps=0
+tick 1 37517e5f
+tick 2 0736d067
+  battery faults=no-loop
+  motor faults=no-circuit
+tick 3 37517e5f
+tick 4 37517e5f
+tick 5 37517e5f
+tick 6 37517e5f
+tick 7 37517e5f
+tick 8 37517e5f
+tick 9 37517e5f
+tick 10 37517e5f
+tick 11 37517e5f
+tick 12 37517e5f
+tick 13 37517e5f
+tick 14 37517e5f
+tick 15 37517e5f
+tick 16 37517e5f
+tick 17 37517e5f
+tick 18 37517e5f
+tick 19 37517e5f
+tick 20 37517e5f
+tick 21 37517e5f
+tick 22 37517e5f
+tick 23 37517e5f
+tick 24 37517e5f
+tick 25 37517e5f
+tick 26 37517e5f
+tick 27 37517e5f
+tick 28 37517e5f
+tick 29 37517e5f
+tick 30 37517e5f

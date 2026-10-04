@@ -1,0 +1,68 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/meet-the-1-cell-battery-pack-wired
+seed 1
+ticks 30
+inputs none
+blueprint 3da19aa824e5bf35
+arena open-floor 297edbfc7ad9a93c
+part battery-pack-1-cell 81b516900e0aa151
+part dc-motor e80cd3eae3017bf6
+record d50c5abad1910c1378a1b03f4f6cd949fb80a258ceefad4c5bfde6f890ef98c3
+fault motor low-voltage first-tick=2
+subjects battery motor wire:w1 wire:w2
+tick 0 01b0e0d2
+  battery volts=1.442 milliamps=288.5 charge=1 x=200 y=600 heading=0
+  motor volts=1.442 milliamps=288.5 rpm=48.1 x=400 y=600 heading=0 sound.motor=0.24
+  wire:w1 milliamps=288.5
+  wire:w2 milliamps=-288.5
+tick 1 191068c7
+  battery volts=1.475 milliamps=126.5
+  motor volts=1.475 milliamps=126.5 rpm=49.2 sound.motor=0.246
+  wire:w1 milliamps=126.5
+  wire:w2 milliamps=-126.5
+tick 2 a16e1ea0
+  battery volts=1.476 milliamps=120.2
+  motor volts=1.476 milliamps=120.2 faults=low-voltage
+  wire:w1 milliamps=120.2
+  wire:w2 milliamps=-120.2
+tick 3 1a02033e
+  battery milliamps=120 charge=0.9999
+  motor milliamps=120
+  wire:w1 milliamps=120
+  wire:w2 milliamps=-120
+tick 4 1f821fc6
+tick 5 8c341fb6
+tick 6 6b3bb4d2
+tick 7 1bb9e3b5
+  battery charge=0.9998
+tick 8 10bb1f9b
+tick 9 e25015cd
+tick 10 b7acfba0
+  battery charge=0.9997
+tick 11 3457e892
+tick 12 be72f3a3
+tick 13 b7b44569
+tick 14 199342e5
+  battery charge=0.9996
+tick 15 9b851ed8
+tick 16 fc8bc5b8
+tick 17 88f99367
+tick 18 cbff7787
+  battery charge=0.9995
+tick 19 65205fb4
+tick 20 51c915f9
+tick 21 f1217c9e
+  battery charge=0.9994
+tick 22 ff45269e
+tick 23 508eb2e9
+tick 24 ea9d36b5
+tick 25 18f84365
+  battery charge=0.9993
+tick 26 52a2723e
+tick 27 2ba3fc9e
+tick 28 08605f2f
+  battery charge=0.9992
+tick 29 c27ab1a0
+tick 30 a910b668

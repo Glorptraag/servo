@@ -1,0 +1,50 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/meet-the-led-wired
+seed 1
+ticks 30
+inputs none
+blueprint 4897cbe86ee39c55
+arena open-floor 297edbfc7ad9a93c
+part battery-pack-2-cell ac49444ad3a2e166
+part led f79a09a51f13bec4
+record 1d69383a52ed980e492ebb07915e2b9e814d8ad3710f6de26daf018a38ec1f00
+faults none
+subjects battery led wire:w1 wire:w2
+tick 0 47ab8c9d
+  battery volts=2.994 milliamps=14.9 charge=1 x=200 y=600 heading=0
+  led volts=2.994 milliamps=14.9 light=0.995 x=400 y=600 heading=0
+  wire:w1 milliamps=14.9
+  wire:w2 milliamps=-14.9
+tick 1 37517e5f
+tick 2 9f9bf4c5
+tick 3 d203a7a8
+tick 4 235f8a9b
+tick 5 92a8e2c6
+tick 6 4ea68c2a
+tick 7 bcbe71fc
+tick 8 245363dd
+tick 9 e97db5d8
+tick 10 777193bd
+tick 11 773dd9de
+tick 12 45e5c039
+tick 13 e10d1769
+tick 14 d9383f3e
+tick 15 a6da97bc
+tick 16 09f1ed5c
+  battery charge=0.9999
+tick 17 99cb70d6
+tick 18 6112029f
+tick 19 76594232
+tick 20 b7a96eb7
+tick 21 8d5684bc
+tick 22 d4c1871e
+tick 23 556e98a4
+tick 24 059be90d
+tick 25 4aae4122
+tick 26 5af30d02
+tick 27 5af0a294
+tick 28 02014dbe
+tick 29 aa49c567
+tick 30 caa931bb

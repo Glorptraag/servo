@@ -1,0 +1,1270 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/meet-the-bumper-switch-beside-the-motors
+seed 1
+ticks 240
+inputs none
+blueprint bab46581f5969af8
+arena wall-stop 1d8d0f6a65d48689
+part battery-pack-2-cell ac49444ad3a2e166
+part bumper-switch 07e8a283c2f64a5b
+part caster 85cad363c9f68e25
+part chassis 2b67875c3e879e19
+part dc-motor e80cd3eae3017bf6
+part wheel-large c182e441f60c54e3
+record b96fd09024a2e80d49e6a79e77b8dfa68f10f170f4669d28ea41e800214e51f2
+fault bumper outside-loop first-tick=2
+fault motor-left overload first-tick=153
+fault motor-right overload first-tick=153
+subjects battery bumper caster chassis motor-left motor-right wheel-left wheel-right wire:w10 wire:w11 wire:w12 wire:w5 wire:w6 wire:w8 wire:w9
+tick 0 2bac8d47
+  battery volts=2.586 milliamps=1034.5 charge=1
+  bumper volts=0 milliamps=0 closed=true
+  chassis x=300 y=600 heading=0 pitch=0 roll=0
+  motor-left volts=2.586 milliamps=517.2 rpm=86.2 sound.motor=0.431
+  motor-right volts=2.586 milliamps=517.2 rpm=86.2 sound.motor=0.431
+  wheel-left rpm=86.2
+  wheel-right rpm=86.2
+  wire:w10 milliamps=-517.2
+  wire:w11 milliamps=-517.2
+  wire:w12 milliamps=0
+  wire:w5 rpm=86.2
+  wire:w6 rpm=86.2
+  wire:w8 milliamps=517.2
+  wire:w9 milliamps=517.2
+tick 1 616abece
+  chassis x=302
+tick 2 42857717
+  battery volts=2.616 milliamps=960.6 charge=0.9998
+  bumper faults=outside-loop
+  chassis x=306.5
+  motor-left volts=2.616 milliamps=480.3 rpm=28.1 sound.motor=0.141
+  motor-right volts=2.616 milliamps=480.3 rpm=28.1 sound.motor=0.141
+  wheel-left rpm=28.1
+  wheel-right rpm=28.1
+  wire:w10 milliamps=-480.3
+  wire:w11 milliamps=-480.3
+  wire:w5 rpm=28.1
+  wire:w6 rpm=28.1
+  wire:w8 milliamps=480.3
+  wire:w9 milliamps=480.3
+tick 3 ad327e34
+  battery volts=2.693 milliamps=766.9 charge=0.9995
+  chassis x=312.7
+  motor-left volts=2.693 milliamps=383.4 rpm=48.4 sound.motor=0.242
+  motor-right volts=2.693 milliamps=383.4 rpm=48.4 sound.motor=0.242
+  wheel-left rpm=48.4
+  wheel-right rpm=48.4
+  wire:w10 milliamps=-383.4
+  wire:w11 milliamps=-383.4
+  wire:w5 rpm=48.4
+  wire:w6 rpm=48.4
+  wire:w8 milliamps=383.4
+  wire:w9 milliamps=383.4
+tick 4 30773df0
+  battery volts=2.749 milliamps=626.7 charge=0.9994
+  chassis x=320.2
+  motor-left volts=2.749 milliamps=313.4 rpm=61.3 sound.motor=0.306
+  motor-right volts=2.749 milliamps=313.4 rpm=61.3 sound.motor=0.306
+  wheel-left rpm=61.3
+  wheel-right rpm=61.3
+  wire:w10 milliamps=-313.4
+  wire:w11 milliamps=-313.4
+  wire:w5 rpm=61.3
+  wire:w6 rpm=61.3
+  wire:w8 milliamps=313.4
+  wire:w9 milliamps=313.4
+tick 5 802b5b4f
+  battery volts=2.789 milliamps=525.3 charge=0.9992
+  chassis x=328.5
+  motor-left volts=2.789 milliamps=262.7 rpm=70.5 sound.motor=0.353
+  motor-right volts=2.789 milliamps=262.7 rpm=70.5 sound.motor=0.353
+  wheel-left rpm=70.5
+  wheel-right rpm=70.5
+  wire:w10 milliamps=-262.7
+  wire:w11 milliamps=-262.7
+  wire:w5 rpm=70.5
+  wire:w6 rpm=70.5
+  wire:w8 milliamps=262.7
+  wire:w9 milliamps=262.7
+tick 6 f29dfc45
+  battery volts=2.818 milliamps=452 charge=0.9991
+  chassis x=337.6
+  motor-left volts=2.818 milliamps=226 rpm=77.3 sound.motor=0.386
+  motor-right volts=2.818 milliamps=226 rpm=77.3 sound.motor=0.386
+  wheel-left rpm=77.3
+  wheel-right rpm=77.3
+  wire:w10 milliamps=-226
+  wire:w11 milliamps=-226
+  wire:w5 rpm=77.3
+  wire:w6 rpm=77.3
+  wire:w8 milliamps=226
+  wire:w9 milliamps=226
+tick 7 003165cd
+  battery volts=2.839 milliamps=398.9 charge=0.999
+  chassis x=347.1
+  motor-left volts=2.839 milliamps=199.4 rpm=82.1 sound.motor=0.411
+  motor-right volts=2.839 milliamps=199.4 rpm=82.1 sound.motor=0.411
+  wheel-left rpm=82.1
+  wheel-right rpm=82.1
+  wire:w10 milliamps=-199.4
+  wire:w11 milliamps=-199.4
+  wire:w5 rpm=82.1
+  wire:w6 rpm=82.1
+  wire:w8 milliamps=199.4
+  wire:w9 milliamps=199.4
+tick 8 16101758
+  battery volts=2.855 milliamps=360.5 charge=0.9989
+  chassis x=356.9
+  motor-left volts=2.855 milliamps=180.2 rpm=85.6 sound.motor=0.428
+  motor-right volts=2.855 milliamps=180.2 rpm=85.6 sound.motor=0.428
+  wheel-left rpm=85.6
+  wheel-right rpm=85.6
+  wire:w10 milliamps=-180.2
+  wire:w11 milliamps=-180.2
+  wire:w5 rpm=85.6
+  wire:w6 rpm=85.6
+  wire:w8 milliamps=180.2
+  wire:w9 milliamps=180.2
+tick 9 f4e47f2b
+  battery volts=2.866 milliamps=332.7 charge=0.9988
+  chassis x=367
+  motor-left volts=2.866 milliamps=166.3 rpm=88.2 sound.motor=0.441
+  motor-right volts=2.866 milliamps=166.3 rpm=88.2 sound.motor=0.441
+  wheel-left rpm=88.2
+  wheel-right rpm=88.2
+  wire:w10 milliamps=-166.3
+  wire:w11 milliamps=-166.3
+  wire:w5 rpm=88.2
+  wire:w6 rpm=88.2
+  wire:w8 milliamps=166.3
+  wire:w9 milliamps=166.3
+tick 10 3b91c369
+  battery volts=2.874 milliamps=312.5 charge=0.9987
+  chassis x=377.3
+  motor-left volts=2.874 milliamps=156.3 rpm=90 sound.motor=0.45
+  motor-right volts=2.874 milliamps=156.3 rpm=90 sound.motor=0.45
+  wheel-left rpm=90
+  wheel-right rpm=90
+  wire:w10 milliamps=-156.3
+  wire:w11 milliamps=-156.3
+  wire:w5 rpm=90
+  wire:w6 rpm=90
+  wire:w8 milliamps=156.3
+  wire:w9 milliamps=156.3
+tick 11 338aa3c5
+  battery volts=2.879 milliamps=298
+  chassis x=387.7
+  motor-left volts=2.879 milliamps=149 rpm=91.3 sound.motor=0.457
+  motor-right volts=2.879 milliamps=149 rpm=91.3 sound.motor=0.457
+  wheel-left rpm=91.3
+  wheel-right rpm=91.3
+  wire:w10 milliamps=-149
+  wire:w11 milliamps=-149
+  wire:w5 rpm=91.3
+  wire:w6 rpm=91.3
+  wire:w8 milliamps=149
+  wire:w9 milliamps=149
+tick 12 0fad4cbd
+  battery volts=2.884 milliamps=287.4 charge=0.9986
+  chassis x=398.3
+  motor-left volts=2.884 milliamps=143.7 rpm=92.3 sound.motor=0.462
+  motor-right volts=2.884 milliamps=143.7 rpm=92.3 sound.motor=0.462
+  wheel-left rpm=92.3
+  wheel-right rpm=92.3
+  wire:w10 milliamps=-143.7
+  wire:w11 milliamps=-143.7
+  wire:w5 rpm=92.3
+  wire:w6 rpm=92.3
+  wire:w8 milliamps=143.7
+  wire:w9 milliamps=143.7
+tick 13 448a2736
+  battery volts=2.887 milliamps=279.8 charge=0.9985
+  chassis x=408.8
+  motor-left volts=2.887 milliamps=139.9 rpm=93 sound.motor=0.465
+  motor-right volts=2.887 milliamps=139.9 rpm=93 sound.motor=0.465
+  wheel-left rpm=93
+  wheel-right rpm=93
+  wire:w10 milliamps=-139.9
+  wire:w11 milliamps=-139.9
+  wire:w5 rpm=93
+  wire:w6 rpm=93
+  wire:w8 milliamps=139.9
+  wire:w9 milliamps=139.9
+tick 14 8967be9a
+  battery volts=2.889 milliamps=274.3
+  chassis x=419.5
+  motor-left volts=2.889 milliamps=137.2 rpm=93.5 sound.motor=0.467
+  motor-right volts=2.889 milliamps=137.2 rpm=93.5 sound.motor=0.467
+  wheel-left rpm=93.5
+  wheel-right rpm=93.5
+  wire:w10 milliamps=-137.2
+  wire:w11 milliamps=-137.2
+  wire:w5 rpm=93.5
+  wire:w6 rpm=93.5
+  wire:w8 milliamps=137.2
+  wire:w9 milliamps=137.2
+tick 15 0d1a9a6f
+  battery volts=2.89 milliamps=270.4 charge=0.9984
+  chassis x=430.1
+  motor-left volts=2.89 milliamps=135.2 rpm=93.9 sound.motor=0.469
+  motor-right volts=2.89 milliamps=135.2 rpm=93.9 sound.motor=0.469
+  wheel-left rpm=93.9
+  wheel-right rpm=93.9
+  wire:w10 milliamps=-135.2
+  wire:w11 milliamps=-135.2
+  wire:w5 rpm=93.9
+  wire:w6 rpm=93.9
+  wire:w8 milliamps=135.2
+  wire:w9 milliamps=135.2
+tick 16 3279846d
+  battery volts=2.891 milliamps=267.5 charge=0.9983
+  chassis x=440.8
+  motor-left volts=2.891 milliamps=133.7 rpm=94.1 sound.motor=0.471
+  motor-right volts=2.891 milliamps=133.7 rpm=94.1 sound.motor=0.471
+  wheel-left rpm=94.1
+  wheel-right rpm=94.1
+  wire:w10 milliamps=-133.7
+  wire:w11 milliamps=-133.7
+  wire:w5 rpm=94.1
+  wire:w6 rpm=94.1
+  wire:w8 milliamps=133.7
+  wire:w9 milliamps=133.7
+tick 17 44f08ed2
+  battery volts=2.892 milliamps=265.4
+  chassis x=451.5
+  motor-left volts=2.892 milliamps=132.7 rpm=94.3 sound.motor=0.472
+  motor-right volts=2.892 milliamps=132.7 rpm=94.3 sound.motor=0.472
+  wheel-left rpm=94.3
+  wheel-right rpm=94.3
+  wire:w10 milliamps=-132.7
+  wire:w11 milliamps=-132.7
+  wire:w5 rpm=94.3
+  wire:w6 rpm=94.3
+  wire:w8 milliamps=132.7
+  wire:w9 milliamps=132.7
+tick 18 859d0b6f
+  battery volts=2.893 milliamps=263.9 charge=0.9982
+  chassis x=462.2
+  motor-left volts=2.893 milliamps=131.9 rpm=94.4
+  motor-right volts=2.893 milliamps=131.9 rpm=94.4
+  wheel-left rpm=94.4
+  wheel-right rpm=94.4
+  wire:w10 milliamps=-131.9
+  wire:w11 milliamps=-131.9
+  wire:w5 rpm=94.4
+  wire:w6 rpm=94.4
+  wire:w8 milliamps=131.9
+  wire:w9 milliamps=131.9
+tick 19 db44b635
+  battery milliamps=262.8
+  chassis x=473
+  motor-left milliamps=131.4 rpm=94.5 sound.motor=0.473
+  motor-right milliamps=131.4 rpm=94.5 sound.motor=0.473
+  wheel-left rpm=94.5
+  wheel-right rpm=94.5
+  wire:w10 milliamps=-131.4
+  wire:w11 milliamps=-131.4
+  wire:w5 rpm=94.5
+  wire:w6 rpm=94.5
+  wire:w8 milliamps=131.4
+  wire:w9 milliamps=131.4
+tick 20 94b9191d
+  battery milliamps=262 charge=0.9981
+  chassis x=483.7
+  motor-left milliamps=131 rpm=94.6
+  motor-right milliamps=131 rpm=94.6
+  wheel-left rpm=94.6
+  wheel-right rpm=94.6
+  wire:w10 milliamps=-131
+  wire:w11 milliamps=-131
+  wire:w5 rpm=94.6
+  wire:w6 rpm=94.6
+  wire:w8 milliamps=131
+  wire:w9 milliamps=131
+tick 21 1aa8e4c0
+  battery milliamps=261.4 charge=0.998
+  chassis x=494.5
+  motor-left milliamps=130.7 rpm=94.7
+  motor-right milliamps=130.7 rpm=94.7
+  wheel-left rpm=94.7
+  wheel-right rpm=94.7
+  wire:w10 milliamps=-130.7
+  wire:w11 milliamps=-130.7
+  wire:w5 rpm=94.7
+  wire:w6 rpm=94.7
+  wire:w8 milliamps=130.7
+  wire:w9 milliamps=130.7
+tick 22 c112689c
+  battery volts=2.894 milliamps=261
+  chassis x=505.2
+  motor-left volts=2.894 milliamps=130.5 sound.motor=0.474
+  motor-right volts=2.894 milliamps=130.5 sound.motor=0.474
+  wire:w10 milliamps=-130.5
+  wire:w11 milliamps=-130.5
+  wire:w8 milliamps=130.5
+  wire:w9 milliamps=130.5
+tick 23 c5f85540
+  battery milliamps=260.8 charge=0.9979
+  chassis x=515.9
+  motor-left milliamps=130.4
+  motor-right milliamps=130.4
+  wire:w10 milliamps=-130.4
+  wire:w11 milliamps=-130.4
+  wire:w8 milliamps=130.4
+  wire:w9 milliamps=130.4
+tick 24 50696ff1
+  battery milliamps=260.6
+  chassis x=526.7
+  motor-left milliamps=130.3
+  motor-right milliamps=130.3
+  wire:w10 milliamps=-130.3
+  wire:w11 milliamps=-130.3
+  wire:w8 milliamps=130.3
+  wire:w9 milliamps=130.3
+tick 25 4ff75fee
+  battery milliamps=260.5 charge=0.9978
+  chassis x=537.4
+tick 26 bce2182f
+  battery charge=0.9977
+  chassis x=548.2
+tick 27 393fac0c
+  battery volts=2.893
+  chassis x=558.9
+  motor-left volts=2.893 milliamps=130.2
+  motor-right volts=2.893 milliamps=130.2
+  wire:w10 milliamps=-130.2
+  wire:w11 milliamps=-130.2
+  wire:w8 milliamps=130.2
+  wire:w9 milliamps=130.2
+tick 28 a56730bd
+  battery charge=0.9976
+  chassis x=569.7
+tick 29 fd7da0f7
+  battery charge=0.9975
+  chassis x=580.4
+tick 30 6aae9870
+  battery milliamps=260.4
+  chassis x=591.2
+tick 31 dc5c2056
+  battery charge=0.9974
+  chassis x=601.9
+tick 32 d60e8e62
+  chassis x=612.7
+tick 33 9c55d735
+  battery charge=0.9973
+  chassis x=623.4
+tick 34 d3ab29a5
+  battery milliamps=260.3 charge=0.9972
+  chassis x=634.2
+tick 35 3c58bdf4
+  chassis x=644.9
+tick 36 81a6eac8
+  battery charge=0.9971
+  chassis x=655.7
+tick 37 ef57a89c
+  chassis x=666.4
+  motor-left milliamps=130.1
+  motor-right milliamps=130.1
+  wire:w10 milliamps=-130.1
+  wire:w11 milliamps=-130.1
+  wire:w8 milliamps=130.1
+  wire:w9 milliamps=130.1
+tick 38 ebffb88f
+  battery charge=0.997
+  chassis x=677.2
+tick 39 5e4813b2
+  battery milliamps=260.2 charge=0.9969
+  chassis x=687.9
+tick 40 35796575
+  chassis x=698.7
+tick 41 ff4e98dd
+  battery charge=0.9968
+  chassis x=709.4
+tick 42 5c74c87d
+  chassis x=720.2
+tick 43 2908dcdd
+  battery charge=0.9967
+  chassis x=730.9
+tick 44 341c326b
+  battery milliamps=260.1 charge=0.9966
+  chassis x=741.7
+tick 45 decf0d84
+  chassis x=752.4
+tick 46 79a3eb47
+  battery volts=2.892 charge=0.9965
+  chassis x=763.2
+  motor-left volts=2.892 milliamps=130
+  motor-right volts=2.892 milliamps=130
+  wire:w10 milliamps=-130
+  wire:w11 milliamps=-130
+  wire:w8 milliamps=130
+  wire:w9 milliamps=130
+tick 47 f9918f61
+  chassis x=773.9
+tick 48 7ef671d6
+  battery charge=0.9964
+  chassis x=784.6
+tick 49 12caa6ee
+  battery milliamps=260 charge=0.9963
+  chassis x=795.4
+tick 50 0723fe0f
+  chassis x=806.1
+tick 51 85437000
+  battery charge=0.9962
+  chassis x=816.9
+tick 52 e01d9949
+  chassis x=827.6
+tick 53 39154404
+  battery charge=0.9961
+  chassis x=838.4
+tick 54 c6a21052
+  battery milliamps=259.9 charge=0.996
+  chassis x=849.1
+tick 55 49fcfb42
+  chassis x=859.9
+tick 56 4f243920
+  battery charge=0.9959
+  chassis x=870.6
+  motor-left milliamps=129.9
+  motor-right milliamps=129.9
+  wire:w10 milliamps=-129.9
+  wire:w11 milliamps=-129.9
+  wire:w8 milliamps=129.9
+  wire:w9 milliamps=129.9
+tick 57 6717c1ab
+  chassis x=881.4
+tick 58 d4e9e423
+  battery charge=0.9958
+  chassis x=892.1
+tick 59 b22bedb0
+  battery milliamps=259.8 charge=0.9957
+  chassis x=902.9
+tick 60 86b30e7c
+  chassis x=913.6
+tick 61 68c0b050
+  battery charge=0.9956
+  chassis x=924.4
+tick 62 021ebd75
+  chassis x=935.1
+tick 63 c8bd3c28
+  battery milliamps=259.7 charge=0.9955
+  chassis x=945.9
+tick 64 6323f361
+  battery charge=0.9954
+  chassis x=956.6
+tick 65 f191c9d9
+  battery volts=2.891
+  chassis x=967.4
+  motor-left volts=2.891
+  motor-right volts=2.891
+tick 66 541538ac
+  battery charge=0.9953
+  chassis x=978.1
+  motor-left milliamps=129.8
+  motor-right milliamps=129.8
+  wire:w10 milliamps=-129.8
+  wire:w11 milliamps=-129.8
+  wire:w8 milliamps=129.8
+  wire:w9 milliamps=129.8
+tick 67 34a45583
+  chassis x=988.9
+tick 68 99f0ef15
+  battery milliamps=259.6 charge=0.9952
+  chassis x=999.6
+tick 69 078de99d
+  battery charge=0.9951
+  chassis x=1010.4
+tick 70 37ba38bd
+  chassis x=1021.1
+tick 71 2838cc80
+  battery charge=0.995
+  chassis x=1031.9
+tick 72 72025c7a
+  chassis x=1042.6
+tick 73 92321edd
+  battery milliamps=259.5 charge=0.9949
+  chassis x=1053.3
+tick 74 d74c866d
+  battery charge=0.9948
+  chassis x=1064.1
+tick 75 56aec7ec
+  chassis x=1074.8
+  motor-left milliamps=129.7
+  motor-right milliamps=129.7
+  wire:w10 milliamps=-129.7
+  wire:w11 milliamps=-129.7
+  wire:w8 milliamps=129.7
+  wire:w9 milliamps=129.7
+tick 76 db3dc3ba
+  battery charge=0.9947
+  chassis x=1085.6
+tick 77 e552e125
+  chassis x=1096.3
+tick 78 1ece66d8
+  battery milliamps=259.4 charge=0.9946
+  chassis x=1107.1
+tick 79 a579b002
+  battery charge=0.9945
+  chassis x=1117.8
+tick 80 b6678423
+  chassis x=1128.6
+tick 81 78c5568f
+  battery charge=0.9944
+  chassis x=1139.3
+tick 82 e5afcfec
+  chassis x=1150.1
+tick 83 ffc50d8b
+  battery milliamps=259.3 charge=0.9943
+  chassis x=1160.8
+tick 84 5978f57b
+  battery charge=0.9942
+  chassis x=1171.6
+tick 85 a5dc83a4
+  battery volts=2.89
+  chassis x=1182.3
+  motor-left volts=2.89 milliamps=129.6
+  motor-right volts=2.89 milliamps=129.6
+  wire:w10 milliamps=-129.6
+  wire:w11 milliamps=-129.6
+  wire:w8 milliamps=129.6
+  wire:w9 milliamps=129.6
+tick 86 246b4a94
+  battery charge=0.9941
+  chassis x=1193.1
+tick 87 354e4d06
+  battery milliamps=259.2
+  chassis x=1203.8
+tick 88 b4fa3d38
+  battery charge=0.994
+  chassis x=1214.6
+tick 89 46b2807b
+  battery charge=0.9939
+  chassis x=1225.3
+tick 90 26d1a411
+  chassis x=1236.1
+tick 91 5b641134
+  battery charge=0.9938
+  chassis x=1246.8
+tick 92 70bc02b7
+  battery milliamps=259.1
+  chassis x=1257.6
+tick 93 8ead95ae
+  battery charge=0.9937
+  chassis x=1268.3
+tick 94 fb74a44f
+  battery charge=0.9936
+  chassis x=1279.1
+tick 95 cd91126e
+  chassis x=1289.8
+  motor-left milliamps=129.5
+  motor-right milliamps=129.5
+  wire:w10 milliamps=-129.5
+  wire:w11 milliamps=-129.5
+  wire:w8 milliamps=129.5
+  wire:w9 milliamps=129.5
+tick 96 95a8e304
+  battery charge=0.9935
+  chassis x=1300.6
+tick 97 445cb7de
+  battery milliamps=259
+  chassis x=1311.3
+tick 98 253f2b3c
+  battery charge=0.9934
+  chassis x=1322
+tick 99 8c437fb9
+  battery charge=0.9933
+  chassis x=1332.8
+tick 100 fbbc31f8
+  chassis x=1343.5
+tick 101 ca4c85ed
+  battery charge=0.9932
+  chassis x=1354.3
+tick 102 f9452db3
+  battery milliamps=258.9
+  chassis x=1365
+tick 103 87ff4222
+  battery charge=0.9931
+  chassis x=1375.8
+tick 104 0954126c
+  battery volts=2.889 charge=0.993
+  chassis x=1386.5
+  motor-left volts=2.889 milliamps=129.4
+  motor-right volts=2.889 milliamps=129.4
+  wire:w10 milliamps=-129.4
+  wire:w11 milliamps=-129.4
+  wire:w8 milliamps=129.4
+  wire:w9 milliamps=129.4
+tick 105 aae35866
+  battery milliamps=259.1
+  chassis x=1397.3
+  motor-left milliamps=129.5
+  motor-right milliamps=129.5
+  wire:w10 milliamps=-129.5
+  wire:w11 milliamps=-129.5
+  wire:w8 milliamps=129.5
+  wire:w9 milliamps=129.5
+tick 106 653c96bb
+  battery milliamps=259 charge=0.9929
+  chassis x=1408
+tick 107 e778b378
+  chassis x=1418.8
+tick 108 ca8e6684
+  battery charge=0.9928
+  chassis x=1429.5
+tick 109 9a578d3f
+  battery charge=0.9927
+  chassis x=1440.3
+tick 110 6d66b1b9
+  chassis x=1451
+tick 111 5b27fa52
+  battery milliamps=258.9 charge=0.9926
+  chassis x=1461.8
+tick 112 ffea2004
+  chassis x=1472.5
+tick 113 9e980841
+  battery charge=0.9925
+  chassis x=1483.2
+  motor-left milliamps=129.4
+  motor-right milliamps=129.4
+  wire:w10 milliamps=-129.4
+  wire:w11 milliamps=-129.4
+  wire:w8 milliamps=129.4
+  wire:w9 milliamps=129.4
+tick 114 9bc54a77
+  battery milliamps=259 charge=0.9924
+  chassis x=1494
+  motor-left milliamps=129.5
+  motor-right milliamps=129.5
+  wire:w10 milliamps=-129.5
+  wire:w11 milliamps=-129.5
+  wire:w8 milliamps=129.5
+  wire:w9 milliamps=129.5
+tick 115 9bfe831e
+  chassis x=1504.7
+tick 116 c3a155d7
+  battery charge=0.9923
+  chassis x=1515.5
+tick 117 8eea0d96
+  chassis x=1526.2
+tick 118 c71ce793
+  battery charge=0.9922
+  chassis x=1537
+tick 119 08587ab0
+  battery milliamps=258.9 charge=0.9921
+  chassis x=1547.7
+tick 120 544d38fc
+  chassis x=1558.5
+tick 121 4e374703
+  battery volts=2.888 charge=0.992
+  chassis x=1569.2
+  motor-left volts=2.888
+  motor-right volts=2.888
+tick 122 dd79725b
+  chassis x=1579.9
+  motor-left milliamps=129.4
+  motor-right milliamps=129.4
+  wire:w10 milliamps=-129.4
+  wire:w11 milliamps=-129.4
+  wire:w8 milliamps=129.4
+  wire:w9 milliamps=129.4
+tick 123 d5c95e66
+  battery milliamps=259 charge=0.9919
+  chassis x=1590.7
+  motor-left milliamps=129.5 sound.motor=0.473
+  motor-right milliamps=129.5 sound.motor=0.473
+  wire:w10 milliamps=-129.5
+  wire:w11 milliamps=-129.5
+  wire:w8 milliamps=129.5
+  wire:w9 milliamps=129.5
+tick 124 f292817b
+  battery charge=0.9918
+  chassis x=1601.4
+tick 125 308e3935
+  chassis x=1612.2
+tick 126 f9a0561e
+  battery charge=0.9917
+  chassis x=1622.9
+tick 127 4182532d
+  chassis x=1633.7
+tick 128 4924df83
+  battery milliamps=258.9 charge=0.9916
+  chassis x=1644.4
+tick 129 2784be53
+  battery charge=0.9915
+  chassis x=1655.1
+tick 130 22b99b01
+  chassis x=1665.9
+  motor-left milliamps=129.4
+  motor-right milliamps=129.4
+  wire:w10 milliamps=-129.4
+  wire:w11 milliamps=-129.4
+  wire:w8 milliamps=129.4
+  wire:w9 milliamps=129.4
+tick 131 f0551aa0
+  battery milliamps=259.1 charge=0.9914
+  chassis x=1676.6
+  motor-left milliamps=129.5
+  motor-right milliamps=129.5
+  wire:w10 milliamps=-129.5
+  wire:w11 milliamps=-129.5
+  wire:w8 milliamps=129.5
+  wire:w9 milliamps=129.5
+tick 132 9914ad2a
+  battery milliamps=259
+  chassis x=1687.4
+tick 133 19e7b5ce
+  battery charge=0.9913
+  chassis x=1698.1
+tick 134 340e0c62
+  battery charge=0.9912
+  chassis x=1708.8
+tick 135 61cc5856
+  chassis x=1719.6
+tick 136 4b4fd9c4
+  battery milliamps=258.9 charge=0.9911
+  chassis x=1730.3
+tick 137 2aa83c5c
+  battery volts=2.887
+  chassis x=1741.1
+  motor-left volts=2.887
+  motor-right volts=2.887
+tick 138 e35809ce
+  battery charge=0.991
+  chassis x=1751.8
+tick 139 0f5c4a0b
+  battery charge=0.9909
+  chassis x=1762.5
+  motor-left milliamps=129.4
+  motor-right milliamps=129.4
+  wire:w10 milliamps=-129.4
+  wire:w11 milliamps=-129.4
+  wire:w8 milliamps=129.4
+  wire:w9 milliamps=129.4
+tick 140 bb213041
+  battery milliamps=259
+  chassis x=1773.3
+  motor-left milliamps=129.5
+  motor-right milliamps=129.5
+  wire:w10 milliamps=-129.5
+  wire:w11 milliamps=-129.5
+  wire:w8 milliamps=129.5
+  wire:w9 milliamps=129.5
+tick 141 7e28f96c
+  battery charge=0.9908
+  chassis x=1784
+tick 142 172a44f7
+  chassis x=1794.8
+tick 143 55024afb
+  battery charge=0.9907
+  chassis x=1805.5
+tick 144 b989cf01
+  battery charge=0.9906
+  chassis x=1816.2
+tick 145 986bbfa9
+  battery milliamps=258.9
+  chassis x=1827
+tick 146 40261f08
+  battery charge=0.9905
+  chassis x=1837.7
+tick 147 f716e32f
+  chassis x=1848.4
+  motor-left milliamps=129.4
+  motor-right milliamps=129.4
+  wire:w10 milliamps=-129.4
+  wire:w11 milliamps=-129.4
+  wire:w8 milliamps=129.4
+  wire:w9 milliamps=129.4
+tick 148 963c5862
+  battery milliamps=259.1 charge=0.9904
+  chassis x=1859.2
+  motor-left milliamps=129.5 rpm=94.6
+  motor-right milliamps=129.5 rpm=94.6
+  wheel-left rpm=94.6
+  wheel-right rpm=94.6
+  wire:w10 milliamps=-129.5
+  wire:w11 milliamps=-129.5
+  wire:w5 rpm=94.6
+  wire:w6 rpm=94.6
+  wire:w8 milliamps=129.5
+  wire:w9 milliamps=129.5
+tick 149 6a0c43ac
+  battery milliamps=259 charge=0.9903
+  chassis x=1869.9 sound.knock=0.805
+tick 150 3a700fd2
+  bumper volts=2.887 closed=false
+  chassis x=1870 heading=360 sound.knock=none
+tick 151 46ac0e05
+  battery volts=2.578 milliamps=1031.1 charge=0.9902
+  bumper volts=2.578
+  motor-left volts=2.578 milliamps=515.6 rpm=0 sound.motor=none sound.hum=0.43
+  motor-right volts=2.578 milliamps=515.6 rpm=0 sound.motor=none sound.hum=0.43
+  wheel-left rpm=0
+  wheel-right rpm=0
+  wire:w10 milliamps=-515.6
+  wire:w11 milliamps=-515.6
+  wire:w5 rpm=0
+  wire:w6 rpm=0
+  wire:w8 milliamps=515.6
+  wire:w9 milliamps=515.6
+tick 152 62defe2e
+  battery milliamps=1031 charge=0.99
+  motor-left milliamps=515.5
+  motor-right milliamps=515.5
+  wire:w10 milliamps=-515.5
+  wire:w11 milliamps=-515.5
+  wire:w8 milliamps=515.5
+  wire:w9 milliamps=515.5
+tick 153 c33a08e4
+  battery volts=2.577 milliamps=1030.9 charge=0.9897
+  bumper volts=2.577
+  motor-left volts=2.577 faults=overload
+  motor-right volts=2.577 faults=overload
+tick 154 4b9d8960
+  battery charge=0.9895
+  motor-left milliamps=515.4
+  motor-right milliamps=515.4
+  wire:w10 milliamps=-515.4
+  wire:w11 milliamps=-515.4
+  wire:w8 milliamps=515.4
+  wire:w9 milliamps=515.4
+tick 155 8cf1cffa
+  battery milliamps=1030.8 charge=0.9893
+  motor-left sound.hum=0.429
+  motor-right sound.hum=0.429
+tick 156 70e8dd70
+  battery milliamps=1030.7 charge=0.989
+  motor-left milliamps=515.3
+  motor-right milliamps=515.3
+  wire:w10 milliamps=-515.3
+  wire:w11 milliamps=-515.3
+  wire:w8 milliamps=515.3
+  wire:w9 milliamps=515.3
+tick 157 58c20381
+  battery milliamps=1030.6 charge=0.9888
+tick 158 898e2c22
+  battery volts=2.576 milliamps=1030.5 charge=0.9886
+  bumper volts=2.576
+  motor-left volts=2.576
+  motor-right volts=2.576
+tick 159 c46cdf8e
+  battery charge=0.9883
+  motor-left milliamps=515.2
+  motor-right milliamps=515.2
+  wire:w10 milliamps=-515.2
+  wire:w11 milliamps=-515.2
+  wire:w8 milliamps=515.2
+  wire:w9 milliamps=515.2
+tick 160 e8773783
+  battery milliamps=1030.4 charge=0.9881
+tick 161 44ef47ee
+  battery milliamps=1030.3 charge=0.9878
+  motor-left milliamps=515.1
+  motor-right milliamps=515.1
+  wire:w10 milliamps=-515.1
+  wire:w11 milliamps=-515.1
+  wire:w8 milliamps=515.1
+  wire:w9 milliamps=515.1
+tick 162 10ebc159
+  battery milliamps=1030.2 charge=0.9876
+tick 163 b22cd4ee
+  battery volts=2.575 milliamps=1030.1 charge=0.9874
+  bumper volts=2.575
+  motor-left volts=2.575
+  motor-right volts=2.575
+tick 164 584d6f51
+  battery milliamps=1030 charge=0.9871
+  motor-left milliamps=515
+  motor-right milliamps=515
+  wire:w10 milliamps=-515
+  wire:w11 milliamps=-515
+  wire:w8 milliamps=515
+  wire:w9 milliamps=515
+tick 165 5960a085
+  battery charge=0.9869
+tick 166 76c67dad
+  battery milliamps=1029.9 charge=0.9866
+  motor-left milliamps=514.9
+  motor-right milliamps=514.9
+  wire:w10 milliamps=-514.9
+  wire:w11 milliamps=-514.9
+  wire:w8 milliamps=514.9
+  wire:w9 milliamps=514.9
+tick 167 4136cb95
+  battery volts=2.574 milliamps=1029.8 charge=0.9864
+  bumper volts=2.574
+  motor-left volts=2.574
+  motor-right volts=2.574
+tick 168 75e4c6e4
+  battery milliamps=1029.7 charge=0.9862
+tick 169 357e486f
+  battery milliamps=1029.6 charge=0.9859
+  motor-left milliamps=514.8
+  motor-right milliamps=514.8
+  wire:w10 milliamps=-514.8
+  wire:w11 milliamps=-514.8
+  wire:w8 milliamps=514.8
+  wire:w9 milliamps=514.8
+tick 170 22599f90
+  battery milliamps=1029.5 charge=0.9857
+tick 171 986d4181
+  battery charge=0.9855
+  motor-left milliamps=514.7
+  motor-right milliamps=514.7
+  wire:w10 milliamps=-514.7
+  wire:w11 milliamps=-514.7
+  wire:w8 milliamps=514.7
+  wire:w9 milliamps=514.7
+tick 172 48a1e50b
+  battery volts=2.573 milliamps=1029.4 charge=0.9852
+  bumper volts=2.573
+  motor-left volts=2.573
+  motor-right volts=2.573
+tick 173 c82751dd
+  battery milliamps=1029.3 charge=0.985
+tick 174 2539b769
+  battery milliamps=1029.2 charge=0.9847
+  motor-left milliamps=514.6
+  motor-right milliamps=514.6
+  wire:w10 milliamps=-514.6
+  wire:w11 milliamps=-514.6
+  wire:w8 milliamps=514.6
+  wire:w9 milliamps=514.6
+tick 175 164292d9
+  battery milliamps=1029.1 charge=0.9845
+tick 176 48794dca
+  battery charge=0.9843
+  motor-left milliamps=514.5
+  motor-right milliamps=514.5
+  wire:w10 milliamps=-514.5
+  wire:w11 milliamps=-514.5
+  wire:w8 milliamps=514.5
+  wire:w9 milliamps=514.5
+tick 177 8f6f7869
+  battery volts=2.572 milliamps=1029 charge=0.984
+  bumper volts=2.572
+  motor-left volts=2.572
+  motor-right volts=2.572
+tick 178 87daeebe
+  battery milliamps=1028.9 charge=0.9838
+  motor-left milliamps=514.4
+  motor-right milliamps=514.4
+  wire:w10 milliamps=-514.4
+  wire:w11 milliamps=-514.4
+  wire:w8 milliamps=514.4
+  wire:w9 milliamps=514.4
+tick 179 f2b4a33a
+  battery milliamps=1028.8 charge=0.9835
+tick 180 e2437e11
+  battery milliamps=1028.7 charge=0.9833
+tick 181 2a927a38
+  battery milliamps=1028.6 charge=0.9831
+  motor-left milliamps=514.3
+  motor-right milliamps=514.3
+  wire:w10 milliamps=-514.3
+  wire:w11 milliamps=-514.3
+  wire:w8 milliamps=514.3
+  wire:w9 milliamps=514.3
+tick 182 c117bad8
+  battery volts=2.571 charge=0.9828
+  bumper volts=2.571
+  motor-left volts=2.571
+  motor-right volts=2.571
+tick 183 768e2249
+  battery milliamps=1028.5 charge=0.9826
+  motor-left milliamps=514.2
+  motor-right milliamps=514.2
+  wire:w10 milliamps=-514.2
+  wire:w11 milliamps=-514.2
+  wire:w8 milliamps=514.2
+  wire:w9 milliamps=514.2
+tick 184 07dd17a0
+  battery milliamps=1028.4 charge=0.9824
+  motor-left sound.hum=0.428
+  motor-right sound.hum=0.428
+tick 185 4c9de21c
+  battery milliamps=1028.3 charge=0.9821
+tick 186 b00c43d4
+  battery milliamps=1028.2 charge=0.9819
+  motor-left milliamps=514.1
+  motor-right milliamps=514.1
+  wire:w10 milliamps=-514.1
+  wire:w11 milliamps=-514.1
+  wire:w8 milliamps=514.1
+  wire:w9 milliamps=514.1
+tick 187 acaf64ee
+  battery volts=2.57 charge=0.9816
+  bumper volts=2.57
+  motor-left volts=2.57
+  motor-right volts=2.57
+tick 188 1f74b7aa
+  battery milliamps=1028.1 charge=0.9814
+  motor-left milliamps=514
+  motor-right milliamps=514
+  wire:w10 milliamps=-514
+  wire:w11 milliamps=-514
+  wire:w8 milliamps=514
+  wire:w9 milliamps=514
+tick 189 e4fb7ae2
+  battery milliamps=1028 charge=0.9812
+tick 190 0db6c3a1
+  battery milliamps=1027.9 charge=0.9809
+tick 191 d827bf76
+  battery milliamps=1027.8 charge=0.9807
+  motor-left milliamps=513.9
+  motor-right milliamps=513.9
+  wire:w10 milliamps=-513.9
+  wire:w11 milliamps=-513.9
+  wire:w8 milliamps=513.9
+  wire:w9 milliamps=513.9
+tick 192 366d0eb2
+  battery volts=2.569 milliamps=1027.7 charge=0.9805
+  bumper volts=2.569
+  motor-left volts=2.569
+  motor-right volts=2.569
+tick 193 531f9203
+  battery charge=0.9802
+  motor-left milliamps=513.8
+  motor-right milliamps=513.8
+  wire:w10 milliamps=-513.8
+  wire:w11 milliamps=-513.8
+  wire:w8 milliamps=513.8
+  wire:w9 milliamps=513.8
+tick 194 bc95df15
+  battery milliamps=1027.6 charge=0.98
+tick 195 d305c91e
+  battery milliamps=1027.5 charge=0.9797
+  motor-left milliamps=513.7
+  motor-right milliamps=513.7
+  wire:w10 milliamps=-513.7
+  wire:w11 milliamps=-513.7
+  wire:w8 milliamps=513.7
+  wire:w9 milliamps=513.7
+tick 196 47785797
+  battery milliamps=1027.4 charge=0.9795
+tick 197 3a8d0fb7
+  battery volts=2.568 milliamps=1027.3 charge=0.9793
+  bumper volts=2.568
+  motor-left volts=2.568
+  motor-right volts=2.568
+tick 198 43e5b8dc
+  battery charge=0.979
+  motor-left milliamps=513.6
+  motor-right milliamps=513.6
+  wire:w10 milliamps=-513.6
+  wire:w11 milliamps=-513.6
+  wire:w8 milliamps=513.6
+  wire:w9 milliamps=513.6
+tick 199 6b7a9318
+  battery milliamps=1027.2 charge=0.9788
+tick 200 c41001a5
+  battery milliamps=1027.1 charge=0.9786
+  motor-left milliamps=513.5
+  motor-right milliamps=513.5
+  wire:w10 milliamps=-513.5
+  wire:w11 milliamps=-513.5
+  wire:w8 milliamps=513.5
+  wire:w9 milliamps=513.5
+tick 201 d66abfb9
+  battery milliamps=1027 charge=0.9783
+tick 202 dbbea195
+  battery volts=2.567 milliamps=1026.9 charge=0.9781
+  bumper volts=2.567
+  motor-left volts=2.567
+  motor-right volts=2.567
+tick 203 f790b766
+  battery milliamps=1026.8 charge=0.9778
+  motor-left milliamps=513.4
+  motor-right milliamps=513.4
+  wire:w10 milliamps=-513.4
+  wire:w11 milliamps=-513.4
+  wire:w8 milliamps=513.4
+  wire:w9 milliamps=513.4
+tick 204 c4725b32
+  battery charge=0.9776
+tick 205 14ed98c7
+  battery milliamps=1026.7 charge=0.9774
+  motor-left milliamps=513.3
+  motor-right milliamps=513.3
+  wire:w10 milliamps=-513.3
+  wire:w11 milliamps=-513.3
+  wire:w8 milliamps=513.3
+  wire:w9 milliamps=513.3
+tick 206 e74f7533
+  battery volts=2.566 milliamps=1026.6 charge=0.9771
+  bumper volts=2.566
+  motor-left volts=2.566
+  motor-right volts=2.566
+tick 207 c5d99b58
+  battery milliamps=1026.5 charge=0.9769
+tick 208 c4f4775c
+  battery milliamps=1026.4 charge=0.9766
+  motor-left milliamps=513.2
+  motor-right milliamps=513.2
+  wire:w10 milliamps=-513.2
+  wire:w11 milliamps=-513.2
+  wire:w8 milliamps=513.2
+  wire:w9 milliamps=513.2
+tick 209 778c8ccb
+  battery milliamps=1026.3 charge=0.9764
+tick 210 16bc1b03
+  battery charge=0.9762
+  motor-left milliamps=513.1
+  motor-right milliamps=513.1
+  wire:w10 milliamps=-513.1
+  wire:w11 milliamps=-513.1
+  wire:w8 milliamps=513.1
+  wire:w9 milliamps=513.1
+tick 211 cb54f09d
+  battery volts=2.565 milliamps=1026.2 charge=0.9759
+  bumper volts=2.565
+  motor-left volts=2.565
+  motor-right volts=2.565
+tick 212 705934e8
+  battery milliamps=1026.1 charge=0.9757
+tick 213 dfcb73a6
+  battery milliamps=1026 charge=0.9755
+  motor-left milliamps=513
+  motor-right milliamps=513
+  wire:w10 milliamps=-513
+  wire:w11 milliamps=-513
+  wire:w8 milliamps=513
+  wire:w9 milliamps=513
+tick 214 3aa0eb6f
+  battery milliamps=1025.9 charge=0.9752
+  motor-left sound.hum=0.427
+  motor-right sound.hum=0.427
+tick 215 2ef0f1b1
+  battery charge=0.975
+  motor-left milliamps=512.9
+  motor-right milliamps=512.9
+  wire:w10 milliamps=-512.9
+  wire:w11 milliamps=-512.9
+  wire:w8 milliamps=512.9
+  wire:w9 milliamps=512.9
+tick 216 34e7aedb
+  battery volts=2.564 milliamps=1025.8 charge=0.9747
+  bumper volts=2.564
+  motor-left volts=2.564
+  motor-right volts=2.564
+tick 217 7ecef99a
+  battery milliamps=1025.7 charge=0.9745
+  motor-left milliamps=512.8
+  motor-right milliamps=512.8
+  wire:w10 milliamps=-512.8
+  wire:w11 milliamps=-512.8
+  wire:w8 milliamps=512.8
+  wire:w9 milliamps=512.8
+tick 218 7eb6aff4
+  battery milliamps=1025.6 charge=0.9743
+tick 219 f241e525
+  battery milliamps=1025.5 charge=0.974
+tick 220 13212b36
+  battery milliamps=1025.4 charge=0.9738
+  motor-left milliamps=512.7
+  motor-right milliamps=512.7
+  wire:w10 milliamps=-512.7
+  wire:w11 milliamps=-512.7
+  wire:w8 milliamps=512.7
+  wire:w9 milliamps=512.7
+tick 221 efefb558
+  battery volts=2.563 charge=0.9736
+  bumper volts=2.563
+  motor-left volts=2.563
+  motor-right volts=2.563
+tick 222 0b4c8dfd
+  battery milliamps=1025.3 charge=0.9733
+  motor-left milliamps=512.6
+  motor-right milliamps=512.6
+  wire:w10 milliamps=-512.6
+  wire:w11 milliamps=-512.6
+  wire:w8 milliamps=512.6
+  wire:w9 milliamps=512.6
+tick 223 873fb08d
+  battery milliamps=1025.2 charge=0.9731
+tick 224 dfceb227
+  battery milliamps=1025.1 charge=0.9728
+tick 225 6d586868
+  battery milliamps=1025 charge=0.9726
+  motor-left milliamps=512.5
+  motor-right milliamps=512.5
+  wire:w10 milliamps=-512.5
+  wire:w11 milliamps=-512.5
+  wire:w8 milliamps=512.5
+  wire:w9 milliamps=512.5
+tick 226 d9feaacc
+  battery volts=2.562 charge=0.9724
+  bumper volts=2.562
+  motor-left volts=2.562
+  motor-right volts=2.562
+tick 227 438069a1
+  battery milliamps=1024.9 charge=0.9721
+  motor-left milliamps=512.4
+  motor-right milliamps=512.4
+  wire:w10 milliamps=-512.4
+  wire:w11 milliamps=-512.4
+  wire:w8 milliamps=512.4
+  wire:w9 milliamps=512.4
+tick 228 bdc7bf8b
+  battery milliamps=1024.8 charge=0.9719
+tick 229 1de5ad7c
+  battery milliamps=1024.7 charge=0.9717
+tick 230 76ab16f5
+  battery milliamps=1024.6 charge=0.9714
+  motor-left milliamps=512.3
+  motor-right milliamps=512.3
+  wire:w10 milliamps=-512.3
+  wire:w11 milliamps=-512.3
+  wire:w8 milliamps=512.3
+  wire:w9 milliamps=512.3
+tick 231 d8e200c4
+  battery volts=2.561 milliamps=1024.5 charge=0.9712
+  bumper volts=2.561
+  motor-left volts=2.561
+  motor-right volts=2.561
+tick 232 0ee6a1ee
+  battery charge=0.971
+  motor-left milliamps=512.2
+  motor-right milliamps=512.2
+  wire:w10 milliamps=-512.2
+  wire:w11 milliamps=-512.2
+  wire:w8 milliamps=512.2
+  wire:w9 milliamps=512.2
+tick 233 6cfa373e
+  battery milliamps=1024.4 charge=0.9707
+tick 234 f770d160
+  battery milliamps=1024.3 charge=0.9705
+tick 235 02280780
+  battery milliamps=1024.2 charge=0.9702
+  motor-left milliamps=512.1
+  motor-right milliamps=512.1
+  wire:w10 milliamps=-512.1
+  wire:w11 milliamps=-512.1
+  wire:w8 milliamps=512.1
+  wire:w9 milliamps=512.1
+tick 236 4a9e6e86
+  battery volts=2.56 milliamps=1024.1 charge=0.97
+  bumper volts=2.56
+  motor-left volts=2.56
+  motor-right volts=2.56
+tick 237 cfb79055
+  battery charge=0.9698
+  motor-left milliamps=512
+  motor-right milliamps=512
+  wire:w10 milliamps=-512
+  wire:w11 milliamps=-512
+  wire:w8 milliamps=512
+  wire:w9 milliamps=512
+tick 238 1c27157b
+  battery milliamps=1024 charge=0.9695
+tick 239 fa44bf19
+  battery milliamps=1023.9 charge=0.9693
+  motor-left milliamps=511.9
+  motor-right milliamps=511.9
+  wire:w10 milliamps=-511.9
+  wire:w11 milliamps=-511.9
+  wire:w8 milliamps=511.9
+  wire:w9 milliamps=511.9
+tick 240 39f7789b
+  battery milliamps=1023.8 charge=0.9691

@@ -1,0 +1,51 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/meet-the-buzzer-wired
+seed 1
+ticks 30
+inputs none
+blueprint a794eee4c8dd619b
+arena open-floor 297edbfc7ad9a93c
+part battery-pack-2-cell ac49444ad3a2e166
+part buzzer d100587ca3edbd2e
+record 6bbe7fb7277d13c3592c94cb7f40f9f0e9408ffcd9cedffb80bffe3de10c2703
+faults none
+subjects battery buzzer wire:w1 wire:w2
+tick 0 e5a9de92
+  battery volts=2.988 milliamps=29.8 charge=1 x=200 y=600 heading=0
+  buzzer volts=2.988 milliamps=29.8 x=400 y=600 heading=0 sound.buzz=0.994@2300hz
+  wire:w1 milliamps=29.8
+  wire:w2 milliamps=-29.8
+tick 1 37517e5f
+tick 2 ef34d3bf
+tick 3 b1f9f3b9
+tick 4 70439c2d
+tick 5 38f33620
+tick 6 0012169c
+tick 7 042e5daa
+tick 8 01f69325
+tick 9 13146980
+  battery charge=0.9999
+tick 10 c94c68af
+tick 11 b7082715
+tick 12 79ed9fd4
+tick 13 db305e34
+tick 14 dd8118ca
+tick 15 1ae40d88
+tick 16 55aa4fca
+tick 17 a1f96c89
+tick 18 2bff69e3
+tick 19 7c25ac30
+tick 20 984b21cf
+tick 21 0ff6a4ca
+tick 22 af654e17
+tick 23 1cd18e7b
+  battery charge=0.9998
+tick 24 74593e21
+tick 25 c7be139c
+tick 26 243680f1
+tick 27 73831ac0
+tick 28 4be8f438
+tick 29 3636da5e
+tick 30 282a7130
