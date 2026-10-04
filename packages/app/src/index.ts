@@ -14,6 +14,7 @@ import type { ProfileStore, ServoStore, StoreOptions } from './store/index.ts';
 import { onProfilesChanged } from './store/device.ts';
 import { buildForOpening, profilesForOpening } from './store/open.ts';
 import { uuidV4 } from './store/uuid.ts';
+import { emitTelemetry } from './telemetry/emit.ts';
 
 export interface AppOptions {
   /** How to open the store. Tests and the e2e harness pass their own database name. */
@@ -119,6 +120,9 @@ export const mountApp: MountApp = async (host, options = {}) => {
     let current = opened.child?.profile;
     const show = ({ child, start }: Opening): void => {
       shown += 1;
+      // The session starts as the app opens for the child, in the sandbox: the build it opens is never a challenge.
+      // Provisional, so a challenge chosen on Home before any Run names the start instead (telemetry, task 6.2).
+      emitTelemetry(child, 'session-start', { mode: 'sandbox' }, { provisional: true });
       root.render(
         createElement(App, { key: shown, content, child, start: child ? start : unsavedBuild(content), saving, onReady: () => resolve(handle) }),
       );

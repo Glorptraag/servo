@@ -290,6 +290,35 @@ Taken conservatively, for Drew and the orchestrator:
 6. The program view sits under the brain's spec card in the card's panel, with no speak-it of its own; the card's speak-it reads only the card.
 7. The canvas gained one optional mount option, `unlockSettings`, fixed at mount: the flag is read once as the app mounts, so nothing needs to change it later.
 
+## Telemetry
+
+In [src/telemetry/](src/telemetry/) (task 6.2). Only the events brief Section 14's measures are read from, kept on this device and nowhere else. [docs/data-note.md](../../docs/data-note.md) says the same to the adult, and the parent view draws it word for word (`DATA_NOTE`, `noteBlocks`, through `@servo/app/store`).
+
+| Event | Fields | Emitted from | Measure |
+| --- | --- | --- | --- |
+| `session-start` | `mode`: `sandbox` or `challenge` | The app opening for a child ([index.ts](src/index.ts)), provisionally `sandbox`; the first Home choice ([home.tsx](src/challenges/home.tsx)) or first Run ([record.ts](src/run-bar/record.ts)) after it may name the mode once. One row per session | Sandbox return |
+| `run` | `challenge`, `runNumber`, `goalMet` | A challenge Run once its run record is kept ([record.ts](src/run-bar/record.ts)) | Unscripted-build pass rate, fault fixing |
+| `hint` | `challenge`, `step` | Each hint step shown or done ([App.tsx](src/App.tsx), through `HintLog`'s listener) | Hint use beside both |
+| `export` | `what`: `parts-list` or `share-link` | The parent view: a parts list made, a link made (packages/parent) | Transfer |
+
+- **The registry** ([events.ts](src/telemetry/events.ts)) is the only list of kinds and fields. `emitTelemetry(child, kind, fields)` ([emit.ts](src/telemetry/emit.ts)) is the only emitter: it checks every field against a closed set or the content's challenge ids, so no free text, name, build or part id can be kept, stamps the time, and keeps the event in the background. It never throws and never waits on the store; a refusal is a console warning.
+- **Where.** The store's `telemetry` table (Dexie version 3), one row per event with the child's profile id beside it. Rows never go to `changes`, so sync never sends them. Removing a profile deletes its rows in the same transaction (`profiles.remove`), as does a sync that removes the profile. There is no sink to plug in (R-6.2 F2): `withTelemetry(ctx, scope)` takes none, and the emitter writes only the local table, re-checking each event against the registry as it writes. A path off the device needs a host (D10, D13) and an adult's consent, and is its own task.
+- **Sessions.** Each `store.forProfile` scope is one session; the app makes one each time it opens for a child. A scope the store did not make (a test's stand-in) emits nothing.
+- **What is not emitted.** Sandbox Runs (no measure reads them), part ids, hint triggers, build names and ids, durations, device details. The card game's results are already the store's own records (task 5.4).
+
+### Tests
+
+[test/telemetry/emitters.test.ts](test/telemetry/emitters.test.ts) finds every mention of `emitTelemetry` in every package's source outside comments: each must be a plain import or export, or a direct call (generic and optional calls included) naming its kind, so an alias, a namespace or dynamic import, or passing the emitter around fails (R-6.2 F1). It holds the calls, the registry and the data note's events list (kinds and fields) to one another one to one, and checks `DATA_NOTE` is docs/data-note.md exactly. It fails on any reach of the table but the emitter's and the two profile removals' deletes, on the table named by string, on Dexie's `table()` and `tables`, and on a destructured table. It follows every value import from the telemetry module and proves the code it runs has no network API and no package import, and that `withTelemetry` takes no sink (R-6.2 F2). [test/telemetry/telemetry.test.ts](test/telemetry/telemetry.test.ts), in Node on fake-indexeddb: events keep exactly their fields and refuse free text, unknown kinds and challenges; one session start per scope; children's events kept apart and out of sync's outbox; deletion with the profile; the Run bar's recorder and the hint log as hooks. packages/parent's tests check its two export events and the note drawn behind the gate.
+
+### Decisions and open questions (task 6.2)
+
+1. A session is one opening of the app for a child, kept as it opens with the mode `sandbox` (the build the app opens is never a challenge). The first Home choice or Run after that may name the mode once, so a challenge picked before any Run counts as a challenge session, and a session with neither still counts (R-6.2 F3, its question 1's default).
+2. `mode` keeps only sandbox or challenge, as the measure reads; a saved build opened from Home counts as sandbox. Should saved and new builds be told apart?
+3. Only challenge Runs emit `run`: the unscripted-build and fault-fixing measures read challenges. Sandbox Runs stay in the run records as before.
+4. A parts-list export is counted when the list is made and shown, not when it is printed; a share-link export when the link is made, copied or not. The data note says "a link made".
+5. Events are kept until the profile is removed: there is no expiry. How long should they be kept, and how do they reach Drew from tester devices, given there is no backend?
+6. Interface changes outside `telemetry/`: the store's `telemetry` table (database.ts), the app's opening emitting the provisional session start (index.ts), `forProfile` scopes registered for telemetry (open.ts), `HintLog`'s optional listener, the re-exports in `@servo/app/store`, and the removal of telemetry in `profiles.remove` and sync's profile removal.
+
 ## Areas and owners
 
 | Folder | Task | Does |

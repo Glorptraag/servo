@@ -1,10 +1,11 @@
 // The parent view's first screen (task 5.1): the parental gate (D28), then the children on this device with the
 // profile switch, adding, renaming and removing a child, and the builds of the child in use, each with its parts list
 // (task 5.3, ../export/) and a "Copy link" that shares it read-only with another adult (task 5.6, D21: the build's name
-// only when ticked), then that child's progress (task 5.2, ../progress/) and the card game (task 5.4, ../card-game/). Every control is a native button, radio,
-// checkbox or text field, so touch, pointer, keyboard and screen reader each have the same path. Nothing is a dialog: a
+// only when ticked), then that child's progress (task 5.2, ../progress/) and the card game (task 5.4, ../card-game/).
+// Every control is a native button, radio, checkbox or text field, so touch, pointer, keyboard and screen reader each have the same path. Nothing is a dialog: a
 // removal is confirmed inline, and anything that goes wrong is one plain line. The view has no routes and writes nothing
-// to the address, so no address can open one child's records, and no profile id reaches the page.
+// to the address, so no address can open one child's records, and no profile id reaches the page. The data note (task
+// 6.2) closes the view.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, FormEvent, KeyboardEvent, RefObject } from 'react';
 import type { Profile, ServoStore } from '@servo/app/store';
@@ -12,6 +13,7 @@ import { answers, gateQuestion } from './gate.ts';
 import { ChoiceNotKept, NameRefused, addChild, readAccounts, removeChild, renameChild, shareLinkFor, switchChild } from './model.ts';
 import type { Accounts } from './model.ts';
 import { CardGameSection } from '../card-game/index.ts';
+import { DataNote } from './data-note.tsx';
 import { PartsListExport } from '../export/index.ts';
 import { ProgressSection } from '../progress/index.ts';
 
@@ -52,7 +54,7 @@ export const PARENT_TEXT = {
 } as const;
 
 const removeWarning = (name: string): string =>
-  `Remove ${name} from this device? Their builds, runs and card-game results are deleted too, and cannot be brought back.`;
+  `Remove ${name} from this device? Their builds, Runs, card-game results and events are deleted too, and cannot be brought back.`;
 
 /** Big enough to tap. */
 const TARGET: CSSProperties = { minHeight: 44, minWidth: 44, fontSize: '1rem' };
@@ -291,6 +293,8 @@ const AccountsView = ({ store }: { readonly store: ServoStore }) => {
       {current && (
         <CardGameSection key={current.id} store={store} profile={current.id} name={current.name} onKept={() => setRounds((count) => count + 1)} />
       )}
+
+      <DataNote />
 
       <p role="status">{line}</p>
     </main>

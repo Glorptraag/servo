@@ -3,7 +3,8 @@
 // same canvas (brief Section 9): Home loads its build and the app shows its goal line, its kit and its arena; there is
 // no lesson screen. A Run in progress stops first, and Save stores what waits before another build comes in. Native
 // buttons throughout, so touch, pointer, keyboard and screen readers take one path (ground rule 8); Escape and "Back to
-// the build" close it. Home leaves a named spot for the gated parent entry, which task 5.2 fills (D91).
+// the build" close it. Home leaves a named spot for the gated parent entry, which task 5.2 fills (D91). A build Home
+// opens names the mode the child's session started in, if no Run has yet (telemetry, task 6.2).
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
@@ -15,6 +16,7 @@ import { useShell } from '../shell/context.ts';
 import type { Autosaver } from '../shell/index.ts';
 import type { BlueprintSummary, ProfileStore } from '../store/index.ts';
 import { uuidV4 } from '../store/uuid.ts';
+import { emitTelemetry } from '../telemetry/emit.ts';
 import { CHALLENGE_TEXT, KIND_WORDS } from './text.ts';
 import './challenges.css';
 
@@ -148,6 +150,7 @@ export const Home = ({ challenge, onChallenge, sandboxLevel, loop, saving, paren
         return;
       }
       onChallenge(next);
+      emitTelemetry(child, 'session-start', { mode: next ? 'challenge' : 'sandbox' });
       close();
     } catch (error) {
       console.warn('A build could not be opened from Home.', error);

@@ -205,6 +205,7 @@ The Level 2 check of brief Section 14: a child at the end of Level 2 names 8 of 
 ## Privacy
 
 - Every query goes through `store.forProfile(id)`, so no view shows one child another child's records.
-- Removing a profile deletes its builds, runs and card-game results, after the adult confirms (D38).
-- Profiles have no email and no public face. Nothing leaves the device unless sync is configured (D10, D13).
-- The parent view explains in one screen what is stored (`docs/data-note.md`, task 6.2).
+- Removing a profile deletes its builds, runs, card-game results and telemetry events, after the adult confirms (D38). The removal warning says so.
+- Profiles have no email and no public face. Nothing leaves the device unless sync is configured (D10, D13); telemetry never syncs.
+- The data note (task 6.2, [src/accounts/data-note.tsx](src/accounts/data-note.tsx)) closes the parent view, behind the gate: [docs/data-note.md](../../docs/data-note.md) word for word, as headings, paragraphs and lists with no controls, through `noteBlocks` from `@servo/app/store` (a package may not read a file outside itself, so the app holds a copy its tests keep identical).
+- Export events (task 6.2, [packages/app/README.md](../app/README.md#telemetry)): a parts list made ([export/view.tsx](src/export/view.tsx)) and a share link made (`shareLinkFor`) each emit one `export` event for the child in use, with only `what`. Tested in [test/accounts/share.test.ts](test/accounts/share.test.ts) and [test/browser/export.test.tsx](test/browser/export.test.tsx), which also checks the note is drawn only past the gate.

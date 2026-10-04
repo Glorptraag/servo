@@ -14,9 +14,16 @@ export interface HintUses {
 
 export class HintLog implements HintUses {
   private readonly uses: HintUse[] = [];
+  private readonly onUse: ((use: HintUse) => void) | undefined;
+
+  /** `onUse` hears each step as it is added: the app's telemetry (task 6.2). */
+  constructor(onUse?: (use: HintUse) => void) {
+    this.onUse = onUse;
+  }
 
   add(use: HintUse): void {
     this.uses.push(use);
+    this.onUse?.(use);
   }
 
   pending(blueprint: Blueprint): readonly HintUse[] {

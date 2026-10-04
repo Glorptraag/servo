@@ -9,11 +9,14 @@
 // them, as the schema says, and keeps the challenge's id and the goal judge's verdict (`goal`), judged from its own
 // record by the same judge as the goal line and `pnpm golden`. A sandbox Run keeps neither. The hint steps used since
 // the last Run kept (task 4.6) join the record as its `hints`, taken as Run is pressed and let go once it is recorded.
+// Telemetry (task 6.2): pressing Run settles the session's start (named by Home, or else the app's opening), and a
+// challenge Run, once kept, is a `run` event.
 import type { Blueprint, BlueprintId, Catalogue, Challenge, HintUse, RunId, RunRecord, Timestamp } from '@servo/schema';
 import type { Simulation } from '@servo/sim-core';
 import { judgeRun } from '../challenges/goal.ts';
 import type { HintUses } from '../hints/log.ts';
 import type { ProfileStore } from '../store/index.ts';
+import { emitTelemetry } from '../telemetry/emit.ts';
 import { uuidV4 } from '../store/uuid.ts';
 
 export interface RunRecorderOptions {
@@ -102,6 +105,7 @@ export class RunRecorder {
     const child = this.options.child();
     if (!child) return;
     const series = this.seriesOf(blueprint);
+    emitTelemetry(child, 'session-start', { mode: series.challenge ? 'challenge' : 'sandbox' });
     this.pressed = { child, series, key: keyOf(child, series), startedAt: this.now(), hints: this.options.hints?.pending(blueprint) ?? [] };
     this.read(child, series);
   }
@@ -143,7 +147,12 @@ export class RunRecorder {
     known.last = record;
     const { child, series, key } = pressed;
     this.keeping = this.keeping
-      .then(() => child.runs.add(record))
+      .then(async () => {
+        await child.runs.add(record);
+        if (record.challenge !== undefined) {
+          emitTelemetry(child, 'run', { challenge: record.challenge, runNumber: record.runNumber, goalMet: record.goal?.met === true });
+        }
+      })
       .catch((error: unknown) => {
         // What the store holds is no longer what the recorder counted: read it again.
         console.warn('This Run could not be kept on this device.', error);
