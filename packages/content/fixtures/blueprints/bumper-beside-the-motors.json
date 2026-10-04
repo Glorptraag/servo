@@ -1,0 +1,234 @@
+{
+  "arena": {
+    "preset": "wall-stop",
+    "props": []
+  },
+  "meta": {
+    "createdAt": "2026-10-04T09:00:00.000Z",
+    "highWater": {
+      "parts": 0,
+      "wires": 12
+    },
+    "id": "72497343-3231-4a38-9b35-c461546c2f00",
+    "level": 2,
+    "name": "Robot with its bumper switch to one side",
+    "updatedAt": "2026-10-04T09:00:00.000Z"
+  },
+  "parts": [
+    {
+      "id": "battery",
+      "part": "battery-pack-2-cell",
+      "position": {
+        "x": -45,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "bumper",
+      "part": "bumper-switch",
+      "position": {
+        "x": 80,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "caster",
+      "part": "caster",
+      "position": {
+        "x": -70,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "chassis",
+      "part": "chassis",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "motor-left",
+      "part": "dc-motor",
+      "position": {
+        "x": 19,
+        "y": -53
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "motor-right",
+      "part": "dc-motor",
+      "position": {
+        "x": 19,
+        "y": 53
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "wheel-left",
+      "part": "wheel-large",
+      "position": {
+        "x": 40,
+        "y": -79
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "wheel-right",
+      "part": "wheel-large",
+      "position": {
+        "x": 40,
+        "y": 79
+      },
+      "rotation": 0,
+      "settings": {}
+    }
+  ],
+  "version": 1,
+  "wires": [
+    {
+      "from": {
+        "part": "battery",
+        "port": "mount"
+      },
+      "id": "w1",
+      "to": {
+        "part": "chassis",
+        "port": "deck-rear"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "minus"
+      },
+      "id": "w10",
+      "to": {
+        "part": "motor-left",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "minus"
+      },
+      "id": "w11",
+      "to": {
+        "part": "motor-right",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "plus"
+      },
+      "id": "w12",
+      "to": {
+        "part": "bumper",
+        "port": "a"
+      }
+    },
+    {
+      "from": {
+        "part": "caster",
+        "port": "mount"
+      },
+      "id": "w2",
+      "to": {
+        "part": "chassis",
+        "port": "caster"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-left",
+        "port": "mount"
+      },
+      "id": "w3",
+      "to": {
+        "part": "chassis",
+        "port": "motor-left"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-right",
+        "port": "mount"
+      },
+      "id": "w4",
+      "to": {
+        "part": "chassis",
+        "port": "motor-right"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-left",
+        "port": "shaft"
+      },
+      "id": "w5",
+      "to": {
+        "part": "wheel-left",
+        "port": "hub"
+      }
+    },
+    {
+      "from": {
+        "part": "motor-right",
+        "port": "shaft"
+      },
+      "id": "w6",
+      "to": {
+        "part": "wheel-right",
+        "port": "hub"
+      }
+    },
+    {
+      "from": {
+        "part": "bumper",
+        "port": "mount"
+      },
+      "id": "w7",
+      "to": {
+        "part": "chassis",
+        "port": "bumper"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "plus"
+      },
+      "id": "w8",
+      "to": {
+        "part": "motor-left",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "plus"
+      },
+      "id": "w9",
+      "to": {
+        "part": "motor-right",
+        "port": "plus"
+      }
+    }
+  ]
+}

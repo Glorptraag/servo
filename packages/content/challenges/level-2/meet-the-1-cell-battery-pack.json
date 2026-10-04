@@ -1,0 +1,254 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "goal": {
+    "forTicks": 15,
+    "kind": "holds",
+    "when": {
+      "kind": "state",
+      "state": "turning",
+      "target": {
+        "placed": "motor"
+      }
+    }
+  },
+  "goalLine": "Wire the 1-cell battery pack's plus to the DC motor and watch how it turns",
+  "hints": [
+    {
+      "steps": [
+        {
+          "line": "The battery pack gives power round a loop",
+          "step": "pulse-part",
+          "target": {
+            "placed": "battery"
+          }
+        },
+        {
+          "line": "Power goes in at this DC motor's plus",
+          "step": "pulse-port",
+          "target": {
+            "placed": "motor",
+            "port": "plus"
+          }
+        },
+        {
+          "from": {
+            "placed": "battery",
+            "port": "plus"
+          },
+          "line": "Plus to the DC motor's plus",
+          "step": "ghost-wire",
+          "to": {
+            "placed": "motor",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "motor",
+                "port": "plus"
+              }
+            }
+          ],
+          "line": "Wired the battery pack's plus to the DC motor's plus",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "placed": "motor",
+        "port": "plus"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This battery pack has no loop back to minus",
+          "step": "pulse-part",
+          "target": {
+            "placed": "battery"
+          }
+        },
+        {
+          "line": "Power comes back to the battery pack at minus",
+          "step": "pulse-port",
+          "target": {
+            "placed": "battery",
+            "port": "minus"
+          }
+        },
+        {
+          "from": {
+            "placed": "motor",
+            "port": "minus"
+          },
+          "line": "The DC motor's minus back to minus",
+          "step": "ghost-wire",
+          "to": {
+            "placed": "battery",
+            "port": "minus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "motor",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "battery",
+                "port": "minus"
+              }
+            }
+          ],
+          "line": "Wired the DC motor's minus back to the battery pack's minus",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "placed": "motor",
+        "port": "minus"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This DC motor is not in a loop with the battery pack",
+          "step": "pulse-part",
+          "target": {
+            "placed": "motor"
+          }
+        },
+        {
+          "line": "Power goes in at this DC motor's plus",
+          "step": "pulse-port",
+          "target": {
+            "placed": "motor",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "minus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "motor",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "motor",
+                "port": "minus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "motor",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "motor",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "battery",
+                "port": "minus"
+              }
+            }
+          ],
+          "line": "Wired the DC motor to the battery pack, plus to plus and minus to minus",
+          "step": "do-it"
+        }
+      ]
+    }
+  ],
+  "id": "meet-the-1-cell-battery-pack",
+  "introduces": "battery-pack-1-cell",
+  "kind": "part-introduction",
+  "kit": "circuit-crew",
+  "level": 2,
+  "start": {
+    "arena": {
+      "preset": "open-floor",
+      "props": []
+    },
+    "meta": {
+      "createdAt": "2026-10-04T09:00:00.000Z",
+      "highWater": {
+        "parts": 0,
+        "wires": 1
+      },
+      "id": "05c28c18-e359-4713-adaf-bfcf2ea42d2f",
+      "level": 2,
+      "name": "Meet the 1-cell battery pack",
+      "updatedAt": "2026-10-04T09:00:00.000Z"
+    },
+    "parts": [
+      {
+        "id": "battery",
+        "part": "battery-pack-1-cell",
+        "position": {
+          "x": -100,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "motor",
+        "part": "dc-motor",
+        "position": {
+          "x": 100,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      }
+    ],
+    "version": 1,
+    "wires": [
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w1",
+        "to": {
+          "part": "motor",
+          "port": "minus"
+        }
+      }
+    ]
+  },
+  "title": "Meet the 1-cell battery pack"
+}

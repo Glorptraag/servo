@@ -1,0 +1,74 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "meta": {
+    "createdAt": "2026-10-04T09:00:00.000Z",
+    "highWater": {
+      "parts": 0,
+      "wires": 2
+    },
+    "id": "be795886-29ca-4d19-8f47-8566808e072f",
+    "level": 2,
+    "name": "Servo motor on one battery pack",
+    "updatedAt": "2026-10-04T09:00:00.000Z"
+  },
+  "parts": [
+    {
+      "id": "battery-1",
+      "part": "battery-pack-2-cell",
+      "position": {
+        "x": -80,
+        "y": 30
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "battery-2",
+      "part": "battery-pack-2-cell",
+      "position": {
+        "x": -80,
+        "y": -30
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "servo",
+      "part": "servo-motor",
+      "position": {
+        "x": 60,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    }
+  ],
+  "version": 1,
+  "wires": [
+    {
+      "from": {
+        "part": "battery-1",
+        "port": "plus"
+      },
+      "id": "w1",
+      "to": {
+        "part": "servo",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery-1",
+        "port": "minus"
+      },
+      "id": "w2",
+      "to": {
+        "part": "servo",
+        "port": "minus"
+      }
+    }
+  ]
+}

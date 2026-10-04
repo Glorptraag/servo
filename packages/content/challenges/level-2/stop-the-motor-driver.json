@@ -1,0 +1,537 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "goal": {
+    "kind": "sequence",
+    "of": [
+      {
+        "forTicks": 15,
+        "kind": "holds",
+        "when": {
+          "atLeast": 200,
+          "kind": "forward-speed",
+          "target": {
+            "placed": "chassis"
+          }
+        }
+      },
+      {
+        "forTicks": 15,
+        "kind": "holds",
+        "when": {
+          "kind": "and",
+          "of": [
+            {
+              "kind": "state",
+              "state": "open",
+              "target": {
+                "placed": "switch"
+              }
+            },
+            {
+              "atMost": 5,
+              "kind": "speed",
+              "target": {
+                "placed": "chassis"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "goalLine": "Put the switch in the motor driver's power line, then press it to stop the robot",
+  "hints": [
+    {
+      "steps": [
+        {
+          "line": "The switch goes in the power line",
+          "step": "pulse-part",
+          "target": {
+            "placed": "switch"
+          }
+        },
+        {
+          "line": "Side A takes power from the battery pack",
+          "step": "pulse-port",
+          "target": {
+            "placed": "switch",
+            "port": "a"
+          }
+        },
+        {
+          "from": {
+            "placed": "battery",
+            "port": "plus"
+          },
+          "line": "Plus to side A",
+          "step": "ghost-wire",
+          "to": {
+            "placed": "switch",
+            "port": "a"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "switch",
+                "port": "a"
+              }
+            }
+          ],
+          "line": "Wired the battery pack's plus to side A",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "placed": "switch",
+        "port": "a"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This motor driver has no power in",
+          "step": "pulse-part",
+          "target": {
+            "placed": "driver"
+          }
+        },
+        {
+          "line": "Power in takes plus from side B of the switch",
+          "step": "pulse-port",
+          "target": {
+            "placed": "driver",
+            "port": "plus"
+          }
+        },
+        {
+          "from": {
+            "placed": "switch",
+            "port": "b"
+          },
+          "line": "Side B to the motor driver's power in",
+          "step": "ghost-wire",
+          "to": {
+            "placed": "driver",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "switch",
+                "port": "b"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "driver",
+                "port": "plus"
+              }
+            }
+          ],
+          "line": "Wired side B to the motor driver's power in",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "placed": "driver",
+        "port": "plus"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This switch is not in a loop with the battery pack",
+          "step": "pulse-part",
+          "target": {
+            "placed": "switch"
+          }
+        },
+        {
+          "line": "The motor driver's power in takes plus straight from the battery pack, round the switch",
+          "step": "pulse-port",
+          "target": {
+            "placed": "driver",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "driver",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "switch",
+                "port": "b"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "driver",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "switch",
+                "port": "a"
+              }
+            }
+          ],
+          "line": "Moved the motor driver's power in from the battery pack to side B of the switch",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "failure": "outside-loop",
+        "kind": "fault",
+        "target": {
+          "placed": "switch"
+        }
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "The switch stops only what is wired to side B",
+          "step": "pulse-part",
+          "target": {
+            "placed": "switch"
+          }
+        },
+        {
+          "line": "The motor driver's power in belongs on side B",
+          "step": "pulse-port",
+          "target": {
+            "placed": "switch",
+            "port": "b"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "driver",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "switch",
+                "port": "b"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "driver",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "switch",
+                "port": "a"
+              }
+            }
+          ],
+          "line": "Moved the motor driver's power in to side B of the switch",
+          "step": "do-it"
+        }
+      ]
+    }
+  ],
+  "id": "stop-the-motor-driver",
+  "kind": "guided",
+  "kit": "circuit-crew",
+  "level": 2,
+  "start": {
+    "arena": {
+      "preset": "open-floor",
+      "props": []
+    },
+    "meta": {
+      "createdAt": "2026-10-04T09:00:00.000Z",
+      "highWater": {
+        "parts": 0,
+        "wires": 13
+      },
+      "id": "c01c5ca0-0549-4295-8885-0ac928202124",
+      "level": 2,
+      "name": "Robot with a motor driver and a switch to wire",
+      "updatedAt": "2026-10-04T09:00:00.000Z"
+    },
+    "parts": [
+      {
+        "id": "battery",
+        "part": "battery-pack-2-cell",
+        "position": {
+          "x": -45,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "caster",
+        "part": "caster",
+        "position": {
+          "x": -70,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "chassis",
+        "part": "chassis",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "driver",
+        "part": "motor-driver",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "motor-left",
+        "part": "dc-motor",
+        "position": {
+          "x": 19,
+          "y": -53
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "motor-right",
+        "part": "dc-motor",
+        "position": {
+          "x": 19,
+          "y": 53
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "switch",
+        "part": "switch",
+        "position": {
+          "x": 55,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "wheel-left",
+        "part": "wheel-large",
+        "position": {
+          "x": 40,
+          "y": -79
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "wheel-right",
+        "part": "wheel-large",
+        "position": {
+          "x": 40,
+          "y": 79
+        },
+        "rotation": 0,
+        "settings": {}
+      }
+    ],
+    "version": 1,
+    "wires": [
+      {
+        "from": {
+          "part": "battery",
+          "port": "mount"
+        },
+        "id": "w1",
+        "to": {
+          "part": "chassis",
+          "port": "deck-rear"
+        }
+      },
+      {
+        "from": {
+          "part": "driver",
+          "port": "a-plus"
+        },
+        "id": "w10",
+        "to": {
+          "part": "motor-left",
+          "port": "plus"
+        }
+      },
+      {
+        "from": {
+          "part": "driver",
+          "port": "a-minus"
+        },
+        "id": "w11",
+        "to": {
+          "part": "motor-left",
+          "port": "minus"
+        }
+      },
+      {
+        "from": {
+          "part": "driver",
+          "port": "b-plus"
+        },
+        "id": "w12",
+        "to": {
+          "part": "motor-right",
+          "port": "plus"
+        }
+      },
+      {
+        "from": {
+          "part": "driver",
+          "port": "b-minus"
+        },
+        "id": "w13",
+        "to": {
+          "part": "motor-right",
+          "port": "minus"
+        }
+      },
+      {
+        "from": {
+          "part": "caster",
+          "port": "mount"
+        },
+        "id": "w2",
+        "to": {
+          "part": "chassis",
+          "port": "caster"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-left",
+          "port": "mount"
+        },
+        "id": "w3",
+        "to": {
+          "part": "chassis",
+          "port": "motor-left"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-right",
+          "port": "mount"
+        },
+        "id": "w4",
+        "to": {
+          "part": "chassis",
+          "port": "motor-right"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-left",
+          "port": "shaft"
+        },
+        "id": "w5",
+        "to": {
+          "part": "wheel-left",
+          "port": "hub"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-right",
+          "port": "shaft"
+        },
+        "id": "w6",
+        "to": {
+          "part": "wheel-right",
+          "port": "hub"
+        }
+      },
+      {
+        "from": {
+          "part": "driver",
+          "port": "mount"
+        },
+        "id": "w7",
+        "to": {
+          "part": "chassis",
+          "port": "deck-middle"
+        }
+      },
+      {
+        "from": {
+          "part": "switch",
+          "port": "mount"
+        },
+        "id": "w8",
+        "to": {
+          "part": "chassis",
+          "port": "deck-front"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w9",
+        "to": {
+          "part": "driver",
+          "port": "minus"
+        }
+      }
+    ]
+  },
+  "title": "Stop the motor driver"
+}

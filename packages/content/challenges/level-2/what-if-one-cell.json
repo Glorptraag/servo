@@ -1,0 +1,501 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "goal": {
+    "forTicks": 30,
+    "kind": "holds",
+    "when": {
+      "atLeast": 60,
+      "atMost": 220,
+      "kind": "forward-speed",
+      "target": {
+        "placed": "chassis"
+      }
+    }
+  },
+  "goalLine": "Swap the 2-cell battery pack for the 1-cell battery pack, then Run the robot and watch its speed",
+  "hints": [
+    {
+      "steps": [
+        {
+          "line": "This 1-cell battery pack is not fixed to the chassis",
+          "step": "pulse-part",
+          "target": {
+            "part": "battery-pack-1-cell"
+          }
+        },
+        {
+          "line": "The 2-cell battery pack comes off the rear deck first",
+          "step": "pulse-port",
+          "target": {
+            "placed": "chassis",
+            "port": "deck-rear"
+          }
+        },
+        {
+          "changes": [
+            {
+              "kind": "remove-part",
+              "target": {
+                "part": "battery-pack-1-cell"
+              }
+            }
+          ],
+          "line": "Put the loose 1-cell battery pack back in the tray, ready to swap",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "part": "battery-pack-1-cell",
+        "port": "mount"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "The rear deck holds the battery pack",
+          "step": "pulse-part",
+          "target": {
+            "placed": "chassis"
+          }
+        },
+        {
+          "line": "The 1-cell battery pack fixes to the rear deck",
+          "step": "pulse-port",
+          "target": {
+            "placed": "chassis",
+            "port": "deck-rear"
+          }
+        },
+        {
+          "changes": [
+            {
+              "kind": "add-part",
+              "mountOn": {
+                "placed": "chassis",
+                "port": "deck-rear"
+              },
+              "part": "battery-pack-1-cell"
+            },
+            {
+              "from": {
+                "placed": "motor-left",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "part": "battery-pack-1-cell",
+                "port": "minus"
+              }
+            },
+            {
+              "from": {
+                "placed": "motor-right",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "part": "battery-pack-1-cell",
+                "port": "minus"
+              }
+            },
+            {
+              "from": {
+                "part": "battery-pack-1-cell",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "switch",
+                "port": "a"
+              }
+            }
+          ],
+          "line": "Fixed the 1-cell battery pack to the rear deck and wired it",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "placed": "chassis",
+        "port": "deck-rear"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This battery pack has no loop back to minus",
+          "step": "pulse-part",
+          "target": {
+            "part": "battery-pack-1-cell"
+          }
+        },
+        {
+          "line": "Its plus feeds side A of the switch",
+          "step": "pulse-port",
+          "target": {
+            "part": "battery-pack-1-cell",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "motor-left",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "part": "battery-pack-1-cell",
+                "port": "minus"
+              }
+            },
+            {
+              "from": {
+                "placed": "motor-right",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "part": "battery-pack-1-cell",
+                "port": "minus"
+              }
+            },
+            {
+              "from": {
+                "part": "battery-pack-1-cell",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "switch",
+                "port": "a"
+              }
+            }
+          ],
+          "line": "Wired the 1-cell battery pack to side A of the switch and to both DC motors",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "missing",
+        "part": "battery-pack-2-cell"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This 2-cell battery pack can swap for the 1-cell battery pack",
+          "step": "pulse-part",
+          "target": {
+            "placed": "battery"
+          }
+        },
+        {
+          "line": "Its plus feeds side A of the switch",
+          "step": "pulse-port",
+          "target": {
+            "placed": "battery",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "kind": "remove-part",
+              "target": {
+                "part": "battery-pack-2-cell"
+              }
+            },
+            {
+              "kind": "add-part",
+              "mountOn": {
+                "placed": "chassis",
+                "port": "deck-rear"
+              },
+              "part": "battery-pack-1-cell"
+            },
+            {
+              "from": {
+                "placed": "motor-left",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "part": "battery-pack-1-cell",
+                "port": "minus"
+              }
+            },
+            {
+              "from": {
+                "placed": "motor-right",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "part": "battery-pack-1-cell",
+                "port": "minus"
+              }
+            },
+            {
+              "from": {
+                "part": "battery-pack-1-cell",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "switch",
+                "port": "a"
+              }
+            }
+          ],
+          "line": "Swapped the 2-cell battery pack for the 1-cell battery pack",
+          "step": "do-it"
+        }
+      ]
+    }
+  ],
+  "id": "what-if-one-cell",
+  "kind": "what-if",
+  "kit": "circuit-crew",
+  "level": 2,
+  "start": {
+    "arena": {
+      "preset": "open-floor",
+      "props": []
+    },
+    "meta": {
+      "createdAt": "2026-10-04T09:00:00.000Z",
+      "highWater": {
+        "parts": 0,
+        "wires": 12
+      },
+      "id": "c765a594-22cb-41ad-8ae9-64e18800c4e6",
+      "level": 2,
+      "name": "Rolling robot with a switch",
+      "updatedAt": "2026-10-04T09:00:00.000Z"
+    },
+    "parts": [
+      {
+        "id": "battery",
+        "part": "battery-pack-2-cell",
+        "position": {
+          "x": -45,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "caster",
+        "part": "caster",
+        "position": {
+          "x": -70,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "chassis",
+        "part": "chassis",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "motor-left",
+        "part": "dc-motor",
+        "position": {
+          "x": 19,
+          "y": -53
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "motor-right",
+        "part": "dc-motor",
+        "position": {
+          "x": 19,
+          "y": 53
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "switch",
+        "part": "switch",
+        "position": {
+          "x": 55,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "wheel-left",
+        "part": "wheel-large",
+        "position": {
+          "x": 40,
+          "y": -79
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "wheel-right",
+        "part": "wheel-large",
+        "position": {
+          "x": 40,
+          "y": 79
+        },
+        "rotation": 0,
+        "settings": {}
+      }
+    ],
+    "version": 1,
+    "wires": [
+      {
+        "from": {
+          "part": "battery",
+          "port": "mount"
+        },
+        "id": "w1",
+        "to": {
+          "part": "chassis",
+          "port": "deck-rear"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-right",
+          "port": "plus"
+        },
+        "id": "w10",
+        "to": {
+          "part": "switch",
+          "port": "b"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w11",
+        "to": {
+          "part": "motor-left",
+          "port": "minus"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w12",
+        "to": {
+          "part": "motor-right",
+          "port": "minus"
+        }
+      },
+      {
+        "from": {
+          "part": "caster",
+          "port": "mount"
+        },
+        "id": "w2",
+        "to": {
+          "part": "chassis",
+          "port": "caster"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-left",
+          "port": "mount"
+        },
+        "id": "w3",
+        "to": {
+          "part": "chassis",
+          "port": "motor-left"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-right",
+          "port": "mount"
+        },
+        "id": "w4",
+        "to": {
+          "part": "chassis",
+          "port": "motor-right"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-left",
+          "port": "shaft"
+        },
+        "id": "w5",
+        "to": {
+          "part": "wheel-left",
+          "port": "hub"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-right",
+          "port": "shaft"
+        },
+        "id": "w6",
+        "to": {
+          "part": "wheel-right",
+          "port": "hub"
+        }
+      },
+      {
+        "from": {
+          "part": "switch",
+          "port": "mount"
+        },
+        "id": "w7",
+        "to": {
+          "part": "chassis",
+          "port": "deck-front"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "plus"
+        },
+        "id": "w8",
+        "to": {
+          "part": "switch",
+          "port": "a"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-left",
+          "port": "plus"
+        },
+        "id": "w9",
+        "to": {
+          "part": "switch",
+          "port": "b"
+        }
+      }
+    ]
+  },
+  "title": "What if the battery pack has one cell"
+}

@@ -1,0 +1,96 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "meta": {
+    "createdAt": "2026-10-04T09:00:00.000Z",
+    "highWater": {
+      "parts": 0,
+      "wires": 4
+    },
+    "id": "d8190156-f616-4e44-830e-24409c933b5a",
+    "level": 2,
+    "name": "Motor driver with its power in swapped",
+    "updatedAt": "2026-10-04T09:00:00.000Z"
+  },
+  "parts": [
+    {
+      "id": "battery",
+      "part": "battery-pack-2-cell",
+      "position": {
+        "x": -120,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "driver",
+      "part": "motor-driver",
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    },
+    {
+      "id": "motor",
+      "part": "dc-motor",
+      "position": {
+        "x": 120,
+        "y": 0
+      },
+      "rotation": 0,
+      "settings": {}
+    }
+  ],
+  "version": 1,
+  "wires": [
+    {
+      "from": {
+        "part": "battery",
+        "port": "minus"
+      },
+      "id": "w1",
+      "to": {
+        "part": "driver",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "battery",
+        "port": "plus"
+      },
+      "id": "w2",
+      "to": {
+        "part": "driver",
+        "port": "minus"
+      }
+    },
+    {
+      "from": {
+        "part": "driver",
+        "port": "a-plus"
+      },
+      "id": "w3",
+      "to": {
+        "part": "motor",
+        "port": "plus"
+      }
+    },
+    {
+      "from": {
+        "part": "driver",
+        "port": "a-minus"
+      },
+      "id": "w4",
+      "to": {
+        "part": "motor",
+        "port": "minus"
+      }
+    }
+  ]
+}

@@ -1,0 +1,416 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "goal": {
+    "forTicks": 30,
+    "kind": "holds",
+    "when": {
+      "kind": "and",
+      "of": [
+        {
+          "atLeast": 200,
+          "kind": "forward-speed",
+          "target": {
+            "placed": "chassis"
+          }
+        },
+        {
+          "atMost": 10,
+          "kind": "turn-rate",
+          "target": {
+            "placed": "chassis"
+          }
+        }
+      ]
+    }
+  },
+  "goalLine": "Find why the robot spins on the spot, and fix it so it drives straight",
+  "hints": [
+    {
+      "steps": [
+        {
+          "line": "This DC motor's plus and minus are swapped",
+          "step": "pulse-part",
+          "target": {
+            "placed": "motor-right"
+          }
+        },
+        {
+          "line": "This DC motor's plus takes the battery pack's minus",
+          "step": "pulse-port",
+          "target": {
+            "placed": "motor-right",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "switch",
+                "port": "b"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "motor-right",
+                "port": "minus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "minus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "motor-right",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "switch",
+                "port": "b"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "motor-right",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "motor-right",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "battery",
+                "port": "minus"
+              }
+            }
+          ],
+          "line": "Swapped this DC motor's plus and minus lines",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "failure": "reversed",
+        "kind": "fault",
+        "target": {
+          "placed": "motor-right"
+        }
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This DC motor turns forward with plus from side B and minus back to the battery pack",
+          "step": "pulse-part",
+          "target": {
+            "placed": "motor-right"
+          }
+        },
+        {
+          "line": "This DC motor's plus belongs on side B",
+          "step": "pulse-port",
+          "target": {
+            "placed": "motor-right",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "switch",
+                "port": "b"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "motor-right",
+                "port": "minus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "minus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "motor-right",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "switch",
+                "port": "b"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "motor-right",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "motor-right",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "battery",
+                "port": "minus"
+              }
+            }
+          ],
+          "line": "Wired this DC motor's plus to side B and its minus back to the battery pack",
+          "step": "do-it"
+        }
+      ]
+    }
+  ],
+  "id": "one-motor-backwards",
+  "kind": "breakdown",
+  "kit": "circuit-crew",
+  "level": 2,
+  "start": {
+    "arena": {
+      "preset": "open-floor",
+      "props": []
+    },
+    "meta": {
+      "createdAt": "2026-10-04T09:00:00.000Z",
+      "highWater": {
+        "parts": 0,
+        "wires": 12
+      },
+      "id": "decb003e-45e6-4f97-9a2f-5d8928c1945a",
+      "level": 2,
+      "name": "Robot that spins on the spot",
+      "updatedAt": "2026-10-04T09:00:00.000Z"
+    },
+    "parts": [
+      {
+        "id": "battery",
+        "part": "battery-pack-2-cell",
+        "position": {
+          "x": -45,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "caster",
+        "part": "caster",
+        "position": {
+          "x": -70,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "chassis",
+        "part": "chassis",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "motor-left",
+        "part": "dc-motor",
+        "position": {
+          "x": 19,
+          "y": -53
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "motor-right",
+        "part": "dc-motor",
+        "position": {
+          "x": 19,
+          "y": 53
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "switch",
+        "part": "switch",
+        "position": {
+          "x": 55,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "wheel-left",
+        "part": "wheel-large",
+        "position": {
+          "x": 40,
+          "y": -79
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "wheel-right",
+        "part": "wheel-large",
+        "position": {
+          "x": 40,
+          "y": 79
+        },
+        "rotation": 0,
+        "settings": {}
+      }
+    ],
+    "version": 1,
+    "wires": [
+      {
+        "from": {
+          "part": "battery",
+          "port": "mount"
+        },
+        "id": "w1",
+        "to": {
+          "part": "chassis",
+          "port": "deck-rear"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-right",
+          "port": "minus"
+        },
+        "id": "w10",
+        "to": {
+          "part": "switch",
+          "port": "b"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w11",
+        "to": {
+          "part": "motor-left",
+          "port": "minus"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w12",
+        "to": {
+          "part": "motor-right",
+          "port": "plus"
+        }
+      },
+      {
+        "from": {
+          "part": "caster",
+          "port": "mount"
+        },
+        "id": "w2",
+        "to": {
+          "part": "chassis",
+          "port": "caster"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-left",
+          "port": "mount"
+        },
+        "id": "w3",
+        "to": {
+          "part": "chassis",
+          "port": "motor-left"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-right",
+          "port": "mount"
+        },
+        "id": "w4",
+        "to": {
+          "part": "chassis",
+          "port": "motor-right"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-left",
+          "port": "shaft"
+        },
+        "id": "w5",
+        "to": {
+          "part": "wheel-left",
+          "port": "hub"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-right",
+          "port": "shaft"
+        },
+        "id": "w6",
+        "to": {
+          "part": "wheel-right",
+          "port": "hub"
+        }
+      },
+      {
+        "from": {
+          "part": "switch",
+          "port": "mount"
+        },
+        "id": "w7",
+        "to": {
+          "part": "chassis",
+          "port": "deck-front"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "plus"
+        },
+        "id": "w8",
+        "to": {
+          "part": "switch",
+          "port": "a"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-left",
+          "port": "plus"
+        },
+        "id": "w9",
+        "to": {
+          "part": "switch",
+          "port": "b"
+        }
+      }
+    ]
+  },
+  "title": "One motor backwards"
+}

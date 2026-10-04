@@ -1,0 +1,51 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/meet-the-buzzer-start
+seed 1
+ticks 30
+inputs none
+blueprint 40d86654e48c8dba
+arena open-floor 297edbfc7ad9a93c
+part battery-pack-2-cell ac49444ad3a2e166
+part buzzer d100587ca3edbd2e
+record 58a04da38e5c84c6c381fd41c2b0b05687b298538231720996608ae97d43c9ce
+fault battery no-loop first-tick=2
+fault buzzer no-circuit first-tick=2
+subjects battery buzzer wire:w1
+tick 0 989147ed
+  battery volts=3 milliamps=0 charge=1 x=200 y=600 heading=0
+  buzzer volts=0 milliamps=0 x=400 y=600 heading=0
+  wire:w1 milliamps=0
+tick 1 37517e5f
+tick 2 5e32b075
+  battery faults=no-loop
+  buzzer faults=no-circuit
+tick 3 37517e5f
+tick 4 37517e5f
+tick 5 37517e5f
+tick 6 37517e5f
+tick 7 37517e5f
+tick 8 37517e5f
+tick 9 37517e5f
+tick 10 37517e5f
+tick 11 37517e5f
+tick 12 37517e5f
+tick 13 37517e5f
+tick 14 37517e5f
+tick 15 37517e5f
+tick 16 37517e5f
+tick 17 37517e5f
+tick 18 37517e5f
+tick 19 37517e5f
+tick 20 37517e5f
+tick 21 37517e5f
+tick 22 37517e5f
+tick 23 37517e5f
+tick 24 37517e5f
+tick 25 37517e5f
+tick 26 37517e5f
+tick 27 37517e5f
+tick 28 37517e5f
+tick 29 37517e5f
+tick 30 37517e5f

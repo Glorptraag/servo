@@ -1,0 +1,54 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/meet-the-servo-motor-joined
+seed 1
+ticks 30
+inputs none
+blueprint 4f77ea249f15fa73
+arena open-floor 297edbfc7ad9a93c
+part battery-pack-2-cell ac49444ad3a2e166
+part servo-motor 8ebf55c8da175c54
+record e7f81e8979cc259a44ab65dfe8bcc5a169eee70ed9544dab7d253ff3e9d7d9e5
+fault servo no-signal first-tick=2
+subjects battery-1 battery-2 servo wire:w1 wire:w2 wire:w3
+tick 0 164a63e7
+  battery-1 volts=2.996 milliamps=10 charge=1 x=220 y=570 heading=0
+  battery-2 volts=2.996 milliamps=10 charge=1 x=220 y=630 heading=0
+  servo volts=5.992 milliamps=10 angle=90 x=360 y=600 heading=0 sound.hum=1
+  wire:w1 milliamps=10
+  wire:w2 milliamps=10
+  wire:w3 milliamps=-10
+tick 1 37517e5f
+tick 2 bf12fdf2
+  servo faults=no-signal
+tick 3 54b70c13
+tick 4 ddfa89af
+tick 5 a265b318
+tick 6 df8c4e11
+tick 7 6d9e86e4
+tick 8 3a5046fd
+tick 9 ffda4668
+tick 10 03b9d9a8
+tick 11 ed8a5146
+tick 12 82439378
+tick 13 37f8e880
+tick 14 453a73b7
+tick 15 2fa15a5f
+tick 16 8307731d
+tick 17 bd24228c
+tick 18 538aa16e
+tick 19 26dd665c
+tick 20 ba5de9c0
+tick 21 59a16029
+tick 22 3aa13578
+tick 23 c6143482
+  battery-1 charge=0.9999
+  battery-2 charge=0.9999
+tick 24 c8b66a32
+tick 25 fcfb6251
+tick 26 62e2cc5c
+tick 27 a784c548
+tick 28 1e91b6b3
+tick 29 0d1974a1
+tick 30 25bf498f

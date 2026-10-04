@@ -1,0 +1,330 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "goal": {
+    "forTicks": 15,
+    "kind": "holds",
+    "when": {
+      "kind": "state",
+      "state": "sounding",
+      "target": {
+        "placed": "buzzer"
+      }
+    }
+  },
+  "goalLine": "Wire the battery pack's plus to the buzzer's plus so the buzzer sounds",
+  "hints": [
+    {
+      "steps": [
+        {
+          "line": "The battery pack gives power round a loop",
+          "step": "pulse-part",
+          "target": {
+            "placed": "battery"
+          }
+        },
+        {
+          "line": "Power goes in at the buzzer's plus",
+          "step": "pulse-port",
+          "target": {
+            "placed": "buzzer",
+            "port": "plus"
+          }
+        },
+        {
+          "from": {
+            "placed": "battery",
+            "port": "plus"
+          },
+          "line": "Plus to the buzzer's plus",
+          "step": "ghost-wire",
+          "to": {
+            "placed": "buzzer",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "buzzer",
+                "port": "plus"
+              }
+            }
+          ],
+          "line": "Wired the battery pack's plus to the buzzer's plus",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "placed": "buzzer",
+        "port": "plus"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This battery pack has no loop back to minus",
+          "step": "pulse-part",
+          "target": {
+            "placed": "battery"
+          }
+        },
+        {
+          "line": "Power comes back to the battery pack at minus",
+          "step": "pulse-port",
+          "target": {
+            "placed": "battery",
+            "port": "minus"
+          }
+        },
+        {
+          "from": {
+            "placed": "buzzer",
+            "port": "minus"
+          },
+          "line": "The buzzer's minus back to minus",
+          "step": "ghost-wire",
+          "to": {
+            "placed": "battery",
+            "port": "minus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "buzzer",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "battery",
+                "port": "minus"
+              }
+            }
+          ],
+          "line": "Wired the buzzer's minus back to the battery pack's minus",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "placed": "buzzer",
+        "port": "minus"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This buzzer's plus and minus are swapped",
+          "step": "pulse-part",
+          "target": {
+            "placed": "buzzer"
+          }
+        },
+        {
+          "line": "The buzzer's plus takes the battery pack's plus",
+          "step": "pulse-port",
+          "target": {
+            "placed": "buzzer",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "minus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "buzzer",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "buzzer",
+                "port": "minus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "buzzer",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "buzzer",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "battery",
+                "port": "minus"
+              }
+            }
+          ],
+          "line": "Swapped the buzzer's plus and minus lines",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "failure": "reversed",
+        "kind": "fault",
+        "target": {
+          "placed": "buzzer"
+        }
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This buzzer is not in a loop with the battery pack",
+          "step": "pulse-part",
+          "target": {
+            "placed": "buzzer"
+          }
+        },
+        {
+          "line": "Power goes in at the buzzer's plus",
+          "step": "pulse-port",
+          "target": {
+            "placed": "buzzer",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "minus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "buzzer",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "buzzer",
+                "port": "minus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "buzzer",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "buzzer",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "battery",
+                "port": "minus"
+              }
+            }
+          ],
+          "line": "Wired the buzzer to the battery pack, plus to plus and minus to minus",
+          "step": "do-it"
+        }
+      ]
+    }
+  ],
+  "id": "meet-the-buzzer",
+  "introduces": "buzzer",
+  "kind": "part-introduction",
+  "kit": "circuit-crew",
+  "level": 2,
+  "start": {
+    "arena": {
+      "preset": "open-floor",
+      "props": []
+    },
+    "meta": {
+      "createdAt": "2026-10-04T09:00:00.000Z",
+      "highWater": {
+        "parts": 0,
+        "wires": 1
+      },
+      "id": "f8f6a91d-bd2a-457e-a869-9520a6a94b89",
+      "level": 2,
+      "name": "Meet the buzzer",
+      "updatedAt": "2026-10-04T09:00:00.000Z"
+    },
+    "parts": [
+      {
+        "id": "battery",
+        "part": "battery-pack-2-cell",
+        "position": {
+          "x": -100,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "buzzer",
+        "part": "buzzer",
+        "position": {
+          "x": 100,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      }
+    ],
+    "version": 1,
+    "wires": [
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w1",
+        "to": {
+          "part": "buzzer",
+          "port": "minus"
+        }
+      }
+    ]
+  },
+  "title": "Meet the buzzer"
+}

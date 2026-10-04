@@ -1,0 +1,190 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/meet-the-gearbox-start
+seed 1
+ticks 60
+inputs none
+blueprint 8a1907119a8ad9bc
+arena open-floor 297edbfc7ad9a93c
+part battery-pack-2-cell ac49444ad3a2e166
+part caster 85cad363c9f68e25
+part chassis 2b67875c3e879e19
+part dc-motor e80cd3eae3017bf6
+part gearbox 36f60677ea150571
+part wheel-large c182e441f60c54e3
+record c912e80ec0078d8c7194acb138a93fea3438926af684ce3d8db0879981fc03c6
+fault chassis scraping first-tick=2
+fault wheel-left not-driven first-tick=2
+fault wheel-right not-driven first-tick=2
+subjects battery caster chassis gear-left gear-right motor-left motor-right wheel-left wheel-right wire:w10 wire:w11 wire:w12 wire:w7 wire:w8 wire:w9
+tick 0 d0fb1f82
+  battery volts=2.586 milliamps=1034.5 charge=1
+  chassis x=300 y=600 heading=0 pitch=-6.28 roll=0
+  gear-left rpm=28.7
+  gear-right rpm=28.7
+  motor-left volts=2.586 milliamps=517.2 rpm=86.2 sound.motor=0.431
+  motor-right volts=2.586 milliamps=517.2 rpm=86.2 sound.motor=0.431
+  wheel-left rpm=0 x=340 y=740 heading=0
+  wheel-right rpm=0 x=340 y=460 heading=0
+  wire:w10 milliamps=517.2
+  wire:w11 milliamps=-517.2
+  wire:w12 milliamps=-517.2
+  wire:w7 rpm=86.2
+  wire:w8 rpm=86.2
+  wire:w9 milliamps=517.2
+tick 1 98b3def6
+  battery volts=2.86 milliamps=349.6
+  gear-left rpm=31.8
+  gear-right rpm=31.8
+  motor-left volts=2.86 milliamps=174.8 rpm=95.3 sound.motor=0.477
+  motor-right volts=2.86 milliamps=174.8 rpm=95.3 sound.motor=0.477
+  wire:w10 milliamps=174.8
+  wire:w11 milliamps=-174.8
+  wire:w12 milliamps=-174.8
+  wire:w7 rpm=95.3
+  wire:w8 rpm=95.3
+  wire:w9 milliamps=174.8
+tick 2 97b97fd2
+  battery volts=2.898 milliamps=255.1 charge=0.9999
+  chassis faults=scraping
+  gear-left rpm=32.2
+  gear-right rpm=32.2
+  motor-left volts=2.898 milliamps=127.5 rpm=96.6 sound.motor=0.483
+  motor-right volts=2.898 milliamps=127.5 rpm=96.6 sound.motor=0.483
+  wheel-left faults=not-driven
+  wheel-right faults=not-driven
+  wire:w10 milliamps=127.5
+  wire:w11 milliamps=-127.5
+  wire:w12 milliamps=-127.5
+  wire:w7 rpm=96.6
+  wire:w8 rpm=96.6
+  wire:w9 milliamps=127.5
+tick 3 80604273
+  battery volts=2.903 milliamps=242.1
+  gear-left rpm=32.3
+  gear-right rpm=32.3
+  motor-left volts=2.903 milliamps=121 rpm=96.8 sound.motor=0.484
+  motor-right volts=2.903 milliamps=121 rpm=96.8 sound.motor=0.484
+  wire:w10 milliamps=121
+  wire:w11 milliamps=-121
+  wire:w12 milliamps=-121
+  wire:w7 rpm=96.8
+  wire:w8 rpm=96.8
+  wire:w9 milliamps=121
+tick 4 f9739e8b
+  battery volts=2.904 milliamps=240.3 charge=0.9998
+  motor-left volts=2.904 milliamps=120.1
+  motor-right volts=2.904 milliamps=120.1
+  wire:w10 milliamps=120.1
+  wire:w11 milliamps=-120.1
+  wire:w12 milliamps=-120.1
+  wire:w9 milliamps=120.1
+tick 5 ec285485
+  battery milliamps=240 charge=0.9997
+  motor-left milliamps=120
+  motor-right milliamps=120
+  wire:w10 milliamps=120
+  wire:w11 milliamps=-120
+  wire:w12 milliamps=-120
+  wire:w9 milliamps=120
+tick 6 929e8dfd
+tick 7 b7bc5856
+  battery charge=0.9996
+tick 8 04982ed8
+tick 9 bdd19561
+  battery charge=0.9995
+tick 10 0c830e72
+  battery volts=2.903
+  motor-left volts=2.903
+  motor-right volts=2.903
+tick 11 65badb1e
+  battery charge=0.9994
+tick 12 456af784
+tick 13 8baa7659
+  battery charge=0.9993
+tick 14 db16aa9d
+  battery charge=0.9992
+tick 15 780eabd3
+tick 16 f731f492
+  battery charge=0.9991
+tick 17 8cd41baa
+tick 18 a5bac582
+  battery charge=0.999
+tick 19 b01d20a0
+tick 20 ca0f8dee
+  battery charge=0.9989
+tick 21 f8a4f40e
+tick 22 9e7af33a
+  battery charge=0.9988
+tick 23 14ff2b01
+  battery charge=0.9987
+tick 24 8be5066c
+tick 25 31f7bebf
+  battery charge=0.9986
+tick 26 027003bd
+tick 27 a05420ea
+  battery charge=0.9985
+tick 28 24671bca
+  battery volts=2.902
+  gear-left rpm=32.2
+  gear-right rpm=32.2
+  motor-left volts=2.902 rpm=96.7
+  motor-right volts=2.902 rpm=96.7
+  wire:w7 rpm=96.7
+  wire:w8 rpm=96.7
+tick 29 b4078cc5
+  battery charge=0.9984
+tick 30 f06ca0bc
+tick 31 17cc8f17
+  battery charge=0.9983
+tick 32 312d1fab
+  battery charge=0.9982
+tick 33 54c6db0b
+tick 34 f723c643
+  battery charge=0.9981
+tick 35 fd75dd2f
+tick 36 20be28c9
+  battery charge=0.998
+tick 37 8fbac0ad
+tick 38 df45744e
+  battery charge=0.9979
+tick 39 dcb0f3cf
+tick 40 406e6233
+  battery charge=0.9978
+tick 41 0677e391
+  battery charge=0.9977
+tick 42 a9fd2481
+tick 43 3a5490c3
+  battery charge=0.9976
+tick 44 8a46610e
+tick 45 f29cd99a
+  battery charge=0.9975
+tick 46 e37f980f
+  battery volts=2.901
+  motor-left volts=2.901
+  motor-right volts=2.901
+tick 47 f9b0fe07
+  battery charge=0.9974
+tick 48 7b8abbdd
+tick 49 9ce5c4eb
+  battery charge=0.9973
+tick 50 3cc2e9b4
+  battery charge=0.9972
+tick 51 e7b423f7
+tick 52 83073645
+  battery charge=0.9971
+tick 53 006d9c8d
+tick 54 b9a7e2bd
+  battery charge=0.997
+tick 55 24021a7d
+  motor-left sound.motor=0.483
+  motor-right sound.motor=0.483
+tick 56 9c1fe77d
+  battery charge=0.9969
+tick 57 c36992f2
+tick 58 be2bceb7
+  battery charge=0.9968
+tick 59 3b0865e7
+  battery charge=0.9967
+tick 60 b8f355f9

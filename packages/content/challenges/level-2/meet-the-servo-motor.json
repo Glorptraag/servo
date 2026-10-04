@@ -1,0 +1,320 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "goal": {
+    "forTicks": 15,
+    "kind": "holds",
+    "when": {
+      "kind": "and",
+      "of": [
+        {
+          "kind": "state",
+          "state": "powered",
+          "target": {
+            "placed": "servo"
+          }
+        },
+        {
+          "failure": "no-signal",
+          "kind": "fault",
+          "target": {
+            "placed": "servo"
+          }
+        },
+        {
+          "kind": "not",
+          "of": {
+            "failure": "low-voltage",
+            "kind": "fault",
+            "target": {
+              "placed": "servo"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "goalLine": "Join the two battery packs one after the other, so the servo motor has the power it needs",
+  "hints": [
+    {
+      "steps": [
+        {
+          "line": "This servo motor needs two battery packs, one after the other",
+          "step": "pulse-part",
+          "target": {
+            "placed": "servo"
+          }
+        },
+        {
+          "line": "This battery pack's minus takes the other battery pack's plus",
+          "step": "pulse-port",
+          "target": {
+            "placed": "battery-2",
+            "port": "minus"
+          }
+        },
+        {
+          "from": {
+            "placed": "battery-1",
+            "port": "plus"
+          },
+          "line": "Plus to minus, from one battery pack to the next",
+          "step": "ghost-wire",
+          "to": {
+            "placed": "battery-2",
+            "port": "minus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery-1",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "battery-2",
+                "port": "minus"
+              }
+            }
+          ],
+          "line": "Joined the two battery packs, plus to minus",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "placed": "battery-2",
+        "port": "minus"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This servo motor is not getting enough power",
+          "step": "pulse-part",
+          "target": {
+            "placed": "servo"
+          }
+        },
+        {
+          "line": "This servo motor's plus takes one battery pack only",
+          "step": "pulse-port",
+          "target": {
+            "placed": "servo",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery-1",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "servo",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery-1",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "battery-2",
+                "port": "minus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery-2",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "servo",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery-1",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "servo",
+                "port": "minus"
+              }
+            }
+          ],
+          "line": "Joined the two battery packs one after the other and wired them to the servo motor",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "failure": "low-voltage",
+        "kind": "fault",
+        "target": {
+          "placed": "servo"
+        }
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This servo motor takes power from two battery packs, one after the other",
+          "step": "pulse-part",
+          "target": {
+            "placed": "servo"
+          }
+        },
+        {
+          "line": "This servo motor's plus takes the second battery pack's plus",
+          "step": "pulse-port",
+          "target": {
+            "placed": "servo",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery-1",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "servo",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery-1",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "battery-2",
+                "port": "minus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery-2",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "servo",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery-1",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "servo",
+                "port": "minus"
+              }
+            }
+          ],
+          "line": "Joined the two battery packs one after the other and wired them to the servo motor",
+          "step": "do-it"
+        }
+      ]
+    }
+  ],
+  "id": "meet-the-servo-motor",
+  "introduces": "servo-motor",
+  "kind": "part-introduction",
+  "kit": "circuit-crew",
+  "level": 2,
+  "start": {
+    "arena": {
+      "preset": "open-floor",
+      "props": []
+    },
+    "meta": {
+      "createdAt": "2026-10-04T09:00:00.000Z",
+      "highWater": {
+        "parts": 0,
+        "wires": 2
+      },
+      "id": "ff2ec014-708d-4649-8b74-c7ffbdc40640",
+      "level": 2,
+      "name": "Meet the servo motor",
+      "updatedAt": "2026-10-04T09:00:00.000Z"
+    },
+    "parts": [
+      {
+        "id": "battery-1",
+        "part": "battery-pack-2-cell",
+        "position": {
+          "x": -80,
+          "y": 30
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "battery-2",
+        "part": "battery-pack-2-cell",
+        "position": {
+          "x": -80,
+          "y": -30
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "servo",
+        "part": "servo-motor",
+        "position": {
+          "x": 60,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      }
+    ],
+    "version": 1,
+    "wires": [
+      {
+        "from": {
+          "part": "battery-2",
+          "port": "plus"
+        },
+        "id": "w1",
+        "to": {
+          "part": "servo",
+          "port": "plus"
+        }
+      },
+      {
+        "from": {
+          "part": "battery-1",
+          "port": "minus"
+        },
+        "id": "w2",
+        "to": {
+          "part": "servo",
+          "port": "minus"
+        }
+      }
+    ]
+  },
+  "title": "Meet the servo motor"
+}

@@ -1,0 +1,47 @@
+{
+  "arena": {
+    "preset": "wall-stop",
+    "props": []
+  },
+  "goal": {
+    "forTicks": 30,
+    "kind": "holds",
+    "when": {
+      "kind": "and",
+      "of": [
+        {
+          "kind": "near-wall",
+          "target": {
+            "part": "chassis"
+          },
+          "wall": "far-wall",
+          "withinMm": 40
+        },
+        {
+          "atMost": 5,
+          "kind": "speed",
+          "target": {
+            "part": "chassis"
+          }
+        },
+        {
+          "kind": "not",
+          "of": {
+            "kind": "state",
+            "state": "powered",
+            "target": {
+              "part": "dc-motor"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "goalLine": "Cross the arena and stop at the wall",
+  "hints": [],
+  "id": "stop-at-the-wall",
+  "kind": "unscripted-build",
+  "kit": "circuit-crew",
+  "level": 2,
+  "title": "Stop at the wall"
+}

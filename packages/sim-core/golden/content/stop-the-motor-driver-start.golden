@@ -1,0 +1,116 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/stop-the-motor-driver-start
+seed 1
+ticks 75
+input 30 switch closed=false
+blueprint 9baf24f2130170fd
+arena open-floor 297edbfc7ad9a93c
+part battery-pack-2-cell ac49444ad3a2e166
+part caster 85cad363c9f68e25
+part chassis 2b67875c3e879e19
+part dc-motor e80cd3eae3017bf6
+part motor-driver 7bba5ed414f432a1
+part switch 0a304ca511260dde
+part wheel-large c182e441f60c54e3
+record 59c9098a1b884aebc78f7575c3adaadc549806d33942a2558874abb732d9c788
+fault battery no-loop first-tick=2
+fault driver no-power first-tick=2
+fault switch outside-loop first-tick=2
+subjects battery caster chassis driver motor-left motor-right switch wheel-left wheel-right wire:w10 wire:w11 wire:w12 wire:w13 wire:w5 wire:w6 wire:w9
+tick 0 f6224d50
+  battery volts=3 milliamps=0 charge=1
+  chassis x=300 y=600 heading=0 pitch=0 roll=0
+  driver volts=0 milliamps=0
+  motor-left volts=0 milliamps=0 rpm=0
+  motor-right volts=0 milliamps=0 rpm=0
+  switch volts=0 milliamps=0 closed=true
+  wheel-left rpm=0
+  wheel-right rpm=0
+  wire:w10 milliamps=0
+  wire:w11 milliamps=0
+  wire:w12 milliamps=0
+  wire:w13 milliamps=0
+  wire:w5 rpm=0
+  wire:w6 rpm=0
+  wire:w9 milliamps=0
+tick 1 37517e5f
+tick 2 2ddc4d5a
+  battery faults=no-loop
+  driver faults=no-power
+  switch faults=outside-loop
+tick 3 37517e5f
+tick 4 37517e5f
+tick 5 37517e5f
+tick 6 37517e5f
+tick 7 37517e5f
+tick 8 37517e5f
+tick 9 37517e5f
+tick 10 37517e5f
+tick 11 37517e5f
+tick 12 37517e5f
+tick 13 37517e5f
+tick 14 37517e5f
+tick 15 37517e5f
+tick 16 37517e5f
+tick 17 37517e5f
+tick 18 37517e5f
+tick 19 37517e5f
+tick 20 37517e5f
+tick 21 37517e5f
+tick 22 37517e5f
+tick 23 37517e5f
+tick 24 37517e5f
+tick 25 37517e5f
+tick 26 37517e5f
+tick 27 37517e5f
+tick 28 37517e5f
+tick 29 37517e5f
+tick 30 37517e5f
+tick 31 ed06831a
+  switch closed=false
+tick 32 37517e5f
+tick 33 37517e5f
+tick 34 37517e5f
+tick 35 37517e5f
+tick 36 37517e5f
+tick 37 37517e5f
+tick 38 37517e5f
+tick 39 37517e5f
+tick 40 37517e5f
+tick 41 37517e5f
+tick 42 37517e5f
+tick 43 37517e5f
+tick 44 37517e5f
+tick 45 37517e5f
+tick 46 37517e5f
+tick 47 37517e5f
+tick 48 37517e5f
+tick 49 37517e5f
+tick 50 37517e5f
+tick 51 37517e5f
+tick 52 37517e5f
+tick 53 37517e5f
+tick 54 37517e5f
+tick 55 37517e5f
+tick 56 37517e5f
+tick 57 37517e5f
+tick 58 37517e5f
+tick 59 37517e5f
+tick 60 37517e5f
+tick 61 37517e5f
+tick 62 37517e5f
+tick 63 37517e5f
+tick 64 37517e5f
+tick 65 37517e5f
+tick 66 37517e5f
+tick 67 37517e5f
+tick 68 37517e5f
+tick 69 37517e5f
+tick 70 37517e5f
+tick 71 37517e5f
+tick 72 37517e5f
+tick 73 37517e5f
+tick 74 37517e5f
+tick 75 37517e5f

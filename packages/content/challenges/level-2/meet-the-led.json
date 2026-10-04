@@ -1,0 +1,330 @@
+{
+  "arena": {
+    "preset": "open-floor",
+    "props": []
+  },
+  "goal": {
+    "forTicks": 15,
+    "kind": "holds",
+    "when": {
+      "kind": "state",
+      "state": "lit",
+      "target": {
+        "placed": "led"
+      }
+    }
+  },
+  "goalLine": "Wire the battery pack's plus to the LED's long leg so the LED lights",
+  "hints": [
+    {
+      "steps": [
+        {
+          "line": "The battery pack gives power round a loop",
+          "step": "pulse-part",
+          "target": {
+            "placed": "battery"
+          }
+        },
+        {
+          "line": "Power goes in at the LED's long leg, its plus",
+          "step": "pulse-port",
+          "target": {
+            "placed": "led",
+            "port": "plus"
+          }
+        },
+        {
+          "from": {
+            "placed": "battery",
+            "port": "plus"
+          },
+          "line": "Plus to the LED's plus",
+          "step": "ghost-wire",
+          "to": {
+            "placed": "led",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "led",
+                "port": "plus"
+              }
+            }
+          ],
+          "line": "Wired the battery pack's plus to the LED's plus",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "placed": "led",
+        "port": "plus"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This battery pack has no loop back to minus",
+          "step": "pulse-part",
+          "target": {
+            "placed": "battery"
+          }
+        },
+        {
+          "line": "Power comes back to the battery pack at minus",
+          "step": "pulse-port",
+          "target": {
+            "placed": "battery",
+            "port": "minus"
+          }
+        },
+        {
+          "from": {
+            "placed": "led",
+            "port": "minus"
+          },
+          "line": "The LED's minus back to minus",
+          "step": "ghost-wire",
+          "to": {
+            "placed": "battery",
+            "port": "minus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "led",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "battery",
+                "port": "minus"
+              }
+            }
+          ],
+          "line": "Wired the LED's minus back to the battery pack's minus",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "placed": "led",
+        "port": "minus"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This LED's plus and minus are swapped",
+          "step": "pulse-part",
+          "target": {
+            "placed": "led"
+          }
+        },
+        {
+          "line": "The LED's plus takes the battery pack's plus",
+          "step": "pulse-port",
+          "target": {
+            "placed": "led",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "minus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "led",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "led",
+                "port": "minus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "led",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "led",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "battery",
+                "port": "minus"
+              }
+            }
+          ],
+          "line": "Swapped the LED's plus and minus lines",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "failure": "reversed",
+        "kind": "fault",
+        "target": {
+          "placed": "led"
+        }
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This LED is not in a loop with the battery pack",
+          "step": "pulse-part",
+          "target": {
+            "placed": "led"
+          }
+        },
+        {
+          "line": "Power goes in at the LED's long leg, its plus",
+          "step": "pulse-port",
+          "target": {
+            "placed": "led",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "minus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "led",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "led",
+                "port": "minus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "led",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "led",
+                "port": "minus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "battery",
+                "port": "minus"
+              }
+            }
+          ],
+          "line": "Wired the LED to the battery pack, plus to plus and minus to minus",
+          "step": "do-it"
+        }
+      ]
+    }
+  ],
+  "id": "meet-the-led",
+  "introduces": "led",
+  "kind": "part-introduction",
+  "kit": "circuit-crew",
+  "level": 2,
+  "start": {
+    "arena": {
+      "preset": "open-floor",
+      "props": []
+    },
+    "meta": {
+      "createdAt": "2026-10-04T09:00:00.000Z",
+      "highWater": {
+        "parts": 0,
+        "wires": 1
+      },
+      "id": "0ff24dab-4c39-4405-bb04-48771c1b7e8c",
+      "level": 2,
+      "name": "Meet the LED",
+      "updatedAt": "2026-10-04T09:00:00.000Z"
+    },
+    "parts": [
+      {
+        "id": "battery",
+        "part": "battery-pack-2-cell",
+        "position": {
+          "x": -100,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "led",
+        "part": "led",
+        "position": {
+          "x": 100,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      }
+    ],
+    "version": 1,
+    "wires": [
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w1",
+        "to": {
+          "part": "led",
+          "port": "minus"
+        }
+      }
+    ]
+  },
+  "title": "Meet the LED"
+}

@@ -1,0 +1,3773 @@
+# Servo golden run (task 1.7): the reference this Run is checked against. Written by `pnpm golden --accept`; never edit it by hand.
+# Layout: packages/tools/src/golden-runs/README.md
+golden 1
+case content/push-the-heavy-box-into-the-wall
+seed 1
+ticks 690
+inputs none
+blueprint 58a9c45af0355fd9
+arena wall-stop 1d8d0f6a65d48689
+part battery-pack-2-cell ac49444ad3a2e166
+part caster 85cad363c9f68e25
+part chassis 2b67875c3e879e19
+part dc-motor e80cd3eae3017bf6
+part gearbox 36f60677ea150571
+part wheel-large c182e441f60c54e3
+record 9fc7b18bd318379d7a656f0c2b63b0ec1eaf6abdd31a688bd6c9a3a5a3b405bf
+fault wheel-left slipping first-tick=622
+fault wheel-right slipping first-tick=622
+subjects battery caster chassis gear-left gear-right motor-left motor-right wheel-left wheel-right arena:heavy-box wire:w10 wire:w11 wire:w12 wire:w13 wire:w14 wire:w7 wire:w8 wire:w9
+tick 0 081f32bb
+  battery volts=2.586 milliamps=1034.5 charge=1
+  chassis x=300 y=600 heading=0 pitch=0 roll=0
+  gear-left rpm=28.7
+  gear-right rpm=28.7
+  motor-left volts=2.586 milliamps=517.2 rpm=86.2 sound.motor=0.431
+  motor-right volts=2.586 milliamps=517.2 rpm=86.2 sound.motor=0.431
+  wheel-left rpm=28.7
+  wheel-right rpm=28.7
+  arena:heavy-box x=1300 y=600 heading=0
+  wire:w10 rpm=28.7
+  wire:w11 milliamps=517.2
+  wire:w12 milliamps=517.2
+  wire:w13 milliamps=-517.2
+  wire:w14 milliamps=-517.2
+  wire:w7 rpm=86.2
+  wire:w8 rpm=86.2
+  wire:w9 rpm=28.7
+tick 1 624f4b0d
+  chassis x=302.3
+tick 2 49c2a380
+  battery volts=2.814 milliamps=463.5 charge=0.9998
+  chassis x=305.6
+  gear-left rpm=27.6
+  gear-right rpm=27.6
+  motor-left volts=2.814 milliamps=231.7 rpm=82.8 sound.motor=0.414
+  motor-right volts=2.814 milliamps=231.7 rpm=82.8 sound.motor=0.414
+  wheel-left rpm=27.6
+  wheel-right rpm=27.6
+  wire:w10 rpm=27.6
+  wire:w11 milliamps=231.7
+  wire:w12 milliamps=231.7
+  wire:w13 milliamps=-231.7
+  wire:w14 milliamps=-231.7
+  wire:w7 rpm=82.8
+  wire:w8 rpm=82.8
+  wire:w9 rpm=27.6
+tick 3 11fc5a83
+  battery volts=2.879 milliamps=302.2 charge=0.9997
+  chassis x=309.1
+  gear-left rpm=31
+  gear-right rpm=31
+  motor-left volts=2.879 milliamps=151.1 rpm=92.9 sound.motor=0.465
+  motor-right volts=2.879 milliamps=151.1 rpm=92.9 sound.motor=0.465
+  wheel-left rpm=31
+  wheel-right rpm=31
+  wire:w10 rpm=31
+  wire:w11 milliamps=151.1
+  wire:w12 milliamps=151.1
+  wire:w13 milliamps=-151.1
+  wire:w14 milliamps=-151.1
+  wire:w7 rpm=92.9
+  wire:w8 rpm=92.9
+  wire:w9 rpm=31
+tick 4 70a2a483
+  battery volts=2.895 milliamps=261.9 charge=0.9996
+  chassis x=312.7
+  gear-left rpm=31.7
+  gear-right rpm=31.7
+  motor-left volts=2.895 milliamps=130.9 rpm=95.2 sound.motor=0.476
+  motor-right volts=2.895 milliamps=130.9 rpm=95.2 sound.motor=0.476
+  wheel-left rpm=31.7
+  wheel-right rpm=31.7
+  wire:w10 rpm=31.7
+  wire:w11 milliamps=130.9
+  wire:w12 milliamps=130.9
+  wire:w13 milliamps=-130.9
+  wire:w14 milliamps=-130.9
+  wire:w7 rpm=95.2
+  wire:w8 rpm=95.2
+  wire:w9 rpm=31.7
+tick 5 6059baac
+  battery volts=2.899 milliamps=251.8 charge=0.9995
+  chassis x=316.3
+  gear-left rpm=31.9
+  gear-right rpm=31.9
+  motor-left volts=2.899 milliamps=125.9 rpm=95.8 sound.motor=0.479
+  motor-right volts=2.899 milliamps=125.9 rpm=95.8 sound.motor=0.479
+  wheel-left rpm=31.9
+  wheel-right rpm=31.9
+  wire:w10 rpm=31.9
+  wire:w11 milliamps=125.9
+  wire:w12 milliamps=125.9
+  wire:w13 milliamps=-125.9
+  wire:w14 milliamps=-125.9
+  wire:w7 rpm=95.8
+  wire:w8 rpm=95.8
+  wire:w9 rpm=31.9
+tick 6 35331308
+  battery volts=2.9 milliamps=249.4
+  chassis x=320
+  gear-left rpm=32
+  gear-right rpm=32
+  motor-left volts=2.9 milliamps=124.7 rpm=95.9 sound.motor=0.48
+  motor-right volts=2.9 milliamps=124.7 rpm=95.9 sound.motor=0.48
+  wheel-left rpm=32
+  wheel-right rpm=32
+  wire:w10 rpm=32
+  wire:w11 milliamps=124.7
+  wire:w12 milliamps=124.7
+  wire:w13 milliamps=-124.7
+  wire:w14 milliamps=-124.7
+  wire:w7 rpm=95.9
+  wire:w8 rpm=95.9
+  wire:w9 rpm=32
+tick 7 cdc1594c
+  battery milliamps=248.7 charge=0.9994
+  chassis x=323.6
+  motor-left milliamps=124.4
+  motor-right milliamps=124.4
+  wire:w11 milliamps=124.4
+  wire:w12 milliamps=124.4
+  wire:w13 milliamps=-124.4
+  wire:w14 milliamps=-124.4
+tick 8 072ee887
+  battery charge=0.9993
+  chassis x=327.2
+  motor-left milliamps=124.3
+  motor-right milliamps=124.3
+  wire:w11 milliamps=124.3
+  wire:w12 milliamps=124.3
+  wire:w13 milliamps=-124.3
+  wire:w14 milliamps=-124.3
+tick 9 08f0f9a0
+  chassis x=330.8
+tick 10 41dacadb
+  battery charge=0.9992
+  chassis x=334.5
+tick 11 9fd53bfa
+  battery milliamps=248.6
+  chassis x=338.1
+tick 12 0a7c503a
+  battery charge=0.9991
+  chassis x=341.7
+tick 13 a676c796
+  chassis x=345.4
+tick 14 81b35ea9
+  battery charge=0.999
+  chassis x=349
+tick 15 de9906f4
+  battery charge=0.9989
+  chassis x=352.6
+tick 16 6a4d1fdd
+  battery volts=2.899 milliamps=248.5
+  chassis x=356.2
+  motor-left volts=2.899
+  motor-right volts=2.899
+tick 17 7f19b9e5
+  battery charge=0.9988
+  chassis x=359.9
+tick 18 8175eb6c
+  chassis x=363.5
+  motor-left milliamps=124.2
+  motor-right milliamps=124.2
+  wire:w11 milliamps=124.2
+  wire:w12 milliamps=124.2
+  wire:w13 milliamps=-124.2
+  wire:w14 milliamps=-124.2
+tick 19 39d51e15
+  battery charge=0.9987
+  chassis x=367.1
+tick 20 65042813
+  chassis x=370.8
+tick 21 473e211b
+  battery milliamps=248.4 charge=0.9986
+  chassis x=374.4
+tick 22 6198aa5c
+  battery charge=0.9985
+  chassis x=378
+tick 23 deca8377
+  chassis x=381.6
+tick 24 33d64b4b
+  battery charge=0.9984
+  chassis x=385.3
+tick 25 31f1a99c
+  chassis x=388.9
+tick 26 5f3faa43
+  battery milliamps=248.5 charge=0.9983
+  chassis x=392.5
+tick 27 02e379bb
+  chassis x=396.1
+tick 28 9641b1b6
+  battery milliamps=248.4 charge=0.9982
+  chassis x=399.8
+tick 29 300d67b8
+  battery charge=0.9981
+  chassis x=403.4
+tick 30 8855b6c6
+  chassis x=407
+tick 31 bbc4b22f
+  battery charge=0.998
+  chassis x=410.7
+tick 32 255a58a9
+  battery milliamps=248.5
+  chassis x=414.3
+tick 33 5991bdbc
+  battery charge=0.9979
+  chassis x=417.9
+tick 34 7b516159
+  battery volts=2.898 milliamps=248.4
+  chassis x=421.5
+  motor-left volts=2.898
+  motor-right volts=2.898
+tick 35 95fde6b5
+  battery charge=0.9978
+  chassis x=425.2
+tick 36 7eee820a
+  battery charge=0.9977
+  chassis x=428.8
+tick 37 86e7525e
+  chassis x=432.4
+tick 38 2e5f3996
+  battery charge=0.9976
+  chassis x=436
+tick 39 f8c45921
+  battery milliamps=248.5
+  chassis x=439.7
+  motor-left sound.motor=0.479
+  motor-right sound.motor=0.479
+tick 40 0084ccac
+  battery charge=0.9975
+  chassis x=443.3
+tick 41 22224a46
+  battery milliamps=248.4
+  chassis x=446.9
+tick 42 9cf67f14
+  battery charge=0.9974
+  chassis x=450.5
+tick 43 0983643a
+  battery charge=0.9973
+  chassis x=454.2
+tick 44 299af683
+  chassis x=457.8
+tick 45 59280b45
+  battery charge=0.9972
+  chassis x=461.4
+tick 46 14cc57d3
+  battery milliamps=248.5
+  chassis x=465.1
+tick 47 32d8c2b8
+  battery charge=0.9971
+  chassis x=468.7
+tick 48 4f95d387
+  battery milliamps=248.4 charge=0.997
+  chassis x=472.3
+tick 49 9e6657d0
+  chassis x=475.9
+tick 50 c303e923
+  battery charge=0.9969
+  chassis x=479.6
+tick 51 a6c3e5a7
+  chassis x=483.2
+tick 52 c32bb6a1
+  battery volts=2.897 charge=0.9968
+  chassis x=486.8
+  motor-left volts=2.897
+  motor-right volts=2.897
+tick 53 82e38513
+  battery milliamps=248.5
+  chassis x=490.4
+tick 54 4eed3304
+  battery charge=0.9967
+  chassis x=494.1
+tick 55 1995ec5e
+  battery milliamps=248.4 charge=0.9966
+  chassis x=497.7
+tick 56 20aeea66
+  chassis x=501.3
+tick 57 5988908a
+  battery charge=0.9965
+  chassis x=504.9
+tick 58 d20b6f11
+  chassis x=508.6
+tick 59 b48ad667
+  battery milliamps=248.5 charge=0.9964
+  chassis x=512.2
+  motor-left milliamps=124.3
+  motor-right milliamps=124.3
+  wire:w11 milliamps=124.3
+  wire:w12 milliamps=124.3
+  wire:w13 milliamps=-124.3
+  wire:w14 milliamps=-124.3
+tick 60 bd2fea24
+  chassis x=515.8
+  motor-left milliamps=124.2
+  motor-right milliamps=124.2
+  wire:w11 milliamps=124.2
+  wire:w12 milliamps=124.2
+  wire:w13 milliamps=-124.2
+  wire:w14 milliamps=-124.2
+tick 61 09305942
+  battery milliamps=248.4 charge=0.9963
+  chassis x=519.4
+tick 62 63972225
+  battery charge=0.9962
+  chassis x=523.1
+tick 63 ce0a4c95
+  chassis x=526.7
+tick 64 6daac325
+  battery charge=0.9961
+  chassis x=530.3
+tick 65 c9572e7b
+  chassis x=533.9
+tick 66 c40cdd51
+  battery milliamps=248.3 charge=0.996
+  chassis x=537.6
+tick 67 eb8e1966
+  chassis x=541.2
+tick 68 014884b4
+  battery charge=0.9959
+  chassis x=544.8
+tick 69 7c434e90
+  battery charge=0.9958
+  chassis x=548.4
+  motor-left milliamps=124.1
+  motor-right milliamps=124.1
+  wire:w11 milliamps=124.1
+  wire:w12 milliamps=124.1
+  wire:w13 milliamps=-124.1
+  wire:w14 milliamps=-124.1
+tick 70 44845bf8
+  battery volts=2.896
+  chassis x=552.1
+  motor-left volts=2.896
+  motor-right volts=2.896
+tick 71 b1ffe5c7
+  battery milliamps=248.2 charge=0.9957
+  chassis x=555.7
+tick 72 881955b6
+  chassis x=559.3
+tick 73 0482a1a3
+  battery charge=0.9956
+  chassis x=562.9
+tick 74 8305c370
+  chassis x=566.6
+tick 75 07779678
+  battery charge=0.9955
+  chassis x=570.2
+tick 76 21722489
+  battery milliamps=248.4 charge=0.9954
+  chassis x=573.8
+  gear-left rpm=31.9
+  gear-right rpm=31.9
+  motor-left milliamps=124.2 rpm=95.8
+  motor-right milliamps=124.2 rpm=95.8
+  wheel-left rpm=31.9
+  wheel-right rpm=31.9
+  wire:w10 rpm=31.9
+  wire:w11 milliamps=124.2
+  wire:w12 milliamps=124.2
+  wire:w13 milliamps=-124.2
+  wire:w14 milliamps=-124.2
+  wire:w7 rpm=95.8
+  wire:w8 rpm=95.8
+  wire:w9 rpm=31.9
+tick 77 82c8b185
+  chassis x=577.4
+tick 78 8f8a3a49
+  battery charge=0.9953
+  chassis x=581.1
+tick 79 e26a4d81
+  chassis x=584.7
+tick 80 c0fad2f7
+  battery milliamps=248.3 charge=0.9952
+  chassis x=588.3
+tick 81 1a8304f4
+  chassis x=591.9
+tick 82 64437fe2
+  battery charge=0.9951
+  chassis x=595.6
+  motor-left milliamps=124.1
+  motor-right milliamps=124.1
+  wire:w11 milliamps=124.1
+  wire:w12 milliamps=124.1
+  wire:w13 milliamps=-124.1
+  wire:w14 milliamps=-124.1
+tick 83 31807f5a
+  battery charge=0.995
+  chassis x=599.2
+tick 84 c06930f9
+  chassis x=602.8
+tick 85 81717063
+  battery milliamps=248.2 charge=0.9949
+  chassis x=606.4
+tick 86 62cbd12c
+  chassis x=610
+tick 87 edfffde4
+  battery charge=0.9948
+  chassis x=613.7
+tick 88 dd0a1d8e
+  battery volts=2.895 charge=0.9947
+  chassis x=617.3
+  motor-left volts=2.895
+  motor-right volts=2.895
+tick 89 d3b77d68
+  battery milliamps=248.4
+  chassis x=620.9
+  motor-left milliamps=124.2
+  motor-right milliamps=124.2
+  wire:w11 milliamps=124.2
+  wire:w12 milliamps=124.2
+  wire:w13 milliamps=-124.2
+  wire:w14 milliamps=-124.2
+tick 90 c379d9e0
+  battery charge=0.9946
+  chassis x=624.5
+tick 91 ec71cebd
+  chassis x=628.2
+tick 92 5a008b1b
+  battery charge=0.9945
+  chassis x=631.8
+tick 93 a1ccdc09
+  battery milliamps=248.3
+  chassis x=635.4
+tick 94 530c48ff
+  battery charge=0.9944
+  chassis x=639
+tick 95 148832de
+  battery charge=0.9943
+  chassis x=642.7
+tick 96 aeda57a5
+  chassis x=646.3
+  motor-left milliamps=124.1
+  motor-right milliamps=124.1
+  wire:w11 milliamps=124.1
+  wire:w12 milliamps=124.1
+  wire:w13 milliamps=-124.1
+  wire:w14 milliamps=-124.1
+tick 97 ed68d138
+  battery charge=0.9942
+  chassis x=649.9
+tick 98 5e9bc852
+  battery milliamps=248.2
+  chassis x=653.5
+tick 99 f905bdcf
+  battery charge=0.9941
+  chassis x=657.2
+tick 100 ddfa4de5
+  chassis x=660.8
+tick 101 02cb5099
+  battery charge=0.994
+  chassis x=664.4
+tick 102 5f23ec97
+  battery charge=0.9939
+  chassis x=668
+tick 103 c5f7f73b
+  battery milliamps=248.4
+  chassis x=671.6
+  motor-left milliamps=124.2
+  motor-right milliamps=124.2
+  wire:w11 milliamps=124.2
+  wire:w12 milliamps=124.2
+  wire:w13 milliamps=-124.2
+  wire:w14 milliamps=-124.2
+tick 104 aeea798f
+  battery volts=2.894 charge=0.9938
+  chassis x=675.3
+  motor-left volts=2.894
+  motor-right volts=2.894
+tick 105 07094e28
+  chassis x=678.9
+tick 106 db2826b7
+  battery charge=0.9937
+  chassis x=682.5
+tick 107 2bbb2753
+  battery milliamps=248.3
+  chassis x=686.1
+tick 108 01330d4f
+  battery charge=0.9936
+  chassis x=689.8
+tick 109 1b8d4a2e
+  battery charge=0.9935
+  chassis x=693.4
+  motor-left milliamps=124.1
+  motor-right milliamps=124.1
+  wire:w11 milliamps=124.1
+  wire:w12 milliamps=124.1
+  wire:w13 milliamps=-124.1
+  wire:w14 milliamps=-124.1
+tick 110 a6c6f5bb
+  chassis x=697
+tick 111 30c3ac19
+  battery charge=0.9934
+  chassis x=700.6
+tick 112 2b21aaa8
+  battery milliamps=248.2
+  chassis x=704.2
+tick 113 98eadb67
+  battery charge=0.9933
+  chassis x=707.9
+tick 114 0ee40e95
+  chassis x=711.5
+tick 115 db17f60e
+  battery charge=0.9932
+  chassis x=715.1
+tick 116 3543a5d1
+  battery milliamps=248.4 charge=0.9931
+  chassis x=718.7
+  motor-left milliamps=124.2
+  motor-right milliamps=124.2
+  wire:w11 milliamps=124.2
+  wire:w12 milliamps=124.2
+  wire:w13 milliamps=-124.2
+  wire:w14 milliamps=-124.2
+tick 117 b2e51c06
+  chassis x=722.3
+tick 118 d868c358
+  battery charge=0.993
+  chassis x=726
+tick 119 fb590f2b
+  chassis x=729.6
+tick 120 995eab64
+  battery milliamps=248.3 charge=0.9929
+  chassis x=733.2
+tick 121 dd3dedda
+  chassis x=736.8
+tick 122 3b2ba1e3
+  battery volts=2.893 charge=0.9928
+  chassis x=740.5
+  motor-left volts=2.893
+  motor-right volts=2.893
+tick 123 97a9a14c
+  battery charge=0.9927
+  chassis x=744.1
+  motor-left milliamps=124.1
+  motor-right milliamps=124.1
+  wire:w11 milliamps=124.1
+  wire:w12 milliamps=124.1
+  wire:w13 milliamps=-124.1
+  wire:w14 milliamps=-124.1
+tick 124 8257b08f
+  chassis x=747.7
+tick 125 bd2a2ceb
+  battery milliamps=248.2 charge=0.9926
+  chassis x=751.3
+tick 126 293a75ca
+  chassis x=754.9
+tick 127 1c7b554f
+  battery charge=0.9925
+  chassis x=758.6
+tick 128 52881534
+  battery charge=0.9924
+  chassis x=762.2
+tick 129 b2acd7e5
+  chassis x=765.8
+tick 130 4a35affb
+  battery milliamps=248.4 charge=0.9923
+  chassis x=769.4
+  motor-left milliamps=124.2 rpm=95.7
+  motor-right milliamps=124.2 rpm=95.7
+  wire:w11 milliamps=124.2
+  wire:w12 milliamps=124.2
+  wire:w13 milliamps=-124.2
+  wire:w14 milliamps=-124.2
+  wire:w7 rpm=95.7
+  wire:w8 rpm=95.7
+tick 131 529f5745
+  chassis x=773
+tick 132 76e76635
+  battery charge=0.9922
+  chassis x=776.7
+tick 133 cef38b58
+  chassis x=780.3
+tick 134 3881347e
+  battery milliamps=248.3 charge=0.9921
+  chassis x=783.9
+tick 135 029da066
+  battery charge=0.992
+  chassis x=787.5
+tick 136 da53a290
+  chassis x=791.1
+  motor-left milliamps=124.1
+  motor-right milliamps=124.1
+  wire:w11 milliamps=124.1
+  wire:w12 milliamps=124.1
+  wire:w13 milliamps=-124.1
+  wire:w14 milliamps=-124.1
+tick 137 dc13789c
+  battery charge=0.9919
+  chassis x=794.8
+tick 138 e7a7ef2a
+  chassis x=798.4
+tick 139 52809c8a
+  battery milliamps=248.2 charge=0.9918
+  chassis x=802
+tick 140 d2ba94ba
+  battery volts=2.892
+  chassis x=805.6
+  motor-left volts=2.892
+  motor-right volts=2.892
+tick 141 9231b3d8
+  battery charge=0.9917
+  chassis x=809.2
+tick 142 828d20ec
+  battery charge=0.9916
+  chassis x=812.9
+tick 143 22fc0418
+  battery milliamps=248.4
+  chassis x=816.5
+  motor-left milliamps=124.2
+  motor-right milliamps=124.2
+  wire:w11 milliamps=124.2
+  wire:w12 milliamps=124.2
+  wire:w13 milliamps=-124.2
+  wire:w14 milliamps=-124.2
+tick 144 f0e36616
+  battery charge=0.9915
+  chassis x=820.1
+tick 145 3b66fe3b
+  chassis x=823.7
+tick 146 bd83f1ba
+  battery charge=0.9914
+  chassis x=827.3
+tick 147 6e74670d
+  battery milliamps=248.3
+  chassis x=831
+tick 148 3466a361
+  battery charge=0.9913
+  chassis x=834.6
+tick 149 40d5bfea
+  battery charge=0.9912
+  chassis x=838.2
+tick 150 13a1fdae
+  chassis x=841.8
+  motor-left milliamps=124.1
+  motor-right milliamps=124.1
+  wire:w11 milliamps=124.1
+  wire:w12 milliamps=124.1
+  wire:w13 milliamps=-124.1
+  wire:w14 milliamps=-124.1
+tick 151 5b146ac8
+  battery charge=0.9911
+  chassis x=845.4
+tick 152 890d893f
+  battery milliamps=248.2
+  chassis x=849.1
+tick 153 ff9971ea
+  battery charge=0.991
+  chassis x=852.7
+tick 154 ec620eef
+  chassis x=856.3
+tick 155 c0e6c232
+  battery charge=0.9909
+  chassis x=859.9
+tick 156 9b4188dd
+  battery charge=0.9908
+  chassis x=863.5
+tick 157 7694ea95
+  battery volts=2.891 milliamps=248.4
+  chassis x=867.1
+  motor-left volts=2.891 milliamps=124.2 sound.motor=0.478
+  motor-right volts=2.891 milliamps=124.2 sound.motor=0.478
+  wire:w11 milliamps=124.2
+  wire:w12 milliamps=124.2
+  wire:w13 milliamps=-124.2
+  wire:w14 milliamps=-124.2
+tick 158 7197f2c8
+  battery charge=0.9907
+  chassis x=870.8
+tick 159 3abce249
+  chassis x=874.4
+tick 160 99fd13bb
+  battery charge=0.9906
+  chassis x=878
+tick 161 7147c81e
+  battery milliamps=248.3
+  chassis x=881.6
+tick 162 e353e1ab
+  battery charge=0.9905
+  chassis x=885.2
+tick 163 dcf0880b
+  battery charge=0.9904
+  chassis x=888.9
+  motor-left milliamps=124.1
+  motor-right milliamps=124.1
+  wire:w11 milliamps=124.1
+  wire:w12 milliamps=124.1
+  wire:w13 milliamps=-124.1
+  wire:w14 milliamps=-124.1
+tick 164 607baad9
+  chassis x=892.5
+tick 165 bd8ed27c
+  battery charge=0.9903
+  chassis x=896.1
+tick 166 1a149630
+  battery milliamps=248.2
+  chassis x=899.7
+tick 167 396739b4
+  battery charge=0.9902
+  chassis x=903.3
+tick 168 58d2d5f6
+  chassis x=906.9
+tick 169 d44bfe21
+  battery charge=0.9901
+  chassis x=910.6
+tick 170 053125c7
+  battery milliamps=248.4 charge=0.99
+  chassis x=914.2
+  motor-left milliamps=124.2 rpm=95.6
+  motor-right milliamps=124.2 rpm=95.6
+  wire:w11 milliamps=124.2
+  wire:w12 milliamps=124.2
+  wire:w13 milliamps=-124.2
+  wire:w14 milliamps=-124.2
+  wire:w7 rpm=95.6
+  wire:w8 rpm=95.6
+tick 171 c2fa1d88
+  chassis x=917.8
+  motor-left rpm=95.7
+  motor-right rpm=95.7
+  wire:w7 rpm=95.7
+  wire:w8 rpm=95.7
+tick 172 1eb30d42
+  battery charge=0.9899
+  chassis x=921.4
+tick 173 4e26fcc8
+  chassis x=925
+tick 174 6cc6a00a
+  battery volts=2.89 milliamps=248.3 charge=0.9898
+  chassis x=928.6
+  motor-left volts=2.89
+  motor-right volts=2.89
+tick 175 4fb38dc7
+  battery charge=0.9897
+  chassis x=932.3
+tick 176 dc62aad2
+  chassis x=935.9
+tick 177 5fa69c6c
+  battery charge=0.9896
+  chassis x=939.5
+  motor-left milliamps=124.1
+  motor-right milliamps=124.1
+  wire:w11 milliamps=124.1
+  wire:w12 milliamps=124.1
+  wire:w13 milliamps=-124.1
+  wire:w14 milliamps=-124.1
+tick 178 18c35284
+  chassis x=943.1
+tick 179 ce90fa91
+  battery milliamps=248.2 charge=0.9895
+  chassis x=946.7
+tick 180 3b9e00a1
+  chassis x=950.4
+tick 181 b0db0562
+  battery charge=0.9894
+  chassis x=954
+tick 182 51de7d90
+  battery charge=0.9893
+  chassis x=957.6
+tick 183 8b942820
+  chassis x=961.2
+tick 184 6bf61d31
+  battery milliamps=248.4 charge=0.9892
+  chassis x=964.8
+  motor-left milliamps=124.2 rpm=95.6
+  motor-right milliamps=124.2 rpm=95.6
+  wire:w11 milliamps=124.2
+  wire:w12 milliamps=124.2
+  wire:w13 milliamps=-124.2
+  wire:w14 milliamps=-124.2
+  wire:w7 rpm=95.6
+  wire:w8 rpm=95.6
+tick 185 57c398a3
+  chassis x=968.4
+tick 186 83a2de8a
+  battery charge=0.9891
+  chassis x=972
+tick 187 b902dff1
+  chassis x=975.7
+tick 188 0eba277a
+  battery milliamps=248.3 charge=0.989
+  chassis x=979.3
+tick 189 923452b6
+  battery charge=0.9889
+  chassis x=982.9
+tick 190 126566db
+  chassis x=986.5
+  motor-left milliamps=124.1
+  motor-right milliamps=124.1
+  wire:w11 milliamps=124.1
+  wire:w12 milliamps=124.1
+  wire:w13 milliamps=-124.1
+  wire:w14 milliamps=-124.1
+tick 191 6f2e7eb4
+  battery charge=0.9888
+  chassis x=990.1
+tick 192 0fcd98f9
+  battery volts=2.889
+  chassis x=993.7
+  motor-left volts=2.889
+  motor-right volts=2.889
+tick 193 717e8dfc
+  battery milliamps=248.2 charge=0.9887
+  chassis x=997.4
+tick 194 93c1a9fa
+  chassis x=1001
+tick 195 01003e3a
+  battery charge=0.9886
+  chassis x=1004.6
+tick 196 5da03175
+  battery charge=0.9885
+  chassis x=1008.2
+tick 197 2840b6bd
+  battery milliamps=248.4
+  chassis x=1011.8
+  motor-left milliamps=124.2
+  motor-right milliamps=124.2
+  wire:w11 milliamps=124.2
+  wire:w12 milliamps=124.2
+  wire:w13 milliamps=-124.2
+  wire:w14 milliamps=-124.2
+tick 198 8bdc340d
+  battery charge=0.9884
+  chassis x=1015.4
+tick 199 2ffcbc37
+  chassis x=1019.1
+tick 200 361d6aeb
+  battery charge=0.9883
+  chassis x=1022.7
+tick 201 c35b6717
+  battery milliamps=248.3
+  chassis x=1026.3
+tick 202 85114a9a
+  battery charge=0.9882
+  chassis x=1029.9
+tick 203 529941f5
+  battery charge=0.9881
+  chassis x=1033.5
+tick 204 b99eeb4c
+  chassis x=1037.1
+  motor-left milliamps=124.1
+  motor-right milliamps=124.1
+  wire:w11 milliamps=124.1
+  wire:w12 milliamps=124.1
+  wire:w13 milliamps=-124.1
+  wire:w14 milliamps=-124.1
+tick 205 bed3bddb
+  battery charge=0.988
+  chassis x=1040.7
+tick 206 a4f02f6f
+  battery milliamps=248.2
+  chassis x=1044.4
+tick 207 b56be810
+  battery charge=0.9879
+  chassis x=1048
+tick 208 35796ee5
+  chassis x=1051.6
+tick 209 b9dccd9e
+  battery charge=0.9878
+  chassis x=1055.2
+tick 210 b68eed07
+  battery volts=2.888 charge=0.9877
+  chassis x=1058.8
+  motor-left volts=2.888
+  motor-right volts=2.888
+tick 211 b2ff04e4
+  battery milliamps=248.1
+  chassis x=1062.4
+tick 212 23464eb9
+  battery charge=0.9876
+  chassis x=1066.1
+tick 213 fb2c0dfc
+  chassis x=1069.7
+tick 214 0fb89b8c
+  battery charge=0.9875
+  chassis x=1073.3
+  motor-left milliamps=124
+  motor-right milliamps=124
+  wire:w11 milliamps=124
+  wire:w12 milliamps=124
+  wire:w13 milliamps=-124
+  wire:w14 milliamps=-124
+tick 215 ae9c9e00
+  battery charge=0.9874
+  chassis x=1076.9
+tick 216 f882cbef
+  battery milliamps=248
+  chassis x=1080.5
+tick 217 6394a04c
+  battery charge=0.9873
+  chassis x=1084.1
+tick 218 92f1d75e
+  chassis x=1087.7
+tick 219 11bad902
+  battery charge=0.9872
+  chassis x=1091.4
+tick 220 28bd0da1
+  chassis x=1095
+tick 221 8affd372
+  battery milliamps=247.9 charge=0.9871
+  chassis x=1098.6
+tick 222 d938a12c
+  battery charge=0.987
+  chassis x=1102.2
+tick 223 c741b194
+  chassis x=1105.8
+tick 224 a73353ad
+  battery charge=0.9869
+  chassis x=1109.4
+  motor-left milliamps=123.9
+  motor-right milliamps=123.9
+  wire:w11 milliamps=123.9
+  wire:w12 milliamps=123.9
+  wire:w13 milliamps=-123.9
+  wire:w14 milliamps=-123.9
+tick 225 385580f6
+  chassis x=1113.1
+tick 226 e448f057
+  battery milliamps=247.8 charge=0.9868
+  chassis x=1116.7
+tick 227 125e7141
+  chassis x=1120.3
+tick 228 96f6d6c9
+  battery charge=0.9867
+  chassis x=1123.9
+tick 229 ad3dec94
+  battery charge=0.9866
+  chassis x=1127.5
+tick 230 48e37f2d
+  battery volts=2.887 milliamps=248.3
+  chassis x=1131.1
+  gear-left rpm=31.8
+  gear-right rpm=31.8
+  motor-left volts=2.887 milliamps=124.2 rpm=95.5
+  motor-right volts=2.887 milliamps=124.2 rpm=95.5
+  wheel-left rpm=31.8
+  wheel-right rpm=31.8
+  wire:w10 rpm=31.8
+  wire:w11 milliamps=124.2
+  wire:w12 milliamps=124.2
+  wire:w13 milliamps=-124.2
+  wire:w14 milliamps=-124.2
+  wire:w7 rpm=95.5
+  wire:w8 rpm=95.5
+  wire:w9 rpm=31.8
+tick 231 26fc4d91
+  battery charge=0.9865
+  chassis x=1134.7
+  motor-left milliamps=124.1
+  motor-right milliamps=124.1
+  wire:w11 milliamps=124.1
+  wire:w12 milliamps=124.1
+  wire:w13 milliamps=-124.1
+  wire:w14 milliamps=-124.1
+tick 232 dea535d8
+  chassis x=1138.4
+tick 233 1f7b76fe
+  battery milliamps=248.2 charge=0.9864
+  chassis x=1142
+tick 234 a22c0da7
+  chassis x=1145.6
+tick 235 355ef6c6
+  battery charge=0.9863
+  chassis x=1149.2
+tick 236 7bead059
+  battery charge=0.9862
+  chassis x=1152.8
+tick 237 6c6ae3d9
+  chassis x=1156.4
+tick 238 5810b9d6
+  battery milliamps=248.1 charge=0.9861
+  chassis x=1160
+tick 239 841a4d2b
+  chassis x=1163.6
+tick 240 5e71e9e8
+  battery charge=0.986
+  chassis x=1167.3
+tick 241 4328d10f
+  chassis x=1170.9
+  motor-left milliamps=124
+  motor-right milliamps=124
+  wire:w11 milliamps=124
+  wire:w12 milliamps=124
+  wire:w13 milliamps=-124
+  wire:w14 milliamps=-124
+tick 242 e14c212a
+  battery charge=0.9859
+  chassis x=1174.5
+tick 243 3e8f6623
+  battery milliamps=248 charge=0.9858
+  chassis x=1178.1
+tick 244 357a09a4
+  chassis x=1180.5 sound.knock=0.271
+  arena:heavy-box x=1300.5
+tick 245 e2f6be33
+  battery volts=2.706 milliamps=698.4 charge=0.9857
+  chassis x=1182.3 sound.knock=none
+  gear-left rpm=15.3
+  gear-right rpm=15.3
+  motor-left volts=2.706 milliamps=349.2 rpm=46 sound.motor=0.23
+  motor-right volts=2.706 milliamps=349.2 rpm=46 sound.motor=0.23
+  wheel-left rpm=15.3
+  wheel-right rpm=15.3
+  arena:heavy-box x=1302.3
+  wire:w10 rpm=15.3
+  wire:w11 milliamps=349.2
+  wire:w12 milliamps=349.2
+  wire:w13 milliamps=-349.2
+  wire:w14 milliamps=-349.2
+  wire:w7 rpm=46
+  wire:w8 rpm=46
+  wire:w9 rpm=15.3
+tick 246 fc06ebe6
+  battery volts=2.686 milliamps=748.6 charge=0.9856
+  chassis x=1184.1
+  gear-left rpm=15.5
+  gear-right rpm=15.5
+  motor-left volts=2.686 milliamps=374.3 rpm=46.5 sound.motor=0.232
+  motor-right volts=2.686 milliamps=374.3 rpm=46.5 sound.motor=0.232
+  wheel-left rpm=15.5
+  wheel-right rpm=15.5
+  arena:heavy-box x=1304.1
+  wire:w10 rpm=15.5
+  wire:w11 milliamps=374.3
+  wire:w12 milliamps=374.3
+  wire:w13 milliamps=-374.3
+  wire:w14 milliamps=-374.3
+  wire:w7 rpm=46.5
+  wire:w8 rpm=46.5
+  wire:w9 rpm=15.5
+tick 247 8c7a9181
+  battery volts=2.679 milliamps=765.6 charge=0.9854
+  chassis x=1185.8
+  gear-left rpm=15.1
+  gear-right rpm=15.1
+  motor-left volts=2.679 milliamps=382.8 rpm=45.3 sound.motor=0.226
+  motor-right volts=2.679 milliamps=382.8 rpm=45.3 sound.motor=0.226
+  wheel-left rpm=15.1
+  wheel-right rpm=15.1
+  arena:heavy-box x=1305.8
+  wire:w10 rpm=15.1
+  wire:w11 milliamps=382.8
+  wire:w12 milliamps=382.8
+  wire:w13 milliamps=-382.8
+  wire:w14 milliamps=-382.8
+  wire:w7 rpm=45.3
+  wire:w8 rpm=45.3
+  wire:w9 rpm=15.1
+tick 248 08af2329
+  battery volts=2.677 milliamps=771.4 charge=0.9852
+  chassis x=1187.5
+  gear-left rpm=15
+  gear-right rpm=15
+  motor-left volts=2.677 milliamps=385.7 rpm=44.9 sound.motor=0.224
+  motor-right volts=2.677 milliamps=385.7 rpm=44.9 sound.motor=0.224
+  wheel-left rpm=15
+  wheel-right rpm=15
+  arena:heavy-box x=1307.5
+  wire:w10 rpm=15
+  wire:w11 milliamps=385.7
+  wire:w12 milliamps=385.7
+  wire:w13 milliamps=-385.7
+  wire:w14 milliamps=-385.7
+  wire:w7 rpm=44.9
+  wire:w8 rpm=44.9
+  wire:w9 rpm=15
+tick 249 6f5d7a28
+  battery volts=2.676 milliamps=773.5 charge=0.985
+  chassis x=1189.2
+  gear-left rpm=14.9
+  gear-right rpm=14.9
+  motor-left volts=2.676 milliamps=386.8 rpm=44.7 sound.motor=0.223
+  motor-right volts=2.676 milliamps=386.8 rpm=44.7 sound.motor=0.223
+  wheel-left rpm=14.9
+  wheel-right rpm=14.9
+  arena:heavy-box x=1309.2
+  wire:w10 rpm=14.9
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+  wire:w7 rpm=44.7
+  wire:w8 rpm=44.7
+  wire:w9 rpm=14.9
+tick 250 f5d5f27c
+  battery volts=2.675 charge=0.9849
+  chassis x=1190.8
+  motor-left volts=2.675 milliamps=386.7 sound.motor=0.224
+  motor-right volts=2.675 milliamps=386.7 sound.motor=0.224
+  arena:heavy-box x=1310.8
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 251 fdb1e5ba
+  battery milliamps=773.4 charge=0.9847
+  chassis x=1192.5
+  arena:heavy-box x=1312.5
+tick 252 0d243b8e
+  battery milliamps=773.3 charge=0.9845
+  chassis x=1194.2
+  arena:heavy-box x=1314.2
+tick 253 c38141c9
+  battery milliamps=773.8 charge=0.9843
+  chassis x=1195.9
+  motor-left milliamps=386.9 sound.motor=0.223
+  motor-right milliamps=386.9 sound.motor=0.223
+  arena:heavy-box x=1315.9
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+tick 254 94a18c87
+  battery milliamps=773.7 charge=0.9841
+  chassis x=1197.6
+  arena:heavy-box x=1317.6
+tick 255 45641d84
+  battery volts=2.674 charge=0.984
+  chassis x=1199.3
+  motor-left volts=2.674 milliamps=386.8
+  motor-right volts=2.674 milliamps=386.8
+  arena:heavy-box x=1319.3
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 256 d59aac78
+  battery milliamps=773.6 charge=0.9838
+  chassis x=1201
+  arena:heavy-box x=1321
+tick 257 8f06b456
+  battery charge=0.9836
+  chassis x=1202.7
+  arena:heavy-box x=1322.7
+tick 258 1aac1eff
+  battery milliamps=773.5 charge=0.9834
+  chassis x=1204.4
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1324.4
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 259 8a04163b
+  battery milliamps=773.4 charge=0.9832
+  chassis x=1206
+  arena:heavy-box x=1326
+tick 260 00a2bceb
+  battery charge=0.9831
+  chassis x=1207.7
+  arena:heavy-box x=1327.7
+tick 261 f3a09f6f
+  battery milliamps=773.3 charge=0.9829
+  chassis x=1209.4
+  arena:heavy-box x=1329.4
+tick 262 7b93670e
+  battery volts=2.673 milliamps=773.8 charge=0.9827
+  chassis x=1211.1
+  motor-left volts=2.673 milliamps=386.9 rpm=44.6
+  motor-right volts=2.673 milliamps=386.9 rpm=44.6
+  arena:heavy-box x=1331.1
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=44.6
+  wire:w8 rpm=44.6
+tick 263 78e871e9
+  battery milliamps=773.7 charge=0.9825
+  chassis x=1212.8
+  arena:heavy-box x=1332.8
+tick 264 61cbb559
+  battery charge=0.9824
+  chassis x=1214.5
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1334.5
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 265 eab56834
+  battery milliamps=773.6 charge=0.9822
+  chassis x=1216.2
+  arena:heavy-box x=1336.2
+tick 266 3579ba23
+  battery milliamps=773.5 charge=0.982
+  chassis x=1217.9
+  arena:heavy-box x=1337.9
+tick 267 d6da023f
+  battery volts=2.672 charge=0.9818
+  chassis x=1219.6
+  motor-left volts=2.672 milliamps=386.7
+  motor-right volts=2.672 milliamps=386.7
+  arena:heavy-box x=1339.6
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 268 4a9ec354
+  battery milliamps=773.4 charge=0.9816
+  chassis x=1221.2
+  arena:heavy-box x=1341.2
+tick 269 28259efb
+  battery charge=0.9815
+  chassis x=1222.9
+  arena:heavy-box x=1342.9
+tick 270 bc06dcf9
+  battery milliamps=773.8 charge=0.9813
+  chassis x=1224.6
+  motor-left milliamps=386.9
+  motor-right milliamps=386.9
+  arena:heavy-box x=1344.6
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+tick 271 be90ab90
+  battery charge=0.9811
+  chassis x=1226.3
+  arena:heavy-box x=1346.3
+tick 272 53e31676
+  battery volts=2.671 milliamps=773.7 charge=0.9809
+  chassis x=1228
+  motor-left volts=2.671 milliamps=386.8
+  motor-right volts=2.671 milliamps=386.8
+  arena:heavy-box x=1348
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 273 150e413e
+  battery milliamps=773.6 charge=0.9807
+  chassis x=1229.7
+  arena:heavy-box x=1349.7
+tick 274 6a67c84d
+  battery charge=0.9806
+  chassis x=1231.4
+  arena:heavy-box x=1351.4
+tick 275 09e9bcae
+  battery milliamps=773.5 charge=0.9804
+  chassis x=1233
+  arena:heavy-box x=1353
+tick 276 a066fd7a
+  battery charge=0.9802
+  chassis x=1234.7
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1354.7
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 277 ca455948
+  battery milliamps=773.4 charge=0.98
+  chassis x=1236.4
+  arena:heavy-box x=1356.4
+tick 278 b79aaf12
+  battery milliamps=773.3 charge=0.9798
+  chassis x=1238.1
+  arena:heavy-box x=1358.1
+tick 279 9b29f91e
+  battery volts=2.67 milliamps=773.8 charge=0.9797
+  chassis x=1239.8
+  gear-left rpm=14.8
+  gear-right rpm=14.8
+  motor-left volts=2.67 milliamps=386.9 rpm=44.5
+  motor-right volts=2.67 milliamps=386.9 rpm=44.5
+  wheel-left rpm=14.8
+  wheel-right rpm=14.8
+  arena:heavy-box x=1359.8
+  wire:w10 rpm=14.8
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=44.5
+  wire:w8 rpm=44.5
+  wire:w9 rpm=14.8
+tick 280 76a84c41
+  battery milliamps=773.7 charge=0.9795
+  chassis x=1241.5
+  arena:heavy-box x=1361.5
+tick 281 9111ef26
+  battery charge=0.9793
+  chassis x=1243.1
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1363.1
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 282 d21b43fc
+  battery milliamps=773.6 charge=0.9791
+  chassis x=1244.8
+  arena:heavy-box x=1364.8
+tick 283 58b641b6
+  battery charge=0.9789
+  chassis x=1246.5
+  arena:heavy-box x=1366.5
+tick 284 dab7dd85
+  battery volts=2.669 milliamps=773.5 charge=0.9788
+  chassis x=1248.2
+  motor-left volts=2.669 milliamps=386.7
+  motor-right volts=2.669 milliamps=386.7
+  arena:heavy-box x=1368.2
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 285 9a21976e
+  battery milliamps=773.4 charge=0.9786
+  chassis x=1249.9
+  arena:heavy-box x=1369.9
+tick 286 2fcc7eb5
+  battery charge=0.9784
+  chassis x=1251.6
+  arena:heavy-box x=1371.6
+tick 287 47df46e8
+  battery milliamps=773.8 charge=0.9782
+  chassis x=1253.2
+  motor-left milliamps=386.9 sound.motor=0.222
+  motor-right milliamps=386.9 sound.motor=0.222
+  arena:heavy-box x=1373.2
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+tick 288 0b9aa581
+  battery charge=0.9781
+  chassis x=1254.9
+  arena:heavy-box x=1374.9
+tick 289 db3e4dad
+  battery volts=2.668 milliamps=773.7 charge=0.9779
+  chassis x=1256.6
+  motor-left volts=2.668
+  motor-right volts=2.668
+  arena:heavy-box x=1376.6
+tick 290 87526509
+  battery charge=0.9777
+  chassis x=1258.3
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1378.3
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 291 873d8d21
+  battery milliamps=773.6 charge=0.9775
+  chassis x=1260
+  arena:heavy-box x=1380
+tick 292 1eee0c67
+  battery milliamps=773.5 charge=0.9773
+  chassis x=1261.6
+  arena:heavy-box x=1381.6
+tick 293 c82f6675
+  battery charge=0.9772
+  chassis x=1263.3
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1383.3
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 294 80b5127d
+  battery milliamps=773.4 charge=0.977
+  chassis x=1265
+  arena:heavy-box x=1385
+tick 295 ef498230
+  battery volts=2.667 milliamps=773.3 charge=0.9768
+  chassis x=1266.7
+  motor-left volts=2.667
+  motor-right volts=2.667
+  arena:heavy-box x=1386.7
+tick 296 53230a10
+  battery milliamps=773.8 charge=0.9766
+  chassis x=1268.4
+  motor-left milliamps=386.9 rpm=44.4
+  motor-right milliamps=386.9 rpm=44.4
+  arena:heavy-box x=1388.4
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=44.4
+  wire:w8 rpm=44.4
+tick 297 201287ac
+  battery charge=0.9764
+  chassis x=1270.1
+  arena:heavy-box x=1390.1
+tick 298 4b146639
+  battery milliamps=773.7 charge=0.9763
+  chassis x=1271.7
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1391.7
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 299 6b96c36f
+  battery milliamps=773.6 charge=0.9761
+  chassis x=1273.4
+  arena:heavy-box x=1393.4
+tick 300 f4edc913
+  battery volts=2.666 charge=0.9759
+  chassis x=1275.1
+  motor-left volts=2.666
+  motor-right volts=2.666
+  arena:heavy-box x=1395.1
+tick 301 04304ffe
+  battery milliamps=773.5 charge=0.9757
+  chassis x=1276.8
+  arena:heavy-box x=1396.8
+tick 302 162df0de
+  battery charge=0.9755
+  chassis x=1278.4
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1398.4
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 303 0d5e4ffa
+  battery milliamps=773.4 charge=0.9754
+  chassis x=1280.1
+  arena:heavy-box x=1400.1
+tick 304 def9009d
+  battery milliamps=773.3 charge=0.9752
+  chassis x=1281.8
+  arena:heavy-box x=1401.8
+tick 305 9dc46fe5
+  battery volts=2.665 milliamps=773.8 charge=0.975
+  chassis x=1283.5
+  motor-left volts=2.665 milliamps=386.9
+  motor-right volts=2.665 milliamps=386.9
+  arena:heavy-box x=1403.5
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+tick 306 ede0053f
+  battery milliamps=773.7 charge=0.9748
+  chassis x=1285.2
+  arena:heavy-box x=1405.2
+tick 307 4760dbc9
+  battery charge=0.9747
+  chassis x=1286.8
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1406.8
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 308 5963bc2e
+  battery milliamps=773.6 charge=0.9745
+  chassis x=1288.5
+  arena:heavy-box x=1408.5
+tick 309 1a9b2a88
+  battery charge=0.9743
+  chassis x=1290.2
+  arena:heavy-box x=1410.2
+tick 310 312d09a5
+  battery milliamps=773.5 charge=0.9741
+  chassis x=1291.9
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1411.9
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 311 426cf700
+  battery milliamps=773.4 charge=0.9739
+  chassis x=1293.6
+  arena:heavy-box x=1413.6
+tick 312 ac566135
+  battery volts=2.664 charge=0.9738
+  chassis x=1295.2
+  motor-left volts=2.664
+  motor-right volts=2.664
+  arena:heavy-box x=1415.2
+tick 313 58664f13
+  battery milliamps=773.8 charge=0.9736
+  chassis x=1296.9
+  motor-left milliamps=386.9 rpm=44.3
+  motor-right milliamps=386.9 rpm=44.3
+  arena:heavy-box x=1416.9
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=44.3
+  wire:w8 rpm=44.3
+tick 314 d8492b92
+  battery charge=0.9734
+  chassis x=1298.6
+  arena:heavy-box x=1418.6
+tick 315 ff557c79
+  battery milliamps=773.7 charge=0.9732
+  chassis x=1300.3
+  arena:heavy-box x=1420.3
+tick 316 eca8ffdc
+  battery charge=0.973
+  chassis x=1301.9
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1421.9
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 317 ffa3f04d
+  battery volts=2.663 milliamps=773.6 charge=0.9729
+  chassis x=1303.6
+  motor-left volts=2.663
+  motor-right volts=2.663
+  arena:heavy-box x=1423.6
+tick 318 36d86fcb
+  battery milliamps=773.5 charge=0.9727
+  chassis x=1305.3
+  arena:heavy-box x=1425.3
+tick 319 9573ed7a
+  battery charge=0.9725
+  chassis x=1307
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1427
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 320 9998542c
+  battery milliamps=773.4 charge=0.9723
+  chassis x=1308.6
+  arena:heavy-box x=1428.6
+tick 321 0a71c86f
+  battery milliamps=773.3 charge=0.9721
+  chassis x=1310.3
+  arena:heavy-box x=1430.3
+tick 322 c6a72249
+  battery volts=2.662 milliamps=773.8 charge=0.972
+  chassis x=1312
+  motor-left volts=2.662 milliamps=386.9 sound.motor=0.221
+  motor-right volts=2.662 milliamps=386.9 sound.motor=0.221
+  arena:heavy-box x=1432
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+tick 323 ee807930
+  battery charge=0.9718
+  chassis x=1313.7
+  arena:heavy-box x=1433.7
+tick 324 8389e7ba
+  battery milliamps=773.7 charge=0.9716
+  chassis x=1315.3
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1435.3
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 325 907f35ca
+  battery milliamps=773.6 charge=0.9714
+  chassis x=1317
+  arena:heavy-box x=1437
+tick 326 c5baa579
+  battery charge=0.9712
+  chassis x=1318.7
+  arena:heavy-box x=1438.7
+tick 327 1afaddf5
+  battery milliamps=773.5 charge=0.9711
+  chassis x=1320.4
+  arena:heavy-box x=1440.4
+tick 328 b9b8af92
+  battery milliamps=773.4 charge=0.9709
+  chassis x=1322
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1442
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 329 8e595986
+  battery volts=2.661 charge=0.9707
+  chassis x=1323.7
+  motor-left volts=2.661
+  motor-right volts=2.661
+  arena:heavy-box x=1443.7
+tick 330 97455242
+  battery milliamps=773.3 charge=0.9705
+  chassis x=1325.4
+  arena:heavy-box x=1445.4
+tick 331 32a9fec4
+  battery milliamps=773.8 charge=0.9704
+  chassis x=1327
+  gear-left rpm=14.7
+  gear-right rpm=14.7
+  motor-left milliamps=386.9 rpm=44.2
+  motor-right milliamps=386.9 rpm=44.2
+  wheel-left rpm=14.7
+  wheel-right rpm=14.7
+  arena:heavy-box x=1447
+  wire:w10 rpm=14.7
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=44.2
+  wire:w8 rpm=44.2
+  wire:w9 rpm=14.7
+tick 332 79a18ed1
+  battery milliamps=773.7 charge=0.9702
+  chassis x=1328.7
+  arena:heavy-box x=1448.7
+tick 333 8b53ee5a
+  battery charge=0.97
+  chassis x=1330.4
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1450.4
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 334 d604a61f
+  battery volts=2.66 milliamps=773.6 charge=0.9698
+  chassis x=1332.1
+  motor-left volts=2.66
+  motor-right volts=2.66
+  arena:heavy-box x=1452.1
+tick 335 fc6b0f7d
+  battery milliamps=773.5 charge=0.9696
+  chassis x=1333.7
+  arena:heavy-box x=1453.7
+tick 336 d73f3318
+  battery charge=0.9695
+  chassis x=1335.4
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1455.4
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 337 0197da8e
+  battery milliamps=773.4 charge=0.9693
+  chassis x=1337.1
+  arena:heavy-box x=1457.1
+tick 338 f0ed91a0
+  battery charge=0.9691
+  chassis x=1338.7
+  arena:heavy-box x=1458.7
+tick 339 92077cb9
+  battery volts=2.659 milliamps=773.8 charge=0.9689
+  chassis x=1340.4
+  motor-left volts=2.659 milliamps=386.9 rpm=44.1
+  motor-right volts=2.659 milliamps=386.9 rpm=44.1
+  arena:heavy-box x=1460.4
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=44.1
+  wire:w8 rpm=44.1
+tick 340 cb28460c
+  battery charge=0.9687
+  chassis x=1342.1
+  motor-left rpm=44.2
+  motor-right rpm=44.2
+  arena:heavy-box x=1462.1
+  wire:w7 rpm=44.2
+  wire:w8 rpm=44.2
+tick 341 a4428347
+  battery milliamps=773.7 charge=0.9686
+  chassis x=1343.8
+  arena:heavy-box x=1463.8
+tick 342 eaabdbb1
+  battery charge=0.9684
+  chassis x=1345.4
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1465.4
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 343 f5c04e48
+  battery milliamps=773.6 charge=0.9682
+  chassis x=1347.1
+  arena:heavy-box x=1467.1
+tick 344 67c38062
+  battery milliamps=773.5 charge=0.968
+  chassis x=1348.8
+  arena:heavy-box x=1468.8
+tick 345 ba2e31d0
+  battery volts=2.658 charge=0.9678
+  chassis x=1350.4
+  motor-left volts=2.658 milliamps=386.7
+  motor-right volts=2.658 milliamps=386.7
+  arena:heavy-box x=1470.4
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 346 a4a92eef
+  battery milliamps=773.4 charge=0.9677
+  chassis x=1352.1
+  arena:heavy-box x=1472.1
+tick 347 cd45b92c
+  battery milliamps=773.3 charge=0.9675
+  chassis x=1353.8
+  arena:heavy-box x=1473.8
+tick 348 e3381f5b
+  battery milliamps=773.8 charge=0.9673
+  chassis x=1355.4
+  motor-left milliamps=386.9 rpm=44.1 sound.motor=0.22
+  motor-right milliamps=386.9 rpm=44.1 sound.motor=0.22
+  arena:heavy-box x=1475.4
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=44.1
+  wire:w8 rpm=44.1
+tick 349 d7037ca1
+  battery charge=0.9671
+  chassis x=1357.1
+  motor-left sound.motor=0.221
+  motor-right sound.motor=0.221
+  arena:heavy-box x=1477.1
+tick 350 3f257005
+  battery volts=2.657 milliamps=773.7 charge=0.967
+  chassis x=1358.8
+  motor-left volts=2.657 milliamps=386.8
+  motor-right volts=2.657 milliamps=386.8
+  arena:heavy-box x=1478.8
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 351 4a037c2a
+  battery milliamps=773.6 charge=0.9668
+  chassis x=1360.4
+  arena:heavy-box x=1480.4
+tick 352 3ef914d7
+  battery charge=0.9666
+  chassis x=1362.1
+  arena:heavy-box x=1482.1
+tick 353 c64aae2e
+  battery milliamps=773.5 charge=0.9664
+  chassis x=1363.8
+  arena:heavy-box x=1483.8
+tick 354 d12fabbc
+  battery milliamps=773.4 charge=0.9662
+  chassis x=1365.4
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1485.4
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 355 6161b823
+  battery charge=0.9661
+  chassis x=1367.1
+  arena:heavy-box x=1487.1
+tick 356 1cb73ca5
+  battery milliamps=773.3 charge=0.9659
+  chassis x=1368.8
+  arena:heavy-box x=1488.8
+tick 357 2adef520
+  battery volts=2.656 milliamps=773.8 charge=0.9657
+  chassis x=1370.4
+  motor-left volts=2.656 milliamps=386.9 rpm=44 sound.motor=0.22
+  motor-right volts=2.656 milliamps=386.9 rpm=44 sound.motor=0.22
+  arena:heavy-box x=1490.4
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=44
+  wire:w8 rpm=44
+tick 358 042d7a59
+  battery milliamps=773.7 charge=0.9655
+  chassis x=1372.1
+  motor-left rpm=44.1
+  motor-right rpm=44.1
+  arena:heavy-box x=1492.1
+  wire:w7 rpm=44.1
+  wire:w8 rpm=44.1
+tick 359 51932a5f
+  battery charge=0.9653
+  chassis x=1373.8
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1493.8
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 360 1ce2c9eb
+  battery milliamps=773.6 charge=0.9652
+  chassis x=1375.4
+  arena:heavy-box x=1495.4
+tick 361 7d3679c6
+  battery milliamps=773.5 charge=0.965
+  chassis x=1377.1
+  arena:heavy-box x=1497.1
+tick 362 83235b83
+  battery volts=2.655 charge=0.9648
+  chassis x=1378.8
+  motor-left volts=2.655 milliamps=386.7
+  motor-right volts=2.655 milliamps=386.7
+  arena:heavy-box x=1498.8
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 363 b10d7822
+  battery milliamps=773.4 charge=0.9646
+  chassis x=1380.4
+  arena:heavy-box x=1500.4
+tick 364 7962ca78
+  battery charge=0.9644
+  chassis x=1382.1
+  arena:heavy-box x=1502.1
+tick 365 bf2d6431
+  battery milliamps=773.8 charge=0.9643
+  chassis x=1383.8
+  motor-left milliamps=386.9 rpm=44
+  motor-right milliamps=386.9 rpm=44
+  arena:heavy-box x=1503.8
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=44
+  wire:w8 rpm=44
+tick 366 4adc4e94
+  battery charge=0.9641
+  chassis x=1385.4
+  arena:heavy-box x=1505.4
+tick 367 2a54c32b
+  battery volts=2.654 milliamps=773.7 charge=0.9639
+  chassis x=1387.1
+  motor-left volts=2.654
+  motor-right volts=2.654
+  arena:heavy-box x=1507.1
+tick 368 99ab9a62
+  battery milliamps=773.6 charge=0.9637
+  chassis x=1388.8
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1508.8
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 369 04ea777e
+  battery charge=0.9635
+  chassis x=1390.4
+  arena:heavy-box x=1510.4
+tick 370 4c699b9b
+  battery milliamps=773.5 charge=0.9634
+  chassis x=1392.1
+  arena:heavy-box x=1512.1
+tick 371 795a7f42
+  battery charge=0.9632
+  chassis x=1393.8
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1513.8
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 372 a73d393e
+  battery milliamps=773.4 charge=0.963
+  chassis x=1395.4
+  arena:heavy-box x=1515.4
+tick 373 663f344d
+  battery volts=2.653 milliamps=773.3 charge=0.9628
+  chassis x=1397.1
+  motor-left volts=2.653
+  motor-right volts=2.653
+  arena:heavy-box x=1517.1
+tick 374 df7eafa1
+  battery milliamps=773.8 charge=0.9627
+  chassis x=1398.7
+  gear-left rpm=14.6
+  gear-right rpm=14.6
+  motor-left milliamps=386.9 rpm=43.9
+  motor-right milliamps=386.9 rpm=43.9
+  wheel-left rpm=14.6
+  wheel-right rpm=14.6
+  arena:heavy-box x=1518.7
+  wire:w10 rpm=14.6
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=43.9
+  wire:w8 rpm=43.9
+  wire:w9 rpm=14.6
+tick 375 6a961d9f
+  battery charge=0.9625
+  chassis x=1400.4
+  arena:heavy-box x=1520.4
+tick 376 bedc6aa0
+  battery milliamps=773.7 charge=0.9623
+  chassis x=1402.1
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1522.1
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 377 565fc88f
+  battery milliamps=773.6 charge=0.9621
+  chassis x=1403.7
+  arena:heavy-box x=1523.7
+tick 378 3a463b01
+  battery charge=0.9619
+  chassis x=1405.4
+  arena:heavy-box x=1525.4
+tick 379 e33b82b8
+  battery volts=2.652 milliamps=773.5 charge=0.9618
+  chassis x=1407.1
+  motor-left volts=2.652
+  motor-right volts=2.652
+  arena:heavy-box x=1527.1
+tick 380 31e806e0
+  battery milliamps=773.4 charge=0.9616
+  chassis x=1408.7
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1528.7
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 381 8c1af7fc
+  battery charge=0.9614
+  chassis x=1410.4
+  arena:heavy-box x=1530.4
+tick 382 9162614a
+  battery milliamps=773.3 charge=0.9612
+  chassis x=1412
+  arena:heavy-box x=1532
+tick 383 80699928
+  battery milliamps=773.8 charge=0.961
+  chassis x=1413.7
+  motor-left milliamps=386.9 sound.motor=0.219
+  motor-right milliamps=386.9 sound.motor=0.219
+  arena:heavy-box x=1533.7
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+tick 384 57044430
+  battery volts=2.651 milliamps=773.7 charge=0.9609
+  chassis x=1415.4
+  motor-left volts=2.651
+  motor-right volts=2.651
+  arena:heavy-box x=1535.4
+tick 385 f5fc208e
+  battery charge=0.9607
+  chassis x=1417
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1537
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 386 caf0d80f
+  battery milliamps=773.6 charge=0.9605
+  chassis x=1418.7
+  arena:heavy-box x=1538.7
+tick 387 4afc5f16
+  battery milliamps=773.5 charge=0.9603
+  chassis x=1420.3
+  arena:heavy-box x=1540.3
+tick 388 37e9602e
+  battery charge=0.9601
+  chassis x=1422
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1542
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 389 b49c3441
+  battery milliamps=773.4 charge=0.96
+  chassis x=1423.7
+  arena:heavy-box x=1543.7
+tick 390 62517b7a
+  battery volts=2.65 charge=0.9598
+  chassis x=1425.3
+  motor-left volts=2.65
+  motor-right volts=2.65
+  arena:heavy-box x=1545.3
+tick 391 f797b940
+  battery milliamps=773.8 charge=0.9596
+  chassis x=1427
+  motor-left milliamps=386.9 rpm=43.8
+  motor-right milliamps=386.9 rpm=43.8
+  arena:heavy-box x=1547
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=43.8
+  wire:w8 rpm=43.8
+tick 392 771ad8fb
+  battery charge=0.9594
+  chassis x=1428.6
+  arena:heavy-box x=1548.6
+tick 393 7412035a
+  battery milliamps=773.7 charge=0.9593
+  chassis x=1430.3
+  arena:heavy-box x=1550.3
+tick 394 ffdaea81
+  battery milliamps=773.6 charge=0.9591
+  chassis x=1431.9
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1551.9
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 395 7da2a9e3
+  battery volts=2.649 charge=0.9589
+  chassis x=1433.6
+  motor-left volts=2.649
+  motor-right volts=2.649
+  arena:heavy-box x=1553.6
+tick 396 ae3b0179
+  battery milliamps=773.5 charge=0.9587
+  chassis x=1435.3
+  arena:heavy-box x=1555.3
+tick 397 e56ebaa4
+  battery charge=0.9585
+  chassis x=1436.9
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1556.9
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 398 19dbfffb
+  battery milliamps=773.4 charge=0.9584
+  chassis x=1438.6
+  arena:heavy-box x=1558.6
+tick 399 9d39c018
+  battery milliamps=773.3 charge=0.9582
+  chassis x=1440.2
+  arena:heavy-box x=1560.2
+tick 400 e0449384
+  battery volts=2.648 milliamps=773.8 charge=0.958
+  chassis x=1441.9
+  motor-left volts=2.648 milliamps=386.9
+  motor-right volts=2.648 milliamps=386.9
+  arena:heavy-box x=1561.9
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+tick 401 ac1074c5
+  battery milliamps=773.7 charge=0.9578
+  chassis x=1443.6
+  arena:heavy-box x=1563.6
+tick 402 d98bf0eb
+  battery charge=0.9576
+  chassis x=1445.2
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1565.2
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 403 ac4fed4a
+  battery milliamps=773.6 charge=0.9575
+  chassis x=1446.9
+  arena:heavy-box x=1566.9
+tick 404 d127d069
+  battery charge=0.9573
+  chassis x=1448.5
+  arena:heavy-box x=1568.5
+tick 405 ba4c034d
+  battery milliamps=773.5 charge=0.9571
+  chassis x=1450.2
+  arena:heavy-box x=1570.2
+tick 406 3bda725f
+  battery milliamps=773.4 charge=0.9569
+  chassis x=1451.8
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1571.8
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 407 f8f5cd6c
+  battery volts=2.647 charge=0.9567
+  chassis x=1453.5
+  motor-left volts=2.647
+  motor-right volts=2.647
+  arena:heavy-box x=1573.5
+tick 408 17810557
+  battery milliamps=773.3 charge=0.9566
+  chassis x=1455.1
+  arena:heavy-box x=1575.1
+tick 409 eaeb0f96
+  battery milliamps=773.8 charge=0.9564
+  chassis x=1456.8
+  motor-left milliamps=386.9 rpm=43.7
+  motor-right milliamps=386.9 rpm=43.7
+  arena:heavy-box x=1576.8
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=43.7
+  wire:w8 rpm=43.7
+tick 410 29eedc67
+  battery milliamps=773.7 charge=0.9562
+  chassis x=1458.5
+  arena:heavy-box x=1578.5
+tick 411 8eab2a0e
+  battery charge=0.956
+  chassis x=1460.1
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1580.1
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 412 a2b08bd3
+  battery volts=2.646 milliamps=773.6 charge=0.9558
+  chassis x=1461.8
+  motor-left volts=2.646
+  motor-right volts=2.646
+  arena:heavy-box x=1581.8
+tick 413 9f831546
+  battery milliamps=773.5 charge=0.9557
+  chassis x=1463.4
+  arena:heavy-box x=1583.4
+tick 414 cfd8828b
+  battery charge=0.9555
+  chassis x=1465.1
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1585.1
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 415 8793bba3
+  battery milliamps=773.4 charge=0.9553
+  chassis x=1466.7
+  arena:heavy-box x=1586.7
+tick 416 1c30ae11
+  battery charge=0.9551
+  chassis x=1468.4
+  arena:heavy-box x=1588.4
+tick 417 c24e9782
+  battery volts=2.645 milliamps=773.8 charge=0.955
+  chassis x=1470
+  motor-left volts=2.645 milliamps=386.9 sound.motor=0.218
+  motor-right volts=2.645 milliamps=386.9 sound.motor=0.218
+  arena:heavy-box x=1590
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+tick 418 9d8a01cf
+  battery charge=0.9548
+  chassis x=1471.7
+  arena:heavy-box x=1591.7
+tick 419 a6f9858a
+  battery milliamps=773.7 charge=0.9546
+  chassis x=1473.3
+  arena:heavy-box x=1593.3
+tick 420 3108934c
+  battery milliamps=773.6 charge=0.9544
+  chassis x=1475
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1595
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 421 300e222c
+  battery charge=0.9542
+  chassis x=1476.6
+  arena:heavy-box x=1596.6
+tick 422 c0fa2882
+  battery milliamps=773.5 charge=0.9541
+  chassis x=1478.3
+  arena:heavy-box x=1598.3
+tick 423 63d5aa36
+  battery volts=2.644 charge=0.9539
+  chassis x=1479.9
+  motor-left volts=2.644 milliamps=386.7
+  motor-right volts=2.644 milliamps=386.7
+  arena:heavy-box x=1599.9
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 424 56528e7e
+  battery milliamps=773.4 charge=0.9537
+  chassis x=1481.6
+  arena:heavy-box x=1601.6
+tick 425 c99df66e
+  battery milliamps=773.3 charge=0.9535
+  chassis x=1483.2
+  arena:heavy-box x=1603.2
+tick 426 b5674b09
+  battery milliamps=773.8 charge=0.9533
+  chassis x=1484.9
+  gear-left rpm=14.5
+  gear-right rpm=14.5
+  motor-left milliamps=386.9 rpm=43.6
+  motor-right milliamps=386.9 rpm=43.6
+  wheel-left rpm=14.5
+  wheel-right rpm=14.5
+  arena:heavy-box x=1604.9
+  wire:w10 rpm=14.5
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=43.6
+  wire:w8 rpm=43.6
+  wire:w9 rpm=14.5
+tick 427 23632d03
+  battery milliamps=773.7 charge=0.9532
+  chassis x=1486.5
+  arena:heavy-box x=1606.5
+tick 428 f3ac9cdb
+  battery charge=0.953
+  chassis x=1488.2
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1608.2
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 429 13a29520
+  battery volts=2.643 milliamps=773.6 charge=0.9528
+  chassis x=1489.8
+  motor-left volts=2.643
+  motor-right volts=2.643
+  arena:heavy-box x=1609.8
+tick 430 7f413fcf
+  battery charge=0.9526
+  chassis x=1491.5
+  arena:heavy-box x=1611.5
+tick 431 8cfb91fd
+  battery milliamps=773.5 charge=0.9524
+  chassis x=1493.1
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1613.1
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 432 b35174cf
+  battery milliamps=773.4 charge=0.9523
+  chassis x=1494.8
+  arena:heavy-box x=1614.8
+tick 433 a1bbd34e
+  battery charge=0.9521
+  chassis x=1496.4
+  arena:heavy-box x=1616.4
+tick 434 c9af2e12
+  battery milliamps=773.3 charge=0.9519
+  chassis x=1498.1
+  arena:heavy-box x=1618.1
+tick 435 ce0b6b16
+  battery volts=2.642 milliamps=773.8 charge=0.9517
+  chassis x=1499.7
+  motor-left volts=2.642 milliamps=386.9
+  motor-right volts=2.642 milliamps=386.9
+  arena:heavy-box x=1619.7
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+tick 436 9d6fa06e
+  battery milliamps=773.7 charge=0.9516
+  chassis x=1501.4
+  arena:heavy-box x=1621.4
+tick 437 5dd1fb9e
+  battery charge=0.9514
+  chassis x=1503
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1623
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 438 8f5ca044
+  battery milliamps=773.6 charge=0.9512
+  chassis x=1504.7
+  arena:heavy-box x=1624.7
+tick 439 aeda2211
+  battery milliamps=773.5 charge=0.951
+  chassis x=1506.3
+  arena:heavy-box x=1626.3
+tick 440 e0b9afa0
+  battery volts=2.641 charge=0.9508
+  chassis x=1508
+  motor-left volts=2.641 milliamps=386.7
+  motor-right volts=2.641 milliamps=386.7
+  arena:heavy-box x=1628
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 441 755d93e6
+  battery milliamps=773.4 charge=0.9507
+  chassis x=1509.6
+  arena:heavy-box x=1629.6
+tick 442 1b86e158
+  battery charge=0.9505
+  chassis x=1511.3
+  arena:heavy-box x=1631.3
+tick 443 a676c83e
+  battery milliamps=773.8 charge=0.9503
+  chassis x=1512.9
+  motor-left milliamps=386.9 rpm=43.5
+  motor-right milliamps=386.9 rpm=43.5
+  arena:heavy-box x=1632.9
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=43.5
+  wire:w8 rpm=43.5
+tick 444 deed9199
+  battery charge=0.9501
+  chassis x=1514.6
+  arena:heavy-box x=1634.6
+tick 445 d9909311
+  battery volts=2.64 milliamps=773.7 charge=0.9499
+  chassis x=1516.2
+  motor-left volts=2.64
+  motor-right volts=2.64
+  arena:heavy-box x=1636.2
+tick 446 ff81fef0
+  battery milliamps=773.6 charge=0.9498
+  chassis x=1517.9
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1637.9
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 447 8810c262
+  battery charge=0.9496
+  chassis x=1519.5
+  arena:heavy-box x=1639.5
+tick 448 0933ab69
+  battery milliamps=773.5 charge=0.9494
+  chassis x=1521.2
+  arena:heavy-box x=1641.2
+tick 449 695d5b9f
+  battery charge=0.9492
+  chassis x=1522.8
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1642.8
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 450 b23f94f6
+  battery milliamps=773.4 charge=0.949
+  chassis x=1524.5
+  arena:heavy-box x=1644.5
+tick 451 54a7a7da
+  battery milliamps=773.3 charge=0.9489
+  chassis x=1526.1
+  arena:heavy-box x=1646.1
+tick 452 6a82272e
+  battery volts=2.639 milliamps=773.8 charge=0.9487
+  chassis x=1527.7
+  motor-left volts=2.639 milliamps=386.9 sound.motor=0.217
+  motor-right volts=2.639 milliamps=386.9 sound.motor=0.217
+  arena:heavy-box x=1647.7
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+tick 453 dacb067e
+  battery milliamps=773.7 charge=0.9485
+  chassis x=1529.4
+  arena:heavy-box x=1649.4
+tick 454 690529fc
+  battery charge=0.9483
+  chassis x=1531
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1651
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 455 c33b01be
+  battery milliamps=773.6 charge=0.9481
+  chassis x=1532.7
+  arena:heavy-box x=1652.7
+tick 456 79a2225a
+  battery charge=0.948
+  chassis x=1534.3
+  arena:heavy-box x=1654.3
+tick 457 6808d591
+  battery volts=2.638 milliamps=773.5 charge=0.9478
+  chassis x=1536
+  motor-left volts=2.638 milliamps=386.7
+  motor-right volts=2.638 milliamps=386.7
+  arena:heavy-box x=1656
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 458 7b046c24
+  battery milliamps=773.4 charge=0.9476
+  chassis x=1537.6
+  arena:heavy-box x=1657.6
+tick 459 87c65bb8
+  battery charge=0.9474
+  chassis x=1539.3
+  arena:heavy-box x=1659.3
+tick 460 fac7c83a
+  battery milliamps=773.3 charge=0.9473
+  chassis x=1540.9
+  arena:heavy-box x=1660.9
+tick 461 9c8f521b
+  battery milliamps=773.8 charge=0.9471
+  chassis x=1542.5
+  motor-left milliamps=386.9 rpm=43.4
+  motor-right milliamps=386.9 rpm=43.4
+  arena:heavy-box x=1662.5
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=43.4
+  wire:w8 rpm=43.4
+tick 462 37b3957f
+  battery volts=2.637 milliamps=773.7 charge=0.9469
+  chassis x=1544.2
+  motor-left volts=2.637
+  motor-right volts=2.637
+  arena:heavy-box x=1664.2
+tick 463 3f55e01f
+  battery charge=0.9467
+  chassis x=1545.8
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1665.8
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 464 f16e433c
+  battery milliamps=773.6 charge=0.9465
+  chassis x=1547.5
+  arena:heavy-box x=1667.5
+tick 465 cf08aabe
+  battery milliamps=773.5 charge=0.9464
+  chassis x=1549.1
+  arena:heavy-box x=1669.1
+tick 466 6b7c277f
+  battery charge=0.9462
+  chassis x=1550.8
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1670.8
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 467 5570bbb7
+  battery milliamps=773.4 charge=0.946
+  chassis x=1552.4
+  arena:heavy-box x=1672.4
+tick 468 c100a66b
+  battery volts=2.636 charge=0.9458
+  chassis x=1554
+  motor-left volts=2.636
+  motor-right volts=2.636
+  arena:heavy-box x=1674
+tick 469 817e03d3
+  battery milliamps=773.8 charge=0.9456
+  chassis x=1555.7
+  motor-left milliamps=386.9
+  motor-right milliamps=386.9
+  arena:heavy-box x=1675.7
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+tick 470 2a53ebc3
+  battery charge=0.9455
+  chassis x=1557.3
+  arena:heavy-box x=1677.3
+tick 471 fd89ed7e
+  battery milliamps=773.7 charge=0.9453
+  chassis x=1559
+  arena:heavy-box x=1679
+tick 472 22f15b48
+  battery milliamps=773.6 charge=0.9451
+  chassis x=1560.6
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1680.6
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 473 153f5949
+  battery volts=2.635 charge=0.9449
+  chassis x=1562.2
+  motor-left volts=2.635
+  motor-right volts=2.635
+  arena:heavy-box x=1682.2
+tick 474 065c368b
+  battery milliamps=773.5 charge=0.9447
+  chassis x=1563.9
+  arena:heavy-box x=1683.9
+tick 475 818c303a
+  battery charge=0.9446
+  chassis x=1565.5
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1685.5
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 476 50df8a16
+  battery milliamps=773.4 charge=0.9444
+  chassis x=1567.2
+  arena:heavy-box x=1687.2
+tick 477 eec5a613
+  battery milliamps=773.3 charge=0.9442
+  chassis x=1568.8
+  arena:heavy-box x=1688.8
+tick 478 48ce06c1
+  battery milliamps=773.8 charge=0.944
+  chassis x=1570.4
+  gear-left rpm=14.4
+  gear-right rpm=14.4
+  motor-left milliamps=386.9 rpm=43.3
+  motor-right milliamps=386.9 rpm=43.3
+  wheel-left rpm=14.4
+  wheel-right rpm=14.4
+  arena:heavy-box x=1690.4
+  wire:w10 rpm=14.4
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=43.3
+  wire:w8 rpm=43.3
+  wire:w9 rpm=14.4
+tick 479 e89827b7
+  battery volts=2.634 milliamps=773.7 charge=0.9439
+  chassis x=1572.1
+  motor-left volts=2.634
+  motor-right volts=2.634
+  arena:heavy-box x=1692.1
+tick 480 fb0356bb
+  battery charge=0.9437
+  chassis x=1573.7
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1693.7
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 481 35c80fdf
+  battery milliamps=773.6 charge=0.9435
+  chassis x=1575.4
+  arena:heavy-box x=1695.4
+tick 482 18c7e713
+  battery charge=0.9433
+  chassis x=1577
+  arena:heavy-box x=1697
+tick 483 9632f09f
+  battery milliamps=773.5 charge=0.9431
+  chassis x=1578.6
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1698.6
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 484 f6c6c465
+  battery milliamps=773.4 charge=0.943
+  chassis x=1580.3
+  arena:heavy-box x=1700.3
+tick 485 4943b529
+  battery volts=2.633 charge=0.9428
+  chassis x=1581.9
+  motor-left volts=2.633
+  motor-right volts=2.633
+  arena:heavy-box x=1701.9
+tick 486 e65ec5c2
+  battery milliamps=773.8 charge=0.9426
+  chassis x=1583.5
+  motor-left milliamps=386.9 sound.motor=0.216
+  motor-right milliamps=386.9 sound.motor=0.216
+  arena:heavy-box x=1703.5
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+tick 487 3eeae4f4
+  battery charge=0.9424
+  chassis x=1585.2
+  arena:heavy-box x=1705.2
+tick 488 afc68f3c
+  battery milliamps=773.7 charge=0.9422
+  chassis x=1586.8
+  arena:heavy-box x=1706.8
+tick 489 14d96988
+  battery charge=0.9421
+  chassis x=1588.5
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1708.5
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 490 38d43f94
+  battery volts=2.632 milliamps=773.6 charge=0.9419
+  chassis x=1590.1
+  motor-left volts=2.632
+  motor-right volts=2.632
+  arena:heavy-box x=1710.1
+tick 491 e71eaa63
+  battery milliamps=773.5 charge=0.9417
+  chassis x=1591.7
+  arena:heavy-box x=1711.7
+tick 492 2dbd4dce
+  battery charge=0.9415
+  chassis x=1593.4
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1713.4
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 493 6aa33d14
+  battery milliamps=773.4 charge=0.9413
+  chassis x=1595
+  arena:heavy-box x=1715
+tick 494 fb2b8e86
+  battery milliamps=773.3 charge=0.9412
+  chassis x=1596.6
+  arena:heavy-box x=1716.6
+tick 495 c09eb513
+  battery volts=2.631 milliamps=773.8 charge=0.941
+  chassis x=1598.3
+  motor-left volts=2.631 milliamps=386.9 rpm=43.2
+  motor-right volts=2.631 milliamps=386.9 rpm=43.2
+  arena:heavy-box x=1718.3
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=43.2
+  wire:w8 rpm=43.2
+tick 496 fca21162
+  battery charge=0.9408
+  chassis x=1599.9
+  arena:heavy-box x=1719.9
+tick 497 5e1a6842
+  battery milliamps=773.7 charge=0.9406
+  chassis x=1601.5
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1721.5
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 498 0e0fee1f
+  battery milliamps=773.6 charge=0.9404
+  chassis x=1603.2
+  arena:heavy-box x=1723.2
+tick 499 6228be17
+  battery charge=0.9403
+  chassis x=1604.8
+  arena:heavy-box x=1724.8
+tick 500 3f8404dd
+  battery milliamps=773.5 charge=0.9401
+  chassis x=1606.4
+  arena:heavy-box x=1726.4
+tick 501 db0648ab
+  battery charge=0.9399
+  chassis x=1608.1
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1728.1
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 502 695959c1
+  battery volts=2.63 milliamps=773.4 charge=0.9397
+  chassis x=1609.7
+  motor-left volts=2.63
+  motor-right volts=2.63
+  arena:heavy-box x=1729.7
+tick 503 02bbb921
+  battery milliamps=773.3 charge=0.9396
+  chassis x=1611.3
+  arena:heavy-box x=1731.3
+tick 504 6d00382a
+  battery milliamps=773.8 charge=0.9394
+  chassis x=1613
+  motor-left milliamps=386.9
+  motor-right milliamps=386.9
+  arena:heavy-box x=1733
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+tick 505 77dd3365
+  battery milliamps=773.7 charge=0.9392
+  chassis x=1614.6
+  arena:heavy-box x=1734.6
+tick 506 7fc35e17
+  battery charge=0.939
+  chassis x=1616.2
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1736.2
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 507 51b59002
+  battery volts=2.629 milliamps=773.6 charge=0.9388
+  chassis x=1617.9
+  motor-left volts=2.629
+  motor-right volts=2.629
+  arena:heavy-box x=1737.9
+tick 508 fc7e6f33
+  battery charge=0.9387
+  chassis x=1619.5
+  arena:heavy-box x=1739.5
+tick 509 6c1e13de
+  battery milliamps=773.5 charge=0.9385
+  chassis x=1621.1
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1741.1
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 510 f6353a10
+  battery milliamps=773.4 charge=0.9383
+  chassis x=1622.8
+  arena:heavy-box x=1742.8
+tick 511 69e1d3bd
+  battery charge=0.9381
+  chassis x=1624.4
+  arena:heavy-box x=1744.4
+tick 512 53fd1acd
+  battery volts=2.628 milliamps=773.8 charge=0.9379
+  chassis x=1626
+  motor-left volts=2.628 milliamps=386.9 rpm=43.1
+  motor-right volts=2.628 milliamps=386.9 rpm=43.1
+  arena:heavy-box x=1746
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=43.1
+  wire:w8 rpm=43.1
+tick 513 72dbbcce
+  battery charge=0.9378
+  chassis x=1627.7
+  arena:heavy-box x=1747.7
+tick 514 98c72c87
+  battery milliamps=773.7 charge=0.9376
+  chassis x=1629.3
+  arena:heavy-box x=1749.3
+tick 515 5e2cecee
+  battery charge=0.9374
+  chassis x=1630.9
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1750.9
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 516 f7dfd5a3
+  battery milliamps=773.6 charge=0.9372
+  chassis x=1632.6
+  arena:heavy-box x=1752.6
+tick 517 e29cc28c
+  battery milliamps=773.5 charge=0.937
+  chassis x=1634.2
+  arena:heavy-box x=1754.2
+tick 518 98e7671b
+  battery volts=2.627 charge=0.9369
+  chassis x=1635.8
+  motor-left volts=2.627 milliamps=386.7
+  motor-right volts=2.627 milliamps=386.7
+  arena:heavy-box x=1755.8
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 519 cdfc4ac3
+  battery milliamps=773.4 charge=0.9367
+  chassis x=1637.5
+  arena:heavy-box x=1757.5
+tick 520 f912cdb0
+  battery milliamps=773.3 charge=0.9365
+  chassis x=1639.1
+  arena:heavy-box x=1759.1
+tick 521 2dc74f1b
+  battery milliamps=773.8 charge=0.9363
+  chassis x=1640.7
+  motor-left milliamps=386.9 sound.motor=0.215
+  motor-right milliamps=386.9 sound.motor=0.215
+  arena:heavy-box x=1760.7
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+tick 522 6dce5b3d
+  battery charge=0.9362
+  chassis x=1642.3
+  arena:heavy-box x=1762.3
+tick 523 91ec7588
+  battery volts=2.626 milliamps=773.7 charge=0.936
+  chassis x=1644
+  motor-left volts=2.626 milliamps=386.8
+  motor-right volts=2.626 milliamps=386.8
+  arena:heavy-box x=1764
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 524 07cb3131
+  battery milliamps=773.6 charge=0.9358
+  chassis x=1645.6
+  arena:heavy-box x=1765.6
+tick 525 33793656
+  battery charge=0.9356
+  chassis x=1647.2
+  arena:heavy-box x=1767.2
+tick 526 732d9e56
+  battery milliamps=773.5 charge=0.9354
+  chassis x=1648.9
+  arena:heavy-box x=1768.9
+tick 527 5daf9f04
+  battery milliamps=773.4 charge=0.9353
+  chassis x=1650.5
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1770.5
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 528 861f0879
+  battery charge=0.9351
+  chassis x=1652.1
+  arena:heavy-box x=1772.1
+tick 529 2f9653d4
+  battery milliamps=773.3 charge=0.9349
+  chassis x=1653.7
+  arena:heavy-box x=1773.7
+tick 530 af77b218
+  battery volts=2.625 milliamps=773.8 charge=0.9347
+  chassis x=1655.4
+  gear-left rpm=14.3
+  gear-right rpm=14.3
+  motor-left volts=2.625 milliamps=386.9 rpm=43
+  motor-right volts=2.625 milliamps=386.9 rpm=43
+  wheel-left rpm=14.3
+  wheel-right rpm=14.3
+  arena:heavy-box x=1775.4
+  wire:w10 rpm=14.3
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=43
+  wire:w8 rpm=43
+  wire:w9 rpm=14.3
+tick 531 93cbbddb
+  battery milliamps=773.7 charge=0.9345
+  chassis x=1657
+  arena:heavy-box x=1777
+tick 532 04212c0d
+  battery charge=0.9344
+  chassis x=1658.6
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1778.6
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 533 28d7fbdb
+  battery milliamps=773.6 charge=0.9342
+  chassis x=1660.2
+  arena:heavy-box x=1780.2
+tick 534 208849cc
+  battery charge=0.934
+  chassis x=1661.9
+  arena:heavy-box x=1781.9
+tick 535 a0198eb2
+  battery volts=2.624 milliamps=773.5 charge=0.9338
+  chassis x=1663.5
+  motor-left volts=2.624 milliamps=386.7
+  motor-right volts=2.624 milliamps=386.7
+  arena:heavy-box x=1783.5
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 536 f701e418
+  battery milliamps=773.4 charge=0.9336
+  chassis x=1665.1
+  arena:heavy-box x=1785.1
+tick 537 3afb0edb
+  battery charge=0.9335
+  chassis x=1666.8
+  arena:heavy-box x=1786.8
+tick 538 2af96ca7
+  battery milliamps=773.8 charge=0.9333
+  chassis x=1668.4
+  motor-left milliamps=386.9
+  motor-right milliamps=386.9
+  arena:heavy-box x=1788.4
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+tick 539 3a909c8e
+  battery charge=0.9331
+  chassis x=1670
+  arena:heavy-box x=1790
+tick 540 d306114d
+  battery volts=2.623 milliamps=773.7 charge=0.9329
+  chassis x=1671.6
+  motor-left volts=2.623
+  motor-right volts=2.623
+  arena:heavy-box x=1791.6
+tick 541 acfe7ef9
+  battery charge=0.9327
+  chassis x=1673.3
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1793.3
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 542 abc5156c
+  battery milliamps=773.6 charge=0.9326
+  chassis x=1674.9
+  arena:heavy-box x=1794.9
+tick 543 e1625e0a
+  battery milliamps=773.5 charge=0.9324
+  chassis x=1676.5
+  arena:heavy-box x=1796.5
+tick 544 d2f8ba8a
+  battery charge=0.9322
+  chassis x=1678.1
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1798.1
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 545 0461d299
+  battery milliamps=773.4 charge=0.932
+  chassis x=1679.8
+  arena:heavy-box x=1799.8
+tick 546 a37aec40
+  battery milliamps=773.3 charge=0.9319
+  chassis x=1681.4
+  arena:heavy-box x=1801.4
+tick 547 7e4f671a
+  battery volts=2.622 milliamps=773.8 charge=0.9317
+  chassis x=1683
+  motor-left volts=2.622 milliamps=386.9 rpm=42.9
+  motor-right volts=2.622 milliamps=386.9 rpm=42.9
+  arena:heavy-box x=1803
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=42.9
+  wire:w8 rpm=42.9
+tick 548 ca010a32
+  battery charge=0.9315
+  chassis x=1684.6
+  arena:heavy-box x=1804.6
+tick 549 2d007283
+  battery milliamps=773.7 charge=0.9313
+  chassis x=1686.2
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1806.2
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 550 f9962a4c
+  battery milliamps=773.6 charge=0.9311
+  chassis x=1687.9
+  arena:heavy-box x=1807.9
+tick 551 ac3cd172
+  battery charge=0.931
+  chassis x=1689.5
+  arena:heavy-box x=1809.5
+tick 552 20fecdec
+  battery volts=2.621 milliamps=773.5 charge=0.9308
+  chassis x=1691.1
+  motor-left volts=2.621
+  motor-right volts=2.621
+  arena:heavy-box x=1811.1
+tick 553 bc7fabee
+  battery milliamps=773.4 charge=0.9306
+  chassis x=1692.7
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1812.7
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 554 f72d1315
+  battery charge=0.9304
+  chassis x=1694.4
+  arena:heavy-box x=1814.4
+tick 555 bec2eb83
+  battery milliamps=773.3 charge=0.9302
+  chassis x=1696
+  arena:heavy-box x=1816
+tick 556 9b51f68c
+  battery milliamps=773.8 charge=0.9301
+  chassis x=1697.6
+  motor-left milliamps=386.9 sound.motor=0.214
+  motor-right milliamps=386.9 sound.motor=0.214
+  arena:heavy-box x=1817.6
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+tick 557 470d8f74
+  battery volts=2.62 milliamps=773.7 charge=0.9299
+  chassis x=1699.2
+  motor-left volts=2.62
+  motor-right volts=2.62
+  arena:heavy-box x=1819.2
+tick 558 dcb34914
+  battery charge=0.9297
+  chassis x=1700.8
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1820.8
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 559 c5d738a6
+  battery milliamps=773.6 charge=0.9295
+  chassis x=1702.5
+  arena:heavy-box x=1822.5
+tick 560 41ba58cf
+  battery milliamps=773.5 charge=0.9293
+  chassis x=1704.1
+  arena:heavy-box x=1824.1
+tick 561 1efc4643
+  battery charge=0.9292
+  chassis x=1705.7
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1825.7
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 562 6ed58ad7
+  battery milliamps=773.4 charge=0.929
+  chassis x=1707.3
+  arena:heavy-box x=1827.3
+tick 563 f5a4bebc
+  battery volts=2.619 charge=0.9288
+  chassis x=1708.9
+  motor-left volts=2.619
+  motor-right volts=2.619
+  arena:heavy-box x=1828.9
+tick 564 ae5f69e3
+  battery milliamps=773.8 charge=0.9286
+  chassis x=1710.6
+  motor-left milliamps=386.9 rpm=42.8
+  motor-right milliamps=386.9 rpm=42.8
+  arena:heavy-box x=1830.6
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=42.8
+  wire:w8 rpm=42.8
+tick 565 41ed0d23
+  battery charge=0.9285
+  chassis x=1712.2
+  arena:heavy-box x=1832.2
+tick 566 95fdf002
+  battery milliamps=773.7 charge=0.9283
+  chassis x=1713.8
+  arena:heavy-box x=1833.8
+tick 567 25d996a8
+  battery charge=0.9281
+  chassis x=1715.4
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1835.4
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 568 ff8d9e5a
+  battery volts=2.618 milliamps=773.6 charge=0.9279
+  chassis x=1717
+  motor-left volts=2.618
+  motor-right volts=2.618
+  arena:heavy-box x=1837
+tick 569 257a60f8
+  battery milliamps=773.5 charge=0.9277
+  chassis x=1718.7
+  arena:heavy-box x=1838.7
+tick 570 8690c44b
+  battery charge=0.9276
+  chassis x=1720.3
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1840.3
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 571 dd6117ab
+  battery milliamps=773.4 charge=0.9274
+  chassis x=1721.9
+  arena:heavy-box x=1841.9
+tick 572 7fcc1439
+  battery milliamps=773.3 charge=0.9272
+  chassis x=1723.5
+  arena:heavy-box x=1843.5
+tick 573 5487bcad
+  battery volts=2.617 milliamps=773.8 charge=0.927
+  chassis x=1725.1
+  motor-left volts=2.617 milliamps=386.9
+  motor-right volts=2.617 milliamps=386.9
+  arena:heavy-box x=1845.1
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+tick 574 438c9d1b
+  battery charge=0.9268
+  chassis x=1726.8
+  arena:heavy-box x=1846.8
+tick 575 03898454
+  battery milliamps=773.7 charge=0.9267
+  chassis x=1728.4
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1848.4
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 576 609e7bc5
+  battery milliamps=773.6 charge=0.9265
+  chassis x=1730
+  arena:heavy-box x=1850
+tick 577 38797e1d
+  battery charge=0.9263
+  chassis x=1731.6
+  arena:heavy-box x=1851.6
+tick 578 1679bc72
+  battery milliamps=773.5 charge=0.9261
+  chassis x=1733.2
+  arena:heavy-box x=1853.2
+tick 579 6e5f5cb0
+  battery milliamps=773.4 charge=0.9259
+  chassis x=1734.8
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1854.8
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 580 ef580a1f
+  battery volts=2.616 charge=0.9258
+  chassis x=1736.5
+  motor-left volts=2.616
+  motor-right volts=2.616
+  arena:heavy-box x=1856.5
+tick 581 ce175df2
+  battery milliamps=773.3 charge=0.9256
+  chassis x=1738.1
+  arena:heavy-box x=1858.1
+tick 582 d48efd25
+  battery milliamps=773.8 charge=0.9254
+  chassis x=1739.7
+  gear-left rpm=14.2
+  gear-right rpm=14.2
+  motor-left milliamps=386.9 rpm=42.7
+  motor-right milliamps=386.9 rpm=42.7
+  wheel-left rpm=14.2
+  wheel-right rpm=14.2
+  arena:heavy-box x=1859.7
+  wire:w10 rpm=14.2
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=42.7
+  wire:w8 rpm=42.7
+  wire:w9 rpm=14.2
+tick 583 5dc1b760
+  battery milliamps=773.7 charge=0.9252
+  chassis x=1741.3
+  arena:heavy-box x=1861.3
+tick 584 a147c520
+  battery charge=0.925
+  chassis x=1742.9
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1862.9
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 585 9ddfd3fd
+  battery volts=2.615 milliamps=773.6 charge=0.9249
+  chassis x=1744.5
+  motor-left volts=2.615
+  motor-right volts=2.615
+  arena:heavy-box x=1864.5
+tick 586 4cb6d572
+  battery milliamps=773.5 charge=0.9247
+  chassis x=1746.1
+  arena:heavy-box x=1866.1
+tick 587 799b3fce
+  battery charge=0.9245
+  chassis x=1747.8
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1867.8
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 588 a882cad7
+  battery milliamps=773.4 charge=0.9243
+  chassis x=1749.4
+  arena:heavy-box x=1869.4
+tick 589 53fb2f43
+  battery charge=0.9242
+  chassis x=1751
+  arena:heavy-box x=1871
+tick 590 694786d3
+  battery volts=2.614 milliamps=773.8 charge=0.924
+  chassis x=1752.6
+  motor-left volts=2.614 milliamps=386.9 rpm=42.6 sound.motor=0.213
+  motor-right volts=2.614 milliamps=386.9 rpm=42.6 sound.motor=0.213
+  arena:heavy-box x=1872.6
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=42.6
+  wire:w8 rpm=42.6
+tick 591 55dd789f
+  battery charge=0.9238
+  chassis x=1754.2
+  motor-left rpm=42.7
+  motor-right rpm=42.7
+  arena:heavy-box x=1874.2
+  wire:w7 rpm=42.7
+  wire:w8 rpm=42.7
+tick 592 8f4b1fa8
+  battery milliamps=773.7 charge=0.9236
+  chassis x=1755.8
+  arena:heavy-box x=1875.8
+tick 593 12b1105f
+  battery milliamps=773.6 charge=0.9234
+  chassis x=1757.4
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1877.4
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 594 1c1291a2
+  battery charge=0.9233
+  chassis x=1759.1
+  arena:heavy-box x=1879.1
+tick 595 3acd26ad
+  battery milliamps=773.5 charge=0.9231
+  chassis x=1760.7
+  arena:heavy-box x=1880.7
+tick 596 3b5982cc
+  battery charge=0.9229
+  chassis x=1762.3
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1882.3
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 597 dc16087b
+  battery volts=2.613 milliamps=773.4 charge=0.9227
+  chassis x=1763.9
+  motor-left volts=2.613
+  motor-right volts=2.613
+  arena:heavy-box x=1883.9
+tick 598 57491411
+  battery milliamps=773.3 charge=0.9225
+  chassis x=1765.5
+  arena:heavy-box x=1885.5
+tick 599 93e563a0
+  battery milliamps=773.8 charge=0.9224
+  chassis x=1767.1
+  motor-left milliamps=386.9 rpm=42.6
+  motor-right milliamps=386.9 rpm=42.6
+  arena:heavy-box x=1887.1
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=42.6
+  wire:w8 rpm=42.6
+tick 600 bd7ccd75
+  battery milliamps=773.7 charge=0.9222
+  chassis x=1768.7
+  arena:heavy-box x=1888.7
+tick 601 b4fc6758
+  battery charge=0.922
+  chassis x=1770.3
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1890.3
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 602 13c3fa12
+  battery volts=2.612 milliamps=773.6 charge=0.9218
+  chassis x=1772
+  motor-left volts=2.612
+  motor-right volts=2.612
+  arena:heavy-box x=1892
+tick 603 9621107a
+  battery charge=0.9216
+  chassis x=1773.6
+  arena:heavy-box x=1893.6
+tick 604 333f2de0
+  battery milliamps=773.5 charge=0.9215
+  chassis x=1775.2
+  arena:heavy-box x=1895.2
+tick 605 0557f4d5
+  battery milliamps=773.4 charge=0.9213
+  chassis x=1776.8
+  motor-left milliamps=386.7
+  motor-right milliamps=386.7
+  arena:heavy-box x=1896.8
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 606 5e2d22d7
+  battery charge=0.9211
+  chassis x=1778.4
+  arena:heavy-box x=1898.4
+tick 607 6f4103cf
+  battery milliamps=773.3 charge=0.9209
+  chassis x=1780
+  arena:heavy-box x=1900
+tick 608 8b89163b
+  battery volts=2.611 milliamps=773.8 charge=0.9208
+  chassis x=1781.6
+  motor-left volts=2.611 milliamps=386.9 rpm=42.5
+  motor-right volts=2.611 milliamps=386.9 rpm=42.5
+  arena:heavy-box x=1901.6
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=42.5
+  wire:w8 rpm=42.5
+tick 609 9a601e5a
+  battery milliamps=773.7 charge=0.9206
+  chassis x=1783.2
+  motor-left rpm=42.6
+  motor-right rpm=42.6
+  arena:heavy-box x=1903.2
+  wire:w7 rpm=42.6
+  wire:w8 rpm=42.6
+tick 610 f114659d
+  battery charge=0.9204
+  chassis x=1784.8
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1904.8
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 611 27d5a95f
+  battery milliamps=773.6 charge=0.9202
+  chassis x=1786.4
+  arena:heavy-box x=1906.4
+tick 612 28861b4f
+  battery milliamps=773.5 charge=0.92
+  chassis x=1788.1
+  arena:heavy-box x=1908.1
+tick 613 f210d398
+  battery volts=2.61 charge=0.9199
+  chassis x=1789.7
+  motor-left volts=2.61 milliamps=386.7
+  motor-right volts=2.61 milliamps=386.7
+  arena:heavy-box x=1909.7
+  wire:w11 milliamps=386.7
+  wire:w12 milliamps=386.7
+  wire:w13 milliamps=-386.7
+  wire:w14 milliamps=-386.7
+tick 614 dabc054c
+  battery milliamps=773.4 charge=0.9197
+  chassis x=1791.3
+  arena:heavy-box x=1911.3
+tick 615 832dbffc
+  battery charge=0.9195
+  chassis x=1792.9
+  arena:heavy-box x=1912.9
+tick 616 9c3470a9
+  battery milliamps=773.8 charge=0.9193
+  chassis x=1794.5
+  motor-left milliamps=386.9 rpm=42.5 sound.motor=0.212
+  motor-right milliamps=386.9 rpm=42.5 sound.motor=0.212
+  arena:heavy-box x=1914.5
+  wire:w11 milliamps=386.9
+  wire:w12 milliamps=386.9
+  wire:w13 milliamps=-386.9
+  wire:w14 milliamps=-386.9
+  wire:w7 rpm=42.5
+  wire:w8 rpm=42.5
+tick 617 50b5d916
+  battery charge=0.9191
+  chassis x=1796.1
+  motor-left sound.motor=0.213
+  motor-right sound.motor=0.213
+  arena:heavy-box x=1916.1
+tick 618 ddf999d3
+  battery volts=2.609 milliamps=773.7 charge=0.919
+  chassis x=1797.7
+  motor-left volts=2.609
+  motor-right volts=2.609
+  arena:heavy-box x=1917.7
+tick 619 36b383d8
+  battery milliamps=773.6 charge=0.9188
+  chassis x=1799.3
+  motor-left milliamps=386.8
+  motor-right milliamps=386.8
+  arena:heavy-box x=1919.3
+  wire:w11 milliamps=386.8
+  wire:w12 milliamps=386.8
+  wire:w13 milliamps=-386.8
+  wire:w14 milliamps=-386.8
+tick 620 19330349
+  battery charge=0.9186
+  chassis x=1800
+  wheel-left sound.squeal=0.131
+  wheel-right sound.squeal=0.131
+  arena:heavy-box x=1920
+tick 621 4fc5d346
+  battery volts=2.594 milliamps=811.5 charge=0.9184
+  gear-left rpm=12.8
+  gear-right rpm=12.8
+  motor-left volts=2.594 milliamps=405.7 rpm=38.3 sound.motor=0.192
+  motor-right volts=2.594 milliamps=405.7 rpm=38.3 sound.motor=0.192
+  wheel-left rpm=12.8 sound.squeal=0.145
+  wheel-right rpm=12.8 sound.squeal=0.145
+  wire:w10 rpm=12.8
+  wire:w11 milliamps=405.7
+  wire:w12 milliamps=405.7
+  wire:w13 milliamps=-405.7
+  wire:w14 milliamps=-405.7
+  wire:w7 rpm=38.3
+  wire:w8 rpm=38.3
+  wire:w9 rpm=12.8
+tick 622 3701d1dd
+  battery volts=2.592 milliamps=816.4 charge=0.9182
+  motor-left volts=2.592 milliamps=408.2 sound.motor=0.191
+  motor-right volts=2.592 milliamps=408.2 sound.motor=0.191
+  wheel-left faults=slipping
+  wheel-right faults=slipping
+  wire:w11 milliamps=408.2
+  wire:w12 milliamps=408.2
+  wire:w13 milliamps=-408.2
+  wire:w14 milliamps=-408.2
+tick 623 7efae6b0
+  battery volts=2.591 milliamps=817.1 charge=0.918
+  motor-left volts=2.591 milliamps=408.5
+  motor-right volts=2.591 milliamps=408.5
+  wire:w11 milliamps=408.5
+  wire:w12 milliamps=408.5
+  wire:w13 milliamps=-408.5
+  wire:w14 milliamps=-408.5
+tick 624 1d59456f
+  battery charge=0.9179
+  motor-left milliamps=408.6
+  motor-right milliamps=408.6
+  wire:w11 milliamps=408.6
+  wire:w12 milliamps=408.6
+  wire:w13 milliamps=-408.6
+  wire:w14 milliamps=-408.6
+tick 625 b7338225
+  battery milliamps=817.2 charge=0.9177
+tick 626 4c480297
+  battery charge=0.9175
+tick 627 854afdb4
+  battery volts=2.59 charge=0.9173
+  gear-left rpm=12.7
+  gear-right rpm=12.7
+  motor-left volts=2.59 rpm=38.2
+  motor-right volts=2.59 rpm=38.2
+  wheel-left rpm=12.7
+  wheel-right rpm=12.7
+  wire:w10 rpm=12.7
+  wire:w7 rpm=38.2
+  wire:w8 rpm=38.2
+  wire:w9 rpm=12.7
+tick 628 275b59ed
+  battery charge=0.9171
+tick 629 1d1cd26a
+  battery charge=0.9169
+tick 630 2012ad41
+  battery charge=0.9167
+tick 631 ff6f6eca
+  battery charge=0.9165
+tick 632 2f7615eb
+  battery volts=2.589 charge=0.9163
+  motor-left volts=2.589
+  motor-right volts=2.589
+tick 633 79d12e9a
+  battery charge=0.9162
+  wheel-left sound.squeal=0.144
+  wheel-right sound.squeal=0.144
+tick 634 c93e172e
+  battery charge=0.916
+tick 635 77b899a6
+  battery charge=0.9158
+tick 636 75f852f4
+  battery charge=0.9156
+tick 637 0d0396c4
+  battery charge=0.9154
+tick 638 148629ca
+  battery volts=2.588 charge=0.9152
+  motor-left volts=2.588
+  motor-right volts=2.588
+tick 639 6d69ae1e
+  battery charge=0.915
+tick 640 3970691b
+  battery charge=0.9148
+tick 641 4187107a
+  battery charge=0.9146
+tick 642 01358e0b
+  battery charge=0.9145
+  motor-left rpm=38.1
+  motor-right rpm=38.1
+  wire:w7 rpm=38.1
+  wire:w8 rpm=38.1
+tick 643 76fe6137
+  battery volts=2.587 charge=0.9143
+  motor-left volts=2.587
+  motor-right volts=2.587
+tick 644 13380072
+  battery charge=0.9141
+tick 645 300c0cbc
+  battery charge=0.9139
+tick 646 dbcc5a4c
+  battery charge=0.9137
+tick 647 a7e9ebaf
+  battery charge=0.9135
+tick 648 e57b9db6
+  battery volts=2.586 charge=0.9133
+  motor-left volts=2.586
+  motor-right volts=2.586
+tick 649 b5549ede
+  battery charge=0.9131
+tick 650 17d384f0
+  battery charge=0.9129
+  motor-left sound.motor=0.19
+  motor-right sound.motor=0.19
+tick 651 d7491340
+  battery charge=0.9127
+tick 652 b603fe10
+  battery charge=0.9126
+tick 653 8c97d49a
+  battery charge=0.9124
+tick 654 b7d13705
+  battery volts=2.585 charge=0.9122
+  motor-left volts=2.585
+  motor-right volts=2.585
+tick 655 d34f996c
+  battery charge=0.912
+tick 656 b98ef921
+  battery charge=0.9118
+tick 657 6f558ba0
+  battery charge=0.9116
+tick 658 886b0cf3
+  battery charge=0.9114
+  motor-left rpm=38
+  motor-right rpm=38
+  wire:w7 rpm=38
+  wire:w8 rpm=38
+tick 659 0fbd3fdd
+  battery volts=2.584 charge=0.9112
+  motor-left volts=2.584
+  motor-right volts=2.584
+tick 660 e4a85f52
+  battery charge=0.911
+tick 661 d129b62b
+  battery charge=0.9109
+tick 662 732bcd16
+  battery charge=0.9107
+tick 663 59e1c41a
+  battery charge=0.9105
+tick 664 58506684
+  battery volts=2.583 charge=0.9103
+  motor-left volts=2.583
+  motor-right volts=2.583
+tick 665 15a774cc
+  battery charge=0.9101
+tick 666 7789a817
+  battery charge=0.9099
+tick 667 8aadbcaa
+  battery charge=0.9097
+tick 668 af22a51d
+  battery charge=0.9095
+tick 669 cc793ad0
+  battery volts=2.582 charge=0.9093
+  motor-left volts=2.582
+  motor-right volts=2.582
+tick 670 2d47e6ae
+  battery charge=0.9092
+tick 671 f479f2d3
+  battery charge=0.909
+tick 672 298785b2
+  battery charge=0.9088
+tick 673 d588e054
+  battery charge=0.9086
+tick 674 85b599a6
+  battery charge=0.9084
+  gear-left rpm=12.6
+  gear-right rpm=12.6
+  motor-left rpm=37.9
+  motor-right rpm=37.9
+  wheel-left rpm=12.6
+  wheel-right rpm=12.6
+  wire:w10 rpm=12.6
+  wire:w7 rpm=37.9
+  wire:w8 rpm=37.9
+  wire:w9 rpm=12.6
+tick 675 867ca4a0
+  battery volts=2.581 charge=0.9082
+  motor-left volts=2.581
+  motor-right volts=2.581
+  wheel-left sound.squeal=0.143
+  wheel-right sound.squeal=0.143
+tick 676 09998089
+  battery charge=0.908
+tick 677 15f46728
+  battery charge=0.9078
+tick 678 bbb220dc
+  battery charge=0.9076
+tick 679 f3fd6275
+  battery charge=0.9075
+tick 680 4938e9e2
+  battery volts=2.58 charge=0.9073
+  motor-left volts=2.58
+  motor-right volts=2.58
+tick 681 b8cb09f7
+  battery charge=0.9071
+tick 682 c8b38e56
+  battery charge=0.9069
+  motor-left sound.motor=0.189
+  motor-right sound.motor=0.189
+tick 683 b84ac48a
+  battery charge=0.9067
+tick 684 18a09029
+  battery charge=0.9065
+tick 685 2c81e94b
+  battery volts=2.579 charge=0.9063
+  motor-left volts=2.579
+  motor-right volts=2.579
+tick 686 61071942
+  battery charge=0.9061
+tick 687 1a226b29
+  battery charge=0.9059
+tick 688 21c8c97f
+  battery charge=0.9058
+tick 689 b021f514
+  battery charge=0.9056
+tick 690 699c345d
+  battery charge=0.9054
+  motor-left rpm=37.8
+  motor-right rpm=37.8
+  wire:w7 rpm=37.8
+  wire:w8 rpm=37.8

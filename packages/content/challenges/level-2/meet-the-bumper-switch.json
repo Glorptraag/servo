@@ -1,0 +1,567 @@
+{
+  "arena": {
+    "preset": "wall-stop",
+    "props": []
+  },
+  "goal": {
+    "kind": "sequence",
+    "of": [
+      {
+        "forTicks": 15,
+        "kind": "holds",
+        "when": {
+          "atLeast": 200,
+          "kind": "forward-speed",
+          "target": {
+            "placed": "chassis"
+          }
+        }
+      },
+      {
+        "forTicks": 15,
+        "kind": "holds",
+        "when": {
+          "kind": "and",
+          "of": [
+            {
+              "kind": "near-wall",
+              "target": {
+                "placed": "chassis"
+              },
+              "wall": "far-wall",
+              "withinMm": 40
+            },
+            {
+              "atMost": 5,
+              "kind": "speed",
+              "target": {
+                "placed": "chassis"
+              }
+            },
+            {
+              "kind": "state",
+              "state": "open",
+              "target": {
+                "placed": "bumper"
+              }
+            },
+            {
+              "kind": "not",
+              "of": {
+                "kind": "state",
+                "state": "powered",
+                "target": {
+                  "part": "dc-motor"
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "goalLine": "Put the bumper switch in the power line, so the robot stops when it bumps the wall",
+  "hints": [
+    {
+      "steps": [
+        {
+          "line": "The bumper switch goes in the power line",
+          "step": "pulse-part",
+          "target": {
+            "placed": "bumper"
+          }
+        },
+        {
+          "line": "Side A takes power from the battery pack",
+          "step": "pulse-port",
+          "target": {
+            "placed": "bumper",
+            "port": "a"
+          }
+        },
+        {
+          "from": {
+            "placed": "battery",
+            "port": "plus"
+          },
+          "line": "Plus to side A",
+          "step": "ghost-wire",
+          "to": {
+            "placed": "bumper",
+            "port": "a"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "bumper",
+                "port": "a"
+              }
+            }
+          ],
+          "line": "Wired the battery pack's plus to side A",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "placed": "bumper",
+        "port": "a"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This bumper switch is not in a loop with the battery pack",
+          "step": "pulse-part",
+          "target": {
+            "placed": "bumper"
+          }
+        },
+        {
+          "line": "Side B sends power on to the DC motors",
+          "step": "pulse-port",
+          "target": {
+            "placed": "bumper",
+            "port": "b"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "bumper",
+                "port": "b"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "motor-left",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "bumper",
+                "port": "b"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "motor-right",
+                "port": "plus"
+              }
+            }
+          ],
+          "line": "Wired side B to both DC motors' plus",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "kind": "unwired",
+        "placed": "bumper",
+        "port": "b"
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "This bumper switch is not in a loop with the battery pack",
+          "step": "pulse-part",
+          "target": {
+            "placed": "bumper"
+          }
+        },
+        {
+          "line": "This DC motor's plus takes power straight from the battery pack, round the bumper switch",
+          "step": "pulse-port",
+          "target": {
+            "placed": "motor-left",
+            "port": "plus"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "motor-left",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "motor-right",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "bumper",
+                "port": "b"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "motor-left",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "bumper",
+                "port": "b"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "motor-right",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "bumper",
+                "port": "a"
+              }
+            }
+          ],
+          "line": "Moved both DC motors' plus lines from the battery pack to side B of the bumper switch",
+          "step": "do-it"
+        }
+      ],
+      "when": {
+        "failure": "outside-loop",
+        "kind": "fault",
+        "target": {
+          "placed": "bumper"
+        }
+      }
+    },
+    {
+      "steps": [
+        {
+          "line": "The bumper switch stops only the DC motors wired to side B",
+          "step": "pulse-part",
+          "target": {
+            "placed": "bumper"
+          }
+        },
+        {
+          "line": "Both DC motors' plus lines belong on side B",
+          "step": "pulse-port",
+          "target": {
+            "placed": "bumper",
+            "port": "b"
+          }
+        },
+        {
+          "changes": [
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "motor-left",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "remove-wire",
+              "to": {
+                "placed": "motor-right",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "bumper",
+                "port": "b"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "motor-left",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "bumper",
+                "port": "b"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "motor-right",
+                "port": "plus"
+              }
+            },
+            {
+              "from": {
+                "placed": "battery",
+                "port": "plus"
+              },
+              "kind": "add-wire",
+              "to": {
+                "placed": "bumper",
+                "port": "a"
+              }
+            }
+          ],
+          "line": "Moved both DC motors' plus lines to side B of the bumper switch",
+          "step": "do-it"
+        }
+      ]
+    }
+  ],
+  "id": "meet-the-bumper-switch",
+  "introduces": "bumper-switch",
+  "kind": "part-introduction",
+  "kit": "circuit-crew",
+  "level": 2,
+  "start": {
+    "arena": {
+      "preset": "wall-stop",
+      "props": []
+    },
+    "meta": {
+      "createdAt": "2026-10-04T09:00:00.000Z",
+      "highWater": {
+        "parts": 0,
+        "wires": 11
+      },
+      "id": "63c3d610-3075-41c8-8405-305973aaab7d",
+      "level": 2,
+      "name": "Meet the bumper switch",
+      "updatedAt": "2026-10-04T09:00:00.000Z"
+    },
+    "parts": [
+      {
+        "id": "battery",
+        "part": "battery-pack-2-cell",
+        "position": {
+          "x": -45,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "bumper",
+        "part": "bumper-switch",
+        "position": {
+          "x": 80,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "caster",
+        "part": "caster",
+        "position": {
+          "x": -70,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "chassis",
+        "part": "chassis",
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "motor-left",
+        "part": "dc-motor",
+        "position": {
+          "x": 19,
+          "y": -53
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "motor-right",
+        "part": "dc-motor",
+        "position": {
+          "x": 19,
+          "y": 53
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "wheel-left",
+        "part": "wheel-large",
+        "position": {
+          "x": 40,
+          "y": -79
+        },
+        "rotation": 0,
+        "settings": {}
+      },
+      {
+        "id": "wheel-right",
+        "part": "wheel-large",
+        "position": {
+          "x": 40,
+          "y": 79
+        },
+        "rotation": 0,
+        "settings": {}
+      }
+    ],
+    "version": 1,
+    "wires": [
+      {
+        "from": {
+          "part": "battery",
+          "port": "mount"
+        },
+        "id": "w1",
+        "to": {
+          "part": "chassis",
+          "port": "deck-rear"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w10",
+        "to": {
+          "part": "motor-left",
+          "port": "minus"
+        }
+      },
+      {
+        "from": {
+          "part": "battery",
+          "port": "minus"
+        },
+        "id": "w11",
+        "to": {
+          "part": "motor-right",
+          "port": "minus"
+        }
+      },
+      {
+        "from": {
+          "part": "caster",
+          "port": "mount"
+        },
+        "id": "w2",
+        "to": {
+          "part": "chassis",
+          "port": "caster"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-left",
+          "port": "mount"
+        },
+        "id": "w3",
+        "to": {
+          "part": "chassis",
+          "port": "motor-left"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-right",
+          "port": "mount"
+        },
+        "id": "w4",
+        "to": {
+          "part": "chassis",
+          "port": "motor-right"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-left",
+          "port": "shaft"
+        },
+        "id": "w5",
+        "to": {
+          "part": "wheel-left",
+          "port": "hub"
+        }
+      },
+      {
+        "from": {
+          "part": "motor-right",
+          "port": "shaft"
+        },
+        "id": "w6",
+        "to": {
+          "part": "wheel-right",
+          "port": "hub"
+        }
+      },
+      {
+        "from": {
+          "part": "bumper",
+          "port": "mount"
+        },
+        "id": "w7",
+        "to": {
+          "part": "chassis",
+          "port": "bumper"
+        }
+      },
+      {
+        "from": {
+          "part": "bumper",
+          "port": "b"
+        },
+        "id": "w8",
+        "to": {
+          "part": "motor-left",
+          "port": "plus"
+        }
+      },
+      {
+        "from": {
+          "part": "bumper",
+          "port": "b"
+        },
+        "id": "w9",
+        "to": {
+          "part": "motor-right",
+          "port": "plus"
+        }
+      }
+    ]
+  },
+  "title": "Meet the bumper switch"
+}
