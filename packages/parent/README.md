@@ -14,11 +14,12 @@ const progress = progressOf({ runs: await child.runs.list(), content: store.cont
 
 | Name | Owner | What |
 | --- | --- | --- |
-| `mountParent(host, store)` | 5.1 | The parent view behind the parental gate: the profile list and switch, then progress, exports and the card game per child. The caller opens and closes the store. `mountParentWith(host, store, { random })` fixes the gate's questions for tests |
+| `mountParent(host, store)` | 5.1 | The parent view behind the parental gate: the profile list and switch, then progress, exports and the card game per child. The caller opens and closes the store. `mountParentWith(host, store, { random, access, speech })` fixes the gate's questions, the access options and read-aloud's speech for tests (task 7.5) |
 | `readAccounts`, `addChild`, `renameChild`, `switchChild`, `removeChild`, `nameOf`, `PARENT_TEXT` | 5.1 | The accounts model and the view's text (below) |
 | `progressOf(input)` → `Progress`, `readProgress(store, profile)`, `PROGRESS_TEXT` | 5.2 | The progress read model, a pure function of the records below; reading it for one child through the store; the view's text |
 | `partsListOf(blueprint, catalogue)` → `PartsList`, `UnknownPart`, `LIST_TEXT`, `EXPORT_TEXT` | 5.3 | The printable parts list for one blueprint, and its text (below) |
 | `drawCards(content, seed)`, `DECK_SIZE`, `CARD_GAME_TEXT` | 5.4 | Ten Level 1–2 part types for one round of the card game, in the order to show them; the game's text (below) |
+| `ParentAccess`, `accessAttributes`, `applyAccess`, `PARENT_ACCESS_CSS` | 7.5 | The access options on the parent view and page (below) |
 
 The parent view runs as its own page of the web build, beside the child's app, because the app may not import parent. A parental gate on the way in keeps it out of a child's way (D28). Home's "For adults" link opens it (D91, below).
 
@@ -202,6 +203,21 @@ The Level 2 check of brief Section 14: a child at the end of Level 2 names 8 of 
 4. **A round stopped part way keeps nothing**: a partial round is not the check's ten cards. Should it be kept?
 5. **No result on the game screen** (R-5.4 F1, R-6.4 PAR-1). The round ends on "That is all the cards." and the adult reads the count in the progress section only, which is put away with the rest of the page until Back to the parent view. The "Parent view" heading stays, as does the page's Home link outside the view. Near-twins (2-cell and 1-cell battery pack, large and small wheel) can both be dealt; whether the family name counts as named is the adult's call (R-5.4 Q2).
 6. **Changes outside src/card-game/:** `src/index.ts` binds `drawCards` and exports `DECK_SIZE` and `CARD_GAME_TEXT`; `src/accounts/view.tsx` adds the section, reads progress again after each round, and puts the rest of the page away while a round is on (task 7.1); `test/contract.test.ts` no longer expects the 5.4 stub to throw.
+
+## Access options and input paths (task 7.5)
+
+R-6.4 PAR-2, PAR-3, PAR-11 and R-5.7 Q2/Q6. In [src/accounts/access.tsx](src/accounts/access.tsx).
+
+- **The four options.** The parent view follows this device's access options (task 5.7), the same ones the child's app keeps in `localStorage` (`servo.access`), read through `@servo/app/store` (`AccessStore`, `ReadAloudScope`, `accessTheme`, `pageStorage`: an additive export there, since parent may import nothing else of the app). `ParentAccess` wraps the gate and the view: its root carries the chrome's theme as Settings does (`release-page`, `data-contrast`, `data-typeface`) and `data-hand`, inside read-aloud's scope. High contrast gives a white ground, black ink and 2 px black edges on every button, field and fieldset; dyslexia-friendly type sets the face and spacing on the text and on the native buttons and fields too; the left-handed layout mirrors the view, every row of controls and every line of text to the right edge, in the same order, so Tab and a screen reader read it as before; read-aloud reads a tap on any words, a control focused by keyboard and a new status line. An option turned on another page of the app follows through the `storage` event. [src/page/main.ts](src/page/main.ts) also sets the theme and hand on the page's body, so the ground round the view and the Back to Servo link follow them.
+- **Focus never rests on the page's body.** Wherever the control that held focus goes away, focus moves in the same commit (`useLayoutEffect`): the gate's Continue to the loading line and then the view's title; the last card to the round's status line while it is kept (PAR-11), then the closing line or Try keeping it again; a removed child's row to the child in use, the first child or Add a child; a parts list's heading as it opens and its button as it closes; the gate's field when the gate asks again after the page was hidden.
+- **Tests** ([test/browser/](test/browser/)). [controls.ts](test/browser/controls.ts) names every kind of control in the view (27, from the gate's field to Try keeping it again) and registers its touch (CDP touch), pointer (CDP mouse) and keyboard (real Tab, then Enter, Space or the arrows) tests; [controls.test.tsx](test/browser/controls.test.tsx) walks every screen (gate, accounts, rename form, removal confirm, parts list, link field, a card hidden and shown, closing line, refused save) and fails for a control no kind claims, a control Tab never reaches, or a kind with no three-path test, as packages/app does (task 7.4). Each three-path test also watches focus on every frame after the press and fails if it rests on the body. The tests are in controls-accounts, controls-builds and controls-card-game; [keys.test.tsx](test/browser/keys.test.tsx) covers Enter in the fields, Escape on the rename form and the removal confirm, Space on Remove profile, and focus after the last child goes, while a round is kept and when the gate asks again; [access.test.tsx](test/browser/access.test.tsx) covers each option, its change at once, and following another page. [input.ts](test/browser/input.ts) is a copy of the app's, since a test may not import across the package line. packages/app's [a11y-parent.test.tsx](../app/test/browser/a11y-parent.test.tsx) runs axe over the parent page past the gate (accounts, progress, the data note, a parts list, a card with its name hidden and shown) with every option off and all on, and over the shared-build page.
+
+### Decisions and open questions (task 7.5)
+
+1. **Left-handed layout on a page with no tray.** It mirrors the view to the right edge, keeping the order in each row. Should it do something else, or nothing, on the parent page?
+2. **Read-aloud on the card game.** It reads only what the adult taps or focuses and the status lines, so a part's name is read only if the adult taps the name once shown. Should read-aloud be off during a round?
+3. **The theme class.** The view reuses the release pages' `release-page` class for the shell's tokens, since theme.css is the app's. Should the app give the parent page a class of its own?
+4. **The Back to Servo link** sits in packages/app/parent.html, outside read-aloud's scope, so read-aloud does not read it. It takes the theme through the body.
 
 ## Privacy
 

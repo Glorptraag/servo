@@ -7,7 +7,7 @@
 // (R-6.4 PAR-1); the adult reads the result in the progress view (task 5.2) alone, after pressing Back. Every control is a native button, so touch, pointer, keyboard and screen reader share one
 // path (ground rule 8), and nothing is a dialog (ground rule 9). A round stopped, or left by a child switch or the
 // page being hidden, keeps nothing.
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, RefObject } from 'react';
 import type { CardGameResult, CardMark, Content, ServoStore } from '@servo/app/store';
 import type { PartRecord, PartTypeId, ProfileId } from '@servo/schema';
@@ -84,6 +84,7 @@ export const CardGameSection = ({ store, profile, name, onKept, seed = randomSee
   const cardRef = useRef<HTMLHeadingElement>(null);
   const doneRef = useRef<HTMLParagraphElement>(null);
   const retryRef = useRef<HTMLButtonElement>(null);
+  const statusRef = useRef<HTMLParagraphElement>(null);
   const content = store.content;
 
   useEffect(() => {
@@ -100,12 +101,14 @@ export const CardGameSection = ({ store, profile, name, onKept, seed = randomSee
     tell.current?.(active);
   }, [active]);
 
-  // Focus follows the round: to each card's heading as it is shown, to the closing line when kept, to Try keeping it
-  // again when the store refused it, back to Start when stopped or left.
+  // Focus follows the round: to each card's heading as it is shown, to the status line while the round is kept (the
+  // last card, which held the focus, is gone: R-6.4 PAR-11), to the closing line when kept, to Try keeping it again
+  // when the store refused it, back to Start when stopped or left. Never to the page's body.
   const cardIndex = round.kind === 'playing' ? round.marks.length : -1;
   const started = useRef(false);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (round.kind === 'playing') cardRef.current?.focus();
+    else if (round.kind === 'saving') statusRef.current?.focus();
     else if (round.kind === 'done') doneRef.current?.focus();
     else if (round.kind === 'failed') retryRef.current?.focus();
     else if (round.kind === 'idle' && started.current) startRef.current?.focus();
@@ -151,7 +154,7 @@ export const CardGameSection = ({ store, profile, name, onKept, seed = randomSee
 
       {round.kind === 'idle' &&
         (canPlay ? (
-          <div style={ROW}>
+          <div className="servo-parent-row" style={ROW}>
             <button ref={startRef} type="button" onClick={start} style={TARGET}>
               {CARD_GAME_TEXT.start}
             </button>
@@ -177,7 +180,7 @@ export const CardGameSection = ({ store, profile, name, onKept, seed = randomSee
       )}
 
       {round.kind === 'failed' && (
-        <div style={ROW}>
+        <div className="servo-parent-row" style={ROW}>
           <button ref={retryRef} type="button" onClick={() => keep(round.marks)} style={TARGET}>
             {CARD_GAME_TEXT.saveAgain}
           </button>
@@ -189,7 +192,7 @@ export const CardGameSection = ({ store, profile, name, onKept, seed = randomSee
           <p ref={doneRef} tabIndex={-1}>
             {CARD_GAME_TEXT.done}
           </p>
-          <div style={ROW}>
+          <div className="servo-parent-row" style={ROW}>
             <button type="button" onClick={start} style={TARGET}>
               {CARD_GAME_TEXT.again}
             </button>
@@ -200,7 +203,7 @@ export const CardGameSection = ({ store, profile, name, onKept, seed = randomSee
         </>
       )}
 
-      <p role="status">
+      <p ref={statusRef} role="status" tabIndex={-1}>
         {round.kind === 'idle'
           ? round.line
           : round.kind === 'saving'
@@ -236,7 +239,7 @@ const Card = ({ ids, content, part, n, of, revealed, headingRef, onReveal, onMar
         {CARD_GAME_TEXT.card(n, of)}
       </h3>
       {record && <CardPicture record={record} art={content.art} />}
-      <div style={ROW}>
+      <div className="servo-parent-row" style={ROW}>
         <button type="button" aria-expanded={revealed} aria-controls={nameId} onClick={onReveal} style={TARGET}>
           {revealed ? CARD_GAME_TEXT.hideName : CARD_GAME_TEXT.showName}
         </button>
@@ -244,7 +247,7 @@ const Card = ({ ids, content, part, n, of, revealed, headingRef, onReveal, onMar
           {nameOf(content, part)}
         </p>
       </div>
-      <div style={ROW}>
+      <div className="servo-parent-row" style={ROW}>
         <button type="button" onClick={() => onMark(true)} style={TARGET}>
           {CARD_GAME_TEXT.named}
         </button>

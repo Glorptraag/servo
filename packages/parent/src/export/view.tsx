@@ -2,7 +2,7 @@
 // has a Parts list button, which opens that build's list in place, never in a dialog. Print uses the browser's own
 // print with a print stylesheet that prints the list alone. Every control is a native button, so touch, pointer and
 // keyboard take the same path, and the list itself is a table and plain lists a screen reader reads in order.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
 import { emitTelemetry } from '@servo/app/store';
 import type { BlueprintSummary, ServoStore } from '@servo/app/store';
@@ -107,7 +107,7 @@ export const PartsListExport = ({ store, profile, builds, describe, actions }: P
     <>
       <ul>
         {builds.map((build) => (
-          <li key={build.id} style={ROW}>
+          <li key={build.id} className="servo-parent-row" style={ROW}>
             <span>{describe(build)}</span>
             <button
               ref={(button) => {
@@ -142,7 +142,7 @@ export interface PartsListPanelProps {
 /** One build's printable parts list. Focus moves to its heading when it opens; Escape closes it. */
 export const PartsListPanel = ({ list, onClose }: PartsListPanelProps) => {
   const heading = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     heading.current?.focus();
   }, [list]);
   const escape = (event: KeyboardEvent) => {
@@ -158,7 +158,7 @@ export const PartsListPanel = ({ list, onClose }: PartsListPanelProps) => {
       </h3>
       <p>{EXPORT_TEXT.intro}</p>
       <table>
-        <caption style={{ textAlign: 'left' }}>{EXPORT_TEXT.parts}</caption>
+        <caption style={{ textAlign: 'inherit' }}>{EXPORT_TEXT.parts}</caption>
         <thead>
           <tr>
             <th scope="col">{EXPORT_TEXT.part}</th>
@@ -210,7 +210,7 @@ export const PartsListPanel = ({ list, onClose }: PartsListPanelProps) => {
         </>
       )}
       <div className="servo-no-print">
-        <div style={ROW}>
+        <div className="servo-parent-row" style={ROW}>
           <button type="button" onClick={() => window.print()} style={TARGET}>
             {EXPORT_TEXT.print}
           </button>
