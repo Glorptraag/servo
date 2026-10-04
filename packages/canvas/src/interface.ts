@@ -478,9 +478,10 @@ export interface ListView {
   readonly hint?: { readonly step: HintStepKind; readonly line: Text };
   /**
    * The actions on a part, port, wire or prop in the current mode. In Build mode: every edit the canvas has,
-   * including moving a part (to the free spot, or onto any free mount point or shaft it fits) and turning it a
-   * quarter turn either way; settings unlocked at the child's level; removing. In Run mode: flipping a manual
-   * switch, and inspecting. Read-only: inspecting only.
+   * including moving a part (to the free spot, or onto any free mount point or shaft it fits) and turning a free
+   * part a quarter turn either way (a held part has no rotate handle on the canvas, so none here either); settings
+   * unlocked at the child's level; removing. In Run mode: flipping a manual switch, and inspecting. Read-only:
+   * inspecting only. In every mode, `Clear selection` on what is selected.
    */
   actionsFor(subject: ListSubject): readonly ListAction[];
   /** Where a tray part can go: the free spot, and every free mount point or shaft it fits. */
@@ -530,7 +531,10 @@ export interface ListWire {
 
 export interface ListProp {
   readonly propId: ArenaFeatureId;
-  /** One line to read aloud, for example `box, 100 by 100 millimetres, ahead of the robot`. */
+  /**
+   * One line to read aloud, for example `box, 100 by 100 millimetres, ahead of the robot`. Twin props are numbered by
+   * shape in id order, as twin parts are (`box 1`, `box 2`; task 7.3).
+   */
   readonly description: string;
   /** Run mode: where it is now. */
   readonly live?: LiveState;
@@ -544,5 +548,6 @@ export interface ListAction {
   readonly does:
     | { readonly kind: 'edit'; readonly command: EditCommand }
     | { readonly kind: 'control'; readonly input: ControlInput }
-    | { readonly kind: 'select'; readonly selection: Selection };
+    /** Null clears the selection: `Clear selection`, offered on what is selected (task 7.3). */
+    | { readonly kind: 'select'; readonly selection: Selection | null };
 }

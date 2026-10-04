@@ -3,7 +3,7 @@
 // input through CDP), and from the list view, its parts from `placementsFor` (the path the app's tray offers a
 // keyboard) and every wire from the list view's DOM by keyboard, Enter on each button. Also: the list view's DOM
 // shows itself when it takes focus, Space never activates it (D42), Enter flips a manual switch in Run mode, and a
-// removal says what it left loose (D35). In the iPad profile (vitest.config.ts).
+// removal says what it left loose (D35), in the canvas's own line. In the iPad profile (vitest.config.ts).
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cdp, userEvent } from 'vitest/browser';
 import { canonicalJson, serializeBlueprint } from '@servo/schema';
@@ -146,13 +146,14 @@ describe('the list view’s DOM', () => {
     const { surface } = bench;
     expect(surface.load(fixture('rolling-start')).ok).toBe(true);
     const edits = listen(surface, 'edit');
-    await open('part:switch');
-    byKey('action:turn:switch:clockwise').focus();
+    // The chassis: a free part, so it has a turn (a held one has none, R-6.4 CAN-1).
+    await open('part:chassis');
+    byKey('action:turn:chassis:clockwise').focus();
     await userEvent.keyboard(' ');
     expect(edits).toEqual([]);
-    await enter('action:turn:switch:clockwise');
-    await vi.waitFor(() => expect(edits.map((edit) => edit.command)).toEqual([{ kind: 'rotate-part', partId: 'switch', rotation: 90 }]));
-    expect(list().querySelector('[role="status"]')?.textContent).toBe('Turned switch. Switch is loose now');
+    await enter('action:turn:chassis:clockwise');
+    await vi.waitFor(() => expect(edits.map((edit) => edit.command)).toEqual([{ kind: 'rotate-part', partId: 'chassis', rotation: 90 }]));
+    expect(list().querySelector('[role="status"]')?.textContent).toBe('Turned chassis');
   });
 
   it('says what a removal left loose (D35)', async () => {
@@ -162,7 +163,8 @@ describe('the list view’s DOM', () => {
     await enter('action:remove:motor-left');
     await vi.waitFor(() => expect(surface.blueprint?.parts.some((part) => part.id === 'motor-left')).toBe(false));
     const status = list().querySelector('[role="status"]')?.textContent ?? '';
-    expect(status).toBe('Removed DC motor 1. Large wheel 1 is loose now');
+    // In the canvas's own words, as a removal on the canvas is said (R-6.4 CAN-2).
+    expect(status).toBe('Removed DC motor 1. Removed with it: 2 wires. Loose now: large wheel');
     expect(document.activeElement && list().contains(document.activeElement)).toBe(true);
   });
 

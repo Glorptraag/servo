@@ -224,6 +224,11 @@ export class PlacementController {
     return this.callout.line;
   }
 
+  /** Where the line is drawn, mm: its centre and size. */
+  get noticeBox(): { readonly at: Vec2; readonly w: number; readonly h: number } | undefined {
+    return this.callout.shownBox;
+  }
+
   /** Whether the line lies over a canvas point: drawn above everything, it takes a press first (wiring, task 3.3). */
   noticeCovers(world: Vec2): boolean {
     return this.callout.covers(world);
@@ -240,6 +245,7 @@ export class PlacementController {
   begin(part: PartTypeId, pointer?: PointerEvent): void {
     this.endIncoming(false);
     this.hideNotice();
+    this.surface.wiring.yieldToPlacement();
     const build = this.surface.blueprint;
     const record = this.host.catalogue.parts.get(part);
     if (!build || !record || !this.editable()) {
@@ -256,6 +262,7 @@ export class PlacementController {
   beginProp(prop: PropTemplate, pointer?: PointerEvent): void {
     this.endIncoming(false);
     this.hideNotice();
+    this.surface.wiring.yieldToPlacement();
     const shaped = (prop.shape === 'box' || prop.shape === 'cylinder') && typeof prop.size?.x === 'number' && typeof prop.size.y === 'number';
     if (!this.surface.blueprint || !this.surface.arena || !shaped || !this.editable()) {
       this.host.placed({ kind: 'prop', placed: false });
@@ -623,10 +630,15 @@ export class PlacementController {
     };
   }
 
-  /** The Move handle was tapped: show where the part can re-snap (D34), and wait for the tap that says where it goes. */
+  /**
+   * The Move handle was tapped: show where the part can re-snap (D34), and wait for the tap that says where it goes.
+   * The held line goes, so a tap where it sat is where the part goes (R-3.2 finding 14, R-6.4 CAN-8).
+   */
   private startRelocation(id: PlacedPartId): void {
     const build = this.surface.blueprint;
     if (!build) return;
+    this.hideNotice();
+    this.surface.wiring.yieldToPlacement();
     const home = this.homeOf(id);
     this.relocating = { id, targets: [...moveTargets(build, this.host.catalogue, id), ...(home ? [home] : [])], home };
     this.rings.draw(this.relocating.targets, undefined, this.palette);

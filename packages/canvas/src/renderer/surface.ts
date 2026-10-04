@@ -219,6 +219,17 @@ export class CanvasSurface implements CanvasHandle {
       apply: (command) => this.apply(command),
       control: (input) => this.emitter.emit('control', { input }),
       select: (selection) => this.select(selection),
+      // Task 7.3: the list offers Clear selection, reads the canvas's line, and says what a canvas edit changed.
+      selection: () => this.selecting.selection,
+      notice: () => this.placement.notice,
+      watch: (listener) => {
+        const edits = this.on('edit', ({ command }) => listener({ kind: 'edit', command }));
+        const selects = this.on('select', () => listener({ kind: 'select' }));
+        return () => {
+          edits();
+          selects();
+        };
+      },
       routes: () => this.routing.routes,
       hint: () => {
         const step = this.selecting.shownHint;

@@ -12,7 +12,9 @@ export interface Bench {
   readonly model: ListViewModel;
   readonly edits: EditCommand[];
   readonly controls: ControlInput[];
-  readonly selections: Selection[];
+  readonly selections: (Selection | null)[];
+  /** What the stand-in canvas has selected now. */
+  selection: Selection | null;
   readonly live: Map<string, LiveState>;
   blueprint: Blueprint | undefined;
   mode: CanvasMode;
@@ -31,6 +33,7 @@ export const benchOf = (
     edits: [],
     controls: [],
     selections: [],
+    selection: null,
     live: new Map(),
     blueprint: start,
     mode: 'build',
@@ -62,7 +65,12 @@ export const benchOf = (
       return result;
     },
     control: (input) => bench.controls.push(input),
-    select: (selection) => bench.selections.push(selection),
+    select: (selection) => {
+      bench.selections.push(selection);
+      bench.selection = selection;
+      bench.model.changed();
+    },
+    selection: () => bench.selection,
     live: (subject) => bench.live.get(subject),
   });
   (bench as { model: ListViewModel }).model = model;

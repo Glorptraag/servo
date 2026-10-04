@@ -2,14 +2,18 @@
 // or a prop, made by a tap or a click, by the handle's `select` (the app, the list view), and shown the same way
 // whichever path made it. A part selection is what opens the spec card: every change fires `select`. In Build mode
 // the selected part shows placement's handles and a selected wire wiring's bin; in Run mode and on a read-only canvas
-// a tap still selects, to inspect. The hint rungs draw here too, in the hints layer. See docs/selection.md.
+// a tap still selects, to inspect. The hint rungs draw here too, in the hints layer. A selected prop of the child's
+// shows a Move handle beside its bin: tap it, then tap where the prop goes, as a drag moves it (task 7.3). The handle's
+// `select` brings what it selects into view, and the arrow keys pan the view, the keyboard's way round a big build at
+// a high zoom (task 7.3). See docs/selection.md.
 import type { ArenaFeatureId, Catalogue, Prop, Vec2 } from '@servo/schema';
 import type { CanvasPrefs, DrawnHintStep, EditCommand, SelectEvent, Selection } from '../interface.ts';
 import { Press } from '../placement/controller.ts';
 import type { Gesture } from '../placement/controller.ts';
 import { layOutHandles } from '../placement/overlays.ts';
 import type { Circle } from '../placement/overlays.ts';
-import { canvasToArena, onProp, propOutline } from '../placement/props.ts';
+import type { HandleKind } from '../placement/overlays.ts';
+import { canvasToArena, onProp, propOutline, propSpot } from '../placement/props.ts';
 import { Callout, HANDLE_GAP_PX, HANDLE_PX, Handles } from '../placement/views.ts';
 import { DRAG_THRESHOLD_PX } from '../renderer/input.ts';
 import type { PointerClaim } from '../renderer/input.ts';
@@ -36,6 +40,17 @@ export const LABEL_HEIGHT_PX = 40;
 export const LABEL_STEP_PX = 16;
 /** How often a pulsing hint is redrawn. */
 export const PULSE_FPS = 20;
+/** An arrow key pans the view by this share of the uncovered canvas's shorter side (task 7.3). */
+export const ARROW_PAN_SHARE = 0.25;
+/** Room kept between a subject brought into view and the uncovered canvas's edge, px (task 7.3). */
+export const REVEAL_MARGIN_PX = 48;
+
+const ARROWS: Readonly<Record<string, readonly [number, number]>> = {
+  ArrowLeft: [-1, 0],
+  ArrowRight: [1, 0],
+  ArrowUp: [0, -1],
+  ArrowDown: [0, 1],
+};
 
 export interface SelectionHost {
   readonly surface: CanvasSurface;
@@ -69,7 +84,10 @@ export class SelectionController {
   private readonly label = new Callout();
   private readonly marks = new HintMarks();
   private readonly ring = new PropRing();
+  /** The selected prop's handles: Move and its bin, on the child's props only. */
   private readonly propBin = new Handles();
+  /** The child's prop the Move handle is moving, waiting for the tap that says where it goes. */
+  private relocating: ArenaFeatureId | undefined;
   private readonly offZoom: () => void;
   private current: Selection | null = null;
   /** Set while the selection is passed on to placement and wiring, so what they report back is not taken as new. */
@@ -125,6 +143,7 @@ export class SelectionController {
     }
     if (next !== null && !this.exists(next)) return;
     this.choose(next);
+    if (next !== null) this.reveal(next);
   }
 
   /**
@@ -166,6 +185,16 @@ export class SelectionController {
     return this.propBin.shown.get('bin');
   }
 
+  /** Where the selected prop's handles sit, mm: Move and the bin. */
+  get propHandlePlaces(): ReadonlyMap<HandleKind, Vec2> {
+    return this.propBin.shown;
+  }
+
+  /** The child's prop the Move handle is moving, waiting for the tap that says where it goes. */
+  get movingProp(): ArenaFeatureId | undefined {
+    return this.relocating;
+  }
+
   // ---------------------------------------------------------------------------------------------------------
   // Hooks the surface calls
 
@@ -182,6 +211,7 @@ export class SelectionController {
 
   /** After every redraw of the build: a selection the build lost clears, and focus and hints follow the new scene. */
   refresh(): void {
+    if (this.relocating !== undefined && !this.childsProp(this.relocating)) this.relocating = undefined;
     if (this.current !== null && !this.exists(this.current)) {
       this.choose(null);
       return;
@@ -206,6 +236,7 @@ export class SelectionController {
   modeChanged(): void {
     this.press?.cancel();
     this.press = undefined;
+    this.relocating = undefined;
     this.push();
     this.redraw();
   }
@@ -256,6 +287,7 @@ export class SelectionController {
   private choose(next: Selection | null): void {
     if (same(this.current, next)) return;
     this.current = next;
+    if (next?.kind !== 'prop' || next.propId !== this.relocating) this.relocating = undefined;
     this.push();
     this.redraw();
     this.host.selected({ selection: next });
@@ -291,19 +323,53 @@ export class SelectionController {
   // Pointers and keys
 
   /**
-   * Sees every press first and claims only a press on the selected prop's bin. A press on the build (a socket, a
-   * wire, a part) lets a selected prop go, as it lets a selected part go; a pan keeps it.
+   * Sees every press first and claims only a press on the selected prop's handles, or, while its Move handle waits, a
+   * press on the build or on a prop, which is where the prop goes. A press on the build (a socket, a wire, a part)
+   * lets a selected prop go, as it lets a selected part go; a pan keeps it.
    */
   private pressed(event: PointerEvent, screen: Vec2, hit: Hit | null): PointerClaim | null {
     if (this.current?.kind !== 'prop') return null;
     const world = this.surface.camera.screenToWorld(screen);
     const propId = this.current.propId;
-    if (this.editable() && this.propBin.hit(world) === 'bin') {
-      this.press = new Press(event, this.surface.blueprint, () => DRAG_THRESHOLD_PX / this.sensitivity, this.binGesture(propId));
-      return this.press;
+    const handle = this.editable() ? this.propBin.hit(world) : undefined;
+    if (handle === 'bin') return this.claim(event, this.binGesture(propId));
+    if (handle === 'move') return this.claim(event, { tap: () => this.toggleRelocation(propId) });
+    if (this.relocating === propId && (hit !== null || this.propAt(world) !== undefined)) {
+      return this.claim(event, { tap: () => this.landRelocation(world) });
     }
     if (hit !== null && this.editable()) this.letGo();
     return null;
+  }
+
+  private claim(event: PointerEvent, gesture: Gesture): Press {
+    this.press = new Press(event, this.surface.blueprint, () => DRAG_THRESHOLD_PX / this.sensitivity, gesture);
+    return this.press;
+  }
+
+  /** The Move handle was tapped: the prop waits for the tap that says where it goes. Tapped again, it lets it be. */
+  private toggleRelocation(propId: ArenaFeatureId): void {
+    this.press = undefined;
+    this.relocating = this.relocating === propId ? undefined : propId;
+    this.drawProp();
+  }
+
+  /**
+   * The tap after the Move handle, with a drag's rule (placement's prop drag, D36): the prop's middle goes to the free
+   * spot nearest the tap, on the floor. A tap on the prop itself leaves it where it is.
+   */
+  private landRelocation(world: Vec2): void {
+    this.press = undefined;
+    const propId = this.relocating;
+    this.relocating = undefined;
+    this.drawProp();
+    const build = this.surface.blueprint;
+    const arena = this.surface.arena;
+    const prop = build?.arena.props.find((each) => each.id === propId);
+    if (!build || !arena || !prop) return;
+    const at = canvasToArena(arena.matrix, world);
+    if (onProp(prop, at)) return;
+    const spot = propSpot(build, this.host.catalogue, prop, at, prop.id, prop.at.heading);
+    if (spot && (spot.x !== prop.at.x || spot.y !== prop.at.y)) this.commit({ kind: 'move-prop', propId: prop.id, at: spot });
   }
 
   /**
@@ -315,6 +381,10 @@ export class SelectionController {
   private tapped(screen: Vec2): void {
     if (!this.surface.blueprint) return;
     const world = this.surface.camera.screenToWorld(screen);
+    if (this.editable() && this.relocating !== undefined) {
+      this.landRelocation(world);
+      return;
+    }
     if (this.editable()) {
       const prop = this.propAt(world);
       if (prop) this.choose({ kind: 'prop', propId: prop.id });
@@ -337,8 +407,20 @@ export class SelectionController {
     if (next) this.surface.canvas.focus({ preventScroll: true });
   }
 
-  /** Delete (and Backspace) removes a selected prop of the child's, as it removes a part or a wire. */
+  /**
+   * Delete (and Backspace) removes a selected prop of the child's, as it removes a part or a wire. The arrow keys pan
+   * the view, in every mode: the keyboard's way to look at one corner of a big build (task 7.3, R-6.4 CAN-5).
+   */
   private readonly keyed = (event: KeyboardEvent): void => {
+    const arrow = ARROWS[event.key];
+    if (arrow && !event.altKey && !event.ctrlKey && !event.metaKey) {
+      event.preventDefault();
+      const view = this.surface.camera.uncovered();
+      const step = Math.min(view.width, view.height) * ARROW_PAN_SHARE;
+      // A drag of (dx, dy) moves the plane with the finger, so the view looks the other way.
+      this.panView(-arrow[0] * step, -arrow[1] * step);
+      return;
+    }
     if (event.key !== 'Delete' && event.key !== 'Backspace') return;
     if (this.current?.kind !== 'prop' || !this.editable() || !this.childsProp(this.current.propId)) return;
     event.preventDefault();
@@ -356,6 +438,51 @@ export class SelectionController {
 
   private commit(command: EditCommand): void {
     this.surface.apply(command);
+  }
+
+  /** Moves the plane by (dx, dy) screen pixels, held by the view's limits, as a drag on empty workbench does. */
+  private panView(dx: number, dy: number): void {
+    if (dx === 0 && dy === 0) return;
+    this.surface.camera.panBy(dx, dy, this.surface.limits());
+    this.surface.wakeGrid();
+    this.surface.requestFrame();
+  }
+
+  /**
+   * Brings what the handle selected into the uncovered canvas, with a margin, at the zoom it has: the list view's
+   * Select, so a keyboard user at a high zoom sees what they chose (task 7.3, R-6.4 CAN-5). Wholly in view along an
+   * axis, nothing moves along it; bigger than the view, its middle comes to the middle.
+   */
+  private reveal(selection: Selection): void {
+    const area = this.areaOf(selection);
+    if (!area) return;
+    const { camera } = this.surface;
+    const view = camera.uncovered();
+    const a = camera.worldToScreen({ x: area.minX, y: area.minY });
+    const b = camera.worldToScreen({ x: area.maxX, y: area.maxY });
+    const margin = Math.min(REVEAL_MARGIN_PX, view.width / 4, view.height / 4);
+    const along = (low: number, high: number, start: number, size: number): number => {
+      if (low >= start && high <= start + size) return 0;
+      const from = start + margin;
+      const to = start + size - margin;
+      if (high - low > to - from) return (from + to) / 2 - (low + high) / 2;
+      if (low < from) return from - low;
+      if (high > to) return to - high;
+      return 0;
+    };
+    this.panView(along(Math.min(a.x, b.x), Math.max(a.x, b.x), view.x, view.width), along(Math.min(a.y, b.y), Math.max(a.y, b.y), view.y, view.height));
+  }
+
+  /** Where a selection lies on the plane: a part's bounds, a wire's drawn path, a prop's outline. */
+  private areaOf(selection: Selection): Rect | undefined {
+    if (selection.kind === 'part') return this.surface.scene.partById.get(selection.partId)?.bounds;
+    if (selection.kind === 'wire') {
+      const wire = wireOf(this.surface.scene, selection.wireId);
+      return wire && rectOfPoints(this.drawnPath(wire));
+    }
+    const prop = this.propOf(selection.propId);
+    const arena = this.surface.arena;
+    return prop && arena ? rectOfPoints(propOutline(prop, prop.at).map((corner) => arenaToCanvas(arena.matrix, corner))) : undefined;
   }
 
   // ---------------------------------------------------------------------------------------------------------
@@ -400,7 +527,7 @@ export class SelectionController {
       return;
     }
     const places = layOutHandles({
-      kinds: ['bin'],
+      kinds: ['move', 'bin'],
       part: rectOfPoints(corners) as Rect,
       sockets: this.socketCircles(),
       radius,
@@ -408,7 +535,7 @@ export class SelectionController {
       view: this.surface.camera.visible(),
       leftHanded: this.host.prefs().leftHanded,
     });
-    this.propBin.draw(places, radius, this.palette);
+    this.propBin.draw(places, radius, this.palette, this.relocating === prop.id ? 'move' : undefined);
     if (request) this.surface.requestFrame();
   }
 

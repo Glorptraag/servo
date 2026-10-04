@@ -10,7 +10,7 @@ import { propSpot } from '../placement/props.ts';
 import { moveTargets, movedPartSpot, placeTargets, tileOutline } from '../placement/rules.ts';
 import { TIDY_WIRES_ACTION } from '../routing/commands.ts';
 import { wireKindOf } from '../wiring/commands.ts';
-import { heldPhrase, listOf, midSentence, namesOf, wireDescription, withUnit } from './words.ts';
+import { heldPhrase, listOf, midSentence, namesOf, propNamesOf, propTitle, propsOf, wireDescription, withUnit } from './words.ts';
 import type { Names } from './words.ts';
 
 /** What the actions depend on: the build, the mode, the child's level, and switches' states in Run mode. */
@@ -24,6 +24,8 @@ export interface ListState {
   readonly readOnly: boolean;
   /** Run mode: whether a manual switch is closed now. */
   readonly switchClosed: (partId: PlacedPartId) => boolean | undefined;
+  /** What the canvas has selected now, when the host says (task 7.3). */
+  readonly selection?: Selection | null;
 }
 
 const sameRef = (a: PortRef, b: PortRef): boolean => a.part === b.part && a.port === b.port;
@@ -31,6 +33,19 @@ const refKey = (ref: PortRef): string => `${ref.part}.${ref.port}`;
 
 const edit = (id: string, label: string, command: EditCommand): ListAction => ({ id, label, does: { kind: 'edit', command } });
 const select = (id: string, label: string, selection: Selection): ListAction => ({ id, label, does: { kind: 'select', selection } });
+
+/** The action that clears the selection: offered on what is selected, in every mode (task 7.3, R-6.4 CAN-6). */
+export const CLEAR_SELECTION: ListAction = { id: 'clear-selection', label: 'Clear selection', does: { kind: 'select', selection: null } };
+
+const sameSelection = (a: Selection | null | undefined, b: Selection): boolean =>
+  a?.kind === b.kind &&
+  ((a.kind === 'part' && b.kind === 'part' && a.partId === b.partId) ||
+    (a.kind === 'wire' && b.kind === 'wire' && a.wireId === b.wireId) ||
+    (a.kind === 'prop' && b.kind === 'prop' && a.propId === b.propId));
+
+/** Select a subject, or clear the selection when it is the one selected already. */
+const selectOrClear = (state: ListState, id: string, label: string, selection: Selection): ListAction =>
+  sameSelection(state.selection, selection) ? CLEAR_SELECTION : select(id, label, selection);
 
 /** Edits are offered in Build mode, on a canvas that is not read-only, once a build is loaded. */
 const editable = (state: ListState): state is ListState & { readonly blueprint: Blueprint } =>
@@ -121,8 +136,9 @@ const partActions = (state: ListState & { readonly blueprint: Blueprint }, names
     }
   }
 
-  // Turn a quarter turn either way.
-  actions.push(
+  // Turn a quarter turn either way: a free part only, as the canvas gives only a free part a rotate handle. A mount
+  // or a shaft sets a held part's turn, and turning it would take it off (R-3.2 Q2, R-6.4 CAN-1).
+  if ((placement?.by ?? 'root') === 'root') actions.push(
     edit(`turn:${partId}:clockwise`, `Turn ${title} a quarter turn clockwise`, { kind: 'rotate-part', partId, rotation: (part.rotation + 90) % 360 }),
     edit(`turn:${partId}:anticlockwise`, `Turn ${title} a quarter turn anticlockwise`, {
       kind: 'rotate-part',
@@ -256,7 +272,7 @@ export const actionsFor = (state: ListState, subject: ListSubject): ListAction[]
     case 'part': {
       if (!blueprint.parts.some((part) => part.id === subject.partId)) return [];
       const title = names.title(subject.partId);
-      const actions = [select(`select:part:${subject.partId}`, `Select ${title}`, { kind: 'part', partId: subject.partId })];
+      const actions = [selectOrClear(state, `select:part:${subject.partId}`, `Select ${title}`, { kind: 'part', partId: subject.partId })];
       if (state.readOnly) return actions;
       if (state.mode === 'run') {
         const manual = manualSwitch(state, subject.partId);
@@ -279,7 +295,7 @@ export const actionsFor = (state: ListState, subject: ListSubject): ListAction[]
       const kind = wire && wireKindOf(blueprint, catalogue, wire.from, wire.to);
       if (!wire || !kind) return [];
       const description = wireDescription(names, wire, kind);
-      const actions = [select(`select:wire:${wire.id}`, `Select ${description}`, { kind: 'wire', wireId: wire.id })];
+      const actions = [selectOrClear(state, `select:wire:${wire.id}`, `Select ${description}`, { kind: 'wire', wireId: wire.id })];
       if (!editable(state)) return actions;
       if (kind === 'mount') {
         actions.push(
@@ -302,14 +318,15 @@ export const actionsFor = (state: ListState, subject: ListSubject): ListAction[]
       const own = blueprint.arena.props.find((prop) => prop.id === subject.propId);
       const prop = own ?? preset?.props.find((candidate) => candidate.id === subject.propId);
       if (!prop) return [];
-      const actions = [select(`select:prop:${prop.id}`, `Select the ${prop.shape}`, { kind: 'prop', propId: prop.id })];
+      const title = propTitle(prop, propNamesOf(propsOf(blueprint, catalogue).map((each) => each.prop)).get(prop.id) ?? prop.shape);
+      const actions = [selectOrClear(state, `select:prop:${prop.id}`, `Select ${title}`, { kind: 'prop', propId: prop.id })];
       // Only the child's own props move or go, and only in Build mode (D36).
       if (!own || !editable(state)) return actions;
       const at = propSpot(blueprint, catalogue, own, undefined, own.id, own.at.heading);
       if (at && (at.x !== own.at.x || at.y !== own.at.y)) {
-        actions.push(edit(`move-prop:${own.id}:free`, `Move the ${own.shape} to a free spot in the arena`, { kind: 'move-prop', propId: own.id, at }));
+        actions.push(edit(`move-prop:${own.id}:free`, `Move ${title} to a free spot in the arena`, { kind: 'move-prop', propId: own.id, at }));
       }
-      actions.push(edit(`remove-prop:${own.id}`, `Remove the ${own.shape}`, { kind: 'remove-prop', propId: own.id }));
+      actions.push(edit(`remove-prop:${own.id}`, `Remove ${title}`, { kind: 'remove-prop', propId: own.id }));
       return actions;
     }
     default:
@@ -340,6 +357,20 @@ export const placementsFor = (state: ListState, type: PartTypeId): ListAction[] 
 export const propPlacementsFor = (state: ListState, prop: PropTemplate): ListAction[] => {
   if (!editable(state) || !propSpot(state.blueprint, state.catalogue, prop)) return [];
   return [edit(`place-prop:${prop.shape}:free`, `Place a ${prop.shape} in the arena`, { kind: 'place-prop', prop })];
+};
+
+/** What a setting reads now, as the live region says it after a change: `DC motor 1 speed is 60% now`. */
+export const settingNow = (state: ListState, partId: PlacedPartId, settingId: string): string | undefined => {
+  const blueprint = state.blueprint;
+  const part = blueprint?.parts.find((candidate) => candidate.id === partId);
+  const setting = part && state.catalogue.parts.get(part.part)?.settings.find((candidate) => candidate.id === settingId);
+  if (!blueprint || !part || !setting) return undefined;
+  const value = part.settings[setting.id] ?? setting.default;
+  const words =
+    setting.kind === 'number'
+      ? withUnit(typeof value === 'number' ? value : setting.default, setting.unit)
+      : midSentence(setting.options.find((option) => option.id === value)?.label ?? String(value));
+  return `${namesOf(blueprint, state.catalogue).title(partId)} ${midSentence(setting.label)} is ${words} now`;
 };
 
 /** How a part is held, for its description and for saying what a change left loose. */
