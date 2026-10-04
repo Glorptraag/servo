@@ -43,7 +43,7 @@ export interface ShellApi {
   /**
    * True while the spec card steps aside so that it never covers a port the child is wiring. The shell steps it aside
    * while a finger or pointer drags on the canvas, wire drags included; `setSpecCardAside(true)` keeps it aside as
-   * well, for wiring by tap-then-tap once the canvas reports it (tasks 3.3 and 4.3), until `setSpecCardAside(false)`.
+   * well, for wiring by tap-then-tap or from the list view, which the canvas reports through its `wire` event (tasks 3.3, 4.3 and 7.8), until `setSpecCardAside(false)`.
    */
   readonly specCardAside: boolean;
   setSpecCardAside(aside: boolean): void;
