@@ -119,6 +119,7 @@ describe('every control in the app', () => {
     await vi.waitFor(() => expect(app.host.querySelector('dialog.tray-places')).toBeNull(), SOON);
     await keysOn(app.one('button.tray-library'));
     const library = await vi.waitFor(() => app.one('dialog.library'), SOON);
+    await vi.waitFor(() => expect(library.querySelector('input[type="radio"]') && library.querySelector('.library-card')).toBeTruthy(), SOON);
     await walk('Parts Library', library, seen);
     await userEvent.keyboard('{Escape}');
     await vi.waitFor(() => expect(app.host.querySelector('dialog.library')).toBeNull(), SOON);
@@ -129,7 +130,15 @@ describe('every control in the app', () => {
     await stopRun(app);
 
     // Home, then a Level 2 challenge: its hint button, and a card with a setting.
-    await walk('Home', await openHome(app), seen);
+    // Home reads the saved builds from the store after it opens (R-7.4 F5): wait for them, the challenges and New build.
+    const home = await openHome(app);
+    await vi.waitFor(() => {
+      expect(home.querySelector('ul button.home-choice:not(.home-level *)')).not.toBeNull();
+      expect(home.querySelector('.home-level button.home-choice')).not.toBeNull();
+      expect(home.querySelector<HTMLButtonElement>('.home-column > button.home-choice')?.disabled).toBe(false);
+      expect(home.querySelector('[data-region="access"] input[role="switch"]')).not.toBeNull();
+    }, SOON);
+    await walk('Home', home, seen);
     await openChallenge(app, 'Meet the motor driver');
     await vi.waitFor(() => app.one('button.hint-button'), SOON);
     await selectPart(app);
@@ -142,13 +151,16 @@ describe('every control in the app', () => {
     document.body.appendChild(settings);
     const root = createRoot(settings);
     root.render(<SettingsView info={{ appVersion: '0.1.0', contentVersion: '0.1.0+abc', inviteHashes: [] }} access={new AccessStore(null)} />);
-    await vi.waitFor(() => expect(settings.querySelector('[data-region="access"]')).not.toBeNull(), SOON);
+    await vi.waitFor(() => expect(settings.querySelectorAll('[data-region="access"] input[role="switch"]').length).toBeGreaterThan(0), SOON);
     await walk('Settings', settings, seen);
     root.unmount();
     settings.remove();
 
     // The parental gate, on the parent page.
-    const parent = await frameOf('/parent.html', (doc) => doc.querySelector('main[aria-labelledby="servo-parent-gate"] input') !== null);
+    const parent = await frameOf(
+      '/parent.html',
+      (doc) => doc.querySelector('main[aria-labelledby="servo-parent-gate"] input') !== null && doc.querySelector('main[aria-labelledby="servo-parent-gate"] button[type="submit"]') !== null && doc.querySelector('a.parent-back') !== null,
+    );
     await walk('parental gate', parent.contentDocument as Document, seen);
     parent.remove();
 
@@ -156,7 +168,7 @@ describe('every control in the app', () => {
     const invite = document.createElement('div');
     document.body.appendChild(invite);
     void openThroughInviteGate(invite, ['0'.repeat(64)], () => undefined);
-    await vi.waitFor(() => expect(invite.querySelector('form input')).not.toBeNull(), SOON);
+    await vi.waitFor(() => expect(invite.querySelector('form input') && invite.querySelector('form button[type="submit"]')).toBeTruthy(), SOON);
     await walk('invite form', invite, seen);
     invite.remove();
 
