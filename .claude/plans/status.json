@@ -1338,7 +1338,7 @@
       "dispatched_at": "2026-10-04T14:23:43+00:00"
     },
     "7.6": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1355,8 +1355,8 @@
       ],
       "done_when": "The parity suite covers every edit kind and is green in CI shards within the 10-minute budget.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-04T14:42:05+00:00",
+      "completed_by": "W-7.6",
       "dispatched_at": "2026-10-04T11:30:51+00:00"
     },
     "7.7": {
@@ -2379,6 +2379,14 @@
       "question": "Icon-only buttons (R-6.4 APP-8, R-7.4): the zoom column and card header buttons name themselves by aria-label only, visible on hover; captions would widen the zoom column. Keep icon-only for Levels 1-2 and revisit after the G3/G4 hands-on sessions?",
       "recommendation": "Keep icon-only; watch at G4 whether children find the zoom and card buttons without a word.",
       "confidence": "0.6",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D118",
+      "question": "E2E parity (R-7.6): strict parity by default; one tour of edits per fixture in CI with SERVO_PARITY_TOURS=all for a manual all-tours job; settings and Reset arena stand in through apply on touch and pointer (the app's own 7.4 tests cover those controls); four CI shards at ~8 minutes locally with thin headroom on CI runners (add a fifth shard if any CI shard passes 8 minutes); the two touch-path gaps are task 7.9. Accept?",
+      "recommendation": "Accept; watch shard times on the first CI run after billing is restored.",
+      "confidence": "0.7",
       "blocks": [],
       "resolved": false
     }
