@@ -1,7 +1,8 @@
 // The app's controls, each kind once, and the three-path tests they register (ground rule 8, review R-6.4 APP-1 to
 // APP-4). controls.test.tsx walks every screen (Home, Build, Run, Settings, the parental gate, the invite form) and
 // fails for an interactive element no entry here claims, and for an entry with no `threePaths` test: so a new
-// control fails until it has a touch, a pointer and a keyboard test. The canvas's list view is the canvas package's
+// control fails until it has a touch, a pointer and a keyboard test. A kind with many members (the tray's tiles, the
+// access switches, the props, Home's builds and challenges) presses every member on each path (R-7.4 F3). The canvas's list view is the canvas package's
 // own (its tests in packages/canvas), and the Level 3 slot's controls show only behind a flag (ground rule 10).
 import { describe, it } from 'vitest';
 import { PATHS, pressBy } from './input.ts';
@@ -109,6 +110,8 @@ export interface PathTest<C> {
   readonly then: (context: C, path: Path) => Promise<void>;
   /** Undoes what `open` set up. */
   readonly close?: (context: C) => void | Promise<void>;
+  /** For a kind with many members, each pressed in turn: longer than the browser project's two minutes. */
+  readonly timeout?: number;
 }
 
 /**
@@ -128,7 +131,7 @@ export const threePaths = <C,>(id: ControlId, test: PathTest<C>): void => {
         } finally {
           await test.close?.(context);
         }
-      });
+      }, test.timeout);
     }
   });
 };

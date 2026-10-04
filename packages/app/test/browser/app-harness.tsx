@@ -12,7 +12,7 @@ import { App } from '../../src/App.tsx';
 import { NO_FLAGS } from '../../src/flags/index.ts';
 import { openStore } from '../../src/store/index.ts';
 import type { ProfileStore, ServoStore } from '../../src/store/index.ts';
-import { keyboard } from './input.ts';
+import { keysOn } from './input.ts';
 
 export const { content } = loadContent();
 
@@ -106,10 +106,13 @@ export const listedProps = (app: MountedApp): number => app.host.querySelectorAl
 export const selectPart = async (app: MountedApp, partId?: string): Promise<void> => {
   const card = (): HTMLElement => app.one('[data-region="specCard"]');
   const choose = async (id: string): Promise<void> => {
-    const toggle = app.one<HTMLButtonElement>(`.servo-list-view button[data-toggle="part:${id}"]`);
-    if (toggle.getAttribute('aria-expanded') !== 'true') await keyboard(toggle);
-    const select = await vi.waitFor(() => app.one<HTMLButtonElement>(`.servo-list-view button[data-action="select:part:${id}"]`), SOON);
-    await keyboard(select);
+    // The list view draws its buttons again on every change of the build, the selection or a hint, so each is found
+    // again by its key at the moment it is focused (R-7.4 F1): a button found earlier may be gone.
+    const toggle = (): HTMLButtonElement => app.one<HTMLButtonElement>(`.servo-list-view button[data-toggle="part:${id}"]`);
+    const select = (): HTMLButtonElement => app.one<HTMLButtonElement>(`.servo-list-view button[data-action="select:part:${id}"]`);
+    if (toggle().getAttribute('aria-expanded') !== 'true') await keysOn(toggle);
+    await vi.waitFor(select, SOON);
+    await keysOn(select);
     await vi.waitFor(() => expect(card().querySelector(`.spec-card`)).not.toBeNull(), SOON);
     await vi.waitFor(() => expect(card().dataset.shown).toBe('true'), SOON);
   };
@@ -124,7 +127,7 @@ export const selectPart = async (app: MountedApp, partId?: string): Promise<void
 
 /** Home, opened by keyboard. */
 export const openHome = async (app: MountedApp): Promise<HTMLElement> => {
-  if (!app.host.querySelector('.servo-home')) await keyboard(app.button('Home', '[data-region="header"]'));
+  if (!app.host.querySelector('.servo-home')) await keysOn(app.button('Home', '[data-region="header"]'));
   return vi.waitFor(() => app.one('.servo-home'), SOON);
 };
 
@@ -136,7 +139,7 @@ export const openChallenge = async (app: MountedApp, title: string): Promise<voi
     if (!found || found.disabled) throw new Error(`no ${title} on Home yet`);
     return found;
   }, SOON);
-  await keyboard(choice);
+  await keysOn(choice);
   await vi.waitFor(() => expect(app.host.querySelector('.servo-home')).toBeNull(), SOON);
   await vi.waitFor(() => expect(app.host.querySelector('.shell-goal')?.textContent).not.toBe(''), SOON);
 };
@@ -146,12 +149,16 @@ export const runToggle = (app: MountedApp): HTMLButtonElement => app.one<HTMLBut
 
 /** Run, pressed by keyboard, and the Run playing. */
 export const startRun = async (app: MountedApp): Promise<void> => {
-  await keyboard(runToggle(app));
+  await keysOn(runToggle(app));
   await vi.waitFor(() => expect(runToggle(app).dataset.run).toBe('stop'), RUN);
+  // The toggle turns to Stop as the Run loads; the shell is in Run mode, the tray gone, a render later.
+  await vi.waitFor(() => expect(app.one('.servo-shell').dataset.mode).toBe('run'), RUN);
+  await vi.waitFor(() => expect(app.one('[data-region="tray"]').inert).toBe(true), RUN);
 };
 
 /** Stop, pressed by keyboard, and Build mode back. */
 export const stopRun = async (app: MountedApp): Promise<void> => {
-  await keyboard(runToggle(app));
+  await keysOn(runToggle(app));
   await vi.waitFor(() => expect(runToggle(app).dataset.run).toBe('run'), RUN);
+  await vi.waitFor(() => expect(app.one('.servo-shell').dataset.mode).toBe('build'), RUN);
 };

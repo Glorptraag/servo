@@ -3,7 +3,9 @@
 import { afterAll, afterEach, beforeAll, expect, vi } from 'vitest';
 import { cdp } from 'vitest/browser';
 import { CHALLENGE_TEXT } from '../../src/challenges/index.ts';
-import { SOON, mountApp, openHome, unmountApps } from './app-harness.tsx';
+import { ACCESS_OPTIONS } from '../../src/a11y/index.ts';
+import type { AccessOption } from '../../src/a11y/index.ts';
+import { SOON, content, mountApp, openHome, unmountApps } from './app-harness.tsx';
 import type { MountedApp } from './app-harness.tsx';
 import { threePaths } from './controls.ts';
 import { keyboard, pressBy } from './input.ts';
@@ -55,37 +57,88 @@ threePaths('home-new-build', {
   },
 });
 
+/** Home again, by keyboard, with its choices ready. */
+const homeAgain = async (app: MountedApp): Promise<void> => {
+  await openHome(app);
+  await vi.waitFor(() => expect(choice(app, CHALLENGE_TEXT.newBuild).disabled).toBe(false), SOON);
+};
+
+const SAVED = ['Build 1', 'Rover', 'Crawler'];
+
 threePaths('home-saved-build', {
-  open: withHome,
+  open: async () => {
+    const app = await withHome();
+    await app.child.blueprints.create({ name: 'Crawler', level: 1, arena: { preset: 'open-floor', props: [] } });
+    return app;
+  },
   control: (app) => choice(app, 'Rover'),
-  then: async (app) => {
-    await vi.waitFor(() => expect(home(app)).toBeNull(), SOON);
-    await vi.waitFor(() => expect(buildName(app)).toBe('Rover'), SOON);
+  // Every saved build in turn, the open one too.
+  press: async (path, _first, app) => {
+    for (const name of [...SAVED.slice(1), SAVED[0] ?? '']) {
+      await homeAgain(app);
+      await vi.waitFor(() => choice(app, name), SOON);
+      await pressBy(path, choice(app, name));
+      await vi.waitFor(() => expect(home(app)).toBeNull(), SOON);
+      await vi.waitFor(() => expect(buildName(app)).toBe(name), SOON);
+    }
   },
+  then: async (app) => {
+    expect((await app.child.blueprints.list()).map((build) => build.name).sort()).toEqual([...SAVED].sort());
+  },
+  timeout: 300_000,
 });
 
+let opened: string[] = [];
 threePaths('home-challenge', {
-  open: withHome,
-  control: (app) => choice(app, 'Meet the switch'),
-  then: async (app) => {
-    await vi.waitFor(() => expect(home(app)).toBeNull(), SOON);
-    await vi.waitFor(() => expect(app.one('.shell-goal').textContent).not.toBe(''), SOON);
-    await vi.waitFor(() => expect(app.host.querySelector('button.hint-button')).not.toBeNull(), SOON);
+  open: async () => {
+    opened = [];
+    return withHome();
   },
+  control: (app) => choice(app, content.challenges[0]?.title ?? ''),
+  // Every challenge in content, each laying its goal line over the canvas.
+  press: async (path, _first, app) => {
+    for (const challenge of content.challenges) {
+      await homeAgain(app);
+      await pressBy(path, choice(app, challenge.title));
+      await vi.waitFor(() => expect(home(app)).toBeNull(), SOON);
+      await vi.waitFor(() => expect(app.one('.shell-goal').textContent, challenge.title).toContain(challenge.goalLine), SOON);
+      opened.push(challenge.id);
+    }
+  },
+  then: async () => {
+    expect(opened).toEqual(content.challenges.map((challenge) => challenge.id));
+    expect(opened.length).toBeGreaterThan(1);
+  },
+  timeout: 900_000,
 });
 
-const contrast = (app: MountedApp): HTMLInputElement => app.one<HTMLInputElement>('[data-region="access"] [data-option="highContrast"] input[role="switch"]');
+const access = (app: MountedApp, option: AccessOption): HTMLInputElement =>
+  app.one<HTMLInputElement>(`[data-region="access"] [data-option="${option}"] input[role="switch"]`);
 
 threePaths('access-switch', {
-  open: withHome,
-  control: (app) => contrast(app),
-  // A switch: a tap or a click anywhere on its row, or Space on it (Home keeps Space from Run and Stop).
-  press: (path, control) => (path === 'keyboard' ? keyboard(control, ' ') : pressBy(path, control.closest('label') as HTMLElement)),
+  open: async () => {
+    // Read aloud speaks once it is on.
+    vi.spyOn(window.speechSynthesis, 'speak').mockImplementation(() => undefined);
+    vi.spyOn(window.speechSynthesis, 'cancel').mockImplementation(() => undefined);
+    return withHome();
+  },
+  control: (app) => access(app, 'highContrast'),
+  // Each switch: a tap or a click anywhere on its row, or Space on it (Home keeps Space from Run and Stop).
+  press: async (path, _first, app) => {
+    for (const option of ACCESS_OPTIONS) {
+      const control = (): HTMLInputElement => access(app, option);
+      await (path === 'keyboard' ? keyboard(control, ' ') : pressBy(path, control().closest('label') as HTMLElement));
+      await vi.waitFor(() => expect(control().checked, option).toBe(true), SOON);
+      expect(app.access.prefs[option]).toBe(true);
+    }
+  },
   then: async (app) => {
-    await vi.waitFor(() => expect(contrast(app).checked).toBe(true), SOON);
-    expect(app.access.prefs.highContrast).toBe(true);
     await vi.waitFor(() => expect(app.one('.servo-shell').dataset.contrast).toBe('high'), SOON);
+    expect(app.one('.servo-shell').dataset.hand).toBe('left');
     expect(runToggleOf(app).dataset.run).toBe('run');
+  },
+  close: () => {
+    vi.restoreAllMocks();
   },
 });
 

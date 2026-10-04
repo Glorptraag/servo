@@ -6,7 +6,7 @@ import { RUN_BAR_TEXT } from '../../src/run-bar/index.ts';
 import { RUN, SOON, listedProps, mountApp, runToggle, unmountApps } from './app-harness.tsx';
 import type { MountedApp } from './app-harness.tsx';
 import { threePaths } from './controls.ts';
-import { keyboard } from './input.ts';
+import { keysOn } from './input.ts';
 
 beforeAll(() => cdp().send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] }));
 afterAll(() => cdp().send('Emulation.setEmulatedMedia', { features: [] }));
@@ -46,7 +46,7 @@ threePaths('slower', {
 threePaths('faster', {
   open: async () => {
     const app = await mountApp();
-    await keyboard(bar(app, RUN_BAR_TEXT.slower));
+    await keysOn(bar(app, RUN_BAR_TEXT.slower));
     await vi.waitFor(() => expect(bar(app, RUN_BAR_TEXT.faster).disabled).toBe(false), SOON);
     return app;
   },
@@ -63,7 +63,7 @@ threePaths('undo', {
   open: async () => {
     const app = await mountApp();
     props = listedProps(app);
-    await keyboard(box(app));
+    await keysOn(box(app));
     await vi.waitFor(() => expect(listedProps(app)).toBe(props + 1), SOON);
     await vi.waitFor(() => expect(bar(app, RUN_BAR_TEXT.undo).disabled).toBe(false), SOON);
     return app;
@@ -79,8 +79,8 @@ threePaths('reset-arena', {
   open: async () => {
     const app = await mountApp();
     props = listedProps(app);
-    await keyboard(box(app));
-    await keyboard(box(app));
+    await keysOn(box(app));
+    await keysOn(box(app));
     await vi.waitFor(() => expect(listedProps(app)).toBe(props + 2), SOON);
     await vi.waitFor(() => expect(bar(app, RUN_BAR_TEXT.resetArena).disabled).toBe(false), SOON);
     return app;

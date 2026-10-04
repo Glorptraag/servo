@@ -3,6 +3,7 @@
 // tap-then-tap, click-then-click or Enter (the keyboard and screen-reader path: the nearest free spot).
 import { afterAll, afterEach, beforeAll, expect, vi } from 'vitest';
 import { cdp } from 'vitest/browser';
+import { PROP_PALETTE } from '../../src/challenges/index.ts';
 import { SOON, listedProps, mountApp, openChallenge, selectPart, unmountApps } from './app-harness.tsx';
 import type { MountedApp } from './app-harness.tsx';
 import { threePaths } from './controls.ts';
@@ -92,10 +93,10 @@ threePaths('arena-preset', {
 });
 
 /** A spot on the floor clear of the panels and the build: below the arena strip, beside the tray. */
-const freeSpot = (app: MountedApp): Point => {
+const freeSpot = (app: MountedApp, nth = 0): Point => {
   const tray = app.one('[data-region="tray"]').getBoundingClientRect();
   const arena = app.one('[data-region="arenaStrip"]').getBoundingClientRect();
-  return pageOf(window, { x: tray.right + 60, y: arena.bottom + 60 });
+  return pageOf(window, { x: tray.right + 60 + nth * 90, y: arena.bottom + 60 });
 };
 
 let props = 0;
@@ -106,16 +107,25 @@ threePaths('arena-prop', {
     return app;
   },
   control: (app) => strip(app, 'Box'),
-  press: async (path, control, app) => {
-    if (path === 'keyboard') return keyboard(control);
-    await pressBy(path, control);
-    await vi.waitFor(() => expect(strip(app, 'Box').getAttribute('aria-pressed')).toBe('true'), SOON);
-    await (path === 'touch' ? touchAt(freeSpot(app)) : clickAt(freeSpot(app)));
+  // Every prop in the palette, each brought in on a spot of its own.
+  press: async (path, _first, app) => {
+    for (const [index, item] of PROP_PALETTE.entries()) {
+      const control = (): HTMLButtonElement => strip(app, item.label);
+      if (path === 'keyboard') {
+        await keyboard(control);
+      } else {
+        await pressBy(path, control());
+        await vi.waitFor(() => expect(control().getAttribute('aria-pressed')).toBe('true'), SOON);
+        const spot = freeSpot(app, index);
+        await (path === 'touch' ? touchAt(spot) : clickAt(spot));
+      }
+      await vi.waitFor(() => expect(listedProps(app), item.label).toBe(props + index + 1), SOON);
+      expect(control().getAttribute('aria-pressed')).toBe('false');
+    }
   },
   then: async (app) => {
-    await vi.waitFor(() => expect(listedProps(app)).toBe(props + 1), SOON);
-    expect(strip(app, 'Box').getAttribute('aria-pressed')).toBe('false');
-    // One edit: Reset arena now has a prop to drop.
+    expect(listedProps(app)).toBe(props + PROP_PALETTE.length);
+    // Reset arena now has props to drop.
     expect(app.button('Reset arena', '[data-region="runBar"]').disabled).toBe(false);
   },
 });

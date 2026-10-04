@@ -6,7 +6,7 @@ import { cdp } from 'vitest/browser';
 import { SOON, listedParts, mountApp, unmountApps } from './app-harness.tsx';
 import type { MountedApp } from './app-harness.tsx';
 import { threePaths } from './controls.ts';
-import { clickAt, keyboard, pageOf, pressBy, touchAt } from './input.ts';
+import { clickAt, keyboard, keysOn, pageOf, pressBy, touchAt } from './input.ts';
 import type { Point } from './input.ts';
 
 beforeAll(() => cdp().send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] }));
@@ -17,11 +17,11 @@ const PART = 'switch';
 
 const tile = (app: MountedApp, part = PART): HTMLButtonElement => app.one<HTMLButtonElement>(`[data-region="tray"] button.tray-tile[data-part="${part}"]`);
 
-/** A spot on the workbench clear of the panels and the build: below the arena strip, beside the tray. */
-const freeSpot = (app: MountedApp): Point => {
+/** A spot on the workbench clear of the panels and the build, below the arena strip beside the tray: the nth of a row. */
+const freeSpot = (app: MountedApp, nth = 0): Point => {
   const tray = app.one('[data-region="tray"]').getBoundingClientRect();
   const strip = app.one('[data-region="arenaStrip"]').getBoundingClientRect();
-  return pageOf(window, { x: tray.right + 60, y: strip.bottom + 60 });
+  return pageOf(window, { x: tray.right + 60 + (nth % 3) * 90, y: strip.bottom + 60 + Math.floor(nth / 3) * 90 });
 };
 
 interface Opened {
@@ -32,31 +32,44 @@ interface Opened {
 const withPlaces = async (): Promise<Opened> => {
   const app = await mountApp();
   const parts = listedParts(app).length;
-  await keyboard(tile(app));
+  await keysOn(tile(app));
   await vi.waitFor(() => app.one('dialog.tray-places button.tray-place'), SOON);
   return { app, parts };
 };
 
+const tiles = (app: MountedApp): string[] =>
+  [...app.host.querySelectorAll<HTMLElement>('[data-region="tray"] button.tray-tile')].map((each) => each.dataset.part ?? '');
+
+let placed = 0;
 threePaths('tray-tile', {
   open: async () => {
     const app = await mountApp();
     return { app, parts: listedParts(app).length };
   },
   control: ({ app }) => tile(app),
-  press: async (path, control, { app }) => {
-    if (path === 'keyboard') {
-      await keyboard(control);
-      await keyboard(await vi.waitFor(() => app.one('dialog.tray-places button.tray-place'), SOON));
-      return;
+  // Every tile in the kit, each placing its part: each lands on a spot of its own.
+  press: async (path, _first, { app, parts }) => {
+    placed = 0;
+    for (const [index, part] of tiles(app).entries()) {
+      if (path === 'keyboard') {
+        await keyboard(() => tile(app, part));
+        await keyboard(() => app.one('dialog.tray-places button.tray-place'));
+      } else {
+        await pressBy(path, tile(app, part));
+        await vi.waitFor(() => expect(tile(app, part).getAttribute('aria-pressed')).toBe('true'), SOON);
+        const spot = freeSpot(app, index);
+        await (path === 'touch' ? touchAt(spot) : clickAt(spot));
+      }
+      await vi.waitFor(() => expect(listedParts(app), part).toHaveLength(parts + index + 1), SOON);
+      expect(tile(app, part).getAttribute('aria-pressed')).toBe('false');
+      placed += 1;
     }
-    await pressBy(path, control);
-    await vi.waitFor(() => expect(tile(app).getAttribute('aria-pressed')).toBe('true'), SOON);
-    await (path === 'touch' ? touchAt(freeSpot(app)) : clickAt(freeSpot(app)));
   },
-  then: async ({ app, parts }) => {
-    await vi.waitFor(() => expect(listedParts(app)).toHaveLength(parts + 1), SOON);
-    expect(tile(app).getAttribute('aria-pressed')).toBe('false');
+  then: async ({ app }) => {
+    expect(placed).toBe(tiles(app).length);
+    expect(placed).toBeGreaterThan(1);
   },
+  timeout: 300_000,
 });
 
 threePaths('places-choice', {
@@ -92,7 +105,7 @@ threePaths('library', {
 
 const withLibrary = async (): Promise<MountedApp> => {
   const app = await mountApp();
-  await keyboard(app.one('button.tray-library'));
+  await keysOn(app.one('button.tray-library'));
   await vi.waitFor(() => app.one('dialog.library'), SOON);
   return app;
 };

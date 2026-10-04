@@ -9,7 +9,7 @@ import { INVITE_KEY } from '../../src/release/invite.ts';
 import { openThroughInviteGate } from '../../src/release/invite-gate.tsx';
 import { SOON } from './app-harness.tsx';
 import { threePaths } from './controls.ts';
-import { keyboard, pointer, touch } from './input.ts';
+import { keyboard, keysOn, pointer, touch } from './input.ts';
 import type { Path } from './input.ts';
 
 beforeAll(() => cdp().send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] }));
@@ -105,7 +105,7 @@ threePaths('gate-answer', {
 threePaths('gate-continue', {
   open: async () => {
     const page = await openParent();
-    await keyboard(page.one(`${GATE} input`), page.answer());
+    await keysOn(page.one(`${GATE} input`), page.answer());
     await vi.waitFor(() => expect(page.one<HTMLInputElement>(`${GATE} input`).value).toBe(page.answer()), SOON);
     return page;
   },
@@ -161,7 +161,7 @@ threePaths('invite-code', {
 threePaths('invite-submit', {
   open: async () => {
     const page = await openInvite();
-    await keyboard(page.field(), CODE);
+    await keysOn(page.field(), CODE);
     await vi.waitFor(() => expect(page.field().value).toBe(CODE), SOON);
     return page;
   },

@@ -18,7 +18,7 @@ import { MUTED_KEY } from '../../src/sound/mute.ts';
 import { SOON, content, fixture, listedWires, mountApp, openChallenge, unmountApps } from './app-harness.tsx';
 import type { MountedApp } from './app-harness.tsx';
 import { threePaths } from './controls.ts';
-import { clickAt, keyboard, pointOn, pressBy, tick, touch, touchAt } from './input.ts';
+import { clickAt, keysOn, pointOn, pressBy, tick, touch, touchAt } from './input.ts';
 import type { Path } from './input.ts';
 
 beforeAll(() => cdp().send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] }));
@@ -49,7 +49,7 @@ threePaths('blueprint-name', {
 threePaths('blueprint-name-field', {
   open: async () => {
     const app = await mountApp();
-    await keyboard(app.one('button.shell-blueprint-name'));
+    await keysOn(app.one('button.shell-blueprint-name'));
     await vi.waitFor(() => app.one('input.shell-blueprint-name-input'), SOON);
     return app;
   },
@@ -67,7 +67,10 @@ threePaths('blueprint-name-field', {
       await userEvent.keyboard('{End} two');
       await clickAt(away);
     } else {
-      await keyboard(field, '{End} two{Enter}');
+      // The field takes focus as it opens (Enter on the name, reached by Tab in blueprint-name's test); Tab away
+      // would leave it, and leaving renames.
+      expect(document.activeElement).toBe(field);
+      await userEvent.keyboard('{End} two{Enter}');
     }
   },
   then: async (app) => {
