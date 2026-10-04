@@ -76,7 +76,7 @@ export interface CanvasProbe {
   part(id: PlacedPartId): PartPlace | undefined;
   socket(port: PortRef | string): SocketPlace | undefined;
   wire(id: WireId): WirePlace | undefined;
-  /** The handles beside the selected part (move, rotate, bin), and the bin beside a selected wire or prop. */
+  /** The handles beside the selected part (move, rotate, bin) or the selected prop (move, bin), and the bin beside a selected wire. */
   handles(): ReadonlyMap<'move' | 'rotate' | 'bin', Place>;
   /** How a part or wire is drawn now: dimmed or highlighted by a focus state, or normal. */
   emphasis(subject: { readonly part: PlacedPartId } | { readonly wire: WireId }): Emphasis | undefined;
@@ -171,7 +171,8 @@ export const probeCanvas = (handle: CanvasHandle): CanvasProbe => {
     handles: () => {
       const shown = new Map<'move' | 'rotate' | 'bin', Place>();
       for (const [kind, at] of surface.placement.handlePlaces.places) shown.set(kind, place(at));
-      const bin = surface.wiring.binPlace ?? surface.selecting.propBinPlace;
+      for (const [kind, at] of surface.selecting.propHandlePlaces) shown.set(kind, place(at));
+      const bin = surface.wiring.binPlace;
       if (bin) shown.set('bin', place(bin));
       return shown;
     },
