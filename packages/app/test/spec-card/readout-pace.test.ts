@@ -5,7 +5,7 @@ import { loadContent } from '@servo/content';
 import { loadFixtures } from '@servo/content/fixtures';
 import { createSimulation } from '@servo/sim-core';
 import type { RunFrame } from '@servo/sim-core';
-import { READOUT_EVERY_TICKS, readoutFrameDue } from '../../src/spec-card/index.ts';
+import { READOUT_EVERY_TICKS, createRunFrames, followRun, readoutFrameDue } from '../../src/spec-card/index.ts';
 
 const { content } = loadContent();
 
@@ -30,7 +30,7 @@ const handed = (frames: readonly RunFrame[]): number[] => {
   let shown: RunFrame | null = null;
   const ticks: number[] = [];
   for (const frame of frames) {
-    if (!readoutFrameDue(shown, frame)) continue;
+    if (!readoutFrameDue(shown, frame, 30)) continue;
     shown = frame;
     ticks.push(frame.tick);
   }
@@ -65,8 +65,48 @@ describe('the pace of live readouts', () => {
 
   it('starts again with a Run restored to tick 0', () => {
     const at = (tick: number): RunFrame => ({ tick, live: new Map() }) as unknown as RunFrame;
-    expect(readoutFrameDue(at(7), at(0))).toBe(true);
-    expect(readoutFrameDue(at(7), at(8))).toBe(false);
-    expect(readoutFrameDue(null, at(8))).toBe(true);
+    expect(readoutFrameDue(at(7), at(0), 30)).toBe(true);
+    expect(readoutFrameDue(at(7), at(8), 30)).toBe(false);
+    expect(readoutFrameDue(null, at(8), 30)).toBe(true);
+  });
+
+  it('hands the card every tick in slow motion, at 1 to 10 ticks a second (R-6.1 F1)', async () => {
+    const frames = await framesOf('busy-workbench');
+    for (const rate of [1, 2, 3, 5, 10]) {
+      const store = createRunFrames();
+      const pushed: number[] = [];
+      store.subscribe(() => {
+        if (store.frame) pushed.push(store.frame.tick);
+      });
+      const listen = followRun(store);
+      listen({ phase: 'spin-up', rate });
+      for (const frame of frames) listen({ phase: frame.tick === 0 ? 'spin-up' : 'running', rate }, frame);
+      expect(pushed, `${String(rate)} ticks a second`).toEqual(frames.map((frame) => frame.tick));
+    }
+  });
+
+  it('hands the card the Run’s last tick before Stop clears it, never a tick or two behind (R-6.1 F2)', async () => {
+    const frames = await framesOf('busy-workbench');
+    for (const last of [59, 60, 58]) {
+      const store = createRunFrames();
+      const seen: (number | null)[] = [];
+      store.subscribe(() => seen.push(store.frame?.tick ?? null));
+      const listen = followRun(store);
+      for (const frame of frames.slice(0, last + 1)) listen({ phase: 'running', rate: 30 }, frame);
+      listen({ phase: 'build', rate: 30 });
+      expect(seen.at(-2), `Stopped at tick ${String(last)}`).toBe(last);
+      expect(seen.at(-1)).toBeNull();
+      expect(store.frame).toBeNull();
+    }
+  });
+
+  it('hands over the frame held back when the clock changes speed mid-Run', async () => {
+    const frames = await framesOf('busy-workbench');
+    const store = createRunFrames();
+    const listen = followRun(store);
+    for (const frame of frames.slice(0, 5)) listen({ phase: 'running', rate: 30 }, frame);
+    expect(store.frame?.tick).toBe(3);
+    listen({ phase: 'running', rate: 5 });
+    expect(store.frame?.tick).toBe(4);
   });
 });

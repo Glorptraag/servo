@@ -17,7 +17,7 @@ import type { RunLoop } from './run-bar/index.ts';
 import { PLACEHOLDER_SLOTS, SaveControl, Shell, pageStorage } from './shell/index.ts';
 import type { Autosaver, CanvasSetup, ShellSlots } from './shell/index.ts';
 import { SoundControl, SoundLayer, WebAudioSink } from './sound/index.ts';
-import { SpecCard, createRunFrames, readoutFrameDue } from './spec-card/index.ts';
+import { SpecCard, createRunFrames, followRun } from './spec-card/index.ts';
 import type { ProfileStore } from './store/index.ts';
 import { emitTelemetry } from './telemetry/emit.ts';
 import { Tray, kitForLevel } from './tray/index.ts';
@@ -43,8 +43,9 @@ export const App = ({ content, child = null, start, saving, onReady, flags: give
   const flags = useMemo(() => givenFlags ?? deviceFlags(), [givenFlags]);
   // The sandbox tray holds the kit at the child's level; a challenge brings its own kit (D68, task 4.5).
   const kit = useMemo(() => kitForLevel(content.kits, START_LEVEL), [content]);
-  // The run loop (task 4.4) gives Run frames to the spec card's live readouts, every third tick and any tick a switch
-  // or a fault changes (readoutFrameDue, task 6.1), which clear whenever no Run plays:
+  // The run loop (task 4.4) gives Run frames to the spec card's live readouts (followRun, task 6.1: every tick in slow
+  // motion, every third tick and any tick a switch or a fault changes from 15 a second, the last one held back handed
+  // over at any change without a frame), which clear whenever no Run plays:
   // on Stop, on a failed Run, and while the next one loads.
   // The goal line judges the same loop's frames (task 4.5).
   const runFrames = useMemo(createRunFrames, []);
@@ -59,12 +60,7 @@ export const App = ({ content, child = null, start, saving, onReady, flags: give
       runFrames.clear();
       setLoop(joined);
       sound.follow(joined);
-      off = joined?.subscribe((state, frame) => {
-        if (frame) {
-          if (readoutFrameDue(runFrames.frame, frame)) runFrames.push(frame);
-        }
-        else if (state.phase !== 'spin-up' && state.phase !== 'running') runFrames.clear();
-      });
+      off = joined?.subscribe(followRun(runFrames));
     };
   }, [runFrames, sound]);
   // A challenge chosen on Home lays its goal line, kit, level and arena over the same canvas (task 4.5); none is the sandbox.

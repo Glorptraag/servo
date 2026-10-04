@@ -18,6 +18,11 @@ import type { ControlInput, CreateSimulation, ProgramRuntime, RunFrame, SimSnaps
  */
 export const loadCreateSimulation = async (): Promise<CreateSimulation> => (await import('@servo/sim-core')).createSimulation;
 
+/** sim-core's chunk did not load: offline before the service worker had it, or a tab older than the release it asks for. */
+class EngineUnavailable extends Error {
+  override readonly name = 'EngineUnavailable';
+}
+
 /** Tick 0 stays on screen this long before the robot moves, so the child sees the wires light first (brief Section 10). */
 export const SPIN_UP_MS = 1000;
 
@@ -91,11 +96,17 @@ export interface RunLines {
   readonly cannotRun: string;
   /** The canvas could not draw a frame. */
   readonly cannotDraw: string;
+  /** The first Run could not load sim-core and the physics engine. Default RUN_LINES's. */
+  readonly cannotLoad?: string;
 }
+
+/** The line when the first Run cannot load sim-core, in the brief's plain voice (Section 12). */
+export const CANNOT_LOAD_LINE = 'The Run could not start. Try again once this device is online.';
 
 export const RUN_LINES: RunLines = {
   cannotRun: 'This build could not be run.',
   cannotDraw: 'This Run could not be shown on this device.',
+  cannotLoad: CANNOT_LOAD_LINE,
 };
 
 export interface RunLoopOptions {
@@ -204,7 +215,9 @@ export class RunLoop {
           if (!arena) throw new Error(`The catalogue has no arena '${blueprint.arena.preset}'.`);
           const seed = (this.options.seed ?? freshSeed)(blueprint);
           const program = this.options.program?.(blueprint);
-          const createSimulation = await loadCreateSimulation();
+          const createSimulation = await loadCreateSimulation().catch((error: unknown) => {
+            throw new EngineUnavailable('sim-core could not be loaded.', { cause: error });
+          });
           const made = await createSimulation({ blueprint, catalogue: this.options.catalogue, arena, seed, ...(program ? { program } : {}) });
           if (overtaken() || this.simulation) {
             made.dispose();
@@ -216,7 +229,7 @@ export class RunLoop {
         }
         await preparing;
       } catch (error) {
-        if (!overtaken()) this.fail(this.lines.cannotRun, error);
+        if (!overtaken()) this.fail(error instanceof EngineUnavailable ? (this.lines.cannotLoad ?? CANNOT_LOAD_LINE) : this.lines.cannotRun, error);
         return;
       }
       if (overtaken()) return;

@@ -2,6 +2,8 @@
 
 Plan P6-1: 25-part builds at 60 fps on a 2020 iPad and a low-end Chromebook, and cold start under 3 s. This page holds the budgets, the stand-in profiles, how each figure is taken, the figures before and after this task's fixes, and what is still out of budget and why. Every figure here comes from Chromium on a development Mac standing in for the devices. None has been taken on a real 2020 iPad or Chromebook yet (see "Still to confirm on devices").
 
+In short: cold start is within budget on both stand-ins. Build frames are within budget on both. Run frames are within budget on the iPad stand-in at moderate load (load average 17–20) and over it at heavy load (25–40). They are over budget on the Chromebook stand-in, at about 26 ms p95.
+
 ## Budgets
 
 | Figure | Budget | Why this number |
@@ -129,9 +131,11 @@ The orchestrator allowed canvas render-scheduling changes for this round, as lon
 
 ### 1. Readouts and spec card (kept)
 
-- **Every third tick.** App.tsx hands the spec card a Run frame every third tick (10 a simulated second). It also hands over every tick where a switch opens or closes or a fault starts or ends, so those show at their tick (`readoutFrameDue`, `packages/app/src/spec-card/frames.ts`).
+- **Every third tick at speed.** At 15 ticks a second and faster, App.tsx hands the spec card a Run frame every third tick (10 a simulated second). It also hands over every tick where a switch opens or closes or a fault starts or ends, so those show at their tick (`followRun` and `readoutFrameDue`, `packages/app/src/spec-card/frames.ts`).
+- **Every tick in slow motion.** Below 15 ticks a second every tick reaches the card, as slow motion shows each tick as a step (R-6.1 F1).
+- **The last frame always arrives.** A change without a frame (Stop, a failed Run, a new speed) first hands over the frame held back, so the card never ends behind the canvas (R-6.1 F2).
 - **No unchanged renders.** The card subscribes to a key of the selected part's exact values and faults, so a frame that leaves them alone renders nothing. This covers the card with nothing selected too: before, it re-rendered (to nothing) on every tick of every Run.
-- **What a child sees.** Readouts may lag a frame by up to two ticks (66 ms). Each value shown is still exactly the run record's value at its tick.
+- **What a child sees.** At normal speed, readouts may lag by up to two ticks (66 ms). Each value shown is still exactly the run record's value at its tick.
 - **Tests.** `packages/app/test/spec-card/readout-pace.test.ts`.
 
 | Profile | Mode | Before p50 / p95 ms, fps | After (two sets) p50 / p95 ms, fps |
@@ -169,11 +173,15 @@ Node 26, unthrottled, on the loaded M1 Max: 20 × 90 ticks of busy-workbench fro
 
 No control search shows in the profile: Levels 1–2 run the no-op brain. Fault judging is 8% of a tick. At 4× that is about 12 ms of step per tick, half the frame budget before any drawing. This is why the Chromebook stand-in stays over budget. Only question 2 (a) or (b) below can change that.
 
+## First Run offline (R-6.1 F3)
+
+The first Run now loads sim-core's chunk. If that fails (offline before the service worker had the chunk, or a tab older than the release it asks for), the Run bar shows "The Run could not start. Try again once this device is online." in place of the generic "This build could not be run." (`CANNOT_LOAD_LINE`, run-loop.ts). The next press tries the load again. A browser that caches the failed import needs a reload. Follow-up for a later task: offer that reload in the line.
+
 ## Still to confirm on devices
 
 All the figures above are stand-ins. These need a real run, with `pnpm release:dry && pnpm release:preview` served on the local Wi-Fi, or the perf page on a dev server:
 
-1. A 2020 iPad (A12), Safari 17 or later: cold start (first visit and from the home-screen app), Build pan, zoom and pinch on busy-workbench, Run at 30 ticks a second with and without the spec card. The 2× stand-in may flatter or wrong the A12. Rapier's WebAssembly under Safari's JIT especially needs checking.
+1. A 2020 iPad (A12), Safari 17 or later: cold start (first visit and from the home-screen app), Build pan, zoom and pinch on busy-workbench, Run at 30 ticks a second with and without the spec card. The 2× stand-in may overstate or understate the A12. Rapier's WebAssembly under Safari's JIT especially needs checking.
 2. A low-end Chromebook (Celeron N4020 or MediaTek MT8183 class, 4 GB): the same list.
 
 Safari has no CDP, so on the iPad the figures come from Web Inspector's timeline (frames, and the `servo:interactive` mark in the performance timeline) or from a screen recording at 60 fps.
