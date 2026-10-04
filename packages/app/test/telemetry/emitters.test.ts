@@ -2,8 +2,8 @@
 // enumerates every emitter in the source of every package: every mention of the one emitter, `emitTelemetry`, outside
 // comments must be a plain import or export of it or a direct call naming its kind (generic and optional calls
 // included), so an alias, a namespace import or passing it around fails here (R-6.2 F1). It holds the calls to the
-// registry, the registry to docs/data-note.md kind by kind and field by field, and the parent view's copy to that file
-// word for word. It fails on any reach of the telemetry table but the emitter's own and the profile removals' deletes,
+// registry, the registry to docs/data-note.md kind by kind and field by field (through note-words.ts, which pairs each
+// code name with the plain words the note uses for it), and the parent view's copy to that file word for word. It fails on any reach of the telemetry table but the emitter's own and the profile removals' deletes,
 // and proves no code the emitter runs can reach the network, nor can its sink be swapped (R-6.2 F2).
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, normalize, relative } from 'node:path';
@@ -11,7 +11,9 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import * as emitModule from '../../src/telemetry/emit.ts';
 import { TELEMETRY_EVENTS, TELEMETRY_KINDS } from '../../src/telemetry/events.ts';
+import type { TelemetryKind } from '../../src/telemetry/events.ts';
 import { DATA_NOTE, noteBlocks } from '../../src/telemetry/note.ts';
+import { NOTE_WORDS } from './note-words.ts';
 
 const root = fileURLToPath(new URL('../../../../', import.meta.url));
 
@@ -86,18 +88,15 @@ const EXPECTED = [
   { file: 'packages/parent/src/export/view.tsx', kind: 'export' },
 ];
 
-/** The data note's events list: each item's kind (its first code span) and the fields it names (the others). */
-const noteEvents = (): ReadonlyMap<string, readonly string[]> => {
+/** The data note's events list (the first list under "The events", before the next heading), each item as plain text. */
+const noteItems = (): readonly string[] => {
   const blocks = noteBlocks(DATA_NOTE);
   const heading = blocks.findIndex((block) => block.kind === 'heading' && block.spans.map((span) => span.text).join('') === 'The events');
-  const list = blocks[heading + 1];
-  if (list?.kind !== 'list') throw new Error('The data note has no list under "The events".');
-  return new Map(
-    list.items.map((item) => {
-      const codes = item.filter((span) => span.code).map((span) => span.text);
-      return [codes[0] ?? '', codes.slice(1)] as const;
-    }),
-  );
+  const section = blocks.slice(heading + 1);
+  const next = section.findIndex((block) => block.kind === 'heading');
+  const list = (next === -1 ? section : section.slice(0, next)).find((block) => block.kind === 'list');
+  if (heading === -1 || list?.kind !== 'list') throw new Error('The data note has no list under "The events".');
+  return list.items.map((item) => item.map((span) => span.text).join(''));
 };
 
 /** The relative modules `file` imports for their values (an `import type` runs nothing), and any bare ones. */
@@ -141,12 +140,34 @@ describe('every emitted event is in the data note, and nothing else is emitted (
     expect(kindOf('emitTelemetry;')).toBe(false);
   });
 
-  it('lists in the data note exactly the registry’s kinds, each with exactly its fields', () => {
-    const listed = noteEvents();
-    expect([...listed.keys()].sort()).toEqual([...TELEMETRY_KINDS].sort());
+  it('describes in the words table exactly the registry’s kinds, each with exactly its fields', () => {
+    expect(Object.keys(NOTE_WORDS).sort()).toEqual([...TELEMETRY_KINDS].sort());
     for (const kind of TELEMETRY_KINDS) {
-      expect([...(listed.get(kind) ?? [])].sort(), kind).toEqual(Object.keys(TELEMETRY_EVENTS[kind].fields).sort());
+      expect(Object.keys(NOTE_WORDS[kind].fields).sort(), kind).toEqual(Object.keys(TELEMETRY_EVENTS[kind].fields).sort());
     }
+  });
+
+  it('gives each kind one item in the data note, opening with its words and saying each of its fields, and no other item', () => {
+    const items = noteItems();
+    const opens = (item: string, kind: TelemetryKind): boolean => item.startsWith(`${NOTE_WORDS[kind].event}:`);
+    for (const item of items) expect(TELEMETRY_KINDS.filter((kind) => opens(item, kind)), item).toHaveLength(1);
+    for (const kind of TELEMETRY_KINDS) {
+      const own = items.filter((item) => opens(item, kind));
+      expect(own, kind).toHaveLength(1);
+      const said = (own[0] ?? '').slice(NOTE_WORDS[kind].event.length + 1);
+      const fields: Readonly<Record<string, string>> = NOTE_WORDS[kind].fields;
+      for (const [field, words] of Object.entries(fields)) expect(said, `${kind} ${field}`).toContain(words);
+    }
+  });
+
+  it('shows the adult no code names: no code spans, and no kind or field name of the registry', () => {
+    expect(DATA_NOTE).not.toContain('`');
+    const spans = noteBlocks().flatMap((block) => (block.kind === 'list' ? block.items.flat() : block.spans));
+    expect(spans.filter((span) => span.code)).toEqual([]);
+    // The names a reader could not mistake for plain words: those with a capital or a hyphen.
+    const names = TELEMETRY_KINDS.flatMap((kind) => [kind, ...Object.keys(TELEMETRY_EVENTS[kind].fields)]).filter((name) => /[A-Z-]/.test(name));
+    expect(names.length).toBeGreaterThan(0);
+    for (const name of names) expect(DATA_NOTE, name).not.toContain(name);
   });
 
   it('draws docs/data-note.md word for word in the parent view', () => {
