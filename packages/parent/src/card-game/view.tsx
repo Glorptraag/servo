@@ -2,8 +2,9 @@
 // child the picture of each of ten Level 1–2 parts, asks what it is called, and marks it named or not named. The round
 // is kept for the child in use through their own scope (`cardGames.add`); the latest round is the one that counts.
 // The child is shown pictures only: no score, praise, streak or exclamation mark (ground rule 7). The round ends on a
-// neutral line with no count and no verdict per card, since the child is watching; the adult reads the result in the
-// progress view (task 5.2) alone. Every control is a native button, so touch, pointer, keyboard and screen reader share one
+// neutral line with no count and no verdict per card, since the child is watching. From Start to Back to the parent view
+// the round has the page to itself (`onActive`), so no count, verdict or part name elsewhere on the page is on screen
+// (R-6.4 PAR-1); the adult reads the result in the progress view (task 5.2) alone, after pressing Back. Every control is a native button, so touch, pointer, keyboard and screen reader share one
 // path (ground rule 8), and nothing is a dialog (ground rule 9). A round stopped, or left by a child switch or the
 // page being hidden, keeps nothing.
 import { useEffect, useId, useRef, useState } from 'react';
@@ -17,7 +18,7 @@ import { CardPicture } from './picture.tsx';
 export const CARD_GAME_TEXT = {
   title: (name: string): string => `Card game: ${name}`,
   intro:
-    'About two minutes, led by you. Show the child each picture and ask what the part is called, then mark whether they named it. Ten cards, from the Level 1–2 parts. The child sees only the pictures, never a result: once the round is over, read it under Progress.',
+    'About two minutes, led by you. Show the child each picture and ask what the part is called, then mark whether they named it. Ten cards, from the Level 1–2 parts. The child sees only the pictures, never a result: while a round is on, the rest of this page is put away. Once it is over, press Back to the parent view and read the result under Progress.',
   start: 'Start a round',
   card: (n: number, of: number): string => `Card ${n} of ${of}`,
   showName: 'Show the name',
@@ -29,6 +30,7 @@ export const CARD_GAME_TEXT = {
   saving: 'Keeping the round',
   done: 'That is all the cards.',
   again: 'Play another round',
+  leave: 'Back to the parent view',
   saveFailed: 'The round could not be kept on this device.',
   saveAgain: 'Try keeping it again',
   noParts: 'This version of Servo has no Level 1–2 parts to show.',
@@ -66,10 +68,15 @@ export interface CardGameSectionProps {
   readonly onKept?: (result: CardGameResult) => void;
   /** Where each round's deck seed comes from. Tests pass a fixed one. */
   readonly seed?: () => number;
+  /**
+   * Told whether a round has the page: true from Start, through saving, a refused save and the closing line, until Back
+   * to the parent view or Stop the round. The caller puts the rest of the page away meanwhile.
+   */
+  readonly onActive?: (active: boolean) => void;
 }
 
 /** The card game for the child in use. The caller remounts it for another child, which drops a round under way. */
-export const CardGameSection = ({ store, profile, name, onKept, seed = randomSeed }: CardGameSectionProps) => {
+export const CardGameSection = ({ store, profile, name, onKept, seed = randomSeed, onActive }: CardGameSectionProps) => {
   const [round, setRound] = useState<Round>({ kind: 'idle', line: '' });
   const ids = useId();
   const live = useRef(true);
@@ -86,8 +93,15 @@ export const CardGameSection = ({ store, profile, name, onKept, seed = randomSee
     };
   }, []);
 
+  const active = round.kind !== 'idle';
+  const tell = useRef(onActive);
+  tell.current = onActive;
+  useEffect(() => {
+    tell.current?.(active);
+  }, [active]);
+
   // Focus follows the round: to each card's heading as it is shown, to the closing line when kept, to Try keeping it
-  // again when the store refused it, back to Start when stopped.
+  // again when the store refused it, back to Start when stopped or left.
   const cardIndex = round.kind === 'playing' ? round.marks.length : -1;
   const started = useRef(false);
   useEffect(() => {
@@ -178,6 +192,9 @@ export const CardGameSection = ({ store, profile, name, onKept, seed = randomSee
           <div style={ROW}>
             <button type="button" onClick={start} style={TARGET}>
               {CARD_GAME_TEXT.again}
+            </button>
+            <button type="button" onClick={() => setRound({ kind: 'idle', line: '' })} style={TARGET}>
+              {CARD_GAME_TEXT.leave}
             </button>
           </div>
         </>
