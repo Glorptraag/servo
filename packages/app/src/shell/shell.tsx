@@ -9,6 +9,7 @@ import type { CanvasHandle, CanvasMode, CanvasPrefs, Selection } from '@servo/ca
 import type { Content } from '@servo/content';
 import type { Blueprint, Kit, Level, ValidationResult } from '@servo/schema';
 import type { ProfileStore } from '../store/index.ts';
+import { themeAttributes } from '../theme/index.ts';
 import { ShellContext } from './context.ts';
 import type { ShellApi } from './context.ts';
 import { EdgeTab } from './edge-tab.tsx';
@@ -22,7 +23,7 @@ import { box } from './place.ts';
 import { ZoomControl } from './zoom-control.tsx';
 import './shell.css';
 
-/** Until task 5.7 keeps the child's prefs, the canvas gets these. */
+/** The canvas's prefs with every access option off; the app lays this device's options over them (src/a11y/, task 5.7). */
 export const DEFAULT_PREFS: CanvasPrefs = { dragSensitivity: 1, leftHanded: false, highContrast: false, typeface: 'standard' };
 
 /**
@@ -58,7 +59,7 @@ export interface ShellProps {
   readonly mountCanvas: (host: HTMLElement, setup: CanvasSetup) => CanvasHandle;
   /** Where the tuck states persist: the page's localStorage unless given. Null keeps them for this visit only. */
   readonly storage?: Storage | null;
-  /** The prefs the canvas starts with. */
+  /** The prefs the canvas starts with. A new object later replaces them: the access options changed (task 5.7). */
   readonly prefs?: CanvasPrefs;
   /** The child's records in the store (task 4.9), shared with the slots as `useShell().child`. None without a store or a profile. */
   readonly child?: ProfileStore | null;
@@ -97,6 +98,11 @@ export const Shell = ({
   const [tucked, setTuckedState] = useState<Tucked>(() => readTucked(storage));
   const [mode, setModeState] = useState<CanvasMode>('build');
   const [prefs, setPrefs] = useState<CanvasPrefs>(startPrefs ?? DEFAULT_PREFS);
+  const [givenPrefs, setGivenPrefs] = useState(startPrefs);
+  if (startPrefs !== givenPrefs) {
+    setGivenPrefs(startPrefs);
+    if (startPrefs) setPrefs(startPrefs);
+  }
   const [canvas, setCanvas] = useState<CanvasHandle | null>(null);
   const [blueprint, setBlueprint] = useState<Blueprint | undefined>(undefined);
   const [selection, setSelection] = useState<Selection | null>(null);
@@ -360,7 +366,7 @@ export const Shell = ({
         data-orientation={layout.orientation}
         data-hand={layout.hand}
         data-mode={mode}
-        data-typeface={prefs.typeface}
+        {...themeAttributes(prefs)}
       >
         {measured ? regions : null}
       </div>

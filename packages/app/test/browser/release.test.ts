@@ -224,7 +224,7 @@ describe('a build with no invite hashes', () => {
 });
 
 describe('Settings', () => {
-  it('shows the app version and the content version, and nothing to change', async () => {
+  it('shows the app version and the content version, and nothing to change but the access options', async () => {
     const page = await start(NOT_TESTER, '/settings');
     await vi.waitFor(() => one(page.host, 'dl'));
     const rows = [...page.host.querySelectorAll('dl > div')].map((row) => [row.querySelector('dt')?.textContent, row.querySelector('dd')?.textContent]);
@@ -232,7 +232,10 @@ describe('Settings', () => {
       ['App version', '0.1.0'],
       ['Content version', '0.1.0+9c5fd87f'],
     ]);
-    expect(page.host.querySelectorAll('a, input, button, select, textarea')).toHaveLength(0);
+    // The access options' four switches (task 5.7) are the only controls: no links out, nothing else to change.
+    const controls = [...page.host.querySelectorAll('a, input, button, select, textarea')];
+    expect(controls.map((control) => control.getAttribute('role'))).toEqual(['switch', 'switch', 'switch', 'switch']);
+    expect(controls.every((control) => control.closest('[data-region="access"]'))).toBe(true);
     expect(document.title).toBe('Servo settings');
   });
 
