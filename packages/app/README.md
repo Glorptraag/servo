@@ -189,6 +189,19 @@ Task 5.7, in [src/a11y/](src/a11y/) and [src/theme/](src/theme/). The bar is WCA
 5. The shared build's page (task 5.6) and the parent view (packages/parent) do not follow the options yet.
 6. Interface changes: the shell's `prefs` prop now replaces the prefs whenever a new object comes (it was read once), the shell root carries `data-contrast`, App takes an optional `access` store, `SettingsView` takes an optional `access` store and shows the switches, and `axe-core` is a new dev dependency of this package.
 
+## Three paths for every control (task 7.4)
+
+Ground rule 8, for the app's own controls (review R-6.4, APP-1 to APP-8). [test/browser/controls.ts](test/browser/controls.ts) names every kind of control once, with how to tell one in the page, and `threePaths(id, …)` gives each kind three browser tests: the same press by touch (CDP touch), by pointer (CDP mouse) and by keyboard (Enter, Space on a switch, an arrow key in a radio group), each on a fresh page and each checking the same result. The helpers are in [test/browser/input.ts](test/browser/input.ts); none of them uses a synthetic `element.click()`, which is none of the three paths. The tests are the `controls-*.test.tsx` files, on the real App with the real canvas where the control lives there.
+
+[test/browser/controls.test.tsx](test/browser/controls.test.tsx) walks every screen: Build, a part's spec card, the rename field, the places list, the Parts Library, Run, Home, a Level 2 challenge with its hint button and a card setting, Settings, the parental gate and the invite form. It fails for any element a finger, a mouse or Tab can reach that no kind claims, for a kind no screen showed, and for a kind with no `threePaths` call in a `controls-*.test.tsx` file. **A new control fails there until it has an entry in controls.ts and its three tests.** Left out: the canvas's list view and the canvas itself (packages/canvas tests them), and the Level 3 slot's controls, which show only behind the `level-3-slot` flag (ground rule 10).
+
+What the tests cover that was missing: "Do it for me" (the fourth press of the hint button) by touch and Enter; arena presets and props by finger and keyboard; the edge tabs, the zoom control, Save, the invite form and the parental gate by real input; places Close, Back to the build and For adults on every path; Tidy wires pressed on the real canvas giving the routes the canvas's own `tidyWires()` gives; a Level 2 card's choice by finger and mouse (the card scrolls, so the tests scroll it to the choice first, as a hand does). shell.test.tsx's `tap` is a real touch now. The VoiceOver double-tap check is row 1.12 of [docs/a11y-checklist.md](../../docs/a11y-checklist.md): it cannot be automated here.
+
+### Open questions (task 7.4)
+
+1. The spec card still steps aside only for a drag (APP-7). Stepping aside for tap-then-tap and list-view wiring needs a wire-in-progress event from the canvas, an interface change in packages/canvas, so it is left to a canvas follow-up (FU-APP-4).
+2. Zoom in, Fit, Tidy wires, Zoom out, Read aloud, Slower and Faster stay icon-only, named by `aria-label` (APP-8). A visible caption would widen the zoom column (`ZOOM_PX`) and the card header, which changes the layout the shell's tests hold, so it waits for Drew's decision (FU-APP-5).
+
 ## Running it
 
 From the repository root, `pnpm dev` serves the app and `pnpm build` writes it to `packages/app/dist`; both run `pnpm art` first. `pnpm --filter @servo/app preview` serves the build, and `pnpm --filter @servo/app test` runs the unit and browser tests ([docs/shell.md](docs/shell.md), "Tests").

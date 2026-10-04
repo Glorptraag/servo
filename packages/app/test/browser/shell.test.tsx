@@ -38,6 +38,7 @@ import {
 } from '../../src/shell/index.ts';
 import type { Rect, SafeArea, ShellApi, ShellProps, ShellSlots } from '../../src/shell/index.ts';
 import { SCREENS, boxOf, overlap } from './frame.ts';
+import { touch } from './input.ts';
 import type { Box } from './frame.ts';
 
 /** Records what the shell asks of the canvas, and fires events as the canvas would. */
@@ -129,10 +130,10 @@ const memoryStorage = (): Storage => {
   };
 };
 
-/** Clicks as a tap does, and lets React commit the update the click scheduled. */
+/** A finger on a control, a real touch through CDP (input.ts), and React's commit of the click it makes. */
 const tap = async (element: HTMLElement | null): Promise<void> => {
   if (!element) throw new Error('nothing to tap');
-  element.click();
+  await touch(element);
   await new Promise((resolve) => setTimeout(resolve, 0));
 };
 
@@ -315,6 +316,8 @@ describe('the shell', () => {
     const again = await mountShell({ storage });
     again.select(PART);
     expect(again.region('specCard').dataset.shown).toBe('false');
+    // The second shell lies over the first; a finger reaches the first once it is gone.
+    again.host.style.display = 'none';
     await tap(app.tab('specCard'));
     expect(shown()).toEqual(['true', false]);
   });
