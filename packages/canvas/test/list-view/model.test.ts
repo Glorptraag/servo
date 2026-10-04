@@ -4,6 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyEdit } from '../../src/index.ts';
 import { canonicalJson, planWire, serializeBlueprint } from '@servo/schema';
+import { buildScene } from '../../src/scene/scene.ts';
 import type { Blueprint, PortRef } from '@servo/schema';
 import type { EditCommand, ListAction, ListSubject, PropTemplate } from '../../src/interface.ts';
 import { wireKindOf } from '../../src/wiring/commands.ts';
@@ -262,10 +263,10 @@ describe('the canvas’s actions, from the list', () => {
     const bench = benchOf(fixture('rolling-start'));
     let calls = 0;
     const stop = bench.model.subscribe(() => (calls += 1));
-    bench.act({ kind: 'part', partId: 'switch' }, 'turn:switch:clockwise');
+    bench.act({ kind: 'part', partId: 'chassis' }, 'turn:chassis:clockwise');
     expect(calls).toBe(1);
     stop();
-    bench.act({ kind: 'part', partId: 'switch' }, 'turn:switch:clockwise');
+    bench.act({ kind: 'part', partId: 'chassis' }, 'turn:chassis:clockwise');
     expect(calls).toBe(1);
   });
 });
@@ -329,5 +330,67 @@ describe('Run mode and read-only (D42, D43)', () => {
   it('is empty before a build is loaded', () => {
     const bench = benchOf(undefined);
     expect([bench.model.parts, bench.model.wires, bench.model.props, bench.model.placementsFor('led')]).toEqual([[], [], [], []]);
+  });
+});
+
+// Review R-6.4 (docs/reviews/canvas.md), task 7.3: the list view matches touch and pointer, and speaks for every path.
+describe('R-6.4 list-view parity (task 7.3)', () => {
+  it.each(fixtureNames)('%s: turns only the parts that show a rotate handle, the free ones (CAN-1)', (name) => {
+    const build = fixture(name);
+    const bench = benchOf(build);
+    const free = buildScene(build, catalogue)
+      .parts.filter((part) => part.held === 'root')
+      .map((part) => part.id)
+      .sort();
+    const turned = bench.model.parts
+      .filter((part) => bench.model.actionsFor({ kind: 'part', partId: part.partId }).some((action) => action.does.kind === 'edit' && action.does.command.kind === 'rotate-part'))
+      .map((part) => part.partId)
+      .sort();
+    expect(turned).toEqual(free);
+  });
+
+  it('offers no turn for the mounted DC motor, so it never knocks it off the chassis (CAN-1)', () => {
+    const bench = benchOf(fixture('rolling-start'));
+    const ids = bench.model.actionsFor({ kind: 'part', partId: 'motor-left' }).map((action) => action.id);
+    expect(ids.filter((id) => id.startsWith('turn:'))).toEqual([]);
+    expect(bench.model.actionsFor({ kind: 'part', partId: 'chassis' }).map((action) => action.id)).toContain('turn:chassis:clockwise');
+  });
+
+  it('numbers twin props as it numbers twin parts, so two boxes read apart (CAN-4)', () => {
+    const bench = benchOf(fixture('rolling-start'));
+    const [place] = bench.model.propPlacementsFor(BOX);
+    expect(bench.model.perform(place as ListAction)).toBe(true);
+    const [again] = bench.model.propPlacementsFor(BOX);
+    expect(bench.model.perform(again as ListAction)).toBe(true);
+    const props = bench.model.props;
+    expect(props.map((prop) => prop.description.split(',')[0])).toEqual(['box 1', 'box 2']);
+    expect(new Set(props.map((prop) => prop.description)).size).toBe(2);
+    const labels = props.map((prop) => bench.model.actionsFor({ kind: 'prop', propId: prop.propId }).map((action) => action.label));
+    expect(labels[0]).toContain('Select box 1');
+    expect(labels[1]).toContain('Select box 2');
+    expect(labels[1]).toContain('Remove box 2');
+    expect(new Set(labels.flat()).size).toBe(labels.flat().length);
+    // One box alone keeps its plain name.
+    bench.act({ kind: 'prop', propId: props[0]?.propId as string }, `remove-prop:${props[0]?.propId}`);
+    expect(bench.model.props.map((prop) => prop.description.split(',')[0])).toEqual(['box']);
+    expect(bench.model.actionsFor({ kind: 'prop', propId: bench.model.props[0]?.propId as string }).map((action) => action.label)).toContain('Select the box');
+  });
+
+  it('offers Clear selection on what is selected, in every mode, and it clears through the canvas (CAN-6)', () => {
+    const bench = benchOf(fixture('rolling-start'));
+    const ids = (): string[] => bench.model.actionsFor({ kind: 'part', partId: 'battery' }).map((action) => action.id);
+    expect(ids()).not.toContain('clear-selection');
+    bench.act({ kind: 'part', partId: 'battery' }, 'select:part:battery');
+    expect(ids()).toContain('clear-selection');
+    expect(ids()).not.toContain('select:part:battery');
+    const clear = bench.model.actionsFor({ kind: 'part', partId: 'battery' }).find((action) => action.id === 'clear-selection');
+    expect(clear?.label).toBe('Clear selection');
+    expect(clear?.does).toEqual({ kind: 'select', selection: null });
+    bench.mode = 'run';
+    bench.model.changed();
+    expect(ids()).toContain('clear-selection');
+    expect(bench.model.perform(clear as ListAction)).toBe(true);
+    expect(bench.selections).toEqual([{ kind: 'part', partId: 'battery' }, null]);
+    expect(ids()).toEqual(['select:part:battery']);
   });
 });

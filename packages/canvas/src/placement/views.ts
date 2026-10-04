@@ -150,6 +150,11 @@ export class Callout {
     return this.container.visible ? this.text.text : undefined;
   }
 
+  /** Where the line's box is drawn, mm: its centre and size. Undefined when hidden. */
+  get shownBox(): { readonly at: Vec2; readonly w: number; readonly h: number } | undefined {
+    return this.container.visible ? this.box : undefined;
+  }
+
   /** Sets the line at `scale` screen pixels per millimetre, and gives the size of its box in mm. */
   measure(line: string, context: DrawContext, scale: number): { readonly w: number; readonly h: number } {
     const setWith = `${line}|${context.typeface}|${context.palette.label}|${context.resolution}`;

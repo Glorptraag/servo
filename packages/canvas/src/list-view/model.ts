@@ -20,9 +20,9 @@ import type {
   UnlockSettings,
 } from '../interface.ts';
 import { wireKindOf } from '../wiring/commands.ts';
-import { actionsFor, heldOf, placementsFor, propPlacementsFor } from './actions.ts';
+import { actionsFor, heldOf, placementsFor, propPlacementsFor, settingNow } from './actions.ts';
 import type { ListState } from './actions.ts';
-import { heldPhrase, listOf, namesOf, naturalCompare, propDescription, wireDescription } from './words.ts';
+import { heldPhrase, listOf, namesOf, naturalCompare, propDescription, propNamesOf, propsOf, wireDescription } from './words.ts';
 
 /** What the list view needs from the canvas it sits beside. */
 export interface ListHost {
@@ -37,8 +37,17 @@ export interface ListHost {
   apply(command: EditCommand): EditResult;
   /** Fires the canvas's `control` event (Run mode, D42). */
   control(input: ControlInput): void;
-  /** The canvas's `select`. */
-  select(selection: Selection): void;
+  /** The canvas's `select`. Null clears it. */
+  select(selection: Selection | null): void;
+  /** What the canvas has selected now: the list offers Clear selection on it (task 7.3). */
+  selection?(): Selection | null;
+  /** The one plain line the canvas shows now (a removal, a held part), for the live region to read (task 7.3). */
+  notice?(): string | undefined;
+  /**
+   * Calls back after every edit, by any path, with its command, and after every change of selection: so the list view
+   * can say what a canvas edit changed and offer Clear selection (task 7.3). Returns the unsubscribe function.
+   */
+  watch?(listener: (change: { readonly kind: 'edit'; readonly command: EditCommand } | { readonly kind: 'select' }) => void): () => void;
   /** Run mode: a subject's live state (a placed part's id, or `arena:<propId>`), when frames have come. */
   live?(subject: string): LiveState | undefined;
   /** The hint rung drawn on the canvas now, as its text twin. */
@@ -99,6 +108,21 @@ export class ListViewModel implements ListView {
     return this.host.hint?.();
   }
 
+  /** What the canvas has selected now, when its host says. */
+  get selection(): Selection | null {
+    return this.host.selection?.() ?? null;
+  }
+
+  /** The one plain line the canvas shows now (a removal, a held part), when its host says. */
+  get notice(): string | undefined {
+    return this.host.notice?.();
+  }
+
+  /** The host's edits, by any path, and changes of selection (ListHost.watch); a host without them never calls back. */
+  watch(listener: Parameters<NonNullable<ListHost['watch']>>[0]): () => void {
+    return this.host.watch?.(listener) ?? (() => undefined);
+  }
+
   actionsFor(subject: ListSubject): readonly ListAction[] {
     return actionsFor(this.state(), subject);
   }
@@ -114,6 +138,11 @@ export class ListViewModel implements ListView {
   /** How a part is held (`mounted on chassis rear deck`, `loose`), as its description says it. */
   heldOf(partId: PlacedPartId): string | undefined {
     return heldOf(this.state(), partId);
+  }
+
+  /** What a setting reads now: `DC motor 1 speed is 60% now`. */
+  settingNow(partId: PlacedPartId, settingId: string): string | undefined {
+    return settingNow(this.state(), partId, settingId);
   }
 
   /** The part's name as the list reads it, numbered when the build has more than one of its type (`DC motor 2`). */
@@ -161,6 +190,7 @@ export class ListViewModel implements ListView {
       ...(this.host.unlockSettings ? { unlockSettings: this.host.unlockSettings } : {}),
       mode: this.host.mode(),
       readOnly: this.host.readOnly,
+      selection: this.host.selection?.() ?? null,
       switchClosed: (partId) => {
         const live = this.host.mode() === 'run' ? this.host.live?.(partId)?.values.closed : undefined;
         return live ?? this.flipped.get(partId);
@@ -226,15 +256,12 @@ export class ListViewModel implements ListView {
       return [{ partId: part.id, part: part.part, name: record.identity.name, description: words.join(', '), ports, ...(live ? { live } : {}) }];
     });
     const preset = catalogue.arenas?.get(blueprint.arena.preset);
-    const props: ListProp[] = [
-      ...(preset?.props ?? []).map((prop) => ({ prop, preset: true })),
-      ...blueprint.arena.props.map((prop) => ({ prop, preset: false })),
-    ]
-      .sort((a, b) => naturalCompare(a.prop.id, b.prop.id))
-      .map(({ prop, preset: own }) => {
-        const live = run ? this.host.live?.(`arena:${prop.id}`) : undefined;
-        return { propId: prop.id, description: propDescription(prop, preset, own), ...(live ? { live } : {}) };
-      });
+    const every = propsOf(blueprint, catalogue);
+    const propNames = propNamesOf(every.map((each) => each.prop));
+    const props: ListProp[] = every.map(({ prop, preset: own }) => {
+      const live = run ? this.host.live?.(`arena:${prop.id}`) : undefined;
+      return { propId: prop.id, description: propDescription(prop, preset, own, propNames.get(prop.id)), ...(live ? { live } : {}) };
+    });
     return { blueprint, mode, level, parts, wires, props };
   }
 }

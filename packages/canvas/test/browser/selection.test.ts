@@ -505,7 +505,7 @@ describe('focus states, by pixel probes and screenshots', () => {
     await expectStrictShot(host, FILE, 'focus-linkage', [textBox()]);
   });
 
-  it('a selected prop: ringed, with its bin', async () => {
+  it('a selected prop: ringed, with its Move handle and its bin', async () => {
     load(withProps, { x: 100, y: 0 });
     const before = await show();
     surface.select({ kind: 'prop', propId: 'prop-1' });

@@ -2,7 +2,7 @@
 // names from the part records (ground rule 7). System text: no exclamation marks, no praise, no character voice. Pure.
 // See README.md, "The list view".
 import { PORT_TYPE_STYLE, cosSin, placeParts } from '@servo/schema';
-import type { ArenaPreset, Blueprint, Catalogue, PartPlacement, PartRecord, PlacedPart, PlacedPartId, PortRef, PortSpec, Prop, Wire } from '@servo/schema';
+import type { ArenaFeatureId, ArenaPreset, Blueprint, Catalogue, PartPlacement, PartRecord, PlacedPart, PlacedPartId, PortRef, PortSpec, Prop, Wire } from '@servo/schema';
 import { compareIds } from '../scene/geometry.ts';
 
 /** Ids in reading order: `p2` before `p10`, as a child counts them. */
@@ -116,10 +116,38 @@ export const directionFrom = (preset: ArenaPreset, point: { readonly x: number; 
   return `${words.join(' and ')} of the robot`;
 };
 
+/** Every prop in the arena, the preset's and the child's, in id order as a child counts them. */
+export const propsOf = (blueprint: Blueprint, catalogue: Catalogue): readonly { readonly prop: Prop; readonly preset: boolean }[] =>
+  [
+    ...(catalogue.arenas?.get(blueprint.arena.preset)?.props ?? []).map((prop) => ({ prop, preset: true })),
+    ...blueprint.arena.props.map((prop) => ({ prop, preset: false })),
+  ].sort((a, b) => naturalCompare(a.prop.id, b.prop.id));
+
+/**
+ * Each prop's name: its shape, numbered in id order when the arena has more than one of that shape (`box 1`, `box 2`),
+ * as twin parts are, so a listener can tell two boxes apart.
+ */
+export const propNamesOf = (props: readonly Prop[]): ReadonlyMap<ArenaFeatureId, string> => {
+  const sorted = [...props].sort((a, b) => naturalCompare(a.id, b.id));
+  const counts = new Map<string, number>();
+  for (const prop of sorted) counts.set(prop.shape, (counts.get(prop.shape) ?? 0) + 1);
+  const seen = new Map<string, number>();
+  const names = new Map<ArenaFeatureId, string>();
+  for (const prop of sorted) {
+    const index = (seen.get(prop.shape) ?? 0) + 1;
+    seen.set(prop.shape, index);
+    names.set(prop.id, (counts.get(prop.shape) ?? 0) > 1 ? `${prop.shape} ${index}` : prop.shape);
+  }
+  return names;
+};
+
+/** A prop's name as an action reads it: `the box` alone, `box 2` among twins. */
+export const propTitle = (prop: Prop, name: string): string => (name === prop.shape ? `the ${name}` : name);
+
 /** `box, 100 by 100 millimetres, ahead of the robot`; a preset's own prop is `part of the arena`. */
-export const propDescription = (prop: Prop, preset: ArenaPreset | undefined, ownedByPreset: boolean): string => {
+export const propDescription = (prop: Prop, preset: ArenaPreset | undefined, ownedByPreset: boolean, name: string = prop.shape): string => {
   const size = prop.shape === 'box' ? `${prop.size.x} by ${prop.size.y} millimetres` : `${prop.size.x} millimetres across`;
-  const words = [prop.shape, size];
+  const words = [name, size];
   if (preset) words.push(directionFrom(preset, prop.at));
   if (prop.fixed) words.push('fixed in place');
   if (ownedByPreset) words.push('part of the arena');

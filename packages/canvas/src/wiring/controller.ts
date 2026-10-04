@@ -189,6 +189,18 @@ export class WiringController {
     this.redraw();
   }
 
+  /**
+   * A part or prop from the tray or the arena strip, or a part the Move handle moves, now waits for its tap and takes
+   * every press: the waiting wire, its glows, an open fan, a refusal's cue and the wire's bin go, so nothing drawn
+   * looks pressable that is not (R-3.3 finding 5, R-6.4 CAN-10).
+   */
+  yieldToPlacement(): void {
+    this.letGo();
+    this.clearSelection();
+    this.clearCue();
+    this.redraw();
+  }
+
   /** Where the bin of the tapped wire sits, mm. */
   get binPlace(): Vec2 | undefined {
     return this.selected !== undefined ? this.bin.shown.get('bin') : undefined;

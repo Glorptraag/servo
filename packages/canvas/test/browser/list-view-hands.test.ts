@@ -60,10 +60,10 @@ const pressCanvas = async (hand: Hand): Promise<void> => {
 const start = (): void => {
   const { surface } = bench;
   expect(surface.load(fixture('rolling-start')).ok).toBe(true);
-  const toggle = byKey('toggle:part:switch');
+  const toggle = byKey('toggle:part:chassis');
   toggle.focus();
   if (toggle.getAttribute('aria-expanded') === 'true') toggle.click();
-  expect(byKey('toggle:part:switch').getAttribute('aria-expanded')).toBe('false');
+  expect(byKey('toggle:part:chassis').getAttribute('aria-expanded')).toBe('false');
   expect(isOpen()).toBe(true);
 };
 
@@ -72,16 +72,17 @@ describe.each<Hand>(['click', 'tap'])('the open list view, by %s', (hand) => {
     start();
     const edits = listen(bench.surface, 'edit');
 
-    await press(hand, 'toggle:part:switch');
-    await vi.waitFor(() => expect(byKey('toggle:part:switch').getAttribute('aria-expanded')).toBe('true'));
+    // The chassis: a free part, so it has a turn (a held one has none, R-6.4 CAN-1).
+    await press(hand, 'toggle:part:chassis');
+    await vi.waitFor(() => expect(byKey('toggle:part:chassis').getAttribute('aria-expanded')).toBe('true'));
     expect(isOpen()).toBe(true);
 
-    await press(hand, 'action:turn:switch:clockwise');
-    await vi.waitFor(() => expect(edits.map((edit) => edit.command)).toEqual([{ kind: 'rotate-part', partId: 'switch', rotation: 90 }]));
+    await press(hand, 'action:turn:chassis:clockwise');
+    await vi.waitFor(() => expect(edits.map((edit) => edit.command)).toEqual([{ kind: 'rotate-part', partId: 'chassis', rotation: 90 }]));
     expect(isOpen()).toBe(true);
-    expect(list().querySelector('[role="status"]')?.textContent).toBe('Turned switch. Switch is loose now');
+    expect(list().querySelector('[role="status"]')?.textContent).toBe('Turned chassis');
     // Focus is on the pressed button, where a keyboard would carry on from, in every engine.
-    expect(document.activeElement?.getAttribute('data-key')).toBe('action:turn:switch:clockwise');
+    expect(document.activeElement?.getAttribute('data-key')).toBe('action:turn:chassis:clockwise');
   });
 
   it('hides when the canvas is pressed', async () => {

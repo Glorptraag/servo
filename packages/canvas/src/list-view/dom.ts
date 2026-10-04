@@ -3,16 +3,20 @@
 // reach every action. Hidden until it takes focus, then shown over the canvas's corner so a sighted keyboard user sees
 // where focus is; a tap or click works there too. Hidden again when focus leaves it, on Escape, or on a press outside
 // it. Enter does an action, as it flips a manual switch in Run mode; Space stays the app's Run and Stop
-// (D42). It says what each action changed in a polite live region, which parts a removal left loose among it (D35).
-import type { PlacedPartId, ValuePayload } from '@servo/schema';
+// (D42). It says what each change did in a polite live region, which parts a removal left loose among it (D35),
+// whichever path made it: the list's own actions, and touch and pointer on the canvas, with the canvas's own line
+// (a removal, a held part) in the canvas's words (task 7.3). An action that has gone stale says so.
+import type { Blueprint, PlacedPartId, ValuePayload } from '@servo/schema';
 import type { LiveState } from '@servo/sim-core/interface';
-import type { CanvasPrefs, ListAction, ListSubject, ListWire } from '../interface.ts';
+import type { CanvasPrefs, EditCommand, ListAction, ListSubject, ListWire, Selection } from '../interface.ts';
 import { FONT_STACKS } from '../renderer/style.ts';
 import { listOf } from './words.ts';
 import type { ListViewModel } from './model.ts';
 
 /** The list view's accessible name. */
 export const LIST_VIEW_NAME = 'Parts and wires';
+/** What the live region says when an action changed nothing, or had gone stale before it was done (task 7.3). */
+export const NOTHING_CHANGED = 'Nothing changed';
 /** Room kept round the panel when it shows over the canvas, px. */
 const INSET_PX = 8;
 const PANEL_WIDTH_PX = 380;
@@ -71,8 +75,14 @@ export const readoutWords = (values: ValuePayload): string => {
 interface Before {
   readonly parts: ReadonlyMap<PlacedPartId, { readonly held: string | undefined; readonly name: string }>;
   readonly wires: ReadonlyMap<string, ListWire>;
-  readonly props: ReadonlySet<string>;
+  /** Each prop's name as an action reads it: `the box`, `box 2`. */
+  readonly props: ReadonlyMap<string, string>;
 }
+
+const sameSelection = (a: Selection | null, subject: ListSubject): boolean =>
+  (a?.kind === 'part' && subject.kind === 'part' && a.partId === subject.partId) ||
+  (a?.kind === 'wire' && subject.kind === 'wire' && a.wireId === subject.wireId) ||
+  (a?.kind === 'prop' && subject.kind === 'prop' && a.propId === subject.propId);
 
 export interface ListViewDomOptions {
   prefs(): CanvasPrefs;
@@ -89,7 +99,15 @@ export class ListViewDom {
   /** Subjects whose actions are shown, by key. */
   private readonly expanded = new Set<string>();
   private readonly unsubscribe: () => void;
+  private readonly unwatch: () => void;
   private open = false;
+  /** Set while the list does an action: it says what its own action changed, so the canvas's edit is not said twice. */
+  private acting = false;
+  /** The build last drawn and the model as read then, and as read before the build last changed. */
+  private drawn: { readonly blueprint: Blueprint | undefined; readonly before: Before } | undefined;
+  private previous: Before | undefined;
+  /** The canvas's line said with the last edit: a change of selection after it does not say it again. */
+  private saidLine: string | undefined;
 
   constructor(host: HTMLElement, model: ListViewModel, options: ListViewDomOptions) {
     this.host = host;
@@ -118,11 +136,16 @@ export class ListViewDom {
     doc.addEventListener('pointerdown', this.pressedOutside, true);
     host.appendChild(this.element);
     this.unsubscribe = model.subscribe(() => this.render());
+    this.unwatch = model.watch((change) => {
+      if (change.kind === 'edit') this.edited(change.command);
+      else this.reselected();
+    });
     this.render();
   }
 
   destroy(): void {
     this.unsubscribe();
+    this.unwatch();
     this.element.removeEventListener('focusin', this.focused);
     this.element.removeEventListener('focusout', this.blurred);
     this.element.removeEventListener('keyup', this.keyUp);
@@ -139,6 +162,11 @@ export class ListViewDom {
     const active = doc.activeElement instanceof HTMLElement && this.element.contains(doc.activeElement) ? doc.activeElement : undefined;
     const focusKey = active?.dataset.key;
     const focusSubject = active?.dataset.subject;
+    const build = this.model.blueprint;
+    if (this.drawn === undefined || this.drawn.blueprint !== build) {
+      this.previous = this.drawn?.before;
+      this.drawn = { blueprint: build, before: this.capture() };
+    }
     const prefs = this.options.prefs();
     this.element.style.fontFamily = FONT_STACKS[prefs.typeface].map((face) => (face.includes(' ') ? `"${face}"` : face)).join(', ');
     this.element.toggleAttribute('data-contrast', prefs.highContrast);
@@ -205,7 +233,7 @@ export class ListViewDom {
     const item = doc.createElement('li');
     item.dataset.subject = key;
     const line = doc.createElement('span');
-    line.textContent = text;
+    line.textContent = sameSelection(this.model.selection, subject) ? `${text}, selected` : text;
     item.appendChild(line);
     // Run mode and a read-only canvas have few actions (inspect, flip a switch), shown at once, so Enter flips a
     // switch. Build mode's are many and slower to work out, so each subject's wait behind its button until asked for.
@@ -303,10 +331,45 @@ export class ListViewDom {
     const id = button.dataset.action;
     if (subject === undefined || id === undefined) return;
     const action = this.findAction(subject, id);
-    if (!action) return;
+    if (!action) {
+      this.say(NOTHING_CHANGED);
+      return;
+    }
     const before = this.capture();
-    if (this.model.perform(action)) this.say(this.changes(before, action));
+    this.say(this.performing(action) ? this.changes(before, action.does) : NOTHING_CHANGED);
   };
+
+  /** Does an action, marked as the list's own so the canvas's edit it makes is not said a second time. */
+  private performing(action: ListAction): boolean {
+    this.acting = true;
+    try {
+      return this.model.perform(action);
+    } finally {
+      this.acting = false;
+    }
+  }
+
+  /** An edit by touch or pointer on the canvas: said as the list says its own, from the model as it was before. */
+  private edited(command: EditCommand): void {
+    if (this.acting || !this.previous) return;
+    const line = this.changes(this.previous, { kind: 'edit', command });
+    if (line !== '') this.say(line);
+  }
+
+  /**
+   * The selection changed, by any path: draw it, and once the canvas has laid out what the change shows, say the
+   * canvas's line if it has a new one (a tapped held part's), the line a sighted child reads.
+   */
+  private reselected(): void {
+    this.render();
+    queueMicrotask(() => {
+      const line = this.model.notice;
+      if (line !== undefined && line !== this.saidLine) {
+        this.saidLine = line;
+        this.say(line);
+      }
+    });
+  }
 
   /** Space never activates a list-view button: it stays the app's Run and Stop (D42). */
   private readonly keyUp = (event: KeyboardEvent): void => {
@@ -384,13 +447,21 @@ export class ListViewDom {
     return {
       parts: new Map(this.model.parts.map((part) => [part.partId, { held: this.model.heldOf(part.partId), name: this.model.titleOf(part.partId) }] as const)),
       wires: new Map(this.model.wires.map((wire) => [wire.wireId, wire] as const)),
-      props: new Set(this.model.props.map((prop) => prop.propId)),
+      props: new Map(
+        this.model.props.map((prop) => {
+          const name = prop.description.split(',')[0] ?? prop.propId;
+          return [prop.propId, /\d$/.test(name) ? name : `the ${name}`] as const;
+        }),
+      ),
     };
   }
 
-  /** What an action changed, in a line or two: what was placed, wired, moved, turned, set, removed, or left loose. */
-  private changes(before: Before, action: ListAction): string {
-    const does = action.does;
+  /**
+   * What a change did, in a line or two: what was placed, wired, moved, turned, set, removed, or left loose. A part's
+   * removal reads the canvas's own line after it ("Removed with it: 2 wires. Loose now: large wheel"), so both paths
+   * say a removal in the same words (R-6.4 CAN-2).
+   */
+  private changes(before: Before, does: ListAction['does']): string {
     if (does.kind === 'control') return `${before.parts.get(does.input.partId)?.name ?? 'switch'} ${does.input.closed ? 'closed' : 'open'}`;
     if (does.kind !== 'edit') return '';
     const command = does.command;
@@ -413,18 +484,24 @@ export class ListViewDom {
       lines.push(`Removed ${wire.description}`);
     }
     if (command.kind === 'set-setting') {
-      const split = action.label.lastIndexOf(' to ');
-      if (split > 4) lines.push(`${action.label.slice(4, split)} is ${action.label.slice(split + 4)} now`);
+      const now = this.model.settingNow(command.partId, command.setting);
+      if (now) lines.push(now);
     }
     if (command.kind === 'rotate-part') lines.push(`Turned ${nameOf(command.partId)}`);
     if (command.kind === 'move-part') lines.push(`Moved ${nameOf(command.partId)}`);
     if (command.kind === 'mount') lines.push(`${nameOf(command.partId)} ${this.model.heldOf(command.partId) ?? 'moved'}`);
     for (const prop of this.model.props) if (!before.props.has(prop.propId)) lines.push(`Placed ${prop.description}`);
-    if (command.kind === 'move-prop') lines.push(`Moved the prop`);
-    if (command.kind === 'remove-prop') lines.push('Removed the prop');
+    if (command.kind === 'move-prop') lines.push(`Moved ${before.props.get(command.propId) ?? 'the prop'}`);
+    if (command.kind === 'remove-prop') lines.push(`Removed ${before.props.get(command.propId) ?? 'the prop'}`);
     if (command.kind === 'tidy-wires') lines.push('Tidied the wires round the parts');
-    const names = loose.map(nameOf);
-    if (names.length > 0) lines.push(`${listOf(names)} ${names.length === 1 ? 'is' : 'are'} loose now`);
+    const notice = command.kind === 'remove-part' ? this.model.notice : undefined;
+    if (notice !== undefined) {
+      this.saidLine = notice;
+      lines.push(notice);
+    } else {
+      const names = loose.map(nameOf);
+      if (names.length > 0) lines.push(`${listOf(names)} ${names.length === 1 ? 'is' : 'are'} loose now`);
+    }
     return lines.map((line) => (line[0]?.toUpperCase() ?? '') + line.slice(1)).join('. ');
   }
 
