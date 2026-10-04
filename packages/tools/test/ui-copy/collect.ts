@@ -85,6 +85,8 @@ export const decodeEntities = (text: string): string =>
     return NAMED_ENTITIES[name?.toLowerCase() ?? ''] ?? whole;
   });
 
+const LIST_MARKER = /^(?:[-*+•]|\d+[.)])\s+/u;
+
 /** The shown strings of one source text: string literals, template text and JSX text, outside the places isCode names. */
 export const uiStringsOf = (file: string, source: string): UiString[] => {
   const kind = file.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
@@ -95,7 +97,9 @@ export const uiStringsOf = (file: string, source: string): UiString[] => {
     // JSX text wraps for layout, so its lines are one; a string's own line breaks end its lines, as in a Markdown note.
     const lines = ts.isJsxText(node) ? [text] : text.split('\n');
     lines.forEach((line, offset) => {
-      const trimmed = line.replace(/\s+/g, ' ').trim();
+      // A list marker or number opening a line (`- `, `* `, `• `, `1. `, `1) `) is not text, so the word after it opens
+      // a sentence. Opening quotes and brackets are already skipped where a sentence start is judged.
+      const trimmed = line.replace(/\s+/g, ' ').trim().replace(LIST_MARKER, '');
       if (trimmed !== '') out.push({ file, line: first + offset, text: trimmed });
     });
   };

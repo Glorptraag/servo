@@ -99,6 +99,12 @@ describe('a planted word fails the check', () => {
     expect(planted(source)).toEqual([expect.stringContaining("reads as a character's name")]);
   });
 
+  it('judges a sentence start after a list marker or a number, so a list item may open with a capital', () => {
+    const items = (lines: readonly string[]): string => `export const NOTE = \`${lines.join('\n')}\`;`;
+    expect(planted(items(['## The events', '- Each time a Run is kept.', '* Each hint shown.', '1. Each export.', '2) Each one again.', '• Each last one.']))).toEqual([]);
+    expect(planted(items(['## The events', '- Buzzy needs power.']))).toEqual([expect.stringContaining("reads as a character's name")]);
+  });
+
   it('in a .ts file', () => {
     expect(planted("throw new Error('Well done, nothing was kept.');", 'planted.ts')).toEqual([expect.stringContaining("'Well done' is on the banned list")]);
   });

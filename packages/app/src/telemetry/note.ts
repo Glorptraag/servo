@@ -11,12 +11,10 @@ Servo keeps each child's builds, Runs and card-game results so they can carry on
 
 ## The events
 
-Servo notes these events, each with only what is listed beside it:
-
-- each time Servo opens for a child: whether they build on their own or take a challenge.
-- each Run of a challenge: which challenge, how many times the child has run it, and whether the robot met the goal.
-- each hint shown or done: which challenge, and which step of the hint ladder it was.
-- each time a parts list or a link to a build is made in this parent view: which of the two was made.
+- Each time Servo opens for a child: whether they build on their own or take a challenge.
+- Each Run of a challenge: which challenge it was, how many times the child has run it, and whether the robot met the goal.
+- Each hint shown or done: which challenge it was in, and which step of the hint ladder it was.
+- Each time a parts list or a link to a build is made in this parent view: which of the two was made.
 
 Each event also keeps the time it happened and which child it is about.
 

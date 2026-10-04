@@ -3,8 +3,9 @@
 // comments must be a plain import or export of it or a direct call naming its kind (generic and optional calls
 // included), so an alias, a namespace import or passing it around fails here (R-6.2 F1). It holds the calls to the
 // registry, the registry to docs/data-note.md kind by kind and field by field (through note-words.ts, which pairs each
-// code name with the plain words the note uses for it), and the parent view's copy to that file word for word. It fails on any reach of the telemetry table but the emitter's own and the profile removals' deletes,
-// and proves no code the emitter runs can reach the network, nor can its sink be swapped (R-6.2 F2).
+// code name with the plain words the note uses for it), and the parent view's copy to that file word for word. It
+// fails on any reach of the telemetry table but the emitter's own and the profile removals' deletes, and proves no code
+// the emitter runs can reach the network, nor can its sink be swapped (R-6.2 F2).
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, normalize, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -99,6 +100,10 @@ const noteItems = (): readonly string[] => {
   return list.items.map((item) => item.map((span) => span.text).join(''));
 };
 
+/** Whether `text` holds `words` as a run of whole words, case and all. */
+const saysWords = (text: string, words: string): boolean =>
+  new RegExp(`(?<![\\p{L}\\p{N}’'])${words.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\p{L}\\p{N}’'])`, 'u').test(text);
+
 /** The relative modules `file` imports for their values (an `import type` runs nothing), and any bare ones. */
 const valueImports = (file: string): { readonly local: readonly string[]; readonly bare: readonly string[] } => {
   const text = code(file);
@@ -156,8 +161,20 @@ describe('every emitted event is in the data note, and nothing else is emitted (
       expect(own, kind).toHaveLength(1);
       const said = (own[0] ?? '').slice(NOTE_WORDS[kind].event.length + 1);
       const fields: Readonly<Record<string, string>> = NOTE_WORDS[kind].fields;
-      for (const [field, words] of Object.entries(fields)) expect(said, `${kind} ${field}`).toContain(words);
+      const phrases = Object.values(fields);
+      expect(new Set(phrases).size, kind).toBe(phrases.length);
+      for (const [field, words] of Object.entries(fields)) {
+        expect(words.trim().split(/\s+/).length, `${kind} ${field}`).toBeGreaterThanOrEqual(3);
+        expect(saysWords(said, words), `${kind} ${field}: "${words}"`).toBe(true);
+      }
     }
+  });
+
+  it('matches the table’s words as whole words, so a cut or partial phrase fails (R-7.7 F1)', () => {
+    expect(saysWords('which challenge it was, and more', 'which challenge it was')).toBe(true);
+    expect(saysWords('which challenge it wasn’t', 'which challenge it was')).toBe(false);
+    expect(saysWords('a whichever challenge it was', 'which challenge it was')).toBe(false);
+    expect(saysWords('Which challenge it was', 'which challenge it was')).toBe(false);
   });
 
   it('shows the adult no code names: no code spans, and no kind or field name of the registry', () => {
