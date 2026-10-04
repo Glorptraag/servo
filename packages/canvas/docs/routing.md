@@ -15,6 +15,7 @@ Back to the [README](../README.md). The contract is [src/interface.ts](../src/in
 | `src/routing/router.ts` | `routeWires(scene)`: a route for every power and signal line that crosses a part body. Pure and deterministic |
 | `src/routing/shapes.ts` | Drawn bodies, grown bodies, tiles and socket squares as convex shapes; entering one's inside, and rays through them. Pure |
 | `src/routing/controller.ts` | The routes the canvas draws: set by `tidy-wires`, kept while they fit the build |
+| `src/routing/exposure.ts` | `exposeWires(scene, routes)`: a bend for every line no press reaches (task 7.9). Pure and deterministic |
 | `src/routing/view.ts` | The safe area, the uncovered canvas, and where the view may go so the build stays on screen. Pure |
 | `src/renderer/picture.ts` | The renderer's own picture sizing, free of Pixi: `views.ts` draws with it, and the router and its tests measure with it |
 
@@ -94,9 +95,20 @@ Zero crossings after tidying are asserted on five builds: the busy workbench, th
 Routes are kept in the canvas, never in the blueprint.
 
 - After any change to the build, including `load` (Undo), a route stays while both its sockets are exactly where they were and it crosses no more parts than when it was tidied.
-- Otherwise its wire goes back to a straight line, like any new wire, until the child tidies again (D85, Q4: kept as built).
+- Otherwise its wire goes back to a straight line, like any new wire, until the child tidies again (D85, Q4: kept as built), or to a bend where a straight line would be out of reach (below).
 - A drag draws the wires on a moving part straight, as before; dropping it ends their routes.
 - Tidying routes every wire afresh.
+
+## Every line can be pressed (task 7.9)
+
+Sockets are drawn above the lines and take a press first, and a line drawn later takes a press before one under it (`hitTest`). Where parts sit close, as the list view's free spots put them, a line can lie wholly under sockets and the lines drawn over it: no press reaches it and the child cannot see it (review R-7.6 finding 2: the 1-cell battery pack's minus line runs past the pack's plus socket to a DC motor beside it).
+
+- **When a line counts as pressable.** Some point on its path, as drawn, is clear of every socket's 44 px target and of every line drawn over it by 1 mm to spare (`PRESS_SPARE_MM`), as a press there would reach it.
+- **The bend.** Otherwise the line is drawn with a bend in one stretch: out sideways to a flat stretch a hit area long, whose middle keeps half a socket and half a hit area from every socket and a whole hit area from every line over it, so the whole 24 px round it reaches the line. The bend keeps off part bodies as the router does (D85, the picture as drawn): its middle lies outside every body, and the line crosses no more bodies than before, so a tidied route still crosses none (review R-7.9 finding 1). Where bodies leave no such room, a middle clear by `PRESS_SPARE_MM` will do. The nearest offset wins (1 mm steps, up to 60 mm), then the place along the stretch nearest its middle, then the side away from the build's middle, so a small move does not flip a bend that both sides could take (finding 2). A tidied route gets its bend in its longest stretch that can take one; a straight line in its only stretch. With nothing clear within 60 mm, the line stays as it was.
+- **Top down.** Lines are taken from the top of the draw order down, since only the lines over a line can cover it, and each bent line counts as bent for those under it.
+- **View state, recomputed.** The bends are part of `routes` (and so of `routeOf`, `pathOf`, `WireView.path`, `hitTest` and the testing entry's wire paths), worked out again after every change to the build. `routing.tidied` gives the tidied routes alone. They are not undo steps and never reach the blueprint. A tidy that changes nothing still changes nothing.
+- **Visual change.** Most builds draw as before. Those with a buried line now draw it bent: of the content fixtures `kit-circuit-crew`, `busy-workbench`, `light-until-the-wall-led-on-plus` and `stop-the-motor-driver-hung-off-plus`; of the schema fixtures `short-circuit` and `bumper-robot`.
+- **Why not fan the lines out on demand, as crowded sockets do (D86).** A fan opens on a press among overlapping targets, but a line covered only by sockets has nothing a press reaches to open it, and a press on a socket must stay a wire's start. A bend gives every line a place a finger reaches at rest, and the child sees the line.
 
 `surface.routing` exposes `routes`, `routeOf(id)` and `pathOf(wire)`. `WireView.path` is the path a line is drawn along now, its route once tidied: the selected wire's label sits on it (task 3.4), and in Run mode the animator carries it with the line's body (`run.pathOf(id)`), so the flowing dots (task 3.5) and the label follow the route too (review R-3.7, finding 13).
 
@@ -133,6 +145,8 @@ Routes are kept in the canvas, never in the blueprint.
   - the list view's action;
   - routes kept through a rename and dropped when a socket moves or a part lands on the route;
   - hit testing along a route.
+- **`test/routing/exposure.test.ts`** (unit, task 7.9): a line under sockets end to end is bent and then reached with its whole hit area; with a caster's body over the nearest clear spot the bend goes on to a spot outside it; bends add no crossing to a tidied route; the bend leans outward and keeps its side through a small move; only lines no press reaches are bent; every line of every schema fixture, the Circuit Crew kit robot and the busy workbench (tidied or not) has a point a press reaches; the bend's middle keeps its distance; deterministic; the controller bends before any tidy and keeps the same map through a change that moves nothing.
+- **`test/browser/tap-paths.test.ts`** (browser, task 7.9): the buried line selected and binned by touch and mouse and dragged to the tray, each giving the list view's bytes.
 - **`test/camera.test.ts`** (unit):
   - fit and zoom about the uncovered centre, and the safe area's guard;
   - the reviewer's repro: a lone chassis, fit, zoom 4, `panBy(-1e6, 1e6)`;
@@ -161,3 +175,4 @@ Settled by the coordinator for task 3.7 (D80 as superseded by D85), as defaults 
 5. The app owns the Tidy wires button, beside Fit in its zoom control; the canvas draws none. Tidying is refused in Run mode and on a read-only canvas, like every command.
 6. The app calls `fit` after the first load: `load` keeps the view (interface).
 7. "Lost" means no 96 px square piece of any part's drawn tile, turned with it, is wholly in the uncovered view, or all of it across a side shorter than that.
+8. A line no press reaches is drawn with a bend out to the nearest clear spot (task 7.9), rather than covered lines fanning out on a press: a line under sockets alone has nothing a press reaches to open a fan.

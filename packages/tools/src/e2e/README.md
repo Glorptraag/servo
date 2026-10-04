@@ -23,7 +23,7 @@ Chromium must be installed once per machine: `pnpm --filter @servo/tools exec pl
 | `input.ts` | Real input through CDP: touch tap, drag and pinch; mouse click, drag and wheel |
 | `pixels.ts` | The screenshot rule, a readable diff, and colour names (pure, Node-safe) |
 | `screenshots.ts` | Screenshots compared with stored references by that rule, diffs written on failure, pixel probes |
-| `probes.ts` | Probes on every power and signal line and every part a build must show, against a model of each tile and its picture (`expectedColour`, pure) |
+| `probes.ts` | Probes on every power and signal line (along the path the canvas draws it on, bent or tidied: `drawnPaths`) and every part a build must show, against a model of each tile and its picture (`expectedColour`, pure) |
 | `mutations.ts` | Builds with a wire, or a part and its wires, taken out, for the mutation test (pure) |
 | `performance.ts` | Frame-time measurement with the CPU slowed, and the pan, wheel and pinch a hand plays one input per frame |
 | `plan.ts` | A content fixture as the steps that build it from an empty canvas, then the edits a child makes on it, and which fixtures take which edits (pure) |
@@ -110,7 +110,7 @@ A setting goes through `apply` on the touch and pointer paths, as the spec card 
 
 The edits go by hand on the touch and pointer paths, with nothing waiting and nothing selected before each:
 
-- move: dragged by a point on the part so its frame origin lands on the spot; or tapped, its Move handle tapped, and the spot tapped. Framed as close as the canvas allows (up to 400%), as a child zooms in to set a part down beside the chassis rather than on a mount point: forgiveness radii are screen pixels;
+- move: dragged by a point on the part so its frame origin lands on the spot; or tapped, its Move handle tapped, and the spot tapped. Framed as close as the canvas allows (up to 400%), as a child zooms in to set a part down beside the chassis rather than on a mount point: forgiveness radii are screen pixels. Where the handles then fall beside the view (a wheel's tile at 400%), the view widens to show the Move handle too, as a child zooms out to reach it (`handleInView`);
 - turn: the part tapped, then its rotate handle tapped, or dragged a quarter turn round the part's origin;
 - remove a part, a line or a prop: dragged to the tray; or tapped and its bin tapped;
 - place a prop: dragged from the strip to the floor's free spot, or offered by a tap and placed by a tap there; move a prop: dragged by its middle, or tapped, its Move handle tapped (task 7.3), and the spot tapped;
@@ -147,10 +147,10 @@ The first line is the check on main with placement (3.2), wiring (3.3) and the l
 
 **Not covered.** Redo: the app has none (packages/app/README.md, the Run bar). Renaming and the arena preset picker: the app's name field and strip send `rename` and `set-arena` through `apply` on every path, with no canvas gesture, as a setting goes through the spec card. Re-snapping a part onto another mount point, taking it off its mount (`unmount`) and carrying a wheel onto another shaft: each has a list action and a gesture, but no tour takes them yet. The Delete key, which removes a selected part, wire or prop as its bin does. A loose part always lands unturned, which every content fixture's loose parts are.
 
-**Findings** (task 7.6's sweep, every tour on every fixture). Every edit is identical on every path but two, where the canvas leaves a hand no way to match the list view. The tours step round both, and these are left for a canvas task:
+**Findings** (task 7.6's sweep, every tour on every fixture). Every edit was identical on every path but two, where the canvas left a hand no way to match the list view. Task 7.9 closed both in the canvas, and the tours no longer step round them:
 
-1. Tap-then-tap cannot move a carried wheel to its free spot. A wheel moved off its shaft has a free spot that overlaps its own tile (meet-the-small-wheel-start, meet-the-large-wheel-start, meet-the-gearbox-one-wheel: `wheel-left`). The list view moves it there, and so does a drag. On touch tap-then-tap and pointer click-click, the tap after the Move handle lands on the wheel itself, and the canvas leaves it where it is (placement.md, decision 7). Any other tap lands at the free spot nearest that tap, not at this one. So the `move` tour takes a part held by a mount.
-2. A line drawn wholly under other lines and sockets cannot be pressed. In meet-the-1-cell-battery-pack-start, the battery pack's minus line to the DC motor is covered along its length by sockets and by the line drawn over it. Touch and pointer cannot select it, bin it or drag it to the tray, while the list view removes it. The plus line in meet-the-dc-motor-wired is covered the same way. In meet-the-led-wired, only a window about 2 mm wide on the plus line is clear. So `disconnect` removes the first of the fixture's lines that a hand can press.
+1. Tap-then-tap could not move a carried wheel to its free spot. A wheel moved off its shaft has a free spot on its own tile (meet-the-small-wheel-start, meet-the-large-wheel-start, meet-the-gearbox-one-wheel: `wheel-left`), and the tap after the Move handle landed on the wheel itself, which left it where it was. Now a tap on the moving part's own tile places it when the tap is a spot it can go (packages/canvas/docs/placement.md, decision 7), so the `move` tour takes the last held part, a carried wheel included. On those fixtures the Move handle also fell beside the 400% view, which `handleInView` deals with.
+2. A line drawn wholly under other lines and sockets could not be pressed (the minus line in meet-the-1-cell-battery-pack-start, the plus line in meet-the-dc-motor-wired; in meet-the-led-wired only a window about 2 mm wide was clear). Now the canvas draws such a line with a bend a press reaches (packages/canvas/docs/routing.md, "Every line can be pressed"), so `disconnect` removes the fixture's longest line on every path.
 
 ## CI
 

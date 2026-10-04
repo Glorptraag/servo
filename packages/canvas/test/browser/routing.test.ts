@@ -10,7 +10,7 @@ import type { Blueprint, Catalogue, Vec2 } from '@servo/schema';
 import type { CanvasSurface } from '../../src/renderer/surface.ts';
 import { paletteFor } from '../../src/renderer/style.ts';
 import { TIDY_WIRES_ACTION } from '../../src/routing/commands.ts';
-import { crossesBodies, routeWires } from '../../src/routing/router.ts';
+import { crossesBodies, crossingCount, routeWires } from '../../src/routing/router.ts';
 import { bodyShape, shapeOf } from '../../src/routing/shapes.ts';
 import type { Shape } from '../../src/routing/shapes.ts';
 import { NO_SAFE_AREA, screenCentre } from '../../src/routing/view.ts';
@@ -52,7 +52,7 @@ const plain = (routes: ReadonlyMap<string, readonly Vec2[]>): string => JSON.str
 const loadFresh = (name: 'rolling-start' | 'twenty-five'): void => {
   surface.load(name === 'twenty-five' ? fixture('rolling-start') : twentyFiveParts);
   surface.load(name === 'twenty-five' ? twentyFiveParts : fixture('rolling-start'));
-  expect(surface.routing.routes.size).toBe(0);
+  expect(surface.routing.tidied.size).toBe(0);
 };
 
 describe('tidy wires', () => {
@@ -64,8 +64,8 @@ describe('tidy wires', () => {
     expect(edits).toEqual([]);
     expect(surface.blueprint).toBe(before);
     const routes = plain(surface.routing.routes);
-    expect(surface.routing.routes.size).toBeGreaterThan(0);
-    expect(routes).toBe(plain(routeWires(surface.scene)));
+    expect(surface.routing.tidied.size).toBeGreaterThan(0);
+    expect(plain(surface.routing.tidied)).toBe(plain(routeWires(surface.scene)));
     // The list view's action and the app's apply give the same routes (ground rule 8).
     loadFresh('twenty-five');
     const action = TIDY_WIRES_ACTION.does;
@@ -78,7 +78,7 @@ describe('tidy wires', () => {
   it('draws and hits a tidied wire along its route, not along the straight line', async () => {
     loadFresh('rolling-start');
     surface.tidyWires();
-    const [id, route] = [...surface.routing.routes][0] ?? [];
+    const [id, route] = [...surface.routing.tidied][0] ?? [];
     if (!id || !route) throw new Error('nothing routed on Rolling Start');
     const wire = surface.scene.wires.find((each) => each.id === id);
     if (!wire) throw new Error(id);
@@ -113,7 +113,7 @@ describe('tidy wires', () => {
       const result = surface.apply({ kind: 'tidy-wires' });
       expect(result.ok === false && result.refusal.code).toBe('edit.locked');
       surface.tidyWires();
-      expect(surface.routing.routes.size).toBe(0);
+      expect(surface.routing.tidied.size).toBe(0);
     } finally {
       surface.setMode('build');
     }
@@ -122,16 +122,16 @@ describe('tidy wires', () => {
   it('keeps routes while their sockets stay put; a moved part’s wires go back to straight lines', () => {
     loadFresh('rolling-start');
     surface.tidyWires();
-    const routed = [...surface.routing.routes.keys()];
+    const routed = [...surface.routing.tidied.keys()];
     expect(routed.length).toBeGreaterThan(0);
     expect(surface.apply({ kind: 'rename', name: 'Tidy robot' }).ok).toBe(true);
-    expect([...surface.routing.routes.keys()]).toEqual(routed);
+    expect([...surface.routing.tidied.keys()]).toEqual(routed);
     const wire = surface.scene.wires.find((each) => each.id === routed[0]);
     if (!wire) throw new Error('no wire');
     const moved = wire.from.ref.part;
     expect(surface.apply({ kind: 'move-part', partId: moved, position: { x: -300, y: -200 } }).ok).toBe(true);
     for (const each of surface.scene.wires) {
-      if (each.from.ref.part === moved || each.to.ref.part === moved) expect(surface.routing.routeOf(each.id), each.id).toBeUndefined();
+      if (each.from.ref.part === moved || each.to.ref.part === moved) expect(surface.routing.tidied.get(each.id), each.id).toBeUndefined();
     }
   });
 });
@@ -190,8 +190,8 @@ describe('one tidy for every hand (ground rule 8)', () => {
     loadFresh('twenty-five');
     surface.tidyWires();
     const expected = plain(surface.routing.routes);
-    expect(expected).toBe(plain(routeWires(surface.scene)));
-    const wireId = surface.scene.wires.find((wire) => surface.routing.routeOf(wire.id))?.id;
+    expect(plain(surface.routing.tidied)).toBe(plain(routeWires(surface.scene)));
+    const wireId = surface.scene.wires.find((wire) => surface.routing.tidied.has(wire.id))?.id;
     if (!wireId) throw new Error('nothing routed');
     const ways: [string, (button: HTMLButtonElement) => Promise<void>][] = [
       [
@@ -283,10 +283,13 @@ describe('the body a route keeps off: the picture Pixi draws', () => {
         drawn.tidyWires();
         const pictures = [...measured.values()];
         for (const wire of drawn.scene.wires) {
-          const route = drawn.routing.routeOf(wire.id);
-          // Routed exactly when its straight line crosses a picture as drawn; never crossing one once routed.
+          const route = drawn.routing.tidied.get(wire.id);
+          // Routed exactly when its straight line crosses a picture as drawn; never crossing one once routed, as drawn
+          // too, with any bend that makes it pressable (task 7.9, R-7.9 finding 1).
           expect(route !== undefined, wire.id).toBe(crossesBodies([wire.from.at, wire.to.at], pictures));
-          if (route) expect(crossesBodies(route, pictures), wire.id).toBe(false);
+          const shown = drawn.routing.routeOf(wire.id);
+          if (route) expect(crossesBodies(shown ?? route, pictures), wire.id).toBe(false);
+          else if (shown) expect(crossingCount(shown, pictures), wire.id).toBeLessThanOrEqual(crossingCount([wire.from.at, wire.to.at], pictures));
         }
       }
       const types = new Set(builds.flatMap((build) => build.parts.map((part) => part.part)));

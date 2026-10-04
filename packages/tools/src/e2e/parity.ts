@@ -153,9 +153,8 @@ const partsNamed = (step: Step): PlacedPartId[] => {
       return [step.ref];
     case 'connect':
     case 'refuse':
-      return [step.from.part, step.to.part];
     case 'disconnect':
-      return step.lines.flatMap((line) => [line.from.part, line.to.part]);
+      return [step.from.part, step.to.part];
     case 'move':
     case 'turn':
     case 'remove':

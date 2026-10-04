@@ -165,6 +165,28 @@ const distanceToSegment = (p: Vec2, [a, b]: Segment): number => {
   return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
 };
 
+const distanceToPath = (p: Vec2, path: readonly Vec2[]): number => {
+  let nearest = Number.POSITIVE_INFINITY;
+  for (let k = 1; k < path.length; k++) nearest = Math.min(nearest, distanceToSegment(p, [path[k - 1] as Vec2, path[k] as Vec2]));
+  return nearest;
+};
+
+/** The point a fraction `t` of the way along a path, by length. */
+const alongPath = (path: readonly Vec2[], t: number): Vec2 => {
+  const lengths = path.slice(1).map((point, k) => Math.hypot(point.x - (path[k] as Vec2).x, point.y - (path[k] as Vec2).y));
+  let left = t * lengths.reduce((sum, length) => sum + length, 0);
+  for (const [k, length] of lengths.entries()) {
+    const a = path[k] as Vec2;
+    const b = path[k + 1] as Vec2;
+    if (left <= length) {
+      const s = length === 0 ? 0 : left / length;
+      return { x: a.x + (b.x - a.x) * s, y: a.y + (b.y - a.y) * s };
+    }
+    left -= length;
+  }
+  return path[path.length - 1] as Vec2;
+};
+
 /** Whether `p` lies inside a convex polygon given in order (either way round). */
 const inside = (p: Vec2, polygon: readonly Vec2[]): boolean => {
   let sign = 0;
@@ -190,19 +212,33 @@ interface Screen {
   readonly width: number;
   readonly height: number;
   readonly sockets: readonly Vec2[];
-  readonly lines: readonly { readonly line: SceneLine; readonly segment: Segment }[];
+  /** Each line along the path it is drawn on: straight, or bent where a press could not reach it (task 7.9). */
+  readonly lines: readonly { readonly line: SceneLine; readonly path: readonly Vec2[] }[];
+  /** Further lines that cover what they cross, not probed: a changed build's lines as drawn now. */
+  readonly covers: readonly (readonly Vec2[])[];
   readonly linkages: readonly Segment[];
   readonly tiles: readonly ScreenTile[];
 }
 
-const screenOf = (camera: RendererHooks['camera'], scene: RendererHooks['scene'], zoom: number): Screen => {
+/** Canvas paths by line id, as drawn: the paths a probe follows. */
+export type LinePaths = ReadonlyMap<string, readonly Vec2[]>;
+
+/** The paths the bench draws its lines on now (the canvas's testing entry), to probe a later build by. */
+export const drawnPaths = (bench: Bench): LinePaths =>
+  new Map(bench.hooks.scene.wires.flatMap((line) => {
+    const path = bench.probe.wire(line.id)?.path.map((place) => place.world);
+    return path ? [[line.id, path] as const] : [];
+  }));
+
+const screenOf = (camera: RendererHooks['camera'], scene: RendererHooks['scene'], zoom: number, paths: LinePaths, covers: LinePaths): Screen => {
   const to = (p: Vec2): Vec2 => camera.worldToScreen(p);
   return {
     zoom,
     width: camera.width,
     height: camera.height,
     sockets: [...scene.portByKey.values()].filter((socket) => socket.layer !== 'none').map((socket) => to(socket.at)),
-    lines: scene.wires.map((line) => ({ line, segment: [to(line.from.at), to(line.to.at)] as const })),
+    lines: scene.wires.map((line) => ({ line, path: (paths.get(line.id) ?? [line.from.at, line.to.at]).map(to) })),
+    covers: [...covers.values()].map((path) => path.map(to)),
     linkages: scene.linkages.map((line) => [to(line.from.at), to(line.to.at)] as const),
     tiles: scene.parts.map((tile) => ({ tile, corners: tile.corners.map(to) })),
   };
@@ -214,20 +250,20 @@ const nearSocket = (screen: Screen, p: Vec2): boolean =>
   screen.sockets.some((socket) => Math.hypot(p.x - socket.x, p.y - socket.y) <= SOCKET_REACH_PX * screen.zoom + MARGIN_PX);
 
 const nearLine = (screen: Screen, p: Vec2, except?: string): boolean =>
-  screen.lines.some(({ line, segment }) => line.id !== except && distanceToSegment(p, segment) <= LINE_REACH_PX * screen.zoom + MARGIN_PX);
+  screen.lines.some(({ line, path }) => line.id !== except && distanceToPath(p, path) <= LINE_REACH_PX * screen.zoom + MARGIN_PX) ||
+  screen.covers.some((path) => distanceToPath(p, path) <= LINE_REACH_PX * screen.zoom + MARGIN_PX);
 
 const nearLinkage = (screen: Screen, p: Vec2): boolean =>
   screen.linkages.some((segment) => distanceToSegment(p, segment) <= LINKAGE_REACH_PX * screen.zoom + MARGIN_PX);
 
 const probeLine = (screen: Screen, shot: Shot, entry: Screen['lines'][number]): Probe => {
-  const { line, segment } = entry;
-  const [a, b] = segment;
+  const { line, path } = entry;
   const expected = line.type === 'signal' ? 'yellow' : 'red';
   let samples = 0;
   let hits = 0;
   for (let k = 0; k <= LINE_SAMPLES; k++) {
     const t = 0.05 + (0.9 * k) / LINE_SAMPLES;
-    const p = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+    const p = alongPath(path, t);
     if (!onScreen(screen, p) || nearSocket(screen, p) || nearLine(screen, p, line.id)) continue;
     samples += 1;
     if (colourName(shot.at(p)) === expected) hits += 1;
@@ -295,11 +331,19 @@ const probeTile = (screen: Screen, shot: Shot, index: number, pictures: Pictures
 
 /**
  * Probes every line and part of the build on the bench in `shot` (a screenshot of the bench's canvas, in Build mode).
- * `scene` is the geometry to probe by: the bench's own by default, or one recorded earlier, to probe a changed build
- * for what it lost.
+ * `scene` and `paths` are the geometry to probe by: the bench's own by default, or recorded earlier (`drawnPaths`), to
+ * probe a changed build for what it lost. `covers` are lines drawn now that cover what they cross: with a line taken out
+ * another may lose its bend and run where the lost one was.
  */
-export const probeBuild = (bench: Bench, shot: Shot, pictures: Pictures, scene: RendererHooks['scene'] = bench.hooks.scene): readonly Probe[] => {
-  const screen = screenOf(bench.hooks.camera, scene, bench.handle.zoom);
+export const probeBuild = (
+  bench: Bench,
+  shot: Shot,
+  pictures: Pictures,
+  scene: RendererHooks['scene'] = bench.hooks.scene,
+  paths: LinePaths = drawnPaths(bench),
+  covers: LinePaths = new Map(),
+): readonly Probe[] => {
+  const screen = screenOf(bench.hooks.camera, scene, bench.handle.zoom, paths, covers);
   return [...screen.lines.map((entry) => probeLine(screen, shot, entry)), ...screen.tiles.map((_, index) => probeTile(screen, shot, index, pictures))];
 };
 

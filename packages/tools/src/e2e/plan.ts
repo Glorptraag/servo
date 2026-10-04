@@ -121,15 +121,11 @@ export interface RemoveStep {
   readonly ref: PlacedPartId;
 }
 
-/**
- * Removes a power or signal line: dragged to the tray, or tapped and its bin tapped. `lines` are the candidates by
- * their ends in fixture ids, the one to try first first: every path removes the first a hand can press on the canvas
- * now, clear of every socket and of the lines drawn over it. A line wholly under others cannot be pressed (README,
- * "Findings").
- */
+/** Removes the power or signal line between two ports (fixture ids): dragged to the tray, or tapped and its bin tapped. */
 export interface DisconnectStep {
   readonly kind: 'disconnect';
-  readonly lines: readonly { readonly from: PortRef; readonly to: PortRef }[];
+  readonly from: PortRef;
+  readonly to: PortRef;
 }
 
 /** Places a prop from the arena strip on the free spot on the floor the placement rule picks (D36). */
@@ -331,11 +327,9 @@ const hasManualSwitch = (catalogue: Catalogue, part: PartTypeId): boolean =>
 
 /**
  * The edits a child makes once the fixture is built, from the tours asked for, each where the build has something for
- * it: a power or signal line removed and put back by Undo (the line whose parts sit furthest apart first, the rest in
- * that order after it); the last part held by a mount moved off to a free spot (a loose part may already sit on its
- * free spot, where the list view offers no move); the first
- * loose part turned; the first held part removed and put back
- * by Undo; on the open floor with no props, two props placed, the first removed, the other moved to the spot that
+ * it: the power or signal line whose parts sit furthest apart removed and put back by Undo; the last held part moved
+ * off its mount or shaft to a free spot (a loose part may already sit on its free spot, where the list view offers no
+ * move); the first loose part turned; the first held part removed and put back by Undo; on the open floor with no props, two props placed, the first removed, the other moved to the spot that
  * frees, then Reset arena; the wires tidied; the first loose part selected and the selection cleared; a manual switch
  * flipped in Run mode.
  */
@@ -343,7 +337,7 @@ const editTour = (fixture: PlannedFixture, catalogue: Catalogue, built: readonly
   const places = built.filter((step): step is PlaceStep => step.kind === 'place');
   const loose = places.filter((step) => !step.attach).map((step) => step.ref);
   const held = places.filter((step) => step.attach).map((step) => step.ref);
-  // The line whose parts sit furthest apart in the fixture: a long line a hand can press clear of every socket.
+  // The line whose parts sit furthest apart in the fixture.
   const at = new Map(fixture.blueprint.parts.map((part) => [part.id, part.position]));
   const span = (step: ConnectStep): number => {
     const a = at.get(step.from.part);
@@ -354,13 +348,6 @@ const editTour = (fixture: PlannedFixture, catalogue: Catalogue, built: readonly
     .filter((step): step is ConnectStep => step.kind === 'connect' && (step.wire === 'power' || step.wire === 'signal'))
     .sort((a, b) => span(b) - span(a));
   const line = lines[0];
-  // Held by a mount, not carried on a shaft: a carried wheel's free spot can overlap its own tile, where a tap after
-  // its Move handle leaves it be (README, "Findings").
-  const mounted = held.filter((ref) => {
-    const step = places.find((place) => place.ref === ref);
-    const port = step?.attach && catalogue.parts.get(step.part)?.ports.find((candidate) => candidate.id === step.attach?.port);
-    return port?.type === 'mechanical' && port.role === 'mount';
-  });
   const switched = places.find((step) => hasManualSwitch(catalogue, step.part));
   const { arena } = fixture.blueprint;
   const steps: Step[] = [];
@@ -368,10 +355,10 @@ const editTour = (fixture: PlannedFixture, catalogue: Catalogue, built: readonly
     if (!tours.has(tour)) continue;
     switch (tour) {
       case 'disconnect':
-        if (line) steps.push({ kind: 'disconnect', lines: lines.map(({ from, to }) => ({ from, to })) }, { kind: 'undo' });
+        if (line) steps.push({ kind: 'disconnect', from: line.from, to: line.to }, { kind: 'undo' });
         break;
       case 'move': {
-        const ref = mounted[mounted.length - 1];
+        const ref = held[held.length - 1];
         if (ref !== undefined) steps.push({ kind: 'move', ref });
         break;
       }
@@ -462,10 +449,8 @@ export const describeStep = (step: Step): string => {
       return `turn ${step.ref} a quarter turn clockwise`;
     case 'remove':
       return `remove ${step.ref}`;
-    case 'disconnect': {
-      const [first] = step.lines;
-      return first ? `remove the first line a hand can press, trying ${port(first.from)} to ${port(first.to)} first` : 'remove a line';
-    }
+    case 'disconnect':
+      return `remove the line from ${port(step.from)} to ${port(step.to)}`;
     case 'place-prop':
       return `place a ${step.prop.shape} in the arena`;
     case 'move-prop':

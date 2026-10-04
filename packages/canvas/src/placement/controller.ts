@@ -393,9 +393,11 @@ export class PlacementController {
       return;
     }
     if (this.relocating) {
-      // A tap on the part itself leaves it where it is; anywhere else is where it goes.
-      if (part === this.relocating.id) this.endRelocation();
-      else this.landRelocation(this.worldOf(event));
+      // A tap on the part itself leaves it where it is, unless it lands on a spot the part can go; anywhere else is
+      // where it goes.
+      const world = this.worldOf(event);
+      if (part === this.relocating.id && !this.landsOnOwnTile(this.relocating, world)) this.endRelocation();
+      else this.landRelocation(world);
       return;
     }
     this.select(part);
@@ -667,6 +669,23 @@ export class PlacementController {
     if (target) this.commit({ kind: 'mount', partId: id, port: target.port, onto: target.onto });
     else this.commit({ kind: 'move-part', partId: id, position: movedPartSpot(build, this.host.catalogue, id, world) });
     if (this.surface.blueprint !== build) this.slide(from);
+  }
+
+  /**
+   * Whether a tap inside the moving part's own tile is a spot it can go (task 7.9): within reach of a mount point it can
+   * re-snap onto, or, for a part a mount or a shaft holds, a free spot exactly where tapped. A wheel moved off its shaft
+   * has its free spot on its own tile. A loose part stays where it is (R-7.9 finding 3).
+   */
+  private landsOnOwnTile(relocating: Relocating, world: Vec2): boolean {
+    const build = this.surface.blueprint;
+    if (!build) return false;
+    const target = this.snapTap(relocating.targets, world);
+    if (target) return target !== relocating.home;
+    // A loose part is already on a free spot: a tap on it lets it be, rather than nudging it by the tap's offset.
+    if (this.surface.scene.partById.get(relocating.id)?.held === 'root') return false;
+    const at = roundPoint(world);
+    const spot = movedPartSpot(build, this.host.catalogue, relocating.id, world);
+    return spot.x === at.x && spot.y === at.y;
   }
 
   private endRelocation(): void {
