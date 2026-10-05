@@ -1431,7 +1431,7 @@
       "dispatched_at": "2026-10-04T15:55:54+00:00"
     },
     "7.10": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1451,8 +1451,8 @@
       ],
       "done_when": "A test drives an 8-control build (busy-workbench) through a flip of each manual switch and asserts the wiring cache does not grow inside a tick; steadyRpm is absent from packages/sim-core/src; one settingValue is shared; interface.ts restore comment, runs.md replay rule and README mechanical.md link updated and the interface change noted in the README; sim-core tests, pnpm golden (all same) and pnpm --filter @servo/tools test:determinism green.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-05T11:55:45+00:00",
+      "completed_by": "W-7.10",
       "retries": 0,
       "errors": [],
       "dispatched_at": "2026-10-05T10:31:35+00:00"
@@ -2804,6 +2804,14 @@
       "question": "Art (R-0.2 Q2, never queued): under D23 parts on the right-hand mount points are drawn as mirror images, so mirrored final three-quarter renders would have their light from the top-right, against brief Section 11. Should final art have left and right variants (D6)?",
       "recommendation": "Placeholder art is flat vector and unaffected; decide at final-art commissioning, with left and right variants as the default so lighting stays top-left.",
       "confidence": "0.6",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D128",
+      "question": "Sim-core warm-up (R-7.10): the warm-up now counts manual and contact (bumper) switches toward its 2^n cap, so busy-workbench is warmed; sim-core's test dir carries a verbatim copy of the busy-workbench content fixture adapted to the schema example parts; the situations cache in electrical/needs.ts still grows inside a tick on a build's first flip. Accept the first two and queue the situations-cache warm-up as its own task?",
+      "recommendation": "Accept both; queue the situations-cache warm-up after G6 unless a device measurement shows a first-flip frame over budget.",
+      "confidence": "0.7",
       "blocks": [],
       "resolved": false
     }
