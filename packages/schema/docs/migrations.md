@@ -20,7 +20,7 @@ Back to the [README](../README.md). The code is in `src/migrate/` (task 0.3). Gr
 | 1 | no step runs: the same object comes back, with `from: 1`, once it passes the structure check |
 | 2 or more | `blueprint.newer_version` at `$.version`: the blueprint is from a newer version of Servo |
 
-- **A newer version is refused, never guessed at.** An older app can meet a newer blueprint after sync. It should leave that document exactly as stored (task 5.5). `validateBlueprint` gives the same refusal, message included, so either path answers it the same way. For an older version, `validateBlueprint` still says to migrate it first (`blueprint.unsupported_version`).
+- **A newer version is refused, never guessed at.** An older app can meet a newer blueprint after sync. It should leave that document exactly as stored (task 5.5). `validateBlueprint` gives the same refusal, message included, so either path answers it the same way. Queued for Drew as D123. Any other version `validateBlueprint` refuses as `blueprint.unsupported_version`: an older whole number (0) is told to migrate first, and anything else (a negative or fractional number, text, infinity) is told no migration reads it.
 - **Issue paths point into the stored document.** If a later step, or the final structure check, refuses a document the steps made, the path points into that document and the message starts "After migrating from version 0 to version 1:". That means a bug in a step, not bad data.
 - **No catalogue.** Content changes between releases, and a migration must give the same result whatever content is loaded. So it checks structure only.
 
@@ -37,10 +37,12 @@ Migration is deterministic, so running it on every load is safe. The same stored
 `BLUEPRINT_MIGRATIONS` (`src/migrate/blueprint.ts`) lists the steps in order, and `runMigrations` (`src/migrate/runner.ts`) runs them. A step `{ from, to, migrate }`:
 
 - reads one version, `from`, and writes `from + 1`;
-- reads that version strictly, with its own reader built only from the reader kit, so later changes to the current readers never change it;
+- reads that version strictly, with its own reader, never the current version's readers;
 - is pure: no clock, randomness, I/O or catalogue;
 - never throws, and reports every problem with a path into the document it read;
 - is frozen once shipped, because stored blueprints, and the ids derived from them, depend on exactly what it writes.
+
+**Live helpers.** `v0ToV1`'s reader is built from the reader kit's primitives (`readSlug`, `readName`, `readLevel`, `readUuid`, `readVec2`, `readNumber` and the rest of `src/validate/reader.ts`), and it uses version 1's `idNumber` for the high-water marks and `canonicalJson` for the derived id. These are live code, so an edit to one could change what the step accepts or writes. `test/migrate-v0-to-v1-pinned.test.ts` pins the step's output over 200 seeded version 0 documents (`test/v0-corpus.ts`), three in four valid and the rest each carrying one defect, by the SHA-256 of each result (`test/v0-to-v1-hashes.json`). A helper edit that changes a hash must leave the step as it was: copy the old helper into `src/migrate/` for the step to import. The hashes are never rewritten.
 
 ## Version 0
 
@@ -61,7 +63,7 @@ Part ids, positions and settings, the wires, `meta.level` and `meta.author` carr
 
 - `meta.id` is the SHA-256 of the line `servo-blueprint-v0` followed by the stored document in `canonicalJson`. Its first 16 bytes are laid out as a UUID v4, with the version and variant bits set, in lower-case hex.
 - The same stored document gives the same id on every device and every load. An injected random id would differ on each load until the migrated form was saved, and two devices would give one build two ids, which sync would then keep as two blueprints.
-- It passes every check a UUID v4 passes, but it is the one blueprint id the app does not generate at random ([validation](validation.md)). SHA-256 is one-way, so the id still holds no name.
+- It passes every check a UUID v4 passes, but it is the one blueprint id the app does not generate at random ([validation](validation.md), [documents](documents.md)). Queued for Drew as D124. SHA-256 is one-way, so the id still holds no name.
 - Key order does not change it. Any change to the content does, including list order.
 - Two stored documents that are exactly alike get the same id. They are the same build, so treating them as one blueprint loses nothing.
 - The fixtures' ids are pinned in the tests, because changing the derivation would change the id of every migrated version 0 blueprint.
@@ -76,7 +78,7 @@ Part ids, positions and settings, the wires, `meta.level` and `meta.author` carr
 - `rolling-start`: the Rolling Start robot, with its parts in the order they were placed and two power wires written from the other end. Migrated, it is byte for byte the version 1 `rolling-start` fixture apart from its derived id.
 - `light-and-motor`: a shared workbench circuit with no author. It has numbered ids with gaps, an LED a quarter turn round, a DC motor three quarter turns round, a stored default that canonical form drops, and three power wires written from the other end.
 
-`test/migrate.test.ts` checks that each migrates, validates and round-trips byte for byte: migrate, canonicalise, serialise, parse and serialise again. `test/migrate-v0-to-v1.test.ts` tests the step on its own.
+`test/migrate.test.ts` checks that each migrates, validates and round-trips byte for byte: migrate, canonicalise, serialise, parse and serialise again. `test/migrate-v0-to-v1.test.ts` tests the step on its own, and `test/migrate-v0-to-v1-pinned.test.ts` pins it over the seeded corpus.
 
 ## Adding version 2
 
@@ -84,3 +86,5 @@ Part ids, positions and settings, the wires, `meta.level` and `meta.author` carr
 2. Write `src/migrate/v1-to-v2.ts`. Its reader is today's version 1 structure check, copied and frozen.
 3. Append the step to `BLUEPRINT_MIGRATIONS`. Never edit `v0ToV1`.
 4. Add stored version 1 documents to `fixtures/v1/` with their migrated forms, list them in `src/fixtures.ts`, and regenerate `fixtures/v0/migrated/` as version 2. Point the v0 → v1 step tests at the frozen version 1 reader.
+5. Freeze what the new step reads through: either copy every helper it imports from `src/validate/` into `src/migrate/`, or pin its output over a seeded corpus as the v0 → v1 step is. The v0 → v1 pinned hashes must still pass unchanged.
+6. Migrate the blueprints stored inside other documents. `validateRunRecord` reads a run record's `blueprint` snapshot, and `validateChallenge` a challenge's `start` build, with the current reader, so after a bump each refuses a version 1 snapshot as `blueprint.unsupported_version`. Each snapshot goes through `migrateBlueprint` on load before it is validated, and a run record keeps its `blueprintId` unchanged (D125, the default the build follows until Drew answers).

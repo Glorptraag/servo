@@ -189,8 +189,8 @@ describe('the vocabulary covers the Level 1–2 roster and the Level 3 slot', ()
     ['battery pack with no loop: nothing works', 'battery-pack-2-cell', 'no-loop', { need: 'loop', unmet: 'open', shows: ['off'] }],
     ['switch outside the loop: pressing it changes nothing', 'switch', 'outside-loop', { need: 'loop', unmet: 'open', shows: ['off'] }],
     ['wheel slipping: it spins in place', 'wheel-large', 'slipping', { need: 'floor', unmet: 'slipping', shows: ['slip'] }],
-    ['caster off the floor: the frame drags', 'caster', 'lifted', { need: 'floor', unmet: 'lifted', shows: ['drag'] }],
-    ['frame on the floor: the robot drags', 'chassis', 'scraping', { need: 'balance', unmet: 'grounded', shows: ['drag'] }],
+    ['caster off the floor: the chassis drags', 'caster', 'lifted', { need: 'floor', unmet: 'lifted', shows: ['drag'] }],
+    ['chassis on the floor: the robot drags', 'chassis', 'scraping', { need: 'balance', unmet: 'grounded', shows: ['drag'] }],
     ['loose gearbox: its output stays still', 'gearbox', 'loose', { need: 'mount', unmet: 'absent', shows: ['still'] }],
   ])('%s', (_name, id, failure, expected) => {
     expect(failureOf(id, failure)).toEqual(expected);

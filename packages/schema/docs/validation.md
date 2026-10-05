@@ -28,7 +28,7 @@ A blueprint's `meta.name` is child text, so voice rules do not apply: 1 to 60 ch
 | Kind | Format |
 | --- | --- |
 | Part, port, primitive, need, setting, failure-mode, arena, kit, challenge and placed-part ids | Lower-case words joined by hyphens, starting with a letter, at most 64 characters |
-| Blueprint id (`meta.id`), author (`meta.author`), run id and profile (`RunRecord.profile`) | A random UUID v4 in lower-case hex, which the app generates. A generated id holds no name |
+| Blueprint id (`meta.id`), author (`meta.author`), run id and profile (`RunRecord.profile`) | A random UUID v4 in lower-case hex, which the app generates. A generated id holds no name. One exception: a blueprint migrated from version 0 keeps an id derived from its stored content, which passes the same check ([migrations](migrations.md#version-0), D124) |
 | Asset keys | Slug segments joined by `/`, for example `part/dc-motor` |
 | Colours | `#rrggbb` in lower case |
 | Timestamps | UTC, exactly as `Date.prototype.toISOString` writes it, so timestamps sort as strings |
@@ -79,7 +79,7 @@ A blueprint's `meta.name` is child text, so voice rules do not apply: 1 to 60 ch
 | `setting.off_step` | A blueprint setting value is not on one of the setting's steps. |
 | `failure.bad_unmet` | A failure mode names a way its need cannot go unmet. |
 | `failure.duplicate_condition` | Two failure modes name the same need and the same way. |
-| `blueprint.unsupported_version` | The blueprint is not version 1. |
+| `blueprint.unsupported_version` | The version is older than this schema reads, or is not a whole number from 0 up. |
 | `blueprint.newer_version` | The blueprint is a newer version than this schema reads. |
 | `wire.same_port` | Both ends are the same port. |
 | `wire.type_mismatch` | The ports are of different types, for example power into signal. |
