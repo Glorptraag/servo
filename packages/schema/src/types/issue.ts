@@ -46,7 +46,7 @@ export const ISSUE_CODES = {
   'setting.off_step': "A blueprint setting value is not on one of the setting's steps.",
   'failure.bad_unmet': 'A failure mode names a way its need cannot go unmet.',
   'failure.duplicate_condition': 'Two failure modes name the same need and the same way.',
-  'blueprint.unsupported_version': 'The blueprint is not version 1.',
+  'blueprint.unsupported_version': 'The version is older than this schema reads, or is not a whole number from 0 up.',
   'blueprint.newer_version': 'The blueprint is a newer version than this schema reads.',
   'wire.same_port': 'Both ends are the same port.',
   'wire.type_mismatch': 'The ports are of different types, for example power into signal.',

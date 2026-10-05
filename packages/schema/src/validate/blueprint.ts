@@ -138,6 +138,20 @@ export const reportNewerVersion = (ctx: Ctx, path: string, version: number, newe
     `This blueprint is from a newer version of Servo: it is version ${version}, and the newest this schema reads is version ${newest}. It is refused, never guessed at.`,
   );
 
+/**
+ * Only an older whole-number version can be migrated (docs/migrations.md), so only that one is told to
+ * migrate first. Any other version is one no version of Servo writes.
+ */
+const unsupportedVersionMessage = (version: unknown): string => {
+  if (typeof version === 'number' && Number.isInteger(version) && version >= 0 && version < BLUEPRINT_VERSION) {
+    return `This schema reads version ${BLUEPRINT_VERSION} blueprints; this one is version ${version + 0}. Migrate it first.`;
+  }
+  if (typeof version === 'number' || typeof version === 'string') {
+    return `This schema reads version ${BLUEPRINT_VERSION} blueprints; this one is version ${shown(String(version))}, which is not a whole number from 0 up, so no migration reads it.`;
+  }
+  return `This schema reads version ${BLUEPRINT_VERSION} blueprints; this version is not a number.`;
+};
+
 /** Structure only: fields, formats, ids unique and under the high-water mark. Needs no catalogue. */
 export const readBlueprintShape = (ctx: Ctx, value: unknown, path: string): Blueprint | undefined => {
   const mark = ctx.issues.length;
@@ -148,14 +162,7 @@ export const readBlueprintShape = (ctx: Ctx, value: unknown, path: string): Blue
       return undefined;
     }
     if (version !== undefined && version !== BLUEPRINT_VERSION) {
-      report(
-        ctx,
-        'blueprint.unsupported_version',
-        at(path, 'version'),
-        typeof version === 'number' || typeof version === 'string'
-          ? `This schema reads version 1 blueprints; this one is version ${shown(String(version))}. Migrate it first.`
-          : 'This schema reads version 1 blueprints; this version is not a number.',
-      );
+      report(ctx, 'blueprint.unsupported_version', at(path, 'version'), unsupportedVersionMessage(version));
       return undefined;
     }
   }

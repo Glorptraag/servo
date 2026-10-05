@@ -159,6 +159,34 @@ describe('the version field', () => {
     expect(issues[0]?.message).toContain('Migrate it first');
   });
 
+  it.each([
+    ['-1', -1],
+    ['0.5', 0.5],
+    ["'0'", '0'],
+    ["'1'", '1'],
+    ["'2'", '2'],
+    ['Infinity', Number.POSITIVE_INFINITY],
+    ['NaN', Number.NaN],
+  ])('does not tell validateBlueprint callers to migrate version %s, which no migration reads', (_name, version) => {
+    const document = { ...copy(validBlueprints[0]?.data as object), version };
+    const issues = issuesOf(validateBlueprint(document, catalogue));
+    expect(issues.map((issue) => `${issue.code} at ${issue.path}`)).toEqual(['blueprint.unsupported_version at $.version']);
+    expect(issues[0]?.message).not.toContain('Migrate it first');
+    expect(issues[0]?.message).toContain('no migration reads it');
+    expect(migrateBlueprint(document).ok).toBe(false);
+  });
+
+  it('tells validateBlueprint callers to migrate first only for a whole number below BLUEPRINT_VERSION', () => {
+    for (let version = 0; version < BLUEPRINT_VERSION; version += 1) {
+      const document = { ...copy(validBlueprints[0]?.data as object), version };
+      expect(issuesOf(validateBlueprint(document, catalogue))[0]?.message).toBe(
+        `This schema reads version ${BLUEPRINT_VERSION} blueprints; this one is version ${version}. Migrate it first.`,
+      );
+    }
+    const negativeZero = { ...copy(validBlueprints[0]?.data as object), version: -0 };
+    expect(issuesOf(validateBlueprint(negativeZero, catalogue))[0]?.message).toContain('this one is version 0. Migrate it first.');
+  });
+
   it('refuses a newer blueprint inside a challenge at its own path', () => {
     const challenge = copy(exampleChallenges.find((entry) => entry.name === 'one-motor-backwards')?.data) as { start: { version: number } };
     challenge.start.version = 2;
