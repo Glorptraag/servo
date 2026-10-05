@@ -12,7 +12,7 @@ Back to the [README](../README.md).
 - **`Wire`** is `{ id, from: PortRef, to: PortRef }` and joins two ports of the same type. A `Mount` is a wire from a mount to a mount point; snapping a part onto a mount point creates one.
 - **`ArenaRef`** is `{ preset, props }`: the preset, plus the props the child dragged in.
 - **`meta`** holds:
-  - `id`: an opaque UUID v4, kept across edits and syncs. A duplicate gets a new one. Task 5.5's "latest blueprint wins, both kept" keys on it, and run records name it as `blueprintId`.
+  - `id`: an opaque UUID v4, kept across edits and syncs. The app generates it at random, except for a blueprint migrated from version 0, whose id is derived from its stored content ([migrations](migrations.md#version-0), D124). A duplicate gets a new one. Task 5.5's "latest blueprint wins, both kept" keys on it, and run records name it as `blueprintId`.
   - `name`, which is child text, and `level`.
   - `createdAt` and `updatedAt`, as UTC timestamps exactly as `toISOString` writes them.
   - `author`: the child's profile as a UUID v4 the app generates. Sharing (task 5.6) omits it.

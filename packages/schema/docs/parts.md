@@ -89,7 +89,26 @@ Settings may drive `actuator.throttle`, `actuator.reverse`, `actuator.target`, `
 
 Every Level 1–2 example part has at least two failure modes (a test checks it).
 
-The table follows the content records in `packages/content/parts/` (tasks 2.1 and 2.2). The example records in `fixtures/parts/` prove the schema and keep their Phase 0 values, so they differ in places: there the LED is a Level 1 part on 2–6 V that dims, and the buzzer needs 3 V.
+The table follows the content records in `packages/content/parts/` (tasks 2.1 and 2.2).
+
+**The example records are frozen Phase 0 test data, not copies of content.** The records in `fixtures/parts/` prove the schema, and the sim-core, canvas, app, parent and tools tests and the schema's golden cases run on them, so they keep their Phase 0 values. Content has no microcontroller (the example's is the Level 3 slot), and the example set has no small wheel. Of the 13 records both hold, every one differs in its card, hint or teaching text, and these differ in other fields too:
+
+| Part | Example record (`fixtures/parts/`) | Content record (`packages/content/parts/`) |
+| --- | --- | --- |
+| battery pack, 1-cell | 0.3 Ω inside; 35 g; 18 × 17 mm across | 0.2 Ω; 29 g; 16 × 16 mm |
+| battery pack, 2-cell | 60 g; 17 mm tall | 58 g; 16 mm |
+| DC motor | starts at 1 V; body 46 mm long with its centre of mass at the middle; mount ports at x 10 and 0; overload shows stall and hum | starts at 0.8 V; 64 mm long, centre of mass at x −7; mount ports at x 21 and 11; overload also shows drain |
+| LED | Level 1; 2–6 V; low voltage shows dim; no mount port; 6 × 6 × 10 mm; colours red, green, blue; light grey accent | Level 2; 1.8–6 V; low shows dark; a mount port; 8 × 8 × 11 mm; red, orange, yellow; dark accent |
+| buzzer | 3–6 V, rated 5 V, sounds from 1.5 V at 2400 Hz; 3 g; no mount port; two failure modes (reversed, low voltage) | 2.5–6 V, rated 3 V, from 1 V at 2300 Hz; 2 g; a mount port; adds no circuit → silent |
+| motor driver | 800 mA a channel; 5 g; white accent; two failure modes (no power, low voltage) | 1200 mA; 6 g; dark accent; adds reversed → off |
+| servo motor | rated 5 V, starts at 3.5 V; no circuit shows still; four failure modes, overload showing stall and hum | rated 4.8 V, starts at 2.5 V; no circuit shows still and silent; adds reversed → still, silent; overload also shows drain |
+| wheel, large | two failure modes: not driven, slipping | adds off the floor: floor · lifted → slip |
+| gearbox | a gear ratio setting (3 to 1 or 5 to 1, from Level 4); failure modes listed not driven, then loose | no settings; loose listed first |
+| switch | 14 mm deep; main colour `#37474f` | 13 mm; `#263238` |
+
+The caster, chassis and bumper switch differ in text only. Because the DC motor's mount ports moved, the example challenge `one-motor-backwards` places its motors where the content chassis does not put them: checked against the content catalogue, it gives two `mount.misplaced` issues (`$.start.parts[3]` and `[4]`). Against the example catalogue it is valid.
+
+**Loose support (D62).** When the chassis drags because its caster is loose, only the caster records a fault (mount · absent → drag); the chassis records no balance fault of its own, so the one fault sits on the part the child must fix. With no caster in the build at all, the chassis's own fault applies (frame on the floor: balance · grounded → drag).
 
 | Part | Family | Primitives | Needs | Failure modes (need · way → shows) |
 | --- | --- | --- | --- | --- |

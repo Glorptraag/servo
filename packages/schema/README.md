@@ -1,6 +1,6 @@
 # @servo/schema
 
-The v1 types, validators, wiring rules, geometry and canonical form that every other package builds on. It is owned by task 0.2; migrations arrive with task 0.3 in `src/migrate/`. It depends on no other package and no library, and freezes at v1 when Phase 0 closes.
+The v1 types, validators, wiring rules, geometry and canonical form that every other package builds on. It is owned by task 0.2; task 0.3 added the migrations in `src/migrate/`. It depends on no other package and no library, and freezes at v1 when Phase 0 closes.
 
 ```ts
 import { validateBlueprint, planWire, drivePushes, serializeBlueprint, makeCatalogue } from '@servo/schema';
@@ -41,7 +41,7 @@ import { exampleParts, validBlueprints } from '@servo/schema/fixtures'; // test 
 
 `fixtures/` holds the JSON and `src/fixtures.ts` the manifest:
 
-- 14 example part records, 3 arenas, 2 valid kits and 1 invalid kit;
+- 14 example part records, 3 arenas, 2 valid kits and 1 invalid kit. The part records are frozen Phase 0 test data, not copies of `packages/content` ([parts](docs/parts.md#the-level-12-roster-and-the-level-3-slot) lists every difference);
 - 7 valid blueprints in canonical form, each labelled with the motion its geometry gives;
 - 23 invalid blueprints, each refused for exactly one recorded reason;
 - 4 challenges and 1 run record;
