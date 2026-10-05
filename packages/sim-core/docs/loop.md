@@ -74,9 +74,9 @@ Every power line, signal line and drive linkage has an entry, in wire id order; 
 
 ## The warm-up (review R-1.2, minor 4; review N14)
 
-Before tick 0, `warmControls` builds the circuit and the schema's wiring verdicts (`wiredNeeds`, whose control search is the costly part) for every position of the switches, with each channel at its setting. Manual switches and contact switches are all the controls a Level 1–2 Run can move, so no wiring search runs inside a tick. A test drives the bumper robot into a wall and checks that the cache never grows.
+Before tick 0, `warmControls` builds the circuit and the schema's wiring verdicts (`wiredNeeds`, whose control search is the costly part) for every position of the switches, with each channel at its setting. Manual switches and contact switches are all the controls a Level 1–2 Run can move (its channels stay at their settings), so no wiring search runs inside a tick. Two tests check that the cache never grows inside a tick: one drives the bumper robot into a wall, the other flips each manual switch of busy-workbench (eight controls: three manual switches, a bumper switch and four driver channels) and back.
 
-- Only builds with at most 6 controls (`LIVE_TABLE_CONTROLS`) are warmed: at most 64 positions, each searching at most 63 others. A Level 1–2 kit has at most 4. A bigger build searches a position the first time a tick meets it: review N14's ten switches and forty motors would take about 0.6–0.8 s for each new position.
+- The cap counts switches, manual and contact, not controls (review R-6.4, SIM-1): builds with at most 6 switches (`WARM_SWITCHES`) are warmed, at most 2^6 = 64 positions, however many driver channels they have. Each position's search tries the other settings of every control, channels included. A Level 1–2 kit has at most 4 switches. A bigger build searches a position the first time a tick meets it: review N14's ten switches and forty motors would take about 0.6–0.8 s for each new position.
 - The electrical solver's own answers for voltage-way needs (`low`, `high`, `reversed`) are searched under a key inside the tick, the first time, and kept in its state (docs/electrical.md). Those depend on the charges, so they are not warmed.
 - The caches belong to the Simulation's models, so they outlast a restore: a Run started again after Stop (D37) starts warm.
 

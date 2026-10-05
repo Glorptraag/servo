@@ -92,8 +92,9 @@ export interface Simulation {
   snapshot(): SimSnapshot;
   /**
    * Returns to exactly the state `snapshot` holds, and that tick's frame. The app snapshots at tick 0 and
-   * restores on Stop, so the next Run of an unchanged build starts from the identical state. Throws when the
-   * snapshot came from another Simulation.
+   * restores on Stop, so the next Run of an unchanged build starts from the identical state. Accepts a snapshot
+   * from this Simulation or from a twin made from the same blueprint, part records, arena and seed (the same
+   * fingerprint: the same Run, ground rule 2). Throws for any other.
    */
   restore(snapshot: SimSnapshot): RunFrame;
   /** The run record of the ticks so far, built with the schema's RunRecord. */

@@ -1,5 +1,5 @@
 import { mapSettingValue } from '@servo/schema';
-import type { PositionActuator, PrimitiveId, SourcePrimitive, SpeedActuator } from '@servo/schema';
+import type { PlacedPart, PositionActuator, PrimitiveId, Setting, SourcePrimitive, SpeedActuator } from '@servo/schema';
 import type { GraphPart } from '../graph/index.ts';
 
 /**
@@ -9,22 +9,27 @@ import type { GraphPart } from '../graph/index.ts';
  */
 
 /**
- * The value a placed part's setting gives one of its primitive's parameters, or undefined when no setting
- * binds it. A number setting maps its range onto the parameter (`mapSettingValue`); a choice gives its
- * option's value. The graph keeps the child's values unapplied, in `placed.settings`.
+ * The value a setting gives its primitive's parameter on a placed part: the child's value or the default. A number
+ * setting maps its range onto the parameter (`mapSettingValue`); a choice gives its option's value. The graph keeps the
+ * child's values unapplied, in `placed.settings`. The one binding of settings to parameters: the behaviour runtime's
+ * `settledPrimitives` and the electrical model's `speedSettings` both read it.
  */
-export const settingValue = (part: GraphPart, primitive: PrimitiveId, param: string): number | boolean | string | undefined => {
-  const setting = part.record.settings.find((each) => each.binds.primitive === primitive && each.binds.param === param);
-  if (!setting) return undefined;
-  const value = part.placed.settings[setting.id] ?? setting.default;
+export const settingValue = (setting: Setting, placed: PlacedPart): number | boolean | string | undefined => {
+  const value = placed.settings[setting.id] ?? setting.default;
   if (setting.kind === 'choice') return setting.options.find((option) => option.id === value)?.value;
   return typeof value === 'number' ? mapSettingValue(setting, value) : undefined;
 };
 
+/** The value a placed part's setting gives one of its primitive's parameters, or undefined when no setting binds it. */
+const boundValue = (part: GraphPart, primitive: PrimitiveId, param: string): number | boolean | string | undefined => {
+  const setting = part.record.settings.find((each) => each.binds.primitive === primitive && each.binds.param === param);
+  return setting ? settingValue(setting, part.placed) : undefined;
+};
+
 /** A speed actuator's throttle (0–1) and reverse flag on a placed part: its settings' values, or the record's own. */
 export const speedSettings = (part: GraphPart, spec: SpeedActuator): { readonly throttle: number; readonly reverse: boolean } => {
-  const throttle = settingValue(part, spec.id, 'throttle');
-  const reverse = settingValue(part, spec.id, 'reverse');
+  const throttle = boundValue(part, spec.id, 'throttle');
+  const reverse = boundValue(part, spec.id, 'reverse');
   return {
     throttle: typeof throttle === 'number' ? Math.min(1, Math.max(0, throttle)) : spec.throttle,
     reverse: typeof reverse === 'boolean' ? reverse : spec.reverse,
@@ -61,25 +66,6 @@ export const speedActuatorModel = (spec: SpeedActuator): SpeedActuatorModel => {
     nmmPerAmp: spec.stallTorqueNmm / stallAmps,
     noLoadAmps: spec.noLoadMilliamps / 1000,
   };
-};
-
-/**
- * The speed a speed actuator settles at, in shaft rpm, with `volts` across its supply and `loadNmm` (at least 0)
- * holding it back: noLoadRpm × (throttle × volts ÷ ratedVolts − load ÷ stallTorqueNmm), the record's "speed ∝
- * voltage × throttle, reduced by load". It is still below startVolts, and stalled once the load reaches the
- * torque it can give at that voltage. Reversed supply turns it the other way, or not at all when it blocks; the
- * reverse flag turns the shaft the other way. The electrical model's steady state: with this speed fed back,
- * its winding current is exactly what the load needs. For the behaviour runtime and the mechanical solver.
- */
-export const steadyRpm = (spec: SpeedActuator, volts: number, loadNmm = 0, throttle = spec.throttle, reverse = spec.reverse): number => {
-  const drive = throttle * volts;
-  if (drive === 0 || (drive < 0 && spec.whenReversed === 'blocks')) return 0;
-  const size = drive < 0 ? -drive : drive;
-  if (size < spec.startVolts) return 0;
-  const share = size / spec.ratedVolts - (loadNmm > 0 ? loadNmm : 0) / spec.stallTorqueNmm;
-  if (share <= 0) return 0;
-  const rpm = spec.noLoadRpm * share;
-  return (drive < 0) !== reverse ? -rpm : rpm;
 };
 
 /**

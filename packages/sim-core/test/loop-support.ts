@@ -4,6 +4,7 @@ import { RUN_SOUNDS, makeCatalogue, validateArenaPreset, validateBlueprint, vali
 import type { ArenaPreset, Blueprint, EventSubject, PartRecord, RunEvent, RunInput, SoundPayload, ValidationResult } from '@servo/schema';
 import { exampleArenas, exampleParts, validBlueprints } from '@servo/schema/fixtures';
 import { createSimulation } from '../src/index.ts';
+import busy from './busy-workbench.json' with { type: 'json' };
 import type { LiveState, ProgramRuntime, RunFrame, RunRecordContext, Simulation } from '../src/index.ts';
 
 export const unwrap = <T>(result: ValidationResult<T>): T => {
@@ -80,6 +81,27 @@ export const brainBench = (): Blueprint => {
         ],
         wires: wires.map(([from, to], index) => ({ id: `w${index + 1}`, ...ends(from, to) })),
         meta: { ...base.meta, highWater: { parts: 0, wires: wires.length } },
+      },
+      catalogue,
+    ),
+  );
+};
+
+/**
+ * The content fixture busy-workbench (test/busy-workbench.json, a copy of packages/content/fixtures/blueprints/) on the
+ * schema's example parts: eight controls, three of them manual switches. The example buzzer and LED have no mount, so
+ * they sit loose, and the example chassis holds its DC motors 11 mm further forward.
+ */
+export const busyWorkbench = (): Blueprint => {
+  const base = busy as Blueprint;
+  const loose = new Set(['buzzer', 'led']);
+  const forward = new Set(['motor-left', 'motor-right']);
+  return unwrap(
+    validateBlueprint(
+      {
+        ...base,
+        parts: base.parts.map((part) => (forward.has(part.id) ? { ...part, position: { ...part.position, x: 30 } } : part)),
+        wires: base.wires.filter((wire) => !(loose.has(wire.from.part) && wire.from.port === 'mount')),
       },
       catalogue,
     ),

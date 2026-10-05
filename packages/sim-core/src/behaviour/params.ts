@@ -1,17 +1,10 @@
-import { mapSettingValue } from '@servo/schema';
-import type { PartRecord, PlacedPart, Primitive, Setting } from '@servo/schema';
+import type { PartRecord, PlacedPart, Primitive } from '@servo/schema';
+import { settingValue } from '../electrical/primitives.ts';
 
 /**
  * Settings drive primitive parameters through their `binds` (the schema's BINDABLE_PARAMS). The graph keeps the
  * child's values unapplied in `placed.settings`; here they replace the record's values, once per Run.
  */
-
-/** What a setting gives its parameter on a placed part: the child's value or the default, mapped by `mapSettingValue` or read from the chosen option. */
-const settingValue = (setting: Setting, placed: PlacedPart): number | boolean | string | undefined => {
-  const value = placed.settings[setting.id] ?? setting.default;
-  if (setting.kind === 'choice') return setting.options.find((option) => option.id === value)?.value;
-  return typeof value === 'number' ? mapSettingValue(setting, value) : undefined;
-};
 
 const within = (value: number, low: number, high: number): number => (value < low ? low : value > high ? high : value);
 
