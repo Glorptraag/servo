@@ -1429,6 +1429,344 @@
       "completed_at": "2026-10-04T19:01:15+00:00",
       "completed_by": "W-7.9",
       "dispatched_at": "2026-10-04T15:55:54+00:00"
+    },
+    "7.10": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.9"
+      ],
+      "title": "Sim-core warm-up by switch count, one setting binding, docs",
+      "description": "R-6.4 SIM-1, SIM-3, SIM-4 and R-1.5 minors: warmControls counts driver channels as controls, so busy-workbench (8 controls) is never warmed and its first flips search inside a tick; the setting binding is written twice (electrical primitives.ts and behaviour/params.ts) and steadyRpm lives in src for tests only; interface.ts's restore comment says a snapshot of the same Simulation where a twin's snapshot (same fingerprint) is accepted; the replay rule for inputs at tick = ticks is undocumented; the README has no link to mechanical.md. Cap the warm-up on the number of manual switches (2^n positions, n <= 6) instead of controls, share one settingValue between the electrical model and settledPrimitives, move steadyRpm out of src (tests use speedRule or a test helper), and bring the interface comment, runs.md and the README into line. No behaviour change: every golden stays 'same'. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/sim-core/src/loop/warm.ts",
+        "packages/sim-core/src/electrical/primitives.ts",
+        "packages/sim-core/src/behaviour/",
+        "packages/sim-core/src/interface.ts",
+        "packages/sim-core/README.md",
+        "packages/sim-core/docs/",
+        "packages/sim-core/test/"
+      ],
+      "done_when": "A test drives an 8-control build (busy-workbench) through a flip of each manual switch and asserts the wiring cache does not grow inside a tick; steadyRpm is absent from packages/sim-core/src; one settingValue is shared; interface.ts restore comment, runs.md replay rule and README mechanical.md link updated and the interface change noted in the README; sim-core tests, pnpm golden (all same) and pnpm --filter @servo/tools test:determinism green.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": []
+    },
+    "7.11": {
+      "status": "pending",
+      "model": "opus",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.10",
+        "7.12"
+      ],
+      "title": "Release margin on a bumper switch's contact",
+      "description": "R-6.4 SIM-6 and D79 (R-1.7 Q2): in the kit-circuit-crew golden the bumper switch opens at tick 169, closes again at 172 and opens for good at 173, so for 1/30 s the LED lights, the buzzer sounds and the DC motors turn, which shows the child a behaviour the build does not have. Add a release margin to the contact switch in the mechanical solver: a contact stays flipped until its probe has been clear by more than TOUCH_MM plus a margin for at least one tick, as a pure deterministic rule with no clock or randomness. Record the rule in mechanical.md. Re-accept only the goldens the margin changes, each named with its tick and reason in your report; the other 8 bumper goldens should open once and stay open as before. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/sim-core/src/mechanical/",
+        "packages/sim-core/docs/mechanical.md",
+        "packages/sim-core/test/",
+        "packages/sim-core/golden/"
+      ],
+      "done_when": "kit-circuit-crew shows no re-close after tick 169 (a test asserts the bumper's contact flips once in that Run); every other golden is 'same' or its change is listed with tick and reason in the package README's golden note; a unit test covers the margin (clear for one tick inside the margin keeps the switch flipped, clear beyond it releases); sim-core tests, pnpm golden and test:determinism green.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": []
+    },
+    "7.12": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.9"
+      ],
+      "title": "Golden part hash covers only what the Run reads",
+      "description": "R-6.4 TLS-6 and docs/reviews/copy-pass-6.5.md: a part's golden hash covers its whole record, so a card or hint text edit turns every golden red and 98 goldens were re-accepted hash-only after the copy pass. Make the golden hash cover only the fields sim-core reads (body, ports less their labels, behaviour, needs, failure-mode ids and needs, settings less labels) so content copy can change without touching the Runs. Re-accept the goldens hash-only once with an orchestrator note in the golden README; headings that round to 360 keep their current treatment, noted. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/tools/src/golden-runs/",
+        "packages/tools/test/",
+        "packages/sim-core/golden/",
+        "packages/tools/README.md"
+      ],
+      "done_when": "A tools test edits a part's card and hint text in a copy of the catalogue and shows the golden hash unchanged, and edits a port or behaviour field and shows it changed; pnpm golden is green after one hash-only re-accept; the golden README states what the hash covers; tools suite, lint and typecheck green.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": []
+    },
+    "7.13": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.12"
+      ],
+      "title": "Build-structure guards: HTML entry reach, no perf page in a release",
+      "description": "R-6.4 APP-10, APP-18, PAR-4, TLS-5: nothing proves that packages/app/parent.html is the only file under packages/app that reaches outside the package (and only to packages/parent/src/page/main.ts), or that a tester release carries no perf page. Add tools tests for both guards, each proven to fire on a planted violation (a probe HTML entry; a release output with a perf page) and to pass on main. Keep the existing lint-rules test as the proof for enums and namespaces; add a note in the tools README naming every guard. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/tools/test/",
+        "packages/tools/src/release/",
+        "packages/tools/README.md"
+      ],
+      "done_when": "Two tools tests: one reads packages/app/*.html and every app src module import and fails on any reach outside packages/app other than parent.html to packages/parent/src/page/main.ts; one fails when pnpm release:dry output contains a perf page; both fail on their planted probe and pass on main; tools README lists the guards; tools suite green.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": []
+    },
+    "7.14": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.21",
+        "7.13",
+        "7.15"
+      ],
+      "title": "Placeholder art fidelity: motor shaft at drive-out, visible driver chip",
+      "description": "R-6.4 TLS-7 and R-0.6 minors: the motor-can form draws its shaft away from the record's drive-out port, so a wheel on the shaft looks mounted off it; the motor driver's strips hide its chip; show() uses process.cwd instead of the given cwd; realWorldArt keys follow D32's default (tracked, no placeholder). Draw the shaft at the drive-out port's position from the part record, shorten the driver strips so the chip shows, and fix show(). Art stays vector from the record's colours and proportions through the swap registry (rule 12). Regenerate only the screenshot references the art change moves, each named in your report. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/tools/src/placeholder-art/",
+        "packages/tools/test/",
+        "packages/tools/src/e2e/",
+        "packages/canvas/test/"
+      ],
+      "done_when": "A tools test asserts the motor-can shaft centre equals the drive-out port's position for every DC and servo motor record and that the motor driver chip rectangle is not covered by a strip; show() takes cwd from its argument with a test; pnpm art, canvas suite, e2e screenshot shard and tools suite green with the changed references listed.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": []
+    },
+    "7.15": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.9",
+        "7.1",
+        "7.5"
+      ],
+      "title": "Schema pair rule for wire kind and direction outside schema",
+      "description": "R-6.4 SCH-6 (rule 3): packages/parent/src/export/parts-list.ts decides mount or drive and the source end from port role literals, and the canvas snap and carry pre-filters in packages/canvas/src/wiring find partner sockets by role literals rather than by the schema's pair rule. Route both through checkPortPair (or a canvas-style wireKindOf built on it) so the one module in packages/schema remains the only place that knows the type rules. No visible change: parity, screenshots and the parts list output stay identical. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/parent/src/export/parts-list.ts",
+        "packages/canvas/src/wiring/commands.ts",
+        "packages/canvas/src/wiring/controller.ts",
+        "packages/canvas/test/",
+        "packages/parent/test/"
+      ],
+      "done_when": "A test in each of canvas and parent asserts the kind and direction given for every port pair over the content fixtures equals checkPortPair's answer; no role literal decides kind or direction in the two files (a grep in a test proves it); parts-list export snapshots, canvas suite, parent suite and one parity shard unchanged and green.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": []
+    },
+    "7.16": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.9"
+      ],
+      "title": "Schema docs tidy, version messages, frozen v0 to v1 helpers",
+      "description": "R-6.4 SCH-4, SCH-5, SCH-7, SCH-8 and SCH-3: validateBlueprint says 'Migrate it first' for any unsupported version instead of only whole numbers below BLUEPRINT_VERSION; ISSUE_CODES and validation.md describe unsupported_version wrongly; validation.md and documents.md miss the derived-id exception; parts.md:92 does not list every example-vs-content difference; the README tense is stale; open questions carry no D numbers and Q5 is answered by canvas; part.test.ts titles say frame where the record says chassis; the v0 to v1 migration imports live helpers that could drift. Fix the message and its test, the docs, and pin the migration by a test over at least 200 seeded v0 documents whose output hashes are recorded, or by a frozen copy of the helpers. Schema is frozen at v1: no type or validator rule changes. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/schema/src/validate/",
+        "packages/schema/src/migrate/",
+        "packages/schema/docs/",
+        "packages/schema/README.md",
+        "packages/schema/test/"
+      ],
+      "done_when": "validateBlueprint gives 'Migrate it first' only for whole numbers below BLUEPRINT_VERSION (test added); ISSUE_CODES and validation.md match; the derived-id exception is cross-linked; parts.md lists every example-vs-content difference and the D62 attribution; open questions carry D numbers; a pinned-hash test covers the v0 to v1 migration over 200 seeded documents; schema suite, lint and typecheck green; no change to any exported type or rule.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": []
+    },
+    "7.17": {
+      "status": "pending",
+      "model": "opus",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.11"
+      ],
+      "title": "Fault explanation gaps: stopped channel feeder, side-by-side switches",
+      "description": "R-6.4 SCH-9 (R-0.2 N11, N12): a motor behind a stopped channel of an unpowered motor driver is not explained by its feeder, and with two closed switches side by side across a pack only the pack shows short-circuit while neither switch shows across-the-pack, so a hint pulses the pack and not a switch to open. Close both gaps in sim-core's need-judging so the explainedBy chain names the right part, following the controls-explain rule in the schema docs. Any golden the change moves is named with tick and reason in your report and re-accepted with a note. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/sim-core/src/electrical/needs.ts",
+        "packages/sim-core/src/electrical/situation.ts",
+        "packages/sim-core/test/",
+        "packages/sim-core/golden/",
+        "packages/sim-core/docs/"
+      ],
+      "done_when": "Two sim-core tests: a motor behind a stopped channel of an unpowered driver carries explainedBy of its feeder; each of two closed switches side by side across a pack shows across-the-pack; every golden is 'same' or its change is listed and accepted with a note; sim-core tests, pnpm golden and test:determinism green.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": []
+    },
+    "7.18": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.9"
+      ],
+      "title": "Challenge runner: short circuits never count as met, Home order, ladder restart",
+      "description": "R-6.4 CON-4, APP-12, APP-13 and D110 (R-4.8 Q1, R-4.7 Q4, R-4.5 Q2): what-if and guided goals are motion predicates only, so a Run whose battery pack shows short-circuit can be reported as met and the child is told a faulty circuit did the job; Home lists each level's challenges by id so Level 1 opens with the unscripted build and Level 2 opens ahead of its meet-the introductions; a trigger-less ladder restarts after do-it. Make GoalWatch refuse any Run with a battery short-circuit for every challenge kind (the conservative reading of D110), order each level's list by kind (meet, guided, what-if, breakdown, unscripted) then by id, and stop a trigger-less ladder restarting after do-it. The refusal is simulated behaviour reported through the existing status line, not a dialog. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/challenges/",
+        "packages/app/test/challenges/"
+      ],
+      "done_when": "Tests: a what-if Run with a battery short-circuit and the motion goal met is judged not met with the fault named; Home's order for Levels 1 and 2 is kind then id; a trigger-less ladder stays finished after do-it; pnpm golden still passes every fixture's expect; app suite green.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": []
+    },
+    "7.19": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.9"
+      ],
+      "title": "Sound hushes in a hidden tab; shared-build page follows the access options",
+      "description": "R-6.4 APP-14 and APP-16, R-7.5 F2 (5.7 Q2): the sound layer keeps playing when the tab is hidden, and mountSharedPage takes no options so a child's high contrast, dyslexia-friendly type, left-handed layout and read-aloud do not reach the page a shared link opens. Hush (suspend the AudioContext) on visibilitychange to hidden and restore the held voices on visible; have mountSharedPage read the device's AccessStore and pass canvasPrefsFor to the canvas and the theme. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/sound/",
+        "packages/app/src/share/",
+        "packages/app/src/store/",
+        "packages/app/test/"
+      ],
+      "done_when": "A test flips document visibility and asserts the context suspends and the held voices return on visible; an a11y browser test opens the shared-build page with every access option on and asserts the canvas prefs and theme follow them, axe green; app suite green.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": []
+    },
+    "7.20": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.18",
+        "7.19"
+      ],
+      "title": "App content-in-code tidy and sync guards",
+      "description": "R-6.4 APP-11, APP-15, APP-17 (rule 1 and docs): the sandbox arena is found by the content id 'open-floor' written twice (index.ts:50, home.tsx:33) and the prop palette's sizes and weights are written into the app instead of coming from the bump-props arena record; an unreachable sync host is not retried like a failed one; a removal change deletes runs and card games for profiles this device does not keep; settings.tsx:3, the release-page test comments and the SyncRow JSDoc are stale. Take the sandbox arena and the prop palette from content records (a content-level marker or the kit's arena, not a literal), make the unreachable host back off and retry like failed, guard removal to profiles this device keeps, and fix the comments. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/index.ts",
+        "packages/app/src/challenges/home.tsx",
+        "packages/app/src/arena/",
+        "packages/app/src/store/sync/",
+        "packages/app/src/settings.tsx",
+        "packages/app/test/",
+        "packages/content/arenas/"
+      ],
+      "done_when": "No arena, kit or part id literal remains in packages/app/src (a test greps every content id); the prop palette's sizes and weights equal the arena record's; sync tests cover the unreachable-host retry and the removal guard; app suite, validate-content and golden green.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": []
+    },
+    "7.21": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.15"
+      ],
+      "title": "Canvas hygiene and sharp art at 400 percent",
+      "description": "R-6.4 CAN-11 to CAN-14: rules.test.ts:31 and :93 rely on the default timeout under load; svgProportions ships in src but is used only by test/helpers/art.ts; a refused tap-then-tap wire reaches and springs back over 280 ms, past the brief's 120 to 200 ms UI motion; part pictures and names blur at 400 percent because they are rasterised once. Give the two tests explicit 60 s timeouts, move svgProportions into test/helpers, bring the refused-wire reach plus spring to 200 ms or less with a test on the total, and re-rasterise art and labels by zoom step (or tile size) so a part's picture and name at 400 percent pass a sharpness probe, with frame time holding in pnpm perf. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/canvas/src/",
+        "packages/canvas/test/",
+        "packages/canvas/README.md"
+      ],
+      "done_when": "svgProportions is absent from packages/canvas/src; a test asserts REACH_MS + SPRING_BACK_MS <= 200; a browser test at zoom 4 measures a part's picture and label edge contrast and passes a sharpness threshold that the current code fails; canvas suite and pnpm perf (canvas) green; screenshot references at zoom 1 unchanged.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": []
+    },
+    "7.22": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.15",
+        "7.5"
+      ],
+      "title": "Parent copy pass table and the parent's open defaults",
+      "description": "R-6.4 PAR-5 to PAR-9 and FU-PAR-6: the parent view's lines were never read against brief Section 12, the README's dependency line and the 5.3 actions slot are wrong, and several defaults were taken without a decision (servo motor on a mirrored mount, the near-twins intro line, time in the sandbox now that 6.2 records no duration). Write docs/reviews/copy-pass-parent.md reading every line of PARENT_TEXT, PROGRESS_TEXT, EXPORT_TEXT, LIST_TEXT, CARD_GAME_TEXT and PAGE_TEXT against Section 12 with a proposed line where one fails; apply the answered defaults with unit tests (a note line, an intro line, the interface comment); fix the README; list the three open defaults as questions at the end of your report for the orchestrator to queue. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/parent/src/",
+        "packages/parent/test/",
+        "packages/parent/README.md",
+        "docs/reviews/copy-pass-parent.md"
+      ],
+      "done_when": "docs/reviews/copy-pass-parent.md covers every line of the six text tables with a verdict each; any line changed has a unit test and no exclamation mark, praise, points or character name; README dependency line and actions slot match the code; parent suite green; the three open defaults are stated as questions in the report.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": []
+    },
+    "7.23": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.13",
+        "7.14"
+      ],
+      "title": "Gate page on the app's run loop, in CI",
+      "description": "R-6.4 TLS-11, TLS-15, TLS-16: the G3 gate page carries its own GateRun copy of the app's run loop, so the two can drift; pnpm gate:g3:test runs nowhere in CI; perf/main.ts's comment names the microcontroller where selectPart opens the motor driver's card. Export the app's run loop through a tools-only entry on @servo/app agreed against the package map (tools depends on all; note the export in the app README), delete GateRun in favour of it, add gate:g3:test as a CI job beside e2e, and fix the comment. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/package.json",
+        "packages/app/src/run-bar/",
+        "packages/app/README.md",
+        "packages/tools/src/gate/",
+        "packages/tools/src/perf/main.ts",
+        "packages/tools/test/",
+        ".github/workflows/ci.yml"
+      ],
+      "done_when": "GateRun is gone from packages/tools/src/gate and the gate page imports the app's run loop through the new export; pnpm gate:g3:test builds and runs the Rolling Start robot by mouse and is a CI job; the perf/main.ts comment names the motor driver; lint (package-map rule), typecheck and tools suite green.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": []
     }
   },
   "human_gates": [
