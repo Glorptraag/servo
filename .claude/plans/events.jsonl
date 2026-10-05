@@ -234,3 +234,4 @@
 {"ts": "2026-10-05T10:34:55+00:00", "event": "decision_add", "id": "D125", "blocks": []}
 {"ts": "2026-10-05T10:34:55+00:00", "event": "decision_add", "id": "D126", "blocks": []}
 {"ts": "2026-10-05T10:34:55+00:00", "event": "decision_add", "id": "D127", "blocks": []}
+{"ts": "2026-10-05T11:14:10+00:00", "event": "done", "tasks": ["7.16"], "by": "W-7.16"}

@@ -1580,7 +1580,7 @@
       "dispatched_at": "2026-10-05T10:31:35+00:00"
     },
     "7.16": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1598,8 +1598,8 @@
       ],
       "done_when": "validateBlueprint gives 'Migrate it first' only for whole numbers below BLUEPRINT_VERSION (test added); ISSUE_CODES and validation.md match; the derived-id exception is cross-linked; parts.md lists every example-vs-content difference and the D62 attribution; open questions carry D numbers; a pinned-hash test covers the v0 to v1 migration over 200 seeded documents; schema suite, lint and typecheck green; no change to any exported type or rule.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-05T11:14:10+00:00",
+      "completed_by": "W-7.16",
       "retries": 0,
       "errors": [],
       "dispatched_at": "2026-10-05T10:31:35+00:00"
