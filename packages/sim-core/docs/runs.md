@@ -27,6 +27,7 @@ Back to the [README](../README.md). The types are in [src/interface.ts](../src/i
 
 - `input({ partId, kind: 'switch', closed })` flips a manual switch. It is recorded as a RunInput at the current tick and takes effect in the next step, so a run record replays exactly.
 - It returns false, and records nothing, for a part with no manual switch (a bumper switch is a contact switch, moved only by its probe) or a switch already that way, counting flips made earlier in the same tick.
+- **Replaying a record.** Make each input at its tick, before the step that applies it: from a fresh Simulation (or tick 0 restored), at each tick from 0 to `ticks − 1`, make that tick's inputs in the record's order and then `step()`. An input recorded at tick = `ticks` was made after the last step, so it changes no frame, but the record keeps it: make it after the last step, before `record()`, and the replay's record matches byte for byte. A test replays one.
 
 ## Faults
 

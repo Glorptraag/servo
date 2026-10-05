@@ -4,7 +4,7 @@
 export { initialElectricalState, electricalModel, solveElectrical, stepElectrical } from './solve.ts';
 export { KNEE_VOLTS, LEAK_SIEMENS, OUTPUT_OHMS, SETTLE_VOLTS } from './circuit.ts';
 export { CHARGE_BAND, REVERSED_VOLTS, voltageWay } from './needs.ts';
-export { batteryEmf, positionActuatorMilliamps, settingValue, speedActuatorModel, speedSettings, steadyRpm } from './primitives.ts';
+export { batteryEmf, positionActuatorMilliamps, settingValue, speedActuatorModel, speedSettings } from './primitives.ts';
 export type { SpeedActuatorModel } from './primitives.ts';
 export type {
   ActuatorState,

@@ -3,7 +3,8 @@ import { makeCatalogue, validateArenaPreset, validatePartRecord, wiredNeeds } fr
 import type { Blueprint, ControlState, Explanation, PartRecord, PortRef, ValidationResult } from '@servo/schema';
 import { exampleArenas, exampleParts, validBlueprints } from '@servo/schema/fixtures';
 import { buildGraph } from '../src/graph/index.ts';
-import { electricalModel, initialElectricalState, solveElectrical, stepElectrical, steadyRpm } from '../src/electrical/index.ts';
+import { electricalModel, initialElectricalState, solveElectrical, stepElectrical } from '../src/electrical/index.ts';
+import { speedRule } from '../src/behaviour/index.ts';
 import type { ActuatorState, ElectricalModel, ElectricalSolution, ElectricalState } from '../src/electrical/index.ts';
 
 // Runs over many ticks take a second each alone, past Vitest's 5 s default on a machine running many agents' tests.
@@ -315,7 +316,7 @@ describe('faults over a Run', () => {
     for (let tick = 0; tick < ticks; tick += 1) {
       const result = stepElectrical(model, now, { actuators });
       seen.push({ tick, faults: faults(result.solution), explained: explained(result.solution), charge: now.charge[0] ?? 0 });
-      actuators = graph.uses.map((use, index): ActuatorState => (use.spec.kind === 'actuator' && use.spec.mode === 'speed' ? { rpm: steadyRpm(use.spec, result.solution.uses[index]?.volts ?? 0) } : {}));
+      actuators = graph.uses.map((use, index): ActuatorState => (use.spec.kind === 'actuator' && use.spec.mode === 'speed' ? { rpm: speedRule(use.spec, result.solution.uses[index]?.volts ?? 0, 0).rpm } : {}));
       now = result.state;
     }
     return seen;
@@ -518,7 +519,7 @@ describe('a motor driver browning out (review R-1.2, finding 1)', () => {
       state = result.state;
       rpm = graph.uses.map((use, index) => {
         if (use.spec.kind !== 'actuator' || use.spec.mode !== 'speed') return 0;
-        const target = held ? 0 : steadyRpm(use.spec, result.solution.uses[index]?.volts ?? 0);
+        const target = held ? 0 : speedRule(use.spec, result.solution.uses[index]?.volts ?? 0, 0).rpm;
         return (rpm[index] ?? 0) + (target - (rpm[index] ?? 0)) * 0.3;
       });
       const duty = result.solution.sources.find((_, index) => graph.sources[index]?.part === 'driver')?.duty ?? 1;

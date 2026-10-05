@@ -4,7 +4,8 @@ import type { Blueprint, PartRecord, SourcePrimitive, SpeedActuator } from '@ser
 import { validBlueprints } from '@servo/schema/fixtures';
 import { buildGraph } from '../src/graph/index.ts';
 import type { SimGraph } from '../src/graph/index.ts';
-import { electricalModel, initialElectricalState, solveElectrical, stepElectrical, steadyRpm } from '../src/electrical/index.ts';
+import { electricalModel, initialElectricalState, solveElectrical, stepElectrical } from '../src/electrical/index.ts';
+import { speedRule } from '../src/behaviour/index.ts';
 import type { ActuatorState, ElectricalModel, ElectricalSolution, ElectricalState } from '../src/electrical/index.ts';
 import type { Model } from '../src/electrical/model.ts';
 import { catalogue, fixture, parts, workbench } from './electrical-support.ts';
@@ -36,7 +37,7 @@ interface Steady {
 
 /**
  * The circuit settled with no load on any motor: each DC motor's speed fed back from the volts across it
- * (`steadyRpm`, the record's "speed ∝ voltage") until nothing moves, at full charge, with no time passing.
+ * (`speedRule` with no load, the record's "speed ∝ voltage") until nothing moves, at full charge, with no time passing.
  */
 const steady = (blueprint: Blueprint): Steady => {
   const graph = buildGraph(blueprint, catalogue);
@@ -47,7 +48,7 @@ const steady = (blueprint: Blueprint): Steady => {
   let solution = solveElectrical(model, state, { actuators }).solution;
   for (let round = 0; round < 60; round += 1) {
     const next: ActuatorState[] = graph.uses.map(() => ({}));
-    for (const motor of motors) next[motor.index] = { rpm: steadyRpm(motor.spec, solution.uses[motor.index]?.volts ?? 0) };
+    for (const motor of motors) next[motor.index] = { rpm: speedRule(motor.spec, solution.uses[motor.index]?.volts ?? 0, 0).rpm };
     actuators = next;
     solution = solveElectrical(model, state, { actuators }).solution;
   }
@@ -282,11 +283,11 @@ describe('the other parts as the circuit sees them', () => {
   });
 
   it('runs a motor backwards from a reversed supply, and turns the shaft the other way with its direction set backward', () => {
-    expect(steadyRpm(DC_MOTOR, -3)).toBeCloseTo(-100, 12);
-    expect(steadyRpm(DC_MOTOR, 3, 0, 1, true)).toBeCloseTo(-100, 12);
-    expect(steadyRpm(DC_MOTOR, 0.9)).toBe(0);
-    expect(steadyRpm(DC_MOTOR, 3, DC_MOTOR.stallTorqueNmm / 2)).toBe(0);
-    expect(steadyRpm(DC_MOTOR, 6, DC_MOTOR.stallTorqueNmm / 2)).toBeCloseTo(100, 12);
+    expect(speedRule(DC_MOTOR, -3, 0).rpm).toBeCloseTo(-100, 12);
+    expect(speedRule({ ...DC_MOTOR, throttle: 1, reverse: true }, 3, 0).rpm).toBeCloseTo(-100, 12);
+    expect(speedRule(DC_MOTOR, 0.9, 0).rpm).toBe(0);
+    expect(speedRule(DC_MOTOR, 3, DC_MOTOR.stallTorqueNmm / 2).rpm).toBe(0);
+    expect(speedRule(DC_MOTOR, 6, DC_MOTOR.stallTorqueNmm / 2).rpm).toBeCloseTo(100, 12);
   });
 });
 

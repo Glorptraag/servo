@@ -50,7 +50,9 @@ Everything comes from the record's parameters; nothing branches on a part's id, 
 | `driver` | Its supply draws idleMilliamps (ramping to onVolts). Each channel at command n: an ideal transformer of ratio \|n\| from the supply, less dropVolts, behind 0.01 Ω, one way (by the sign of n), up to maxMilliamps; the supply carries \|n\| × the output current. A driver whose supply would sag below onVolts browns out: its channels run at a duty below 1 (below) |
 | `regulator` | Its output holds `volts` while the supply is above volts + dropoutVolts and follows the supply less dropoutVolts below that, behind 0.01 Ω, up to maxMilliamps; its supply carries the output current |
 
-`steadyRpm(spec, volts, loadNmm, throttle, reverse)` gives the speed a DC motor settles at: noLoadRpm × (throttle × volts ÷ ratedVolts − load ÷ stallTorqueNmm), still below startVolts, stalled past its torque. With that speed fed back, the winding carries exactly what the load needs: the solver's steady state. The behaviour runtime and the mechanical solver (tasks 1.3 and 1.4) own the motion; this is the curve they can use.
+The speed a DC motor settles at is the behaviour runtime's `speedRule` ([behaviour.md](behaviour.md)): noLoadRpm × (throttle × volts ÷ ratedVolts − load ÷ stallTorqueNmm), still below startVolts, stalled past its torque. With that speed fed back, the winding carries exactly what the load needs: the solver's steady state. The electrical tests feed it back to settle a circuit; the solver keeps no copy of the curve (review R-6.4, SIM-3).
+
+A setting reaches a primitive's parameter through one function, `settingValue(setting, placed)` in `electrical/primitives.ts`: the child's value or the default, mapped by the schema's `mapSettingValue`, or the chosen option's value. The electrical model reads a DC motor's throttle and reverse through it (`speedSettings`), and the behaviour runtime's `settledPrimitives` sets every bound parameter with it, so the two never disagree on a setting.
 
 ## Solving
 
@@ -138,7 +140,7 @@ The rule is the schema's: a fault is what the child's controls cannot fix ([part
   - A voltage-way need costs one search the first time it appears under a key, and one solve a tick while a kept explanation is checked. A kept fault costs a search again when a pack enters another band; kept explanations outlast the bands (review R-1.2, round 2, finding 3).
   - A tick in which a driver browns out costs up to a few dozen solves.
 - **Not done here (review R-1.2, finding 4):**
-  - Searches still run inside the tick on the first visit to a control state. Task 1.5 can warm a kit's 64 or fewer control states at Run start.
+  - Searches still run inside the tick on the first visit to a control state. Task 1.5 warms every switch position of a build with at most 6 switches at Run start ([loop.md](loop.md#the-warm-up-review-r-12-minor-4-review-n14)).
   - They also run inside the tick when a kept explanation stops holding, and for a kept fault in a new band. Ten DC motors, each stalled behind its own switch on a 2-cell pack, are the worst case seen: a search there tries all 1,023 other settings, about 0.2 s, at 12 ticks over a full drain (26 before kept explanations outlasted the bands). Kit builds take a few ms.
   - Level 3 channel commands would grow the caches with every new value.
 

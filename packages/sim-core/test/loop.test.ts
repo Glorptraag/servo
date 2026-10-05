@@ -19,7 +19,7 @@ import { FAULT_DEBOUNCE_TICKS, eventsOf, liveOf } from '../src/loop/frame.ts';
 import { buildModels } from '../src/loop/models.ts';
 import { solveTick, startState } from '../src/loop/tick.ts';
 import { warmControls } from '../src/loop/warm.ts';
-import { CONTEXT, arenaOf, arenas, brainBench, catalogue, failureOrder, fixture, flips, fold, frameText, make, sameBytes, stepTo, unlinked, unwrap, without } from './loop-support.ts';
+import { CONTEXT, arenaOf, arenas, brainBench, busyWorkbench, catalogue, failureOrder, fixture, flips, fold, frameText, make, sameBytes, stepTo, unlinked, unwrap, without } from './loop-support.ts';
 
 // Whole Runs, stepped tick by tick: generous for a busy machine.
 vi.setConfig({ testTimeout: 120_000 });
@@ -245,6 +245,23 @@ describe('inputs', () => {
     const record = first.record(CONTEXT);
     const again = await make(record.blueprint, record.seed);
     stepTo(again, record.ticks, record.inputs);
+    expect(JSON.stringify(again.record(CONTEXT))).toBe(JSON.stringify(record));
+    first.dispose();
+    again.dispose();
+  });
+
+  it('keeps an input made after the last step, which a replay makes after its last step too', async () => {
+    const blueprint = fixture('led-circuit');
+    const first = await make(blueprint);
+    stepTo(first, 12);
+    expect(first.input({ partId: 'switch', kind: 'switch', closed: false })).toBe(true);
+    const record = first.record(CONTEXT);
+    expect(record.inputs).toEqual([{ tick: 12, partId: 'switch', kind: 'switch', closed: false }]);
+    expect(validateRunRecord(stored(record), catalogue).ok).toBe(true);
+    const again = await make(record.blueprint, record.seed);
+    stepTo(again, record.ticks, record.inputs);
+    expect(JSON.stringify(again.record(CONTEXT))).not.toBe(JSON.stringify(record));
+    for (const input of record.inputs.filter((each) => each.tick === record.ticks)) again.input({ partId: input.partId, kind: input.kind, closed: input.closed });
     expect(JSON.stringify(again.record(CONTEXT))).toBe(JSON.stringify(record));
     first.dispose();
     again.dispose();
@@ -497,6 +514,33 @@ describe('the warm-up', () => {
     // The next tick solves with the bumper switch open.
     expect(solveTick(models, state, state.tick + 1).state.contact).toEqual({ 'bumper/contacts': false });
     expect([...wired.keys()].sort()).toEqual(['closed,1,1', 'open,1,1']);
+  });
+
+  it('warms a build with more controls than switches, so flipping each manual switch searches nothing inside a tick', () => {
+    const blueprint = busyWorkbench();
+    const graph = buildGraph(canonicalizeBlueprint(blueprint, catalogue), catalogue);
+    // Three manual switches, a bumper switch and two motor drivers' four channels: eight controls, sixteen switch positions.
+    expect(graph.controls).toHaveLength(8);
+    expect(graph.controls.filter((control) => control.kind === 'switch')).toHaveLength(4);
+    const models = buildModels(graph, arenaOf(blueprint), undefined);
+    warmControls(models);
+    const model = models.electrical as Model;
+    expect(model.wired.size).toBe(16);
+    const warmed = [...model.wired.keys()].sort();
+    const manual = [...models.manual.values()].flat();
+    expect(manual).toHaveLength(3);
+    // Each manual switch flipped in turn, ten ticks apart, then all flipped back: every tick solves without a new search.
+    const flipAt = new Map<number, readonly string[]>([...manual.map((id, index) => [10 * (index + 1), [id]] as const), [10 * (manual.length + 1), manual]]);
+    let state = startState(models);
+    for (let tick = 0; tick <= 10 * (manual.length + 2); tick += 1) {
+      const solved = solveTick(models, state, tick);
+      state = { ...solved.state, live: liveOf(models, solved.readouts, state.live, eventsOf(models, tick, solved.readouts, state.live)), pending: {} };
+      const flipped = flipAt.get(tick);
+      if (flipped) state = { ...state, manual: { ...state.manual, ...Object.fromEntries(flipped.map((id) => [id, !state.manual[id]])) } };
+      expect(model.wired.size).toBe(16);
+    }
+    expect(manual.map((id) => state.manual[id])).toEqual(manual.map((id) => models.manualRest[id]));
+    expect([...model.wired.keys()].sort()).toEqual(warmed);
   });
 });
 

@@ -3,7 +3,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Blueprint } from '@servo/schema';
 import { buildGraph } from '../src/graph/index.ts';
-import { electricalModel, initialElectricalState, stepElectrical, steadyRpm } from '../src/electrical/index.ts';
+import { electricalModel, initialElectricalState, stepElectrical } from '../src/electrical/index.ts';
+import { speedRule } from '../src/behaviour/index.ts';
 import type { ActuatorState } from '../src/electrical/index.ts';
 import { catalogue, workbench } from './electrical-support.ts';
 import type { Placed } from './electrical-support.ts';
@@ -23,7 +24,7 @@ describe('cost', () => {
       const result = stepElectrical(model, state, { actuators });
       state = result.state;
       const next: ActuatorState[] = graph.uses.map(() => ({}));
-      for (const motor of motors) next[motor.index] = { rpm: steadyRpm(motor.spec, result.solution.uses[motor.index]?.volts ?? 0) };
+      for (const motor of motors) next[motor.index] = { rpm: speedRule(motor.spec, result.solution.uses[motor.index]?.volts ?? 0, 0).rpm };
       actuators = next;
     };
     for (let warm = 0; warm < 200; warm += 1) tick();
