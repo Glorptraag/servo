@@ -79,7 +79,7 @@ export const siteFilesPlugin = (): Plugin => {
           next();
           return;
         }
-        response.setHeader('Content-Type', file.contentType);
+        response.setHeader('content-type', file.contentType);
         response.end(file.source);
       });
     },
