@@ -237,3 +237,8 @@
 {"ts": "2026-10-05T11:14:10+00:00", "event": "done", "tasks": ["7.16"], "by": "W-7.16"}
 {"ts": "2026-10-05T11:55:45+00:00", "event": "decision_add", "id": "D128", "blocks": []}
 {"ts": "2026-10-05T11:55:45+00:00", "event": "done", "tasks": ["7.10"], "by": "W-7.10"}
+{"ts": "2026-10-07T06:48:55+00:00", "event": "decision_add", "id": "D129", "blocks": []}
+{"ts": "2026-10-07T09:24:41+00:00", "event": "decision_add", "id": "D130", "blocks": []}
+{"ts": "2026-10-07T09:24:41+00:00", "event": "decision_add", "id": "D131", "blocks": []}
+{"ts": "2026-10-07T09:24:41+00:00", "event": "decision_add", "id": "D132", "blocks": []}
+{"ts": "2026-10-07T09:24:41+00:00", "event": "park", "task": "7.35", "reason": "Waits on D132 (level unlocking before or after G6)"}

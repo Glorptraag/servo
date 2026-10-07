@@ -144,6 +144,29 @@ body:has(.servo-shell) {
   min-width: 0;
 }
 
+/*
+ * With a goal line showing, the goal slot competes for the header's room by the goal's own length (a basis of auto)
+ * instead of taking what the kit, the name and the controls leave, which on a tablet held upright was nothing: a goal
+ * squeezed to nothing is a challenge the child cannot see. The build's name, in a challenge its title, gives way first,
+ * and in a narrow header the kit and level label gives way too (both are on Home, and the tray shows the kit). With
+ * them every Level 1–2 goal line fits two lines of a tablet held upright. The header's height is fixed by the
+ * layout (layout.ts HEADER_PX), so the goal has two lines of the row, not a row of its own. In the sandbox the goal
+ * slot is empty and the header is as before.
+ */
+.shell-goal:has(.challenge-goal) {
+  flex: 1 1 auto;
+}
+
+.shell-header:has(.challenge-goal) .shell-blueprint-name {
+  flex-shrink: 3;
+}
+
+@media (max-width: 900px) {
+  .shell-header:has(.challenge-goal) .shell-kit {
+    display: none;
+  }
+}
+
 /* The blueprint's name: quiet text that is also a 44 px target, and a text field while the child renames it. */
 .shell-blueprint-name {
   flex: 0 1 auto;

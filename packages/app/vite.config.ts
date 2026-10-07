@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { offlinePlugin } from './src/offline/plugin.ts';
+import { siteFilesPlugin } from './src/offline/site-files.ts';
 
 // The app's web build: `pnpm dev`, `pnpm build` and `pnpm preview` (docs/shell.md, "Running it"). Both dev and build
 // run `pnpm art` first, so content's art registry exists; without it every part draws as a neutral tile. The build
@@ -11,7 +12,7 @@ import { offlinePlugin } from './src/offline/plugin.ts';
 // third, src/perf/perf.html, for the performance measurement only (packages/tools/src/perf/, docs/perf.md); a release
 // never builds it.
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), offlinePlugin()],
+  plugins: [react(), siteFilesPlugin(), offlinePlugin()],
   build: {
     rolldownOptions: {
       input: {
