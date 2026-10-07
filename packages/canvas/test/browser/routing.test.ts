@@ -298,6 +298,31 @@ describe('the body a route keeps off: the picture Pixi draws', () => {
       unmount();
     }
   }, LONG_MS);
+
+  it('routes a build loaded before its pictures came as one loaded after them', async () => {
+    // A picture loads the first time a build shows it. Until it comes, the bends keep off the part's whole tile; once
+    // it is here they keep off the picture as drawn (D85), and the picture on screen must not depend on which came
+    // first: a fixture's screenshot reference was once drawn with its pictures still loading (e2e, the busy workbench).
+    const parts = sets[1]?.[1] as Catalogue;
+    const { surface: drawn, unmount } = await mount({ catalogue: parts, resolveArt: placeholderResolver(parts) });
+    try {
+      expect(drawn.load(busyWorkbench).ok).toBe(true);
+      expect(drawn.scene.parts.some((part) => drawn.artOf(part) !== undefined)).toBe(false);
+      const roundTiles = plain(drawn.routing.routes);
+      await settle(drawn);
+      expect(drawn.scene.parts.every((part) => part.frame || drawn.artOf(part) !== undefined)).toBe(true);
+      const roundPictures = plain(drawn.routing.routes);
+      expect(roundPictures).not.toBe(roundTiles);
+      // Every drawn line follows the route worked out again.
+      for (const wire of drawn.scene.wires) expect(drawn.wireView(wire.id)?.path, wire.id).toEqual(drawn.routing.pathOf(wire));
+      // The same build loaded with every picture ready draws the same routes.
+      expect(drawn.load(busyWorkbench).ok).toBe(true);
+      await settle(drawn);
+      expect(plain(drawn.routing.routes)).toBe(roundPictures);
+    } finally {
+      unmount();
+    }
+  }, LONG_MS);
 });
 
 /** An upright box on the plane from two opposite corners. */

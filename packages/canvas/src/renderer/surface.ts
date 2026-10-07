@@ -803,8 +803,19 @@ export class CanvasSurface implements CanvasHandle {
   private artArrived(key: AssetKey): void {
     if (this.destroyed) return;
     const context = this.drawContext;
+    let drawn = false;
     for (const view of this.partViews.values()) {
-      if (view.part.record.identity.art === key) view.draw(view.part, this.art.get(key), context);
+      if (view.part.record.identity.art !== key) continue;
+      view.draw(view.part, this.art.get(key), context);
+      drawn = true;
+    }
+    // The routes keep off each part's picture as drawn (D85). A build loaded before its pictures had them routed round
+    // the parts' tiles; with the picture here, they are worked out again, so a build draws the same whether its
+    // pictures were ready when it was loaded or came after.
+    if (drawn) {
+      const before = this.routing.routes;
+      this.routing.refresh(this.scene, this.artOf);
+      if (this.routing.routes !== before) this.redrawWires();
     }
     this.loop.request();
   }
