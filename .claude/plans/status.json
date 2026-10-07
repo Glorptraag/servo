@@ -1773,6 +1773,332 @@
       "completed_by": null,
       "retries": 0,
       "errors": []
+    },
+    "7.24": {
+      "status": "pending",
+      "model": "opus",
+      "size": "small",
+      "batch": null,
+      "blocked_by": [
+        "0.2",
+        "7.16"
+      ],
+      "title": "Schema: optional order, prop name and failure-mode port",
+      "description": "docs/reviews/content-slots.md A, B, E. Add three optional, additive fields to the v1 records, each with its validator and docs: Challenge.order (a number, the challenge's place in its level on Home; the validator warns when two challenges of one level share an order, or when a level has some with and some without), Prop.name (Text, the prop's real name for the arena strip and the list view), FailureMode.port (a PortId the failure is about, which must be one of the part's ports). No blueprint change, no version bump: the freeze guards the persisted format (decision D130 holds the default). Update packages/schema/README.md and docs. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/schema/src/types/challenge.ts",
+        "packages/schema/src/types/arena.ts",
+        "packages/schema/src/types/part.ts",
+        "packages/schema/src/validate/",
+        "packages/schema/README.md",
+        "packages/schema/docs/",
+        "packages/schema/test/"
+      ],
+      "done_when": "Validators accept records with and without the three fields and refuse a bad order, a port not on the part; existing content validates unchanged; README names the fields and D130.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": [],
+      "dispatched_at": null
+    },
+    "7.25": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.24",
+        "7.9",
+        "7.20",
+        "7.21",
+        "7.23"
+      ],
+      "title": "App: Home order from content, props from the arena record",
+      "description": "docs/reviews/content-slots.md A, B. Home sorts each level's challenges by Challenge.order when present, then by KIND_ORDER, then by id; the arena strip's palette comes from the bump-props preset's props (name, shape, size, mass, fixed) instead of PROP_PALETTE, with its spoken description built from the record; the canvas list view says Prop.name when there is one and the shape when not, so strip and list agree. Update the app README (Challenges, Home) and the canvas README (list view words). Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/challenges/home.tsx",
+        "packages/app/src/challenges/arena-strip.tsx",
+        "packages/app/src/challenges/text.ts",
+        "packages/app/README.md",
+        "packages/app/test/challenges/home.test.ts",
+        "packages/app/test/browser/challenges.test.tsx",
+        "packages/canvas/src/list-view/words.ts",
+        "packages/canvas/test/list-view/",
+        "packages/canvas/README.md"
+      ],
+      "done_when": "PROP_PALETTE is gone; a prop added to the preset in a test appears in the strip with its name; Home's unit test covers a level with and without order; browser tests green.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": [],
+      "dispatched_at": null
+    },
+    "7.26": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "small",
+      "batch": null,
+      "blocked_by": [
+        "7.24",
+        "0.4"
+      ],
+      "title": "Content: author the challenge order and the prop names",
+      "description": "docs/reviews/content-slots.md A, B. Give all 34 challenges an order along the path a child should take within each level (part introductions in teaching order: battery pack, DC motor, large wheel, caster, switch at Level 1; then guided, breakdowns, what-ifs, the unscripted build last), name the bump-props preset's box and post, and correct the content README line that says the order is not authored. Validate with pnpm validate-content. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/content/challenges/",
+        "packages/content/arenas/bump-props.json",
+        "packages/content/README.md"
+      ],
+      "done_when": "Every challenge has a unique order within its level; both props have names; validate-content clean; README updated.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": [],
+      "dispatched_at": null
+    },
+    "7.27": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.25",
+        "7.4",
+        "7.18",
+        "7.23"
+      ],
+      "title": "App: the part introduction opens the spec card on the new part",
+      "description": "docs/reviews/content-slots.md C (brief Section 5: the part appears, the child wires it, the spec card opens). When a challenge with `introduces` opens, select the introduced part through the canvas handle so its spec card opens at the child's level; when the goal is met, select it again so the meeting ends on the card. Nothing else changes: the goal line, the hint ladder and the tick stay as for a guided challenge. Say what happens in the app README (Challenges). Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/challenges/",
+        "packages/app/src/App.tsx",
+        "packages/app/README.md",
+        "packages/app/test/browser/challenges.test.tsx"
+      ],
+      "done_when": "A browser test opens Meet the switch: the card shows the switch on load and again when the goal is met, on touch, pointer and keyboard; every other kind is unchanged.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": [],
+      "dispatched_at": null
+    },
+    "7.28": {
+      "status": "pending",
+      "model": "opus",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.27",
+        "7.20",
+        "7.23"
+      ],
+      "title": "App: a what-if has no right answer",
+      "description": "docs/reviews/content-slots.md D (brief Sections 4 and 5; decision D131 holds the default). For kind what-if: the goal line shows no tick and says no Goal met; Home marks a what-if Tried once a Run with its change has happened (the run record's goal.met keeps meaning the change was observed, so the golden harness and fixtures are unchanged); the hint button works on request but never offers itself after missed Runs. Guided challenges, breakdowns and unscripted builds are unchanged. Update the app README (Challenges, Hints) and the content README's what-if line. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/challenges/goal-line.tsx",
+        "packages/app/src/challenges/home.tsx",
+        "packages/app/src/challenges/text.ts",
+        "packages/app/src/hints/controller.ts",
+        "packages/app/README.md",
+        "packages/app/test/browser/challenges.test.tsx",
+        "packages/app/test/browser/hints.test.tsx",
+        "packages/app/test/hints/"
+      ],
+      "done_when": "Browser tests: a what-if shows no tick after its change runs, Tried on Home, no auto-offer; a guided challenge still ticks and offers; golden unchanged.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": [],
+      "dispatched_at": null
+    },
+    "7.29": {
+      "status": "pending",
+      "model": "opus",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.28",
+        "7.4",
+        "7.23"
+      ],
+      "title": "App: fault hints from the part record, outside a ladder",
+      "description": "docs/reviews/content-slots.md E (brief Section 10, errors that teach, case 2). In the sandbox and in a challenge whose build state no ladder matches (the unscripted builds), after two Runs of the same build (same runKeyOf) that show the same fault, the Hint button offers a ladder made from the part's failure mode: pulse the part with its FailureMode.hint line, then pulse FailureMode.port when the mode names one; no ghost wire and no do-it. The button shows in the sandbox only while such a ladder exists; hint uses go into the run record as today. A challenge with a matching ladder is unchanged. Update the app README (Hints). Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/hints/",
+        "packages/app/src/App.tsx",
+        "packages/app/README.md",
+        "packages/app/test/hints/",
+        "packages/app/test/browser/hints.test.tsx"
+      ],
+      "done_when": "Browser test: a sandbox roller with one DC motor unwired, two Runs, the button offers, a press pulses the motor and says its hint line on touch, pointer and keyboard; the unscripted build gets the same; existing hint tests green.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": [],
+      "dispatched_at": null
+    },
+    "7.30": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "small",
+      "batch": null,
+      "blocked_by": [
+        "7.24"
+      ],
+      "title": "Content: failure-mode hint lines as callouts, with their ports",
+      "description": "docs/reviews/content-slots.md E. Review every FailureMode.hint on the 14 parts as a drawn callout in the brief's Section 12 voice (one line, names the part or port, no full stop, no question), and add FailureMode.port on each mode that is about one port (a servo with no signal: its signal port; a motor with no return: its minus). Keep the teaching notes and card lines. Validate with pnpm validate-content. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/content/parts/"
+      ],
+      "done_when": "Every failure mode has a hint line in voice; every mode about one port names it; validate-content clean.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": [],
+      "dispatched_at": null
+    },
+    "7.31": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "micro",
+      "batch": null,
+      "blocked_by": [
+        "7.5",
+        "7.15",
+        "7.22"
+      ],
+      "title": "Parent: show the teaching note beside each fault",
+      "description": "docs/reviews/content-slots.md F. The parent progress view shows FailureMode.teachingNote beside each fault seen or fixed, read from the part record; nothing in the child's app changes. Update the parent README. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/parent/src/progress/",
+        "packages/parent/README.md",
+        "packages/parent/test/"
+      ],
+      "done_when": "The progress view's faults list carries each fault's teaching note; tests green.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": [],
+      "dispatched_at": null
+    },
+    "7.32": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "small",
+      "batch": null,
+      "blocked_by": [
+        "7.26",
+        "7.6",
+        "7.12",
+        "7.13",
+        "7.14",
+        "7.23"
+      ],
+      "title": "Validator: goal lines at most 80 characters; rewrite the six over",
+      "description": "docs/reviews/content-slots.md G. Add a validate-content rule that a challenge's goalLine is at most 80 characters, reported with its length, and rewrite the six goal lines now over 80 (what-if-one-cell, light-until-the-wall, meet-the-1-cell-battery-pack, meet-the-servo-motor, what-if-one-motor-on-the-switch, over-the-hill) in the same voice. Note the rule in the tools README. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/tools/src/validate-content/",
+        "packages/tools/test/",
+        "packages/tools/README.md",
+        "packages/content/challenges/"
+      ],
+      "done_when": "The rule fires on an over-long line in a test; every content goal line passes; validate-content clean.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": [],
+      "dispatched_at": null
+    },
+    "7.33": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.28",
+        "7.32",
+        "7.11",
+        "7.12",
+        "7.17"
+      ],
+      "title": "Content: a third breakdown and a third what-if per level",
+      "description": "docs/reviews/content-slots.md Part 2 item 1 and D. Write one more breakdown and one more what-if at each level, from the broken blueprints with no challenge (broken-loose-caster, broken-short-circuit, broken-chassis-on-the-floor, broken-servo-without-signal, broken-underpowered-pack) and the failure modes no whole-robot fixture shows; each with hint ladders (breakdowns name their fault in a fault trigger, D48), a passing and a failing fixture in FIXTURES, an order, and golden runs accepted with a note. What-ifs are a change and a thing to watch, never a question. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/content/challenges/",
+        "packages/content/src/fixtures.ts",
+        "packages/content/fixtures/",
+        "packages/sim-core/golden/",
+        "packages/content/README.md"
+      ],
+      "done_when": "Four new challenges validate; each has a passing and a failing fixture; pnpm golden green with the new goldens; the hint-ladder tests climb the new ladders.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": [],
+      "dispatched_at": null
+    },
+    "7.34": {
+      "status": "pending",
+      "model": "sonnet",
+      "size": "small",
+      "batch": null,
+      "blocked_by": [
+        "7.30",
+        "7.33"
+      ],
+      "title": "Content: spec-card fills and clashing lines",
+      "description": "docs/reviews/content-slots.md Part 2 items 2 to 4. Safety notes on chassis, DC motor, large wheel and small wheel (brief Section 13); the servo's Level 4 spec line with its draw and stall figures (D58); a fuller DC motor does line and a chassis does line that opens with a verb; a buzzer popular-mechanics line without beeps; a second real-world image for the gearbox or the large wheel so they do not share the bike; the three challenges that say the LED's plus and minus to say its long and short leg as the part does. Validate with pnpm validate-content; the spec-card and challenge tests stay green. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/content/parts/",
+        "packages/content/challenges/"
+      ],
+      "done_when": "Every listed line is written in voice; validate-content clean; no test changes needed beyond fixtures' expected text.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": [],
+      "dispatched_at": null
+    },
+    "7.35": {
+      "status": "parked",
+      "model": "sonnet",
+      "size": "standard",
+      "batch": null,
+      "blocked_by": [
+        "7.29",
+        "7.19",
+        "7.20",
+        "7.23"
+      ],
+      "title": "App: level unlocking from the unscripted build",
+      "description": "docs/reviews/content-slots.md Part 3 (brief Section 5: passing the unscripted build opens the next level and its parts). Parked on decision D132. A level read model from the child's run records (the highest level whose unscripted build has a Run with goal.met, plus one) replaces START_LEVEL for the sandbox kit and new builds; Home lists a locked level's challenges under its heading, not pressable, with one plain line naming the build that opens it; a device that keeps no builds stays at Level 1. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
+      "files": [
+        "packages/app/src/App.tsx",
+        "packages/app/src/challenges/home.tsx",
+        "packages/app/src/tray/tiles.ts",
+        "packages/app/src/store/",
+        "packages/app/README.md",
+        "packages/app/test/browser/challenges.test.tsx"
+      ],
+      "done_when": "With Cross the arena met, the sandbox tray shows the Level 2 kit and Level 2 challenges open; without it, Level 2 is listed and locked; tests green.",
+      "contracts": "",
+      "completed_at": null,
+      "completed_by": null,
+      "retries": 0,
+      "errors": [],
+      "dispatched_at": null,
+      "parked_reason": "Waits on D132 (level unlocking before or after G6)"
     }
   },
   "human_gates": [
@@ -2820,6 +3146,30 @@
       "question": "New sandbox builds open on an empty canvas; brief Sections 4 and 9 describe the canvas with the robot chassis at its centre. Should New build (and the first Build 1 on a new device) place the chassis at the canvas's middle, with the tray then showing chassis \u00d7 0?",
       "recommendation": "Yes: every Level 1\u20132 build needs the chassis, and placing it first is a step a six-year-old has to discover alone; the G3 and e2e builds from an empty canvas would start from the fixture's chassis instead. Until answered the canvas stays empty, with the Run bar's 'Place a part first.' as the only cue.",
       "confidence": "medium",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D130",
+      "question": "Schema freeze: tasks 7.24-7.26 add three optional, additive fields to v1 records (Challenge.order for Home's order, Prop.name for the arena strip and list view, FailureMode.port for fault hints), each with a validator and docs, and no blueprint change. Does the v1 freeze allow optional additions to records that are never persisted?",
+      "recommendation": "Yes: the freeze guards the blueprint, the only persisted format (ground rule 5); optional record fields with validators and defaults break no stored build, and content stays the only place a part or challenge changes (ground rule 1).",
+      "confidence": "0.8",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D131",
+      "question": "What-ifs (brief Sections 4-5: one thing to change, no right answer) are judged today like guided challenges: a goal predicate, a Goal met tick, a met mark on Home, and a hint ladder that offers itself and whose do-it makes the change. Task 7.28 keeps the goal as the fixtures' predicate but shows no tick and no Goal met for a what-if, marks it Tried on Home once a Run with the change has happened, and never offers a hint on its own. Confirm?",
+      "recommendation": "Confirm: the brief says no right answer; the record's goal.met keeps meaning the change was observed, so progress and the golden harness are unchanged.",
+      "confidence": "0.7",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D132",
+      "question": "Level unlocking (brief Section 5: passing the unscripted build opens the next level and its parts) is absent: START_LEVEL is 1 and Home lists every level ungated (app README Challenges, decision 4). Task 7.35 would read the level from the child's run records, lock later levels on Home with one plain line naming the build that opens them, and move the sandbox kit with it. Build it before G6, or keep every level open for the family testers?",
+      "recommendation": "Keep every level open until G6's families have run; park 7.35 and build it from their findings, since a locked level is the one thing in the app a child cannot undo.",
+      "confidence": "0.6",
       "blocks": [],
       "resolved": false
     }
