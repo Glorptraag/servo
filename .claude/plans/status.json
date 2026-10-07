@@ -2814,6 +2814,14 @@
       "confidence": "0.7",
       "blocks": [],
       "resolved": false
+    },
+    {
+      "id": "D129",
+      "question": "New sandbox builds open on an empty canvas; brief Sections 4 and 9 describe the canvas with the robot chassis at its centre. Should New build (and the first Build 1 on a new device) place the chassis at the canvas's middle, with the tray then showing chassis \u00d7 0?",
+      "recommendation": "Yes: every Level 1\u20132 build needs the chassis, and placing it first is a step a six-year-old has to discover alone; the G3 and e2e builds from an empty canvas would start from the fixture's chassis instead. Until answered the canvas stays empty, with the Run bar's 'Place a part first.' as the only cue.",
+      "confidence": "medium",
+      "blocks": [],
+      "resolved": false
     }
   ]
 }

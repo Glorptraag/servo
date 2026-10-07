@@ -10,7 +10,7 @@ import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { Content } from '@servo/content';
 import { BLUEPRINT_VERSION, LEVELS } from '@servo/schema';
-import type { ArenaRef, Blueprint, Challenge, Level } from '@servo/schema';
+import type { ArenaRef, Blueprint, Challenge, ChallengeId, ChallengeKind, Level, RunRecord } from '@servo/schema';
 import type { RunLoop } from '../run-bar/run-loop.ts';
 import { useShell } from '../shell/context.ts';
 import type { Autosaver } from '../shell/index.ts';
@@ -34,9 +34,34 @@ export const sandboxArena = (content: Content): ArenaRef | undefined => {
   return preset ? { preset: preset.id, props: [] } : undefined;
 };
 
-/** Challenges grouped by level, levels in order, each level's challenges in content order. */
+/**
+ * The order the kinds of challenge come in on Home: the path brief Section 5 lays out for a level. The child meets each
+ * new part first, then takes the guided jobs, finds the faults in the breakdowns, tries the what-ifs, and the unscripted
+ * build, the level's assessment, comes last. Content gives no order of its own (challenges load in id order), so Home
+ * would otherwise put "Cross the arena" above "Meet the battery pack".
+ */
+export const KIND_ORDER: readonly ChallengeKind[] = ['part-introduction', 'guided', 'breakdown', 'what-if', 'unscripted-build'];
+
+/** Challenges grouped by level, levels in order, each level's challenges along the path (`KIND_ORDER`), then in content order. */
 export const challengesByLevel = (challenges: readonly Challenge[]): readonly { readonly level: Level; readonly challenges: readonly Challenge[] }[] =>
-  LEVELS.map(({ level }) => ({ level, challenges: challenges.filter((challenge) => challenge.level === level) })).filter((group) => group.challenges.length > 0);
+  LEVELS.map(({ level }) => ({
+    level,
+    // Array.prototype.sort is stable, so challenges of one kind keep content's order.
+    challenges: challenges.filter((challenge) => challenge.level === level).sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind)),
+  })).filter((group) => group.challenges.length > 0);
+
+/**
+ * The challenges one of the child's Runs has met the goal of, read from the run records (each challenge Run keeps its
+ * verdict, README "Challenges", decision 2). Home marks them with the goal line's own check mark, a plain fact of where
+ * the child has been: no score, no streak, nothing counted (ground rule 7).
+ */
+export const metChallenges = (runs: readonly Pick<RunRecord, 'challenge' | 'goal'>[]): ReadonlySet<ChallengeId> => {
+  const met = new Set<ChallengeId>();
+  for (const run of runs) if (run.challenge !== undefined && run.goal?.met === true) met.add(run.challenge);
+  return met;
+};
+
+const NONE_MET: ReadonlySet<ChallengeId> = new Set();
 
 /** A build kept only in this page, for a device that keeps no builds. */
 const pageBuild = (init: { readonly name: string; readonly level: Level; readonly arena: ArenaRef }): Blueprint => {
@@ -89,6 +114,7 @@ export const Home = ({ challenge, onChallenge, sandboxLevel, loop, saving, paren
   const [shellRoot, setShellRoot] = useState<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
   const [saved, setSaved] = useState<Saved>({ kind: 'none' });
+  const [met, setMet] = useState<ReadonlySet<ChallengeId>>(NONE_MET);
   const [line, setLine] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -102,6 +128,7 @@ export const Home = ({ challenge, onChallenge, sandboxLevel, loop, saving, paren
     setOpen(true);
     if (!child) {
       setSaved({ kind: 'none' });
+      setMet(NONE_MET);
       return;
     }
     setSaved({ kind: 'reading' });
@@ -111,6 +138,14 @@ export const Home = ({ challenge, onChallenge, sandboxLevel, loop, saving, paren
       .catch((error: unknown) => {
         console.warn('The saved builds could not be read.', error);
         setSaved({ kind: 'read', builds: [] });
+      });
+    // The check marks come in as the records are read; the list itself never waits on them.
+    child.runs
+      .list()
+      .then((runs) => setMet(metChallenges(runs)))
+      .catch((error: unknown) => {
+        console.warn('The Runs could not be read.', error);
+        setMet(NONE_MET);
       });
   };
 
@@ -247,11 +282,22 @@ export const Home = ({ challenge, onChallenge, sandboxLevel, loop, saving, paren
                         type="button"
                         className="shell-button home-choice"
                         aria-current={challenge?.id === item.id ? 'true' : undefined}
+                        data-met={met.has(item.id) ? 'true' : undefined}
                         disabled={busy}
                         onClick={() => openChallenge(item)}
                       >
                         <span className="home-choice-name">{item.title}</span>
-                        <span className="home-choice-detail">{KIND_WORDS[item.kind]}</span>
+                        <span className="home-choice-detail">
+                          {met.has(item.id) ? (
+                            <>
+                              <svg className="home-choice-tick" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                                <path d="M4 10.5 L8.5 15 L16 5.5" />
+                              </svg>
+                              <span className="home-choice-spoken">{CHALLENGE_TEXT.met}. </span>
+                            </>
+                          ) : null}
+                          {KIND_WORDS[item.kind]}
+                        </span>
                       </button>
                     </li>
                   ))}

@@ -91,6 +91,14 @@ const homeButton = (app: Mounted, name: string): HTMLButtonElement => {
   if (!found) throw new Error(`no ${name} on Home`);
   return found;
 };
+/** The challenge titled `name` in Home's level lists, as against a saved build named after it. */
+const challengeButton = (app: Mounted, name: string): HTMLButtonElement => {
+  const found = [...(homeOf(app)?.querySelectorAll<HTMLButtonElement>('.home-level button.home-choice') ?? [])].find(
+    (button) => button.querySelector('.home-choice-name')?.textContent === name,
+  );
+  if (!found) throw new Error(`no challenge ${name} on Home`);
+  return found;
+};
 const stripButton = (app: Mounted, name: string): HTMLButtonElement => {
   const found = [...app.host.querySelectorAll<HTMLButtonElement>('[data-region="arenaStrip"] button')].find((button) => button.textContent?.startsWith(name));
   if (!found) throw new Error(`no ${name} in the arena strip`);
@@ -221,6 +229,30 @@ describe('a challenge on the canvas', () => {
     await userEvent.keyboard('{Enter}');
     await vi.waitFor(() => expect(ticked(app)).toBe(false), SOON);
     expect(spoken(app)).toBe('');
+
+    // Home marks the challenge met, with the same check mark and "Goal met" for a screen reader, and no other.
+    const home = await openHome(app);
+    // (The saved build the challenge made carries its title too; the challenge's own button is in the level's list.)
+    await vi.waitFor(() => expect(challengeButton(app, CROSS.title).dataset.met).toBe('true'), SOON);
+    expect(challengeButton(app, CROSS.title).textContent).toContain(CHALLENGE_TEXT.met);
+    expect(challengeButton(app, CROSS.title).querySelector('.home-choice-tick')).not.toBeNull();
+    expect(home.querySelectorAll('.home-choice[data-met="true"]').length).toBe(1);
+    expect(challengeButton(app, LIGHT.title).dataset.met).toBeUndefined();
+    expect(challengeButton(app, MEET.title).dataset.met).toBeUndefined();
+    expect(home.textContent).not.toContain('!');
+    await userEvent.click(homeButton(app, CHALLENGE_TEXT.back));
+    await vi.waitFor(() => expect(homeOf(app)).toBeNull(), SOON);
+  });
+
+  it('lists each level along the path on Home: a guided challenge before the unscripted build, whatever order content gives', async () => {
+    const app = await mount();
+    const home = await openHome(app);
+    // Content gives cross and stop before drive and light; the path puts the guided challenge first and the unscripted build last.
+    const titles = [...home.querySelectorAll('.home-choice-name')].map((name) => name.textContent);
+    expect(titles.indexOf(MEET.title)).toBeLessThan(titles.indexOf(LIGHT.title));
+    expect(titles.indexOf(LIGHT.title)).toBeLessThan(titles.indexOf(CROSS.title));
+    // Nothing met yet: no check marks.
+    expect(home.querySelectorAll('.home-choice[data-met="true"]').length).toBe(0);
   });
 
   it('shows no check for a Run that misses the goal', async () => {
