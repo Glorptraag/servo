@@ -1,7 +1,20 @@
 name: CI
 
+# Runner minutes are billed on this private repository, so the workflow runs where a result is read, not on every push
+# of every branch: pushes to main, pull requests, and a manual run (workflow_dispatch) on any branch the orchestrator
+# wants checked. A worker's branch is checked by `pnpm check` locally. Pushes that touch only the plan state or the
+# docs run nothing: no test reads them.
 on:
   push:
+    branches:
+      - main
+    paths-ignore:
+      - '.claude/**'
+      - 'docs/**'
+  pull_request:
+    paths-ignore:
+      - '.claude/**'
+      - 'docs/**'
   workflow_dispatch:
 
 permissions:
@@ -24,8 +37,20 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       # The canvas's browser tests (packages/canvas/vitest.config.ts) run in Playwright's Chromium; the list view's tap
-      # and click tests run in its WebKit as well, Safari's engine.
-      - run: pnpm --filter @servo/canvas exec playwright install --with-deps chromium webkit
+      # and click tests run in its WebKit as well, Safari's engine. Both are cached by Playwright's version, under a
+      # key of this job's own since the e2e and perf jobs cache Chromium alone; the system libraries they need are
+      # installed either way.
+      - id: playwright
+        run: echo "version=$(pnpm --filter @servo/canvas exec playwright --version | cut -d' ' -f2)" >> "$GITHUB_OUTPUT"
+      - id: browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-check-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      - if: steps.browsers.outputs.cache-hit != 'true'
+        run: pnpm --filter @servo/canvas exec playwright install --with-deps chromium webkit
+      - if: steps.browsers.outputs.cache-hit == 'true'
+        run: pnpm --filter @servo/canvas exec playwright install-deps chromium webkit
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm -r test
@@ -103,6 +128,9 @@ jobs:
     # Every timing budget, apart from the correctness jobs so that a slow runner reads as a perf result on its own:
     # sim-core's per-tick cost, the canvas's frame time, and the e2e harness's and Run mode's frame time (pnpm perf).
     # Each frame-time test takes five samples, prints every one, and holds the best (lowest p95) to the 16 ms budget.
+    # The dearest job, about a quarter of an hour, so it runs on main and on a manual run, not on pull requests
+    # (D103): a budget is read per merge, and `pnpm perf` measures a branch locally.
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
