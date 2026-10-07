@@ -67,7 +67,7 @@ Needs Node 24 or newer and pnpm 12 (the exact version is pinned in `package.json
 | `pnpm --filter @servo/sim-core test` | One package's tests; `pnpm --filter @servo/sim-core exec vitest` watches |
 | `pnpm typecheck` | `tsc --noEmit` in every package |
 | `pnpm lint` | ESLint over the repo with the root config, failing on any warning. Includes the package-map, `.ts`-import and sim-core purity rules |
-| `pnpm check` | Lint, typecheck, then test, as CI's `check` job does on every push; that job adds `validate-content` and `golden`, and the `e2e` and `perf` jobs run beside it (`.github/workflows/ci.yml`) |
+| `pnpm check` | Lint, typecheck, then test, as CI's `check` job does on every push to main and every pull request; that job adds `validate-content` and `golden`, the `e2e` job runs beside it, and `perf` runs on main only (`.github/workflows/ci.yml`). A task branch is checked locally, or by a manual run of the workflow on that branch |
 | `pnpm perf` | `pnpm art`, then every package's timing tests one package at a time: sim-core's tick cost, canvas and e2e frame time. Not in `pnpm test`; CI's `perf` job |
 | `pnpm validate-content <path>…` | Checks content records against the schema and the terminology lists; `--catalogue <dir>`, `--terminology <dir>` |
 | `pnpm golden` | Runs every content fixture and valid schema blueprint, checks each fixture's `expect`, and diffs each Run against `packages/sim-core/golden/` |
