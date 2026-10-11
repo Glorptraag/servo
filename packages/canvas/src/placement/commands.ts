@@ -202,6 +202,8 @@ const placeProp: Reducer<'place-prop'> = (blueprint, command, catalogue) => {
   }
   const prop = {
     id: nextPropId(preset, blueprint.arena.props),
+    // The template's name (schema 1.1) travels with the prop, so the list view says it after a reload too.
+    ...(typeof template.name === 'string' ? { name: template.name } : {}),
     shape: template.shape,
     size: copyData(template.size),
     grams: template.grams,

@@ -13,7 +13,7 @@
       "fixed": false,
       "grams": 50,
       "id": "box",
-      "name": "Box",
+      "name": "box",
       "shape": "box",
       "size": {
         "x": 80,
@@ -30,7 +30,7 @@
       "fixed": true,
       "grams": 700,
       "id": "post",
-      "name": "Post",
+      "name": "post",
       "shape": "cylinder",
       "size": {
         "x": 100,

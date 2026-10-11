@@ -3,8 +3,8 @@
 // tap-then-tap, click-then-click or Enter (the keyboard and screen-reader path: the nearest free spot).
 import { afterAll, afterEach, beforeAll, expect, vi } from 'vitest';
 import { cdp } from 'vitest/browser';
-import { PROP_PALETTE } from '../../src/challenges/index.ts';
-import { SOON, listedProps, mountApp, openChallenge, selectPart, unmountApps } from './app-harness.tsx';
+import { propPalette } from '../../src/challenges/index.ts';
+import { SOON, content, listedProps, mountApp, openChallenge, selectPart, unmountApps } from './app-harness.tsx';
 import type { MountedApp } from './app-harness.tsx';
 import { threePaths } from './controls.ts';
 import { clickAt, keyboard, pageOf, pressBy, touchAt } from './input.ts';
@@ -109,7 +109,7 @@ threePaths('arena-prop', {
   control: (app) => strip(app, 'Box'),
   // Every prop in the palette, each brought in on a spot of its own.
   press: async (path, _first, app) => {
-    for (const [index, item] of PROP_PALETTE.entries()) {
+    for (const [index, item] of propPalette(content).entries()) {
       const control = (): HTMLButtonElement => strip(app, item.label);
       if (path === 'keyboard') {
         await keyboard(control);
@@ -124,7 +124,7 @@ threePaths('arena-prop', {
     }
   },
   then: async (app) => {
-    expect(listedProps(app)).toBe(props + PROP_PALETTE.length);
+    expect(listedProps(app)).toBe(props + propPalette(content).length);
     // Reset arena now has props to drop.
     expect(app.button('Reset arena', '[data-region="runBar"]').disabled).toBe(false);
   },

@@ -1,6 +1,6 @@
 // The challenge runner (task 4.5): the goal judge, the header's goal line, the arena strip and Home. See the README,
 // "Challenges". The judge (goal.ts, world.ts) is pure and is also exported alone as `@servo/app/goal`.
-export { ArenaStrip, PROP_PALETTE } from './arena-strip.tsx';
+export { ArenaStrip, propPalette, propSpoken } from './arena-strip.tsx';
 export type { ArenaStripProps, PaletteProp } from './arena-strip.tsx';
 export { GoalWatch, NOT_MET, goalJudgeFor, judgeRun, namedFaults } from './goal.ts';
 export type { GoalJudge, GoalVerdict, GoalWatchOptions } from './goal.ts';

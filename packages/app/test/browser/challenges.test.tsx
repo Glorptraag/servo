@@ -15,7 +15,7 @@ import { validateChallenge } from '@servo/schema';
 import type { Blueprint, Challenge } from '@servo/schema';
 import { exampleChallenges } from '@servo/schema/fixtures';
 import { App } from '../../src/App.tsx';
-import { CHALLENGE_TEXT, PROP_PALETTE } from '../../src/challenges/index.ts';
+import { CHALLENGE_TEXT, propPalette } from '../../src/challenges/index.ts';
 import { openStore } from '../../src/store/index.ts';
 import type { ProfileStore, ServoStore } from '../../src/store/index.ts';
 
@@ -225,7 +225,7 @@ describe('a challenge on the canvas', () => {
     }, SOON);
     expect(ticked(app)).toBe(true);
     // A change to the build clears it: a prop brought in by keyboard, Enter on the strip's box.
-    stripButton(app, PROP_PALETTE[0]?.label ?? 'Box').focus();
+    stripButton(app, propPalette(content)[0]?.label ?? 'Box').focus();
     await userEvent.keyboard('{Enter}');
     await vi.waitFor(() => expect(ticked(app)).toBe(false), SOON);
     expect(spoken(app)).toBe('');

@@ -35,12 +35,21 @@ describe('Home', () => {
     expect([...KIND_ORDER].sort()).toEqual([...new Set(content.challenges.map((challenge) => challenge.kind))].sort());
   });
 
-  it("puts every real level's part introductions first and its unscripted build last", () => {
+  it('orders a level by its authored order when it has one, with the path as the fallback', () => {
+    const of = (id: string, kind: Challenge['kind'], order?: number): Challenge => ({ id, level: 1, kind, ...(order === undefined ? {} : { order }) }) as Challenge;
+    const ordered = challengesByLevel([of('cross', 'unscripted-build', 2), of('meet', 'part-introduction', 3), of('drive', 'guided', 1)]);
+    expect(ordered[0]?.challenges.map((challenge) => challenge.id)).toEqual(['drive', 'cross', 'meet']);
+    // A level where only some have an order (which the content validator refuses) still lists along the path.
+    const mixed = challengesByLevel([of('cross', 'unscripted-build', 1), of('meet', 'part-introduction'), of('drive', 'guided', 2)]);
+    expect(mixed[0]?.challenges.map((challenge) => challenge.id)).toEqual(['meet', 'drive', 'cross']);
+  });
+
+  it("lists every real level in its authored order: a part introduction first and the unscripted build last", () => {
     for (const group of challengesByLevel(content.challenges)) {
-      const kinds = group.challenges.map((challenge) => challenge.kind);
-      expect(kinds[0]).toBe('part-introduction');
-      expect(kinds.at(-1)).toBe('unscripted-build');
-      expect(kinds).toEqual([...kinds].sort((a, b) => KIND_ORDER.indexOf(a) - KIND_ORDER.indexOf(b)));
+      const orders = group.challenges.map((challenge) => challenge.order);
+      expect(orders).toEqual([...orders].sort((a, b) => (a ?? 0) - (b ?? 0)));
+      expect(group.challenges[0]?.kind).toBe('part-introduction');
+      expect(group.challenges.at(-1)?.kind).toBe('unscripted-build');
     }
   });
 

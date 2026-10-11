@@ -42,13 +42,23 @@ export const sandboxArena = (content: Content): ArenaRef | undefined => {
  */
 export const KIND_ORDER: readonly ChallengeKind[] = ['part-introduction', 'guided', 'breakdown', 'what-if', 'unscripted-build'];
 
-/** Challenges grouped by level, levels in order, each level's challenges along the path (`KIND_ORDER`), then in content order. */
+/** Two challenges along the path (`KIND_ORDER`); within a kind, as content gives them (Array.prototype.sort is stable, so id order). */
+export const compareAlongPath = (a: Challenge, b: Challenge): number => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind);
+
+/**
+ * One level's challenges in Home's order: by their authored `order` (schema 1.1) when every one of them has one, else
+ * along the path. The content validator refuses a level where only some have an order; Home still lists such a level.
+ */
+export const orderLevel = (group: readonly Challenge[]): readonly Challenge[] =>
+  group.every((challenge) => challenge.order !== undefined)
+    ? [...group].sort((a, b) => (a.order as number) - (b.order as number))
+    : [...group].sort(compareAlongPath);
+
+/** Challenges grouped by level, levels in order, each level's challenges in Home's order (`orderLevel`). */
 export const challengesByLevel = (challenges: readonly Challenge[]): readonly { readonly level: Level; readonly challenges: readonly Challenge[] }[] =>
-  LEVELS.map(({ level }) => ({
-    level,
-    // Array.prototype.sort is stable, so challenges of one kind keep content's order.
-    challenges: challenges.filter((challenge) => challenge.level === level).sort((a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind)),
-  })).filter((group) => group.challenges.length > 0);
+  LEVELS.map(({ level }) => ({ level, challenges: orderLevel(challenges.filter((challenge) => challenge.level === level)) })).filter(
+    (group) => group.challenges.length > 0,
+  );
 
 /**
  * The challenges one of the child's Runs has met the goal of, read from the run records (each challenge Run keeps its
