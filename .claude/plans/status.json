@@ -1681,7 +1681,8 @@
       "batch": null,
       "blocked_by": [
         "7.18",
-        "7.19"
+        "7.19",
+        "7.25"
       ],
       "title": "App content-in-code tidy and sync guards",
       "description": "R-6.4 APP-11, APP-15, APP-17 (rule 1 and docs): the sandbox arena is found by the content id 'open-floor' written twice (index.ts:50, home.tsx:33) and the prop palette's sizes and weights are written into the app instead of coming from the bump-props arena record; an unreachable sync host is not retried like a failed one; a removal change deletes runs and card games for profiles this device does not keep; settings.tsx:3, the release-page test comments and the SyncRow JSDoc are stale. Take the sandbox arena and the prop palette from content records (a content-level marker or the kit's arena, not a literal), make the unreachable host back off and retry like failed, guard removal to profiles this device keeps, and fix the comments. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
@@ -1707,7 +1708,8 @@
       "size": "standard",
       "batch": null,
       "blocked_by": [
-        "7.15"
+        "7.15",
+        "7.25"
       ],
       "title": "Canvas hygiene and sharp art at 400 percent",
       "description": "R-6.4 CAN-11 to CAN-14: rules.test.ts:31 and :93 rely on the default timeout under load; svgProportions ships in src but is used only by test/helpers/art.ts; a refused tap-then-tap wire reaches and springs back over 280 ms, past the brief's 120 to 200 ms UI motion; part pictures and names blur at 400 percent because they are rasterised once. Give the two tests explicit 60 s timeouts, move svgProportions into test/helpers, bring the refused-wire reach plus spring to 200 ms or less with a test on the total, and re-rasterise art and labels by zoom step (or tile size) so a part's picture and name at 400 percent pass a sharpness probe, with frame time holding in pnpm perf. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
@@ -1754,7 +1756,8 @@
       "batch": null,
       "blocked_by": [
         "7.13",
-        "7.14"
+        "7.14",
+        "7.25"
       ],
       "title": "Gate page on the app's run loop, in CI",
       "description": "R-6.4 TLS-11, TLS-15, TLS-16: the G3 gate page carries its own GateRun copy of the app's run loop, so the two can drift; pnpm gate:g3:test runs nowhere in CI; perf/main.ts's comment names the microcontroller where selectPart opens the motor driver's card. Export the app's run loop through a tools-only entry on @servo/app agreed against the package map (tools depends on all; note the export in the app README), delete GateRun in favour of it, add gate:g3:test as a CI job beside e2e, and fix the comment. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
@@ -1809,10 +1812,7 @@
       "batch": null,
       "blocked_by": [
         "7.24",
-        "7.9",
-        "7.20",
-        "7.21",
-        "7.23"
+        "7.9"
       ],
       "title": "App: Home order from content, props from the arena record",
       "description": "docs/reviews/content-slots.md A, B. Home sorts each level's challenges by Challenge.order when present, then by KIND_ORDER, then by id; the arena strip's palette comes from the bump-props preset's props (name, shape, size, mass, fixed) instead of PROP_PALETTE, with its spoken description built from the record; the canvas list view says Prop.name when there is one and the shape when not, so strip and list agree. Update the app README (Challenges, Home) and the canvas README (list view words). Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
@@ -1836,7 +1836,7 @@
       "dispatched_at": null
     },
     "7.26": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "small",
       "batch": null,
@@ -1853,8 +1853,8 @@
       ],
       "done_when": "Every challenge has a unique order within its level; both props have names; validate-content clean; README updated.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-11T04:38:51+00:00",
+      "completed_by": "session-affectionate-sagan",
       "retries": 0,
       "errors": [],
       "dispatched_at": "2026-10-11T04:38:11+00:00"
