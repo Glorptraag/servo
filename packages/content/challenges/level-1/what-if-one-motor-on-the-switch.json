@@ -151,6 +151,7 @@
   "kind": "what-if",
   "kit": "rolling-start",
   "level": 1,
+  "order": 14,
   "start": {
     "arena": {
       "preset": "open-floor",

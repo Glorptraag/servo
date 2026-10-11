@@ -140,6 +140,7 @@
   "kind": "part-introduction",
   "kit": "circuit-crew",
   "level": 2,
+  "order": 11,
   "start": {
     "arena": {
       "preset": "open-floor",

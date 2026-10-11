@@ -87,6 +87,7 @@
   "kind": "part-introduction",
   "kit": "rolling-start",
   "level": 1,
+  "order": 3,
   "start": {
     "arena": {
       "preset": "open-floor",

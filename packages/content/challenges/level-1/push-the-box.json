@@ -233,6 +233,7 @@
   "kind": "guided",
   "kit": "rolling-start",
   "level": 1,
+  "order": 9,
   "start": {
     "arena": {
       "preset": "bump-props",

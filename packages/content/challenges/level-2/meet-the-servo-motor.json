@@ -242,6 +242,7 @@
   "kind": "part-introduction",
   "kit": "circuit-crew",
   "level": 2,
+  "order": 10,
   "start": {
     "arena": {
       "preset": "open-floor",

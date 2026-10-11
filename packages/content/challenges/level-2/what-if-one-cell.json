@@ -263,6 +263,7 @@
   "kind": "what-if",
   "kit": "circuit-crew",
   "level": 2,
+  "order": 17,
   "start": {
     "arena": {
       "preset": "open-floor",

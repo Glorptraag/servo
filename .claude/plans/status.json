@@ -1836,7 +1836,7 @@
       "dispatched_at": null
     },
     "7.26": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "small",
       "batch": null,
@@ -1857,7 +1857,7 @@
       "completed_by": null,
       "retries": 0,
       "errors": [],
-      "dispatched_at": null
+      "dispatched_at": "2026-10-11T04:38:11+00:00"
     },
     "7.27": {
       "status": "pending",
@@ -3169,6 +3169,14 @@
       "id": "D132",
       "question": "Level unlocking (brief Section 5: passing the unscripted build opens the next level and its parts) is absent: START_LEVEL is 1 and Home lists every level ungated (app README Challenges, decision 4). Task 7.35 would read the level from the child's run records, lock later levels on Home with one plain line naming the build that opens them, and move the sandbox kit with it. Build it before G6, or keep every level open for the family testers?",
       "recommendation": "Keep every level open until G6's families have run; park 7.35 and build it from their findings, since a locked level is the one thing in the app a child cannot undo.",
+      "confidence": "0.6",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D133",
+      "question": "Task 7.26 authored each challenge's order on Home (Challenge.order, schema 1.1). Level 1: meet the battery pack, DC motor, large wheel, caster; drive forward; meet the switch; stop with the switch; turn in a circle; push the box; over the hill; the two breakdowns; the two what-ifs; cross the arena. Level 2 meets each part right before the job that uses it (LED then drive and light, buzzer then drive with the buzzer, bumper switch then light until the wall, motor driver then stop the motor driver and spin on the spot, servo, gearbox and small wheel then push the heavy box, 1-cell pack before the breakdowns), then breakdowns, what-ifs, stop at the wall. Confirm or reorder?",
+      "recommendation": "Confirm as the path the family testers see at G6; reorder from their findings. The numbers are in each challenge file and the validator keeps them unique per level.",
       "confidence": "0.6",
       "blocks": [],
       "resolved": false

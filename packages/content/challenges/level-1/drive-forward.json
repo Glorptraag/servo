@@ -245,6 +245,7 @@
   "kind": "guided",
   "kit": "rolling-start",
   "level": 1,
+  "order": 5,
   "start": {
     "arena": {
       "preset": "open-floor",

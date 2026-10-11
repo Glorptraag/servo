@@ -88,6 +88,7 @@
   "kind": "breakdown",
   "kit": "rolling-start",
   "level": 1,
+  "order": 11,
   "start": {
     "arena": {
       "preset": "open-floor",

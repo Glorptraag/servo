@@ -364,6 +364,7 @@
   "kind": "guided",
   "kit": "circuit-crew",
   "level": 2,
+  "order": 6,
   "start": {
     "arena": {
       "preset": "wall-stop",
