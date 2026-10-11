@@ -8,8 +8,8 @@ input 10 switch closed=false
 input 20 switch closed=true
 blueprint 3514614b3517dd8b
 arena open-floor 297edbfc7ad9a93c
-part battery-pack-2-cell 4f06898988ddc4d3
-part switch bcdbfddbd71ae424
+part battery-pack-2-cell 58782a4ff319d3fd
+part switch e81391b373393119
 record e227f7b30979d2448321d132a600ea1de50210a26d8247b1d295abc59238f5fc
 fault battery short-circuit first-tick=2
 fault switch across-the-pack first-tick=2

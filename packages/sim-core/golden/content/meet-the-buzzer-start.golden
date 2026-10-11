@@ -7,8 +7,8 @@ ticks 30
 inputs none
 blueprint 40d86654e48c8dba
 arena open-floor 297edbfc7ad9a93c
-part battery-pack-2-cell c0db17158e46f983
-part buzzer 726dc0450856ad8f
+part battery-pack-2-cell c100ff04528eb9e4
+part buzzer f8ff68fd1ac259a2
 record 58a04da38e5c84c6c381fd41c2b0b05687b298538231720996608ae97d43c9ce
 fault battery no-loop first-tick=2
 fault buzzer no-circuit first-tick=2

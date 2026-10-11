@@ -8,9 +8,9 @@ input 10 switch closed=false
 input 20 switch closed=true
 blueprint 45022438f1260937
 arena open-floor 297edbfc7ad9a93c
-part battery-pack-2-cell 4f06898988ddc4d3
-part led da7f1e454d72d95f
-part switch bcdbfddbd71ae424
+part battery-pack-2-cell 58782a4ff319d3fd
+part led df0395e6c8427406
+part switch e81391b373393119
 record 79d3a039a3f513f289eba300102bf39134c5939af2c88a5a9b0976fe8f93140b
 faults none
 subjects battery led switch wire:w1 wire:w2 wire:w3

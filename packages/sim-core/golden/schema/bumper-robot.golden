@@ -7,16 +7,16 @@ ticks 30
 inputs none
 blueprint 2a4593aa551aa158
 arena wall-stop e655694a00d0f9fd
-part battery-pack-2-cell 4f06898988ddc4d3
-part bumper-switch f9d36ab7b77ed291
-part buzzer 4d72863463005016
-part caster 2a2f645fdaf6f14e
-part chassis e4dd75ff894669d7
-part dc-motor 860878b9ebd9b2f6
-part gearbox b27c24359f1e3c80
-part motor-driver d751dabace2c7b52
-part servo-motor 5d68db52aaa87fc7
-part wheel-large a38367d03cf69dba
+part battery-pack-2-cell 58782a4ff319d3fd
+part bumper-switch 099fa5b457b8c0c8
+part buzzer 4592cee02c21e1e7
+part caster 0b2f079c73fcdf44
+part chassis 5674f8a7f4379417
+part dc-motor 374f944b9b5926c6
+part gearbox 5f4e02bd9d299c95
+part motor-driver 9c79b68f6669a912
+part servo-motor d14755acff9ee16f
+part wheel-large b9ec730aa0846171
 record f746833a69e704fd6d46785738efe3c67cd69b03b2eae6fb71d916e02fe134a6
 fault buzzer low-voltage first-tick=2
 fault servo low-voltage first-tick=2

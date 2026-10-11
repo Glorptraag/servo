@@ -7,10 +7,10 @@ ticks 30
 inputs none
 blueprint dbf4b61f0bc39e3d
 arena open-floor 297edbfc7ad9a93c
-part battery-pack-2-cell 4f06898988ddc4d3
-part dc-motor 860878b9ebd9b2f6
-part microcontroller 3a6a9384d36797a6
-part servo-motor 5d68db52aaa87fc7
+part battery-pack-2-cell 58782a4ff319d3fd
+part dc-motor 374f944b9b5926c6
+part microcontroller 7bd23cae26a791ed
+part servo-motor d14755acff9ee16f
 record 9a094ee6277a2a3e9b01a43f187fad018f678b46476e4dabcf51c0e7db63eb92
 fault brain low-voltage first-tick=2
 fault servo low-voltage first-tick=2

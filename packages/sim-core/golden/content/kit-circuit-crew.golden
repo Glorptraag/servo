@@ -7,16 +7,16 @@ ticks 360
 inputs none
 blueprint edecfc69ac5dad92
 arena wall-stop 1d8d0f6a65d48689
-part battery-pack-2-cell c0db17158e46f983
-part bumper-switch 07e8a283c2f64a5b
-part buzzer 726dc0450856ad8f
-part caster f8d6f1e4cb696e4e
-part chassis 2b67875c3e879e19
-part dc-motor 549f5c5fe7228521
-part led 03a9d93bdcba5766
-part motor-driver 267740b1b2d0d537
-part switch 0a304ca511260dde
-part wheel-large adb7c8165db4646e
+part battery-pack-2-cell c100ff04528eb9e4
+part bumper-switch 099fa5b457b8c0c8
+part buzzer f8ff68fd1ac259a2
+part caster 0b2f079c73fcdf44
+part chassis 5674f8a7f4379417
+part dc-motor 1138ba0d5d8ce499
+part led 58e10af9669209a0
+part motor-driver f7552a7c6cb0f940
+part switch f63351cbd639bb24
+part wheel-large 8b010b67b9166b23
 record 3daf8f7c4e8bf8f8f1f7c51e0acafbba598eeaadd9e07fd2efcf8febd4826d04
 faults none
 subjects battery bumper buzzer caster chassis driver led motor-left motor-right switch wheel-left wheel-right wire:w10 wire:w11 wire:w12 wire:w13 wire:w14 wire:w15 wire:w16 wire:w17 wire:w18 wire:w19 wire:w20 wire:w21 wire:w22 wire:w23

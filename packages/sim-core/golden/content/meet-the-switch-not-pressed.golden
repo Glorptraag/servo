@@ -7,9 +7,9 @@ ticks 75
 inputs none
 blueprint 9c11ce4557035cce
 arena open-floor 297edbfc7ad9a93c
-part battery-pack-2-cell c0db17158e46f983
-part dc-motor 549f5c5fe7228521
-part switch 0a304ca511260dde
+part battery-pack-2-cell c100ff04528eb9e4
+part dc-motor 1138ba0d5d8ce499
+part switch f63351cbd639bb24
 record a609614ac11db5c838019417d184c3821a1fb02e6837d214f50e2697ae377468
 faults none
 subjects battery motor switch wire:w1 wire:w2 wire:w3

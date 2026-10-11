@@ -7,12 +7,12 @@ ticks 690
 inputs none
 blueprint 58a9c45af0355fd9
 arena wall-stop 1d8d0f6a65d48689
-part battery-pack-2-cell c0db17158e46f983
-part caster f8d6f1e4cb696e4e
-part chassis 2b67875c3e879e19
-part dc-motor 549f5c5fe7228521
-part gearbox 0ccc719a9dbfd5f5
-part wheel-large adb7c8165db4646e
+part battery-pack-2-cell c100ff04528eb9e4
+part caster 0b2f079c73fcdf44
+part chassis 5674f8a7f4379417
+part dc-motor 1138ba0d5d8ce499
+part gearbox ae52eaae4dff4a94
+part wheel-large 8b010b67b9166b23
 record 9fc7b18bd318379d7a656f0c2b63b0ec1eaf6abdd31a688bd6c9a3a5a3b405bf
 fault wheel-left slipping first-tick=622
 fault wheel-right slipping first-tick=622

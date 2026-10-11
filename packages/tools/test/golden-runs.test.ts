@@ -6,7 +6,7 @@ import { loadContent } from '@servo/content';
 import { loadFixtures } from '@servo/content/fixtures';
 import type { ContentFixture } from '@servo/content/fixtures';
 import { canonicalJson, validateRunRecord } from '@servo/schema';
-import type { IssueCode, RunEvent } from '@servo/schema';
+import type { Catalogue, IssueCode, PartRecord, RunEvent } from '@servo/schema';
 import type { LiveState } from '@servo/sim-core';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -25,6 +25,7 @@ import {
   runCase,
   schemaCases,
   sha256,
+  simulatedPart,
   summarizeSubject,
 } from '../src/golden-runs/index.ts';
 import type { GoldenCase, GoldenFile, GoldenRun, GoldenTick, SubjectState } from '../src/golden-runs/index.ts';
@@ -360,6 +361,66 @@ describe('golden runs: each content fixture’s expect', () => {
   it('leaves a schema blueprint, which has no expect, alone', async () => {
     const golden = schemaCase('short-circuit');
     expect(checkExpect(golden, await ran(golden))).toEqual({ holds: true, shows: '', mismatches: [] });
+  });
+});
+
+describe('golden runs: the part hash covers only what the Run reads (task 7.12)', () => {
+  /** The catalogue with every part record changed by `change`. */
+  const withParts = (change: (record: PartRecord) => PartRecord): Catalogue => ({
+    ...content.catalogue,
+    parts: new Map([...content.catalogue.parts].map(([id, record]) => [id, change(record)])),
+  });
+  /** A copy edit: the identity, the spec card, every label, and each failure mode's hint, card line, teaching note and effects. */
+  const copyEdited = (record: PartRecord): PartRecord => ({
+    ...record,
+    identity: { ...record.identity, name: `${record.identity.name} edited` },
+    card: { ...record.card, does: 'Does something else.', needs: 'Needs something else.' },
+    ports: record.ports.map((port) => ({ ...port, label: `${port.label} edited` })),
+    settings: record.settings.map((setting) =>
+      setting.kind === 'choice'
+        ? { ...setting, label: `${setting.label} edited`, options: setting.options.map((option) => ({ ...option, label: `${option.label} edited` })) }
+        : { ...setting, label: `${setting.label} edited` },
+    ),
+    failureModes: record.failureModes.map((mode) => ({ ...mode, cardLine: 'Another line.', teachingNote: 'Another note.', hint: 'Another hint' })),
+  });
+  const hashOf = (record: PartRecord): string => sha256(canonicalJson(simulatedPart(record)));
+  const motor = (): PartRecord => {
+    const found = content.catalogue.parts.get('dc-motor');
+    if (!found) throw new Error('no dc-motor record');
+    return found;
+  };
+
+  it('is the same after a copy edit to every part record, so the golden file is the same', async () => {
+    const golden = contentCase(fixture('switch-in-the-line'), content.catalogue);
+    const before = await ran(golden);
+    const edited = await runCase({ ...golden, catalogue: withParts(copyEdited) });
+    expect(edited.file.parts).toEqual(before.file.parts);
+    expect(edited.file).toEqual(before.file);
+    expect(hashOf(copyEdited(motor()))).toBe(hashOf(motor()));
+    // The effects a mode shows are the app's too (sim-core never reads them).
+    expect(hashOf({ ...motor(), failureModes: motor().failureModes.map((mode) => ({ ...mode, shows: [...mode.shows, ...mode.shows] })) })).toBe(hashOf(motor()));
+  });
+
+  it('changes with a port, the body, a behaviour, a need, a setting or a failure mode’s id, need or unmet', () => {
+    const record = motor();
+    const was = hashOf(record);
+    const [port, ...ports] = record.ports;
+    if (!port || port.type !== 'power') throw new Error('the DC motor starts with a power port');
+    expect(hashOf({ ...record, ports: [{ ...port, polarity: port.polarity === 'positive' ? 'negative' : 'positive' }, ...ports] })).not.toBe(was);
+    expect(hashOf({ ...record, body: { ...record.body, grams: record.body.grams + 1 } })).not.toBe(was);
+    expect(hashOf({ ...record, behaviour: record.behaviour.slice(1) })).not.toBe(was);
+    expect(hashOf({ ...record, needs: record.needs.slice(1) })).not.toBe(was);
+    const [mode, ...modes] = record.failureModes;
+    if (!mode) throw new Error('the DC motor has a failure mode');
+    expect(hashOf({ ...record, failureModes: [{ ...mode, id: 'renamed' }, ...modes] })).not.toBe(was);
+    expect(hashOf({ ...record, failureModes: [{ ...mode, need: 'another' }, ...modes] })).not.toBe(was);
+    expect(hashOf({ ...record, failureModes: modes })).not.toBe(was);
+    const servo = content.catalogue.parts.get('servo-motor');
+    if (!servo) throw new Error('no servo-motor record');
+    const [setting, ...settings] = servo.settings;
+    if (!setting || setting.kind !== 'number') throw new Error('the servo motor has a number setting');
+    expect(hashOf({ ...servo, settings: [{ ...setting, default: setting.default + 1 }, ...settings] })).not.toBe(hashOf(servo));
+    expect(hashOf({ ...servo, settings: [{ ...setting, label: 'Angle edited' }, ...settings] })).toBe(hashOf(servo));
   });
 });
 

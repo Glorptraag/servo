@@ -2,7 +2,7 @@
 // record it gives.
 import { createHash } from 'node:crypto';
 import { canonicalJson } from '@servo/schema';
-import type { Blueprint, Catalogue, ChallengeId, RunInput, RunRecord } from '@servo/schema';
+import type { Blueprint, Catalogue, ChallengeId, PartRecord, RunInput, RunRecord } from '@servo/schema';
 import type { FixtureVerdict } from '@servo/content/fixtures';
 import { createSimulation } from '@servo/sim-core';
 import type { RunFrame, RunRecordContext } from '@servo/sim-core';
@@ -42,6 +42,33 @@ export const RECORD_CONTEXT: RunRecordContext = {
 
 export const sha256 = (text: string): string => createHash('sha256').update(text).digest('hex');
 
+/** `value` with every `label` field, at any depth, left out. */
+const withoutLabels = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(withoutLabels);
+  if (value === null || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => key !== 'label')
+      .map(([key, each]) => [key, withoutLabels(each)]),
+  );
+};
+
+/**
+ * The part of a record the simulation reads (task 7.12): its body, ports, needs, behaviour and settings less their
+ * labels, and each failure mode's id, need and unmet. The identity, the spec card, the teaching notes, hints, card lines,
+ * the effects a mode shows and every label are the app's and the content validator's, so the golden file's part hash is
+ * over this and a copy edit changes no golden.
+ */
+export const simulatedPart = (record: PartRecord): unknown => ({
+  id: record.id,
+  body: record.body,
+  ports: withoutLabels(record.ports),
+  needs: record.needs,
+  behaviour: record.behaviour,
+  settings: withoutLabels(record.settings),
+  failureModes: record.failureModes.map(({ id, need, unmet }) => ({ id, need, unmet })),
+});
+
 const tickOf = (frame: RunFrame): GoldenTick => ({
   tick: frame.tick,
   hash: sha256(canonicalJson(frame.events)).slice(0, 8),
@@ -79,7 +106,10 @@ export const runCase = async (golden: GoldenCase): Promise<GoldenRun> => {
       inputs: record.inputs,
       blueprint: sha256(canonicalJson(simulation.blueprint)).slice(0, 16),
       arena: { id: arena.id, hash: sha256(canonicalJson(arena)).slice(0, 16) },
-      parts: partTypes.map((id) => ({ id, hash: sha256(canonicalJson(golden.catalogue.parts.get(id) ?? null)).slice(0, 16) })),
+      parts: partTypes.map((id) => {
+        const record = golden.catalogue.parts.get(id);
+        return { id, hash: sha256(canonicalJson(record ? simulatedPart(record) : null)).slice(0, 16) };
+      }),
       record: sha256(canonicalJson(record)),
       faults: record.faults,
       subjects: [...frames[0]?.state.keys() ?? []],

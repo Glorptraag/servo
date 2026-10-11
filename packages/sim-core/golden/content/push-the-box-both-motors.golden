@@ -7,11 +7,11 @@ ticks 150
 inputs none
 blueprint b7cdbc6eada58b02
 arena bump-props d755cfc776721331
-part battery-pack-2-cell c0db17158e46f983
-part caster f8d6f1e4cb696e4e
-part chassis 2b67875c3e879e19
-part dc-motor 549f5c5fe7228521
-part wheel-large adb7c8165db4646e
+part battery-pack-2-cell c100ff04528eb9e4
+part caster 0b2f079c73fcdf44
+part chassis 5674f8a7f4379417
+part dc-motor 1138ba0d5d8ce499
+part wheel-large 8b010b67b9166b23
 record 832687ade5e1ca5a57cc2b945b81f55d0814562f8630dcde80589a75e1347d50
 fault motor-left overload first-tick=136
 fault motor-right overload first-tick=136

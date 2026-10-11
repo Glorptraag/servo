@@ -7,8 +7,8 @@ ticks 30
 inputs none
 blueprint 4897cbe86ee39c55
 arena open-floor 297edbfc7ad9a93c
-part battery-pack-2-cell c0db17158e46f983
-part led 03a9d93bdcba5766
+part battery-pack-2-cell c100ff04528eb9e4
+part led 58e10af9669209a0
 record 1d69383a52ed980e492ebb07915e2b9e814d8ad3710f6de26daf018a38ec1f00
 faults none
 subjects battery led wire:w1 wire:w2

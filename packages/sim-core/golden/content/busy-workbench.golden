@@ -7,16 +7,16 @@ ticks 90
 inputs none
 blueprint 4430f05091861f2a
 arena open-floor 297edbfc7ad9a93c
-part battery-pack-2-cell c0db17158e46f983
-part bumper-switch 07e8a283c2f64a5b
-part buzzer 726dc0450856ad8f
-part caster f8d6f1e4cb696e4e
-part chassis 2b67875c3e879e19
-part dc-motor 549f5c5fe7228521
-part led 03a9d93bdcba5766
-part motor-driver 267740b1b2d0d537
-part switch 0a304ca511260dde
-part wheel-large adb7c8165db4646e
+part battery-pack-2-cell c100ff04528eb9e4
+part bumper-switch 099fa5b457b8c0c8
+part buzzer f8ff68fd1ac259a2
+part caster 0b2f079c73fcdf44
+part chassis 5674f8a7f4379417
+part dc-motor 1138ba0d5d8ce499
+part led 58e10af9669209a0
+part motor-driver f7552a7c6cb0f940
+part switch f63351cbd639bb24
+part wheel-large 8b010b67b9166b23
 record e473e67eefad8119300608e172772800c082dedc76bc28eac71b8017dfb761f6
 faults none
 subjects battery bench-battery bench-buzzer bench-driver bench-led-1 bench-led-2 bench-led-3 bench-motor-a bench-motor-b bench-motor-c bench-switch bumper buzzer caster chassis driver lamp-battery lamp-led lamp-switch led motor-left motor-right switch wheel-left wheel-right wire:w10 wire:w11 wire:w12 wire:w13 wire:w14 wire:w15 wire:w16 wire:w17 wire:w18 wire:w19 wire:w20 wire:w21 wire:w22 wire:w23 wire:w24 wire:w25 wire:w26 wire:w27 wire:w28 wire:w29 wire:w30 wire:w31 wire:w32 wire:w33 wire:w34 wire:w35 wire:w36 wire:w37 wire:w38 wire:w39 wire:w40 wire:w41 wire:w42 wire:w43

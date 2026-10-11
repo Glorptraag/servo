@@ -9,7 +9,7 @@ export { checkExpect } from './expect.ts';
 export type { ExpectReport, GoalJudge } from './expect.ts';
 export { GOLDEN_EXTENSION, GOLDEN_FORMAT, formatGolden, parseGolden } from './file.ts';
 export type { GoldenFile, GoldenParse, GoldenTick, InputHash } from './file.ts';
-export { RECORD_CONTEXT, runCase, sha256 } from './run.ts';
+export { RECORD_CONTEXT, runCase, sha256, simulatedPart } from './run.ts';
 export type { GoldenCase, GoldenRun } from './run.ts';
 export { FIELD_ORDER, NONE, PRECISION, applyChanges, changedFields, formatNumber, summarizeLive, summarizeSubject } from './summary.ts';
 export type { SubjectState, TickState } from './summary.ts';

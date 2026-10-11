@@ -1482,7 +1482,7 @@
       "errors": []
     },
     "7.12": {
-      "status": "pending",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1500,10 +1500,11 @@
       ],
       "done_when": "A tools test edits a part's card and hint text in a copy of the catalogue and shows the golden hash unchanged, and edits a port or behaviour field and shows it changed; pnpm golden is green after one hash-only re-accept; the golden README states what the hash covers; tools suite, lint and typecheck green.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-11T05:31:33+00:00",
+      "completed_by": "session-affectionate-sagan",
       "retries": 0,
-      "errors": []
+      "errors": [],
+      "dispatched_at": "2026-10-11T05:20:38+00:00"
     },
     "7.13": {
       "status": "pending",

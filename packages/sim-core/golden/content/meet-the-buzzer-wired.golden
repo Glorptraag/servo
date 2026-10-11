@@ -7,8 +7,8 @@ ticks 30
 inputs none
 blueprint a794eee4c8dd619b
 arena open-floor 297edbfc7ad9a93c
-part battery-pack-2-cell c0db17158e46f983
-part buzzer 726dc0450856ad8f
+part battery-pack-2-cell c100ff04528eb9e4
+part buzzer f8ff68fd1ac259a2
 record 6bbe7fb7277d13c3592c94cb7f40f9f0e9408ffcd9cedffb80bffe3de10c2703
 faults none
 subjects battery buzzer wire:w1 wire:w2

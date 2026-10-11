@@ -7,9 +7,9 @@ ticks 30
 inputs none
 blueprint ef1e47f1e0b29b2d
 arena open-floor 297edbfc7ad9a93c
-part battery-pack-2-cell c0db17158e46f983
-part dc-motor 549f5c5fe7228521
-part motor-driver 267740b1b2d0d537
+part battery-pack-2-cell c100ff04528eb9e4
+part dc-motor 1138ba0d5d8ce499
+part motor-driver f7552a7c6cb0f940
 record b7d10123d1eb9c349830270b28c24ec858817dac08f087f0dd0d37db49252c2a
 faults none
 subjects battery driver motor wire:w1 wire:w2 wire:w3 wire:w4

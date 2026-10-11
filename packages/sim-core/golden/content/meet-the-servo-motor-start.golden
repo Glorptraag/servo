@@ -7,8 +7,8 @@ ticks 30
 inputs none
 blueprint 4d83b8b3e1103cf3
 arena open-floor 297edbfc7ad9a93c
-part battery-pack-2-cell c0db17158e46f983
-part servo-motor 3eaa2a20a102c860
+part battery-pack-2-cell c100ff04528eb9e4
+part servo-motor a966331d5b662682
 record 0b53c0a09decb61dbd7afa3608a22ad2b17dffcdeed8814c9360105074d5eb86
 fault battery-1 no-loop first-tick=2
 fault battery-2 no-loop first-tick=2
