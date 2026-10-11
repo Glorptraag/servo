@@ -1921,7 +1921,7 @@
       "dispatched_at": "2026-10-11T04:58:28+00:00"
     },
     "7.29": {
-      "status": "pending",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -1940,11 +1940,11 @@
       ],
       "done_when": "Browser test: a sandbox roller with one DC motor unwired, two Runs, the button offers, a press pulses the motor and says its hint line on touch, pointer and keyboard; the unscripted build gets the same; existing hint tests green.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-11T05:20:01+00:00",
+      "completed_by": "session-affectionate-sagan",
       "retries": 0,
       "errors": [],
-      "dispatched_at": null
+      "dispatched_at": "2026-10-11T05:09:54+00:00"
     },
     "7.30": {
       "status": "done",
@@ -3175,6 +3175,14 @@
       "question": "Task 7.26 authored each challenge's order on Home (Challenge.order, schema 1.1). Level 1: meet the battery pack, DC motor, large wheel, caster; drive forward; meet the switch; stop with the switch; turn in a circle; push the box; over the hill; the two breakdowns; the two what-ifs; cross the arena. Level 2 meets each part right before the job that uses it (LED then drive and light, buzzer then drive with the buzzer, bumper switch then light until the wall, motor driver then stop the motor driver and spin on the spot, servo, gearbox and small wheel then push the heavy box, 1-cell pack before the breakdowns), then breakdowns, what-ifs, stop at the wall. Confirm or reorder?",
       "recommendation": "Confirm as the path the family testers see at G6; reorder from their findings. The numbers are in each challenge file and the validator keeps them unique per level.",
       "confidence": "0.6",
+      "blocks": [],
+      "resolved": false
+    },
+    {
+      "id": "D134",
+      "question": null,
+      "recommendation": "",
+      "confidence": "medium",
       "blocks": [],
       "resolved": false
     }

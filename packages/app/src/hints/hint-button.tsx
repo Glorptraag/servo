@@ -2,8 +2,9 @@
 // next step of the ladder (controller.ts); the rungs are drawn on the canvas, never here. One native button, so touch,
 // pointer, keyboard (Enter; Space stays Run and Stop, D42) and screen readers take the same path (ground rule 8), and
 // the canvas's list view reads the rung drawn now. The step's line is the text twin, said in a polite status; do-it's
-// line, saying what it did, also shows beside the button. No dialog (ground rule 9). Nothing in the sandbox, or for a
-// challenge with no ladder (an unscripted build).
+// line, saying what it did, also shows beside the button. No dialog (ground rule 9). In the sandbox, and for a challenge
+// with no ladder (an unscripted build), the button shows only while a part record's ladder exists for the build that
+// ran twice with the same fault (task 7.29, controller.ts), and goes with the next edit.
 import { useEffect, useRef, useState } from 'react';
 import type { Challenge, Timestamp } from '@servo/schema';
 import type { RunLoop } from '../run-bar/run-loop.ts';
@@ -35,7 +36,7 @@ export const HintButton = ({ challenge, loop, log, now }: HintButtonProps) => {
   useEffect(() => {
     // Steps used under another challenge, or before the sandbox, are not about this one's Runs.
     log.clear();
-    if (!canvas || !challenge || challenge.hints.length === 0) return undefined;
+    if (!canvas) return undefined;
     const made = new HintLadderController({
       canvas,
       catalogue: content.catalogue,
@@ -59,7 +60,8 @@ export const HintButton = ({ challenge, loop, log, now }: HintButtonProps) => {
     controller?.buildChanged();
   }, [controller, blueprint]);
 
-  if (!challenge || challenge.hints.length === 0) return null;
+  // A challenge with ladders keeps its button through every state; anything else shows one only while a ladder exists.
+  if (!(challenge && challenge.hints.length > 0) && !state.exists) return null;
   const usable = state.available && mode === 'build';
   return (
     <div className="hint-ladder">

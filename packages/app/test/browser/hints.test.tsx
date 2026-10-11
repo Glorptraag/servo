@@ -15,7 +15,7 @@ import { mountCanvas } from '@servo/canvas';
 import type { CanvasHandle } from '@servo/canvas';
 import { probeCanvas } from '@servo/canvas/testing';
 import { loadContent } from '@servo/content';
-import { validateBlueprint } from '@servo/schema';
+import { validateBlueprint, validateChallenge } from '@servo/schema';
 import type { Blueprint, Challenge } from '@servo/schema';
 import { GoalLine } from '../../src/challenges/index.ts';
 import { HINT_TEXT, HintButton, HintLog } from '../../src/hints/index.ts';
@@ -25,7 +25,7 @@ import { PLACEHOLDER_SLOTS, Shell, useShell } from '../../src/shell/index.ts';
 import type { CanvasSetup, ShellApi } from '../../src/shell/index.ts';
 import { openStore } from '../../src/store/index.ts';
 import type { ProfileStore, ServoStore } from '../../src/store/index.ts';
-import { example } from '../hints/support.ts';
+import { example, fixture } from '../hints/support.ts';
 
 const { content } = loadContent();
 const MEET = example('meet-the-switch');
@@ -80,11 +80,13 @@ interface Mounted {
   readonly log: HintLog;
 }
 
-const mount = async (challenge: Challenge): Promise<Mounted> => {
+/** The App with `challenge` on the canvas, or none (the sandbox), starting from `start` (default: the challenge's start). */
+const mount = async (challenge: Challenge | null, start: Blueprint | undefined = challenge?.start as Blueprint | undefined): Promise<Mounted> => {
+  if (!start) throw new Error('no start build');
   const store = await openStore({ name: `servo-hints-${crypto.randomUUID()}` });
   const profile = await store.profiles.create('Builder 1');
   const child = store.forProfile(profile.id);
-  const copied = await child.blueprints.copy(challenge.start as Blueprint, 'Build 1');
+  const copied = await child.blueprints.copy(start, 'Build 1');
   if (!copied.ok) throw new Error('the start did not copy');
   const host = document.createElement('div');
   host.style.cssText = 'position: fixed; left: 0; top: 0; width: 1180px; height: 820px;';
@@ -107,7 +109,7 @@ const mount = async (challenge: Challenge): Promise<Mounted> => {
     return (
       <Shell
         content={content}
-        level={challenge.level}
+        level={challenge?.level ?? 1}
         storage={null}
         child={child}
         start={copied.blueprint}
@@ -154,8 +156,9 @@ const mount = async (challenge: Challenge): Promise<Mounted> => {
   };
 };
 
+const hintButtonOrNone = (app: Mounted): HTMLButtonElement | null => app.host.querySelector<HTMLButtonElement>('[data-region="header"] .hint-button');
 const hintButton = (app: Mounted): HTMLButtonElement => {
-  const found = app.host.querySelector<HTMLButtonElement>('[data-region="header"] .hint-button');
+  const found = hintButtonOrNone(app);
   if (!found) throw new Error('no hint button');
   return found;
 };
@@ -235,6 +238,11 @@ const runFor = async (app: Mounted, ticks: number): Promise<void> => {
 };
 
 const SOON = { timeout: 10_000 };
+
+/** Lets the recorder's read of the build's earlier Runs land (one store round trip behind it), so the first Run is kept. */
+const recorderReady = async (app: Mounted): Promise<void> => {
+  await app.child.runs.list();
+};
 
 describe('the hint ladder', () => {
   it('draws each rung clear of every port by pointer, touch and keyboard, then does it with one valid wire', async () => {
@@ -322,7 +330,9 @@ describe('the hint ladder', () => {
   it('never offers on a what-if: two Runs without the change draw nothing, and a tap still draws the first rung (D131)', async () => {
     const app = await mount(WHAT_IF);
     expect(hintButton(app).dataset.offered).toBe('false');
+    await recorderReady(app);
     await runFor(app, 12);
+    await vi.waitFor(async () => expect(await app.child.runs.list({ challenge: WHAT_IF.id })).toHaveLength(1), SOON);
     await runFor(app, 12);
     await vi.waitFor(async () => expect(await app.child.runs.list({ challenge: WHAT_IF.id })).toHaveLength(2), SOON);
     expect(app.canvas().listView.hint).toBeUndefined();
@@ -333,5 +343,81 @@ describe('the hint ladder', () => {
     expect(hintButton(app).dataset.offered).toBe('false');
     const runs = await app.child.runs.list({ challenge: WHAT_IF.id });
     expect(runs.map((run) => run.hints)).toEqual([[], []]);
+  });
+});
+
+describe('a fault teaches outside a ladder (task 7.29)', () => {
+  /** The Level 1 roller with the left DC motor's return wire missing: no circuit, so it stays still and the robot turns. */
+  const BROKEN = fixture('broken-missing-return-wire');
+  const NO_LOOP = 'This DC motor is not in a loop with the battery pack';
+  const press = {
+    pointer: async (button: HTMLButtonElement) => userEvent.click(button),
+    touch: async (button: HTMLButtonElement) => touch(button),
+    keyboard: async (button: HTMLButtonElement) => {
+      button.focus();
+      await userEvent.keyboard('{Enter}');
+    },
+  } as const;
+
+  it('in the sandbox, shows the button only after two Runs with the same fault, pulsing; a press pulses the part and says its line, by pointer, touch and keyboard', async () => {
+    for (const [path, pressBy] of Object.entries(press)) {
+      const app = await mount(null, BROKEN);
+      expect(hintButtonOrNone(app), `${path}: no button before any Run`).toBeNull();
+      await recorderReady(app);
+      await runFor(app, 12);
+      await vi.waitFor(async () => expect(await app.child.runs.list()).toHaveLength(1), SOON);
+      expect(hintButtonOrNone(app), `${path}: one Run is not enough`).toBeNull();
+      await runFor(app, 12);
+      await vi.waitFor(() => expect(hintButtonOrNone(app)).not.toBeNull(), SOON);
+      const button = hintButton(app);
+      expect(button.textContent).toBe(HINT_TEXT.button);
+      expect(button.dataset.offered).toBe('true');
+      expect(button.getAttribute('aria-disabled')).toBe('false');
+      expect(app.canvas().listView.hint, `${path}: an offer from a part record draws nothing until a press`).toBeUndefined();
+      await pressBy(button);
+      await vi.waitFor(() => expect(app.canvas().listView.hint?.step).toBe('pulse-part'), SOON);
+      expect(app.canvas().listView.hint).toMatchObject({ step: 'pulse-part', line: NO_LOOP });
+      expect(spoken(app)).toBe(NO_LOOP);
+      expect(hintButton(app).dataset.offered).toBe('false');
+      // No ghost wire and no do-it: nothing is left, and the build is untouched.
+      expect(hintButton(app).getAttribute('aria-disabled')).toBe('true');
+      expect(app.canvas().blueprint?.wires.length).toBe(BROKEN.wires.length);
+      expect(app.loop().phase).toBe('build');
+    }
+    // The use goes to the next Run's record, as under a challenge.
+    const app = await mount(null, BROKEN);
+    await recorderReady(app);
+    await runFor(app, 12);
+    await vi.waitFor(async () => expect(await app.child.runs.list()).toHaveLength(1), SOON);
+    await runFor(app, 12);
+    await vi.waitFor(() => expect(hintButtonOrNone(app)).not.toBeNull(), SOON);
+    await userEvent.click(hintButton(app));
+    await vi.waitFor(() => expect(app.canvas().listView.hint?.step).toBe('pulse-part'), SOON);
+    await runFor(app, 12);
+    await vi.waitFor(async () => expect(await app.child.runs.list()).toHaveLength(3), SOON);
+    const runs = await app.child.runs.list();
+    expect(runs.map((run) => run.hints.map((use) => [use.step, use.trigger, use.partId]))).toEqual([[], [], [['pulse-part', 'asked', 'motor-left']]]);
+    expect(runs.every((run) => run.challenge === undefined)).toBe(true);
+  });
+
+  it('serves an unscripted build the same way: no ladder of its own, so the part record teaches', async () => {
+    const data = content.challenges.find((challenge) => challenge.id === 'cross-the-arena') as Challenge;
+    expect(data.hints).toEqual([]);
+    const checked = validateChallenge({ ...data, start: { ...BROKEN, arena: data.arena } }, content.catalogue);
+    if (!checked.ok) throw new Error(checked.issues.map((issue) => issue.message).join(' '));
+    const app = await mount(checked.value);
+    expect(hintButtonOrNone(app)).toBeNull();
+    await recorderReady(app);
+    await runFor(app, 12);
+    await vi.waitFor(async () => expect(await app.child.runs.list({ challenge: checked.value.id })).toHaveLength(1), SOON);
+    await runFor(app, 12);
+    await vi.waitFor(() => expect(hintButtonOrNone(app)).not.toBeNull(), SOON);
+    expect(hintButton(app).dataset.offered).toBe('true');
+    await userEvent.click(hintButton(app));
+    await vi.waitFor(() => expect(app.canvas().listView.hint?.step).toBe('pulse-part'), SOON);
+    expect(spoken(app)).toBe(NO_LOOP);
+    const runs = await app.child.runs.list({ challenge: checked.value.id });
+    expect(runs).toHaveLength(2);
+    expect(runs.every((run) => run.goal?.met === false)).toBe(true);
   });
 });

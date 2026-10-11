@@ -262,3 +262,6 @@
 {"ts": "2026-10-11T04:56:00+00:00", "event": "done", "tasks": ["7.32"], "by": "session-affectionate-sagan"}
 {"ts": "2026-10-11T04:58:28+00:00", "event": "dispatch", "tasks": ["7.28"]}
 {"ts": "2026-10-11T05:06:54+00:00", "event": "done", "tasks": ["7.28"], "by": "session-affectionate-sagan"}
+{"ts": "2026-10-11T05:09:54+00:00", "event": "dispatch", "tasks": ["7.29"]}
+{"ts": "2026-10-11T05:18:14+00:00", "event": "decision_add", "id": "D134", "blocks": []}
+{"ts": "2026-10-11T05:20:01+00:00", "event": "done", "tasks": ["7.29"], "by": "session-affectionate-sagan"}
