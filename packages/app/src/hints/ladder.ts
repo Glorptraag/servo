@@ -28,7 +28,9 @@ export interface RunFault {
 
 /** The ladder that applies now, and the part its trigger is about, when it names one. */
 export interface LadderChoice {
-  /** The ladder's place in `challenge.hints`. */
+  /** Whose ladder: one of `challenge.hints`, or one made from a part record's failure mode (task 7.29). */
+  readonly source: 'challenge' | 'part-record';
+  /** The ladder's place in `challenge.hints`; -1 for a part record's. */
   readonly index: number;
   readonly ladder: HintLadder;
   /** The placed part the trigger found: the one with the fault or the unwired port. A type target narrows to it. */
@@ -74,7 +76,7 @@ export const chooseLadder = (challenge: Challenge, blueprint: Blueprint, faults:
     const parts = triggerParts(ladder.when, blueprint, faults);
     if (!parts) continue;
     const part = parts[0];
-    return { index, ladder, part, key: `${index} ${part ?? ''}` };
+    return { source: 'challenge', index, ladder, part, key: `${index} ${part ?? ''}` };
   }
   return undefined;
 };

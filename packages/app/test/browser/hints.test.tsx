@@ -349,7 +349,9 @@ describe('the hint ladder', () => {
 describe('a fault teaches outside a ladder (task 7.29)', () => {
   /** The Level 1 roller with the left DC motor's return wire missing: no circuit, so it stays still and the robot turns. */
   const BROKEN = fixture('broken-missing-return-wire');
-  const NO_LOOP = 'This DC motor is not in a loop with the battery pack';
+  /** The DC motor's no-circuit hint line, as content has it. */
+  const NO_LOOP = content.catalogue.parts.get('dc-motor')?.failureModes.find((mode) => mode.id === 'no-circuit')?.hint ?? '';
+  if (NO_LOOP === '') throw new Error('the DC motor record has no no-circuit hint');
   const press = {
     pointer: async (button: HTMLButtonElement) => userEvent.click(button),
     touch: async (button: HTMLButtonElement) => touch(button),

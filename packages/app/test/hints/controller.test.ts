@@ -298,18 +298,25 @@ describe('Runs that miss the goal', { timeout: 60_000 }, () => {
 
 describe('a part record’s ladder, outside any challenge ladder (task 7.29)', { timeout: 60_000 }, () => {
   const BROKEN = fixture('broken-missing-return-wire');
-  const NO_LOOP = 'This DC motor is not in a loop with the battery pack';
+  /** The DC motor's no-circuit hint line, as content has it: the ladder's words are the record's. */
+  const NO_LOOP = catalogue.parts.get('dc-motor')?.failureModes.find((mode) => mode.id === 'no-circuit')?.hint ?? '';
+  if (NO_LOOP === '') throw new Error('the DC motor record has no no-circuit hint');
 
   it('makes a ladder from the failure mode: the hint on the part, then the port it names', () => {
     expect(recordLadder({ partId: 'motor-left', failure: 'no-circuit' }, BROKEN, catalogue)).toMatchObject({
+      source: 'part-record',
       index: -1,
       part: 'motor-left',
       ladder: { when: { kind: 'fault', failure: 'no-circuit', target: { placed: 'motor-left' } }, steps: [{ step: 'pulse-part', target: { placed: 'motor-left' }, line: NO_LOOP }] },
     });
     const reversed = fixture('broken-reversed-motor');
+    const record = catalogue.parts.get('dc-motor');
+    const swapped = record?.failureModes.find((mode) => mode.id === 'reversed');
+    const plus = record?.ports.find((port) => port.id === swapped?.port);
+    if (!swapped?.hint || !plus) throw new Error('the DC motor record names a port and a hint for reversed');
     expect(recordLadder({ partId: 'motor-right', failure: 'reversed' }, reversed, catalogue)?.ladder.steps).toEqual([
-      { step: 'pulse-part', target: { placed: 'motor-right' }, line: "This DC motor's plus and minus are swapped" },
-      { step: 'pulse-port', target: { placed: 'motor-right', port: 'plus' }, line: "This DC motor's plus and minus are swapped: plus (+)" },
+      { step: 'pulse-part', target: { placed: 'motor-right' }, line: swapped.hint },
+      { step: 'pulse-port', target: { placed: 'motor-right', port: plus.id }, line: `${swapped.hint}: ${plus.label}` },
     ]);
     // A part no longer on the build, or a failure the record has no hint for, gives none.
     expect(recordLadder({ partId: 'motor-gone', failure: 'no-circuit' }, BROKEN, catalogue)).toBeUndefined();

@@ -89,6 +89,7 @@ export const recordLadder = (fault: RunFault, blueprint: Blueprint, catalogue: C
   const port = failure.port === undefined ? undefined : record.ports.find((spec) => spec.id === failure.port);
   if (port) steps.push({ step: 'pulse-port', target: { ...target, port: port.id }, line: `${failure.hint}: ${port.label}` });
   return {
+    source: 'part-record',
     index: -1,
     ladder: { when: { kind: 'fault', failure: fault.failure, target }, steps },
     part: fault.partId,
@@ -114,7 +115,7 @@ export class HintLadderController {
   /** The last Run's build and faults, for the two-Runs-alike rule of the part records' ladders. */
   private lastRun: { readonly key: string; readonly faults: readonly RunFault[] } | undefined;
   /** A ladder made from a part record's failure mode, for the build (by run key) it was made on. */
-  private fromRecord: { readonly on: string; readonly choice: LadderChoice } | undefined;
+  private fromRecord: { readonly on: string; readonly fault: RunFault; readonly choice: LadderChoice } | undefined;
   private disposed = false;
 
   constructor(options: HintLadderOptions) {
@@ -204,6 +205,9 @@ export class HintLadderController {
     const key = build ? runKeyOf(build) : '';
     const alike = this.lastRun?.key === key ? faults.filter((fault) => this.lastRun?.faults.some((seen) => sameFault(seen, fault))) : [];
     this.lastRun = { key, faults };
+    // A part record's ladder describes the last Run: a Run that meets the goal, or no longer shows its fault, ends it.
+    const kept = this.fromRecord;
+    if (kept && (met || !faults.some((fault) => sameFault(fault, kept.fault)))) this.fromRecord = undefined;
     if (met) {
       this.missed = 0;
       this.offered = false;
@@ -215,20 +219,23 @@ export class HintLadderController {
     }
     this.sync();
     if (this.options.challenge?.kind === 'what-if') return;
+    this.missed += 1;
     if (!this.choice && build) {
       // No challenge ladder for this build: the part record's, after two Runs of this build showing the same fault.
-      const made = alike.map((fault) => recordLadder(fault, build, this.options.catalogue)).find((choice) => choice !== undefined);
-      if (!made) return;
-      this.fromRecord = { on: key, choice: made };
-      this.sync();
-      // Offered by the pulsing button alone: the tap draws the part, so the child looks before anything is pointed at.
-      this.offered = true;
-      this.missed = 0;
-      this.emit();
+      for (const fault of alike) {
+        const made = recordLadder(fault, build, this.options.catalogue);
+        if (!made) continue;
+        this.fromRecord = { on: key, fault, choice: made };
+        this.sync();
+        // Offered by the pulsing button alone: the tap draws the part, so the child looks before anything is pointed at.
+        this.offered = true;
+        this.missed = 0;
+        this.emit();
+        return;
+      }
       return;
     }
-    if (this.choice?.index === -1) return;
-    this.missed += 1;
+    if (this.choice?.source === 'part-record') return;
     if (this.missed >= MISSED_RUNS_BEFORE_OFFER && !this.step('offered') && this.stateNow.available) {
       // Only do-it is left: the button pulses, and the child decides.
       this.offered = true;
