@@ -1861,7 +1861,7 @@
       "dispatched_at": "2026-10-11T04:38:11+00:00"
     },
     "7.27": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1879,8 +1879,8 @@
       ],
       "done_when": "A browser test opens Meet the switch: the card shows the switch on load and again when the goal is met, on touch, pointer and keyboard; every other kind is unchanged.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-11T04:51:03+00:00",
+      "completed_by": "session-affectionate-sagan",
       "retries": 0,
       "errors": [],
       "dispatched_at": "2026-10-11T04:47:17+00:00"
@@ -1943,7 +1943,7 @@
       "dispatched_at": null
     },
     "7.30": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "small",
       "batch": null,
@@ -1957,8 +1957,8 @@
       ],
       "done_when": "Every failure mode has a hint line in voice; every mode about one port names it; validate-content clean.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-11T04:51:03+00:00",
+      "completed_by": "session-affectionate-sagan",
       "retries": 0,
       "errors": [],
       "dispatched_at": "2026-10-11T04:46:06+00:00"
