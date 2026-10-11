@@ -9,7 +9,7 @@ import { exampleParts, validBlueprints } from '@servo/schema/fixtures'; // test 
 
 ## Versioning
 
-- `SCHEMA_VERSION` is `'1.0'`. A minor bump is additive: a new part family, primitive, need kind or optional field. Valid data stays valid.
+- `SCHEMA_VERSION` is `'1.1'`. A minor bump is additive: a new part family, primitive, need kind or optional field. Valid data stays valid. 1.1 (task 7.24, decision D130) added three optional fields: `Challenge.order` (with `challengeOrderIssues` over a set), `Prop.name` and `FailureMode.port`; the blueprint's version is unchanged, since a prop's name is optional in a stored build too.
 - A major bump changes `Blueprint.version` and needs a migration.
 - The eleventh part family (D4) is one entry in `PART_FAMILIES` (`src/types/taxonomy.ts`) plus a minor bump.
 

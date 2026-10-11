@@ -8,7 +8,8 @@ import {
   validatePartRecord,
   validateRunRecord,
 } from '@servo/schema';
-import type { Catalogue, Issue, ValidationResult } from '@servo/schema';
+import { challengeOrderIssues } from '@servo/schema';
+import type { Catalogue, Challenge, Issue, ValidationResult } from '@servo/schema';
 import { catalogueFromFixtures, catalogueFromFolder } from './catalogue.ts';
 import type { CatalogueSource } from './catalogue.ts';
 import type { ContentIssue, Finding } from './codes.ts';
@@ -155,6 +156,8 @@ export const validateContent = (options: ValidateContentOptions): ContentReport 
   };
 
   const firstWithId = new Map<string, string>();
+  /** Every challenge that passed the schema, with its file, for the checks that only a whole set can make. */
+  const challenges: { readonly file: string; readonly challenge: Challenge }[] = [];
   for (const file of files) {
     const result = read(file);
     if (!result.ok) {
@@ -169,6 +172,7 @@ export const validateContent = (options: ValidateContentOptions): ContentReport 
     const { kind } = classification;
     const checked = checkRecord(kind, result.value, catalogue);
     if (!checked.ok) issues.push(...checked.issues.map((issue: Issue) => ({ file, ...issue })));
+    if (checked.ok && kind === 'challenge') challenges.push({ file, challenge: checked.value as Challenge });
     for (const text of systemText(kind, result.value)) {
       issues.push(...textFindings(text, matcher).map((finding) => ({ file, path: text.path, ...finding })));
     }
@@ -187,6 +191,14 @@ export const validateContent = (options: ValidateContentOptions): ContentReport 
         });
       }
     }
+  }
+
+  // A level's challenge order (schema 1.1): repeated or partial within a level, reported against the challenge's own file.
+  const fileOf = new Map(challenges.map(({ file, challenge }) => [challenge.id, file] as const));
+  for (const issue of challengeOrderIssues(challenges.map(({ challenge }) => challenge))) {
+    const id = /^\$(?:\.([^.[]+)|\['((?:[^'\\]|\\.)*)'\])/u.exec(issue.path);
+    const file = fileOf.get(id?.[1] ?? id?.[2]?.replaceAll("\\'", "'").replaceAll('\\\\', '\\') ?? '');
+    issues.push({ file: file ?? options.paths[0] ?? '', code: issue.code, path: '$.order', message: issue.message });
   }
 
   if (source) {

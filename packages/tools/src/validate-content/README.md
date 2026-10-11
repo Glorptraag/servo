@@ -94,6 +94,7 @@ A file with the fields of no kind, or of more than one, is refused as `file.unkn
    - the word `level` or `levels`, in any case, as `text.level`. A level is a product word for adults and the app's shell, not for a child's card, hint or goal (brief Section 12, R-6.5 F4). Inside a banned phrase such as `level up`, it is left to the banned list. One issue per field;
    - in a blueprint's name only (`meta.name` and a challenge's `start.meta.name`), an exclamation mark, with the schema's code `text.exclamation`. The schema checks every other field itself, but does not read a blueprint's name as system text.
 5. **Ids.** No two records of the same kind may share an `id`. Only records that pass the schema claim their id, because only they can enter a catalogue.
+6. **A level's challenge order** (schema 1.1, `challengeOrderIssues`). Over every challenge that passed the schema: within a level either every challenge has an `order` or none does (`challenge.order_partial` on each without one), and no two share one (`challenge.order_repeated` on the later id). Each issue is reported against the challenge's own file at `$.order`.
 
 ## The catalogue
 

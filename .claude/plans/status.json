@@ -1775,7 +1775,7 @@
       "errors": []
     },
     "7.24": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "opus",
       "size": "small",
       "batch": null,
@@ -1800,7 +1800,7 @@
       "completed_by": null,
       "retries": 0,
       "errors": [],
-      "dispatched_at": null
+      "dispatched_at": "2026-10-11T04:30:43+00:00"
     },
     "7.25": {
       "status": "pending",

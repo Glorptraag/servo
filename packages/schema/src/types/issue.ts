@@ -67,6 +67,8 @@ export const ISSUE_CODES = {
   'challenge.introduces_required': 'A part introduction names the part it introduces.',
   'challenge.introduces_unexpected': 'Only a part introduction names a part to introduce.',
   'challenge.arena_mismatch': "The starting blueprint's arena preset differs from the challenge's.",
+  'challenge.order_repeated': 'Two challenges of one level share an order.',
+  'challenge.order_partial': 'Some challenges of a level have an order and others do not.',
   'hint.bad_order': 'Ladder steps are out of order, repeat a rung, or do not end with do-it.',
   'run.event_order': 'Events or inputs are not in tick order.',
   'run.tick_out_of_range': 'A tick falls after the last tick of the run.',

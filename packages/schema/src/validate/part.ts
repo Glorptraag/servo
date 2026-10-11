@@ -463,7 +463,7 @@ const readSetting = (ctx: Ctx, value: unknown, path: string): Setting | undefine
 
 const readFailureMode = (ctx: Ctx, value: unknown, path: string): FailureMode | undefined => {
   const mark = ctx.issues.length;
-  const record = readObject(ctx, value, path, ['id', 'need', 'unmet', 'shows', 'teachingNote', 'cardLine'], ['hint']);
+  const record = readObject(ctx, value, path, ['id', 'need', 'unmet', 'shows', 'teachingNote', 'cardLine'], ['hint', 'port']);
   if (!record) return undefined;
   readSlug(ctx, field(record, 'id'), at(path, 'id'));
   readSlug(ctx, field(record, 'need'), at(path, 'need'));
@@ -474,6 +474,7 @@ const readFailureMode = (ctx: Ctx, value: unknown, path: string): FailureMode | 
   readText(ctx, field(record, 'teachingNote'), at(path, 'teachingNote'));
   readText(ctx, field(record, 'cardLine'), at(path, 'cardLine'));
   readText(ctx, field(record, 'hint'), at(path, 'hint'));
+  readSlug(ctx, field(record, 'port'), at(path, 'port'));
   return ctx.issues.length === mark ? (record as unknown as FailureMode) : undefined;
 };
 
@@ -771,6 +772,12 @@ export const readPartRecord = (ctx: Ctx, value: unknown, path: string): PartReco
     // A torque need is checked against the actuators only when their own bindings are sound, to avoid a cascade.
     const bound = ctx.issues.length === beforeBindings ? behaviour : undefined;
     needs?.forEach((need, index) => checkNeedPorts(ctx, portMap, need, at(needsPath, index), bound));
+    // A failure mode about one port names one of the part's (schema 1.1).
+    failureModes?.forEach((mode, index) => {
+      if (mode.port !== undefined && !portMap.has(mode.port)) {
+        report(ctx, 'ref.unknown_port', at(at(failuresPath, index), 'port'), `The part has no port '${mode.port}'.`);
+      }
+    });
   }
   if (settings && behaviour) {
     const bound = new Map<string, string>();

@@ -43,9 +43,10 @@ const readRectangle = (ctx: Ctx, record: Readonly<Record<string, unknown>>, path
 
 export const readProp = (ctx: Ctx, value: unknown, path: string, size?: Vec2): Prop | undefined => {
   const mark = ctx.issues.length;
-  const record = readObject(ctx, value, path, ['id', 'shape', 'size', 'grams', 'at', 'fixed']);
+  const record = readObject(ctx, value, path, ['id', 'shape', 'size', 'grams', 'at', 'fixed'], ['name']);
   if (!record) return undefined;
   readSlug(ctx, field(record, 'id'), at(path, 'id'));
+  readText(ctx, field(record, 'name'), at(path, 'name'));
   const shape = readEnum(ctx, field(record, 'shape'), at(path, 'shape'), ['box', 'cylinder'] as const);
   const dimensions = readVec3(ctx, field(record, 'size'), at(path, 'size'), POSITIVE);
   if (shape === 'cylinder' && dimensions && dimensions.x !== dimensions.y) {

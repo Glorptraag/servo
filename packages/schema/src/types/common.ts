@@ -3,7 +3,7 @@
  * a new optional field. Data that was valid stays valid. A major bump changes `Blueprint.version`
  * and needs a migration (packages/schema/src/migrate, task 0.3).
  */
-export const SCHEMA_VERSION = '1.0';
+export const SCHEMA_VERSION = '1.1';
 
 /** The five levels of the knowledge ladder (brief Section 2). */
 export type Level = 1 | 2 | 3 | 4 | 5;
