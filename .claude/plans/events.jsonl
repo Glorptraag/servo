@@ -243,3 +243,4 @@
 {"ts": "2026-10-07T09:24:41+00:00", "event": "decision_add", "id": "D132", "blocks": []}
 {"ts": "2026-10-07T09:24:41+00:00", "event": "park", "task": "7.35", "reason": "Waits on D132 (level unlocking before or after G6)"}
 {"ts": "2026-10-11T04:30:43+00:00", "event": "dispatch", "tasks": ["7.24"]}
+{"ts": "2026-10-11T04:37:28+00:00", "event": "done", "tasks": ["7.24"], "by": "session-affectionate-sagan"}

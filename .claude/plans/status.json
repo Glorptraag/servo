@@ -1775,7 +1775,7 @@
       "errors": []
     },
     "7.24": {
-      "status": "dispatched",
+      "status": "done",
       "model": "opus",
       "size": "small",
       "batch": null,
@@ -1796,8 +1796,8 @@
       ],
       "done_when": "Validators accept records with and without the three fields and refuse a bad order, a port not on the part; existing content validates unchanged; README names the fields and D130.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-11T04:37:28+00:00",
+      "completed_by": "session-affectionate-sagan",
       "retries": 0,
       "errors": [],
       "dispatched_at": "2026-10-11T04:30:43+00:00"
