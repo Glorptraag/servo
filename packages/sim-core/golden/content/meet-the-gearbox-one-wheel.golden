@@ -7,12 +7,12 @@ ticks 60
 inputs none
 blueprint d8213f1f050996d1
 arena open-floor 297edbfc7ad9a93c
-part battery-pack-2-cell ac49444ad3a2e166
-part caster 85cad363c9f68e25
-part chassis 2b67875c3e879e19
-part dc-motor d05dc083bd1fa3f7
-part gearbox 36f60677ea150571
-part wheel-large fde3284299722f48
+part battery-pack-2-cell c100ff04528eb9e4
+part caster 0b2f079c73fcdf44
+part chassis 5674f8a7f4379417
+part dc-motor 1138ba0d5d8ce499
+part gearbox ae52eaae4dff4a94
+part wheel-large 8b010b67b9166b23
 record 47274f251b6d5bcca98c4a46ee55bf833d90b3cc4afd533fba9ed81aa30c4206
 fault chassis scraping first-tick=2
 fault wheel-right not-driven first-tick=2

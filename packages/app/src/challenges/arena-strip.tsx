@@ -10,7 +10,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import type { PropTemplate } from '@servo/canvas';
-import type { Challenge } from '@servo/schema';
+import type { Content } from '@servo/content';
+import type { Challenge, Prop } from '@servo/schema';
 import { useShell } from '../shell/context.ts';
 import { DRAG_PX } from '../shell/index.ts';
 import { CHALLENGE_TEXT } from './text.ts';
@@ -19,30 +20,47 @@ import './challenges.css';
 /** A prop the strip offers: what it is called, read aloud, and drawn as. */
 export interface PaletteProp {
   readonly id: string;
+  /** The prop's name as the tile shows it: its authored `name`, or else its shape, with the first letter capitalised. */
   readonly label: string;
-  /** Read aloud with the label: its real size and weight. */
+  /** Read aloud with the label: its real size and weight, from the record. */
   readonly spoken: string;
   readonly prop: PropTemplate;
 }
 
+const propTemplateOf = (prop: Prop): PropTemplate => ({
+  ...(prop.name === undefined ? {} : { name: prop.name }),
+  shape: prop.shape,
+  size: prop.size,
+  grams: prop.grams,
+  fixed: prop.fixed,
+});
+
+/** `80 by 80 millimetres, 50 grams, moves when pushed`, in the list view's words for a prop's size. */
+export const propSpoken = (prop: Prop): string => {
+  const size = prop.shape === 'box' ? `${prop.size.x} by ${prop.size.y} millimetres` : `${prop.size.x} millimetres across`;
+  return `${size}, ${prop.grams} grams, ${prop.fixed ? 'fixed in place' : 'moves when pushed'}`;
+};
+
 /**
- * The short preset list of props (D36): the two of the bump-props arena preset, a light box the robot can push and a
- * post that does not move.
+ * The props the strip offers (D36): every prop the content's arena presets hold, each once (two presets with the same
+ * prop by name, shape, size, weight and fixedness offer it once), in preset order. Content decides what a child can
+ * bring in; nothing here names a preset or a prop. With content as it is, the bump-props preset's box and post.
  */
-export const PROP_PALETTE: readonly PaletteProp[] = [
-  {
-    id: 'box',
-    label: 'Box',
-    spoken: '80 by 80 millimetres, 50 grams, moves when pushed',
-    prop: { shape: 'box', size: { x: 80, y: 80, z: 60 }, grams: 50, fixed: false },
-  },
-  {
-    id: 'post',
-    label: 'Post',
-    spoken: '100 millimetres across, 700 grams, fixed in place',
-    prop: { shape: 'cylinder', size: { x: 100, y: 100, z: 150 }, grams: 700, fixed: true },
-  },
-];
+export const propPalette = (content: Content): readonly PaletteProp[] => {
+  const seen = new Set<string>();
+  const palette: PaletteProp[] = [];
+  for (const preset of content.arenas) {
+    for (const prop of preset.props) {
+      const template = propTemplateOf(prop);
+      const key = JSON.stringify(template);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const word = prop.name ?? prop.shape;
+      palette.push({ id: prop.id, label: word.charAt(0).toUpperCase() + word.slice(1), spoken: propSpoken(prop), prop: template });
+    }
+  }
+  return palette;
+};
 
 interface Press {
   readonly pointerId: number;
@@ -114,6 +132,7 @@ export const ArenaStrip = ({ challenge }: ArenaStripProps) => {
     setPending(item.id);
   };
 
+  const palette = propPalette(content);
   const current = blueprint?.arena.preset;
   return (
     <div className="arena-strip">
@@ -139,7 +158,7 @@ export const ArenaStrip = ({ challenge }: ArenaStripProps) => {
         })}
       </div>
       <div className="arena-strip-group" role="group" aria-label={CHALLENGE_TEXT.props}>
-        {PROP_PALETTE.map((item) => (
+        {palette.map((item) => (
           <button
             key={item.id}
             type="button"

@@ -14,7 +14,7 @@
       }
     }
   },
-  "goalLine": "Swap one large wheel for a small wheel, then Run the robot and watch where it goes",
+  "goalLine": "Swap one large wheel for a small wheel, then Run and watch where the robot goes",
   "hints": [
     {
       "steps": [
@@ -148,6 +148,7 @@
   "kind": "what-if",
   "kit": "circuit-crew",
   "level": 2,
+  "order": 18,
   "start": {
     "arena": {
       "preset": "open-floor",

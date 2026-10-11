@@ -11,6 +11,12 @@ describe('part records: structure and text', () => {
     expect(refusal('led', remove(['card']))).toEqual(['value.missing at $.card']);
   });
 
+  it('lets a failure mode name the port it is about, one of the part\'s (schema 1.1)', () => {
+    const portId = part('led').ports[0]?.id;
+    expect(refusal('led', set(['failureModes', 0, 'port'], portId))).toEqual([]);
+    expect(refusal('led', set(['failureModes', 0, 'port'], 'nowhere'))).toEqual(['ref.unknown_port at $.failureModes[0].port']);
+  });
+
   it('refuses fields the schema does not define', () => {
     expect(refusal('led', set(['mascot'], 'Sparky'))).toEqual(['value.unknown_key at $.mascot']);
   });

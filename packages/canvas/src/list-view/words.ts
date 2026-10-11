@@ -123,29 +123,33 @@ export const propsOf = (blueprint: Blueprint, catalogue: Catalogue): readonly { 
     ...blueprint.arena.props.map((prop) => ({ prop, preset: false })),
   ].sort((a, b) => naturalCompare(a.prop.id, b.prop.id));
 
+/** What a prop is called before numbering: its authored `name` (schema 1.1, `post`), or else its shape (`cylinder`). */
+export const propWord = (prop: Prop): string => prop.name ?? prop.shape;
+
 /**
- * Each prop's name: its shape, numbered in id order when the arena has more than one of that shape (`box 1`, `box 2`),
- * as twin parts are, so a listener can tell two boxes apart.
+ * Each prop's name: its word (`propWord`), numbered in id order when the arena has more than one with that word
+ * (`box 1`, `box 2`), as twin parts are, so a listener can tell two boxes apart.
  */
 export const propNamesOf = (props: readonly Prop[]): ReadonlyMap<ArenaFeatureId, string> => {
   const sorted = [...props].sort((a, b) => naturalCompare(a.id, b.id));
   const counts = new Map<string, number>();
-  for (const prop of sorted) counts.set(prop.shape, (counts.get(prop.shape) ?? 0) + 1);
+  for (const prop of sorted) counts.set(propWord(prop), (counts.get(propWord(prop)) ?? 0) + 1);
   const seen = new Map<string, number>();
   const names = new Map<ArenaFeatureId, string>();
   for (const prop of sorted) {
-    const index = (seen.get(prop.shape) ?? 0) + 1;
-    seen.set(prop.shape, index);
-    names.set(prop.id, (counts.get(prop.shape) ?? 0) > 1 ? `${prop.shape} ${index}` : prop.shape);
+    const word = propWord(prop);
+    const index = (seen.get(word) ?? 0) + 1;
+    seen.set(word, index);
+    names.set(prop.id, (counts.get(word) ?? 0) > 1 ? `${word} ${index}` : word);
   }
   return names;
 };
 
 /** A prop's name as an action reads it: `the box` alone, `box 2` among twins. */
-export const propTitle = (prop: Prop, name: string): string => (name === prop.shape ? `the ${name}` : name);
+export const propTitle = (prop: Prop, name: string): string => (name === propWord(prop) ? `the ${name}` : name);
 
 /** `box, 100 by 100 millimetres, ahead of the robot`; a preset's own prop is `part of the arena`. */
-export const propDescription = (prop: Prop, preset: ArenaPreset | undefined, ownedByPreset: boolean, name: string = prop.shape): string => {
+export const propDescription = (prop: Prop, preset: ArenaPreset | undefined, ownedByPreset: boolean, name: string = propWord(prop)): string => {
   const size = prop.shape === 'box' ? `${prop.size.x} by ${prop.size.y} millimetres` : `${prop.size.x} millimetres across`;
   const words = [name, size];
   if (preset) words.push(directionFrom(preset, prop.at));

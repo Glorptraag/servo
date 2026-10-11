@@ -12,7 +12,7 @@ import type {
   PartTarget,
   PortTarget,
 } from '../types/challenge.ts';
-import type { ValidationResult } from '../types/issue.ts';
+import type { Issue, ValidationResult } from '../types/issue.ts';
 import type { PartRecord } from '../types/part.ts';
 import type { PortSpec } from '../types/port.ts';
 import { checkArenaRef, readArenaRef } from './arena.ts';
@@ -27,6 +27,7 @@ import {
   readEnum,
   readLevel,
   readList,
+  compareText,
   readNumber,
   readObject,
   readSlug,
@@ -460,10 +461,11 @@ export const readChallenge = (ctx: Ctx, value: unknown, path: string, catalogue:
     value,
     path,
     ['id', 'kind', 'level', 'title', 'goalLine', 'goal', 'arena', 'kit', 'hints'],
-    ['start', 'introduces'],
+    ['start', 'introduces', 'order'],
   );
   if (!record) return undefined;
   readSlug(ctx, field(record, 'id'), at(path, 'id'));
+  if (field(record, 'order') !== undefined) readNumber(ctx, field(record, 'order'), at(path, 'order'), { min: 0, integer: true });
   const kind = readEnum(ctx, field(record, 'kind'), at(path, 'kind'), CHALLENGE_KINDS);
   readLevel(ctx, field(record, 'level'), at(path, 'level'));
   readText(ctx, field(record, 'title'), at(path, 'title'));
@@ -509,3 +511,30 @@ export const readChallenge = (ctx: Ctx, value: unknown, path: string, catalogue:
  */
 export const validateChallenge = (value: unknown, catalogue: Catalogue): ValidationResult<Challenge> =>
   runValidator(value, (ctx, root) => readChallenge(ctx, root, '$', catalogue));
+
+/**
+ * Checks a set of valid challenges' `order` across each level (schema 1.1): within a level either every challenge has
+ * one or none does, and no two share one. Paths name the challenge: `$['cross-the-arena'].order`. The content
+ * validator runs it over every challenge it loads; a single challenge cannot be checked alone.
+ */
+export const challengeOrderIssues = (challenges: readonly Challenge[]): Issue[] => {
+  const ctx: Ctx = { issues: [] };
+  const levels = new Map<number, Challenge[]>();
+  for (const challenge of challenges) levels.set(challenge.level, [...(levels.get(challenge.level) ?? []), challenge]);
+  for (const [level, group] of levels) {
+    const ordered = group.filter((challenge) => challenge.order !== undefined);
+    if (ordered.length !== 0 && ordered.length !== group.length) {
+      for (const challenge of group.filter((candidate) => candidate.order === undefined)) {
+        report(ctx, 'challenge.order_partial', at(at('$', challenge.id), 'order'), `Level ${level} has challenges with an order, and '${challenge.id}' has none.`);
+      }
+    }
+    const seen = new Map<number, Challenge>();
+    for (const challenge of [...ordered].sort((a, b) => compareText(a.id, b.id))) {
+      const order = challenge.order as number;
+      const first = seen.get(order);
+      if (first) report(ctx, 'challenge.order_repeated', at(at('$', challenge.id), 'order'), `'${challenge.id}' and '${first.id}' both have order ${order} at Level ${level}.`);
+      else seen.set(order, challenge);
+    }
+  }
+  return ctx.issues;
+};

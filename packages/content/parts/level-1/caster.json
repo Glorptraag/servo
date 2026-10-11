@@ -33,6 +33,7 @@
       "hint": "This caster is not fixed to the chassis",
       "id": "loose",
       "need": "fixed",
+      "port": "mount",
       "shows": [
         "drag"
       ],

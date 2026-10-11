@@ -8,16 +8,17 @@ import { describe, expect, it } from 'vitest';
 import { applyEdit } from '@servo/canvas';
 import type { CanvasHandle, CanvasMode, DrawnHintStep, EditCommand, EditResult } from '@servo/canvas';
 import { loadContent } from '@servo/content';
-import { validateBlueprint } from '@servo/schema';
+import { validateBlueprint, validateChallenge } from '@servo/schema';
 import type { Blueprint, Challenge } from '@servo/schema';
-import { HintLadderController } from '../../src/hints/controller.ts';
+import { HintLadderController, recordLadder } from '../../src/hints/controller.ts';
 import { partsMatching } from '../../src/hints/ladder.ts';
 import { HintLog } from '../../src/hints/log.ts';
 import { RunLoop, SPIN_UP_MS } from '../../src/run-bar/run-loop.ts';
 import type { RunClock } from '../../src/run-bar/run-loop.ts';
 import { contentFixture, example, fixture } from './support.ts';
 
-const { catalogue } = loadContent().content;
+const { content } = loadContent();
+const { catalogue } = content;
 
 /** The canvas as far as the ladder and the run loop reach it. A rung draws when something on the build matches it. */
 class StandIn {
@@ -81,7 +82,7 @@ class TestClock implements RunClock {
   }
 }
 
-const setUp = (challenge: Challenge, start: Blueprint) => {
+const setUp = (challenge: Challenge | null, start: Blueprint) => {
   const canvas = new StandIn(start);
   const clock = new TestClock();
   const loop = new RunLoop({ canvas: canvas as unknown as CanvasHandle, catalogue, clock, seed: () => 5 });
@@ -216,6 +217,23 @@ describe('Runs that miss the goal', { timeout: 60_000 }, () => {
     ladder.dispose();
   });
 
+  it('never offers on a what-if (D131): two Runs without its change draw nothing, and a tap still climbs its ladder', async () => {
+    const whatIf = content.challenges.find((challenge) => challenge.id === 'what-if-one-wheel') as Challenge;
+    expect(whatIf.kind).toBe('what-if');
+    const { canvas, ladder, loop, runFor } = setUp(whatIf, whatIf.start as Blueprint);
+    expect(ladder.state).toMatchObject({ available: true, offered: false });
+    await runFor(20);
+    await runFor(20);
+    await runFor(20);
+    expect(canvas.shown).toBeNull();
+    expect(ladder.state).toMatchObject({ available: true, offered: false, shown: undefined });
+    expect(ladder.ask()).toBe(true);
+    expect(canvas.shown).toMatchObject({ step: 'pulse-part', target: { placed: 'wheel-right' } });
+    expect(ladder.state.offered).toBe(false);
+    loop.dispose();
+    ladder.dispose();
+  });
+
   it('waits for a Run that shows a breakdown’s fault, then narrows to the part it showed on', async () => {
     const challenge = example('one-motor-backwards', fixture('broken-reversed-motor'));
     const { canvas, ladder, loop, runFor } = setUp(challenge, fixture('broken-reversed-motor'));
@@ -273,6 +291,99 @@ describe('Runs that miss the goal', { timeout: 60_000 }, () => {
     await runFor(lit.ticks);
     expect(canvas.shown).toBeNull();
     expect(ladder.state).toMatchObject({ offered: false, shown: undefined });
+    loop.dispose();
+    ladder.dispose();
+  });
+});
+
+describe('a part record’s ladder, outside any challenge ladder (task 7.29)', { timeout: 60_000 }, () => {
+  const BROKEN = fixture('broken-missing-return-wire');
+  /** The DC motor's no-circuit hint line, as content has it: the ladder's words are the record's. */
+  const NO_LOOP = catalogue.parts.get('dc-motor')?.failureModes.find((mode) => mode.id === 'no-circuit')?.hint ?? '';
+  if (NO_LOOP === '') throw new Error('the DC motor record has no no-circuit hint');
+
+  it('makes a ladder from the failure mode: the hint on the part, then the port it names', () => {
+    expect(recordLadder({ partId: 'motor-left', failure: 'no-circuit' }, BROKEN, catalogue)).toMatchObject({
+      source: 'part-record',
+      index: -1,
+      part: 'motor-left',
+      ladder: { when: { kind: 'fault', failure: 'no-circuit', target: { placed: 'motor-left' } }, steps: [{ step: 'pulse-part', target: { placed: 'motor-left' }, line: NO_LOOP }] },
+    });
+    const reversed = fixture('broken-reversed-motor');
+    const record = catalogue.parts.get('dc-motor');
+    const swapped = record?.failureModes.find((mode) => mode.id === 'reversed');
+    const plus = record?.ports.find((port) => port.id === swapped?.port);
+    if (!swapped?.hint || !plus) throw new Error('the DC motor record names a port and a hint for reversed');
+    expect(recordLadder({ partId: 'motor-right', failure: 'reversed' }, reversed, catalogue)?.ladder.steps).toEqual([
+      { step: 'pulse-part', target: { placed: 'motor-right' }, line: swapped.hint },
+      { step: 'pulse-port', target: { placed: 'motor-right', port: plus.id }, line: `${swapped.hint}: ${plus.label}` },
+    ]);
+    // A part no longer on the build, or a failure the record has no hint for, gives none.
+    expect(recordLadder({ partId: 'motor-gone', failure: 'no-circuit' }, BROKEN, catalogue)).toBeUndefined();
+    expect(recordLadder({ partId: 'motor-left', failure: 'no-such-failure' }, BROKEN, catalogue)).toBeUndefined();
+  });
+
+  it('in the sandbox, offers by the pulsing button after two Runs of the same build with the same fault, and a tap pulses the part', async () => {
+    const { canvas, log, ladder, loop, runFor } = setUp(null, BROKEN);
+    expect(ladder.state).toMatchObject({ exists: false, available: false, offered: false });
+    await runFor(20);
+    expect(ladder.state).toMatchObject({ exists: false, available: false, offered: false });
+    await runFor(20);
+    expect(ladder.state).toMatchObject({ exists: true, available: true, offered: true, shown: undefined });
+    expect(canvas.shown, 'an offer from a part record draws nothing').toBeNull();
+    expect(ladder.ask()).toBe(true);
+    expect(canvas.shown).toMatchObject({ step: 'pulse-part', target: { placed: 'motor-left' } });
+    expect(ladder.state).toMatchObject({ exists: true, available: false, offered: false, shown: { step: 'pulse-part', line: NO_LOOP } });
+    expect(ladder.ask(), 'no ghost wire and no do-it: the fix is the child’s').toBe(false);
+    expect(canvas.applied).toEqual([]);
+    expect(log.pending(canvas.blueprint as Blueprint).map((use) => [use.step, use.trigger, use.partId])).toEqual([['pulse-part', 'asked', 'motor-left']]);
+    // An edit is another build: the ladder goes, and two Runs of the new build are needed again.
+    const edit = canvas.apply({ kind: 'connect', from: { part: 'battery', port: 'minus' }, to: { part: 'motor-left', port: 'minus' } });
+    expect(edit.ok).toBe(true);
+    ladder.buildChanged();
+    expect(ladder.state).toMatchObject({ exists: false, available: false, offered: false });
+    expect(canvas.shown).toBeNull();
+    loop.dispose();
+    ladder.dispose();
+  });
+
+  it('pulses the port the failure mode names as its second step', async () => {
+    const { canvas, ladder, loop, runFor } = setUp(null, fixture('broken-reversed-motor'));
+    await runFor(20);
+    await runFor(20);
+    expect(ladder.state).toMatchObject({ exists: true, offered: true });
+    expect(ladder.ask()).toBe(true);
+    expect(canvas.shown).toMatchObject({ step: 'pulse-part', target: { placed: 'motor-right' } });
+    expect(ladder.ask()).toBe(true);
+    expect(canvas.shown).toMatchObject({ step: 'pulse-port', target: { placed: 'motor-right', port: 'plus' } });
+    expect(ladder.ask()).toBe(false);
+    loop.dispose();
+    ladder.dispose();
+  });
+
+  it('serves an unscripted build the same way, since no challenge ladder matches', async () => {
+    const data = content.challenges.find((challenge) => challenge.id === 'cross-the-arena') as Challenge;
+    expect(data.hints).toEqual([]);
+    const start = { ...BROKEN, arena: data.arena };
+    const checked = validateChallenge({ ...data, start }, catalogue);
+    if (!checked.ok) throw new Error(checked.issues.map((issue) => issue.message).join(' '));
+    const { canvas, ladder, loop, runFor } = setUp(checked.value, start);
+    await runFor(20);
+    expect(ladder.state.exists).toBe(false);
+    await runFor(20);
+    expect(ladder.state).toMatchObject({ exists: true, available: true, offered: true });
+    expect(ladder.ask()).toBe(true);
+    expect(canvas.shown).toMatchObject({ step: 'pulse-part', target: { placed: 'motor-left' } });
+    loop.dispose();
+    ladder.dispose();
+  });
+
+  it('never replaces a challenge’s own ladder, which keeps offering its drawn rung', async () => {
+    const { canvas, ladder, loop, runFor } = setUp(MEET, MEET.start as Blueprint);
+    await runFor(20);
+    await runFor(20);
+    expect(canvas.shown).toMatchObject({ step: 'pulse-part', target: { placed: 'switch' } });
+    expect(ladder.state).toMatchObject({ exists: true, offered: true });
     loop.dispose();
     ladder.dispose();
   });

@@ -12,7 +12,7 @@ Back to the [README](../README.md). One record per part type, authored as conten
 | Needs | `needs`: what must be true for the part to work (below). |
 | Behaviour | `behaviour`: a list of primitives (below). |
 | Settings | `settings`: `number` (min, max, child-sized `step`, real `unit`) or `choice`, each with an `unlockLevel`. Each drives one primitive parameter through `binds`. The default must equal the primitive's own value, so the part behaves the same before and after the setting unlocks. |
-| Failure modes | `failureModes`: a need, the way it goes unmet, `shows` (effects), `teachingNote`, `cardLine` and an optional `hint`. |
+| Failure modes | `failureModes`: a need, the way it goes unmet, `shows` (effects), `teachingNote`, `cardLine`, an optional `hint` (a one-line callout naming the part or port) and an optional `port` (schema 1.1), the port the failure is about when it is about one, which must be one of the part's. |
 | Spec card | `card`: `does` (L1), `needs` and `gives` (L2), `popularMechanics` (L2), `specLine` (L4), `realWorldArt`, `safetyNote`. Name and picture come from identity, settings from `settings`, failure notes from `cardLine`. |
 
 **Spec card layers** (`SPEC_CARD_LAYERS`): name, picture and what it does from Level 1; needs, gives and the popular-mechanics line from Level 2; the spec line from Level 4. The settings layer has no level of its own: each setting shows from its own `unlockLevel`, so a DC motor's direction shows from Level 2 and its speed from Level 3. Failure notes show when the failure happens.

@@ -68,7 +68,7 @@ export { mapSettingValue, validatePartRecord } from './validate/part.ts';
 export { validateArenaPreset } from './validate/arena.ts';
 export { PLACEMENT_TOLERANCE, validateBlueprint, validateBlueprintShape } from './validate/blueprint.ts';
 export { validateKit } from './validate/kit.ts';
-export { MAX_GOAL_DEPTH, validateChallenge } from './validate/challenge.ts';
+export { MAX_GOAL_DEPTH, challengeOrderIssues, validateChallenge } from './validate/challenge.ts';
 export { validateRunRecord } from './validate/run.ts';
 export { canonicalJson, canonicalizeBlueprint, claimPartId, claimWireId, serializeBlueprint } from './validate/canonical.ts';
 

@@ -41,6 +41,8 @@ export interface Ramp {
  */
 export interface Prop {
   readonly id: ArenaFeatureId;
+  /** The prop's real name for the arena strip and the list view, `Box`, `Post` (schema 1.1, task 7.24). Without it the shape is said. */
+  readonly name?: Text;
   readonly shape: 'box' | 'cylinder';
   readonly size: Vec3;
   readonly grams: number;

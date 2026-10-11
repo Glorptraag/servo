@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { ISSUE_CODES } from '@servo/schema';
-import { exampleArenas, exampleParts, invalidBlueprints, invalidKits, validKits } from '@servo/schema/fixtures';
+import { exampleArenas, exampleChallenges, exampleParts, invalidBlueprints, invalidKits, validKits } from '@servo/schema/fixtures';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import * as tools from '../src/index.ts';
 import { generateArt } from '../src/placeholder-art/cli.ts';
@@ -426,5 +426,37 @@ describe('issue codes', () => {
       .filter((match): match is RegExpExecArray => match !== null)
       .map(([, code, meaning]) => [code, meaning]);
     expect(Object.fromEntries(rows)).toEqual(CONTENT_ISSUE_CODES);
+  });
+});
+
+describe("a level's challenge order (schema 1.1)", () => {
+  const exampleChallenge = (name: string): Record<string, unknown> => {
+    const found = exampleChallenges.find((challenge) => challenge.name === name);
+    if (!found) throw new Error(`No example challenge '${name}'.`);
+    return structuredClone(found.data) as Record<string, unknown>;
+  };
+
+  it('reports a repeated or a partial order within a level against the challenge\'s own file', () => {
+    const content = tempFolder();
+    writeSchemaFixtures(content);
+    // Level 2: cross-and-stop and drive-and-light share order 1; one-motor-backwards has none. Level 1 has no order at all.
+    write(content, 'challenges/cross-and-stop.json', changed(exampleChallenge('cross-and-stop'), (data) => (data.order = 1)));
+    const repeated = write(content, 'challenges/drive-and-light.json', changed(exampleChallenge('drive-and-light'), (data) => (data.order = 1)));
+    const partial = path.join(content, 'challenges/one-motor-backwards.json');
+    const run = cli([path.join(content, 'challenges'), '--catalogue', content, '--terminology', TERMINOLOGY]);
+    expect(run.status).toBe(1);
+    expect(run.out).toContain(`${shown(repeated)}: challenge.order_repeated at $.order: 'drive-and-light' and 'cross-and-stop' both have order 1 at Level 2.`);
+    expect(run.out).toContain(`${shown(partial)}: challenge.order_partial at $.order: Level 2 has challenges with an order, and 'one-motor-backwards' has none.`);
+    expect(run.out.filter((line) => line.includes('challenge.order_'))).toHaveLength(2);
+  });
+
+  it('says nothing when a level is wholly ordered or wholly unordered', () => {
+    const content = tempFolder();
+    writeSchemaFixtures(content);
+    for (const [name, order] of [['cross-and-stop', 3], ['drive-and-light', 1], ['one-motor-backwards', 2]] as const) {
+      write(content, `challenges/${name}.json`, changed(exampleChallenge(name), (data) => (data.order = order)));
+    }
+    const run = cli([path.join(content, 'challenges'), '--catalogue', content, '--terminology', TERMINOLOGY]);
+    expect(run.out.filter((line) => line.includes('challenge.order_'))).toEqual([]);
   });
 });

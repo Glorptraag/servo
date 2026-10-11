@@ -8,7 +8,8 @@ import {
   validatePartRecord,
   validateRunRecord,
 } from '@servo/schema';
-import type { Catalogue, Issue, ValidationResult } from '@servo/schema';
+import { challengeOrderIssues } from '@servo/schema';
+import type { Catalogue, Challenge, Issue, ValidationResult } from '@servo/schema';
 import { catalogueFromFixtures, catalogueFromFolder } from './catalogue.ts';
 import type { CatalogueSource } from './catalogue.ts';
 import type { ContentIssue, Finding } from './codes.ts';
@@ -27,7 +28,7 @@ import {
   TERMINOLOGY_FILES,
 } from './terminology.ts';
 import type { TermMatcher } from './terminology.ts';
-import { markFindings } from './voice.ts';
+import { goalLengthFindings, markFindings } from './voice.ts';
 
 export interface ValidateContentOptions {
   /** Record files, or folders to search for `.json` records: absolute, or relative to the process's working folder. */
@@ -80,6 +81,7 @@ export const textFindings = (text: TextField, matcher: TermMatcher): Finding[] =
   ...(text.partName ? partNameFindings(text.text, matcher) : capitalFindings(text.text, matcher)),
   ...levelFindings(text.text, matcher),
   ...markFindings(text.text, { exclamations: text.blueprintName === true }),
+  ...(text.goalLine ? goalLengthFindings(text.text) : []),
 ];
 
 const unknownKind = (candidates: readonly RecordKind[]): string => {
@@ -155,6 +157,8 @@ export const validateContent = (options: ValidateContentOptions): ContentReport 
   };
 
   const firstWithId = new Map<string, string>();
+  /** Every challenge that passed the schema, with its file, for the checks that only a whole set can make. */
+  const challenges: { readonly file: string; readonly challenge: Challenge }[] = [];
   for (const file of files) {
     const result = read(file);
     if (!result.ok) {
@@ -169,6 +173,7 @@ export const validateContent = (options: ValidateContentOptions): ContentReport 
     const { kind } = classification;
     const checked = checkRecord(kind, result.value, catalogue);
     if (!checked.ok) issues.push(...checked.issues.map((issue: Issue) => ({ file, ...issue })));
+    if (checked.ok && kind === 'challenge') challenges.push({ file, challenge: checked.value as Challenge });
     for (const text of systemText(kind, result.value)) {
       issues.push(...textFindings(text, matcher).map((finding) => ({ file, path: text.path, ...finding })));
     }
@@ -187,6 +192,14 @@ export const validateContent = (options: ValidateContentOptions): ContentReport 
         });
       }
     }
+  }
+
+  // A level's challenge order (schema 1.1): repeated or partial within a level, reported against the challenge's own file.
+  const fileOf = new Map(challenges.map(({ file, challenge }) => [challenge.id, file] as const));
+  for (const issue of challengeOrderIssues(challenges.map(({ challenge }) => challenge))) {
+    const id = /^\$(?:\.([^.[]+)|\['((?:[^'\\]|\\.)*)'\])/u.exec(issue.path);
+    const file = fileOf.get(id?.[1] ?? id?.[2]?.replaceAll("\\'", "'").replaceAll('\\\\', '\\') ?? '');
+    issues.push({ file: file ?? options.paths[0] ?? '', code: issue.code, path: '$.order', message: issue.message });
   }
 
   if (source) {

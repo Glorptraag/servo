@@ -5,12 +5,15 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { cdp, userEvent } from 'vitest/browser';
 import { openStore } from '@servo/app/store';
+import { loadContent } from '@servo/content';
 import type { ServoStore } from '@servo/app/store';
 import type { ProfileId, RunRecord } from '@servo/schema';
 import { PARENT_TEXT, mountParentWith } from '../../src/accounts/index.ts';
 import type { ParentHandle } from '../../src/index.ts';
 import { PROGRESS_TEXT } from '../../src/progress/index.ts';
 import { fixture, planOf, runAll, without } from '../progress/runs.ts';
+
+const { content } = loadContent();
 
 let mounted: { handle: ParentHandle; host: HTMLElement; store: ServoStore } | undefined;
 
@@ -85,6 +88,10 @@ describe('the progress view', () => {
 
     await expect.poll(() => figures(host)).toEqual(ROBIN);
     expect(heading(host)).toBe(PROGRESS_TEXT.title('Robin'));
+    // Each fixed fault's line carries the failure mode's teaching note, for the adult (task 7.31).
+    const faultLine = host.querySelector('ul[aria-labelledby$="-faults"] li')?.textContent ?? '';
+    const notes = content.parts.flatMap((part) => part.failureModes.map((mode) => mode.teachingNote));
+    expect(notes.some((note) => faultLine.includes(note)), faultLine).toBe(true);
     const text = progressOf(host)?.textContent ?? '';
     expect(text).toContain(PROGRESS_TEXT.runs(2));
     expect(text).toContain('DC motor, first used');

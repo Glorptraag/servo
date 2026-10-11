@@ -43,6 +43,7 @@
       "hint": "This LED's legs are swapped",
       "id": "reversed",
       "need": "power",
+      "port": "plus",
       "shows": [
         "dark"
       ],

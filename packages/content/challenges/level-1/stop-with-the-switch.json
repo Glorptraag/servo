@@ -353,6 +353,7 @@
   "kind": "guided",
   "kit": "rolling-start",
   "level": 1,
+  "order": 7,
   "start": {
     "arena": {
       "preset": "open-floor",

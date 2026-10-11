@@ -46,8 +46,8 @@ describe('families, domains and levels come from brief Sections 2 and 3', () => 
     ]);
   });
 
-  it('is schema version 1.0', () => {
-    expect(SCHEMA_VERSION).toBe('1.0');
+  it('is schema version 1.1: 1.0 plus the optional order, prop name and failure-mode port (task 7.24)', () => {
+    expect(SCHEMA_VERSION).toBe('1.1');
   });
 });
 

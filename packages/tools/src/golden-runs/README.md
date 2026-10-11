@@ -59,7 +59,8 @@ With the DC motor's speed in `speedRule` (sim-core's behaviour runtime) made 5% 
 | `golden 1` | The layout's version, `GOLDEN_FORMAT`. A change to the layout or to a precision below bumps it, and `--accept` rewrites every file |
 | `case`, `seed`, `ticks` | The case's id, its seed and its last tick |
 | `input <tick> <part> closed=<bool>`, or `inputs none` | The switch presses, as the run record keeps them |
-| `blueprint`, `arena <id>`, `part <id>` | The first 16 hex digits of the SHA-256 of the canonical blueprint, the arena preset and each part record used, so a diff names the input that changed |
+| `blueprint`, `arena <id>` | The first 16 hex digits of the SHA-256 of the canonical blueprint and the arena preset, so a diff names the input that changed |
+| `part <id>` | The first 16 hex digits of the SHA-256 of what the simulation reads of each part record used (`simulatedPart`, task 7.12): its id, body, ports, needs, behaviour and settings less every `label`, and each failure mode's id, need and unmet. The identity, the spec card, the hints, card lines, teaching notes, the effects a mode `shows` and the labels are the app's, so a copy edit changes no golden |
 | `record` | The SHA-256 of the whole run record, as the schema's `canonicalJson` writes it |
 | `fault <part> <failure> first-tick=<n>`, or `faults none` | The run record's faults |
 | `subjects` | Every placed part, then every prop (`arena:<id>`), in `frame.live`'s order, then every power line, signal line and drive linkage (`wire:<id>`), in `frame.flows`' order |
@@ -70,6 +71,8 @@ A subject's fields are its summary from `frame.live`, in this order: `volts`, `m
 Numbers are rounded to fixed places (`PRECISION`): volts 3 (millivolts), milliamps 1, charge 4, rpm 1, angle 1, light and signal 3, x and y 1 (a tenth of a millimetre), heading, pitch and roll 2, a sound's level 3. That keeps the files small (about 270 KB for all 26) and their diffs about changes a person can see. Each tick's hash and the record's hash still catch what the rounding hides: the diff then says the events differ below the summary's precision, and where the summary first differs.
 
 ## Accepting a change
+
+Orchestrator notes on hash-only re-accepts: after copy pass 6.5, 98 goldens were re-accepted with every tick the same, because the part hash covered the whole record; task 7.30's failure-mode ports did the same to 102. Task 7.12 narrowed the hash to what the Run reads (above) and re-accepted every golden once more, hash-only, with every tick, fault and record hash unchanged. A heading the summary rounds to 360 is written as 360, not 0, as before: the rounding is of the summary alone and the tick's hash is over the events, so nothing is hidden by it.
 
 Accept only a change you meant: a solver change, a retuned part record, a new fixture. Run `pnpm golden` first and read every diff; then `pnpm golden --accept <case>...` for the cases you meant, and say why in the task's notes for the orchestrator. Review `git diff packages/sim-core/golden/` like code: each changed tick line shows what moved. `--accept` never makes an `expect` hold; a fixture that does not hold is a finding for its content task or for the simulation.
 

@@ -10,7 +10,7 @@ import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { Content } from '@servo/content';
 import { BLUEPRINT_VERSION, LEVELS } from '@servo/schema';
-import type { ArenaRef, Blueprint, Challenge, Level } from '@servo/schema';
+import type { ArenaRef, Blueprint, Challenge, ChallengeId, ChallengeKind, Level, PlacedPartId, RunRecord } from '@servo/schema';
 import type { RunLoop } from '../run-bar/run-loop.ts';
 import { useShell } from '../shell/context.ts';
 import type { Autosaver } from '../shell/index.ts';
@@ -34,9 +34,53 @@ export const sandboxArena = (content: Content): ArenaRef | undefined => {
   return preset ? { preset: preset.id, props: [] } : undefined;
 };
 
-/** Challenges grouped by level, levels in order, each level's challenges in content order. */
+/**
+ * The order the kinds of challenge come in on Home: the path brief Section 5 lays out for a level. The child meets each
+ * new part first, then takes the guided jobs, finds the faults in the breakdowns, tries the what-ifs, and the unscripted
+ * build, the level's assessment, comes last. Content gives no order of its own (challenges load in id order), so Home
+ * would otherwise put "Cross the arena" above "Meet the battery pack".
+ */
+export const KIND_ORDER: readonly ChallengeKind[] = ['part-introduction', 'guided', 'breakdown', 'what-if', 'unscripted-build'];
+
+/** Two challenges along the path (`KIND_ORDER`); within a kind, as content gives them (Array.prototype.sort is stable, so id order). */
+export const compareAlongPath = (a: Challenge, b: Challenge): number => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind);
+
+/**
+ * One level's challenges in Home's order: by their authored `order` (schema 1.1) when every one of them has one, else
+ * along the path. The content validator refuses a level where only some have an order; Home still lists such a level.
+ */
+export const orderLevel = (group: readonly Challenge[]): readonly Challenge[] =>
+  group.every((challenge) => challenge.order !== undefined)
+    ? [...group].sort((a, b) => (a.order as number) - (b.order as number))
+    : [...group].sort(compareAlongPath);
+
+/** Challenges grouped by level, levels in order, each level's challenges in Home's order (`orderLevel`). */
 export const challengesByLevel = (challenges: readonly Challenge[]): readonly { readonly level: Level; readonly challenges: readonly Challenge[] }[] =>
-  LEVELS.map(({ level }) => ({ level, challenges: challenges.filter((challenge) => challenge.level === level) })).filter((group) => group.challenges.length > 0);
+  LEVELS.map(({ level }) => ({ level, challenges: orderLevel(challenges.filter((challenge) => challenge.level === level)) })).filter(
+    (group) => group.challenges.length > 0,
+  );
+
+/**
+ * The challenges one of the child's Runs has met the goal of, read from the run records (each challenge Run keeps its
+ * verdict, README "Challenges", decision 2). Home marks them with the goal line's own check mark, a plain fact of where
+ * the child has been: no score, no streak, nothing counted (ground rule 7). A what-if's record means its change was
+ * observed in a Run, so Home marks it "Tried" and never met: there is no right answer (D131).
+ */
+export const metChallenges = (runs: readonly Pick<RunRecord, 'challenge' | 'goal'>[]): ReadonlySet<ChallengeId> => {
+  const met = new Set<ChallengeId>();
+  for (const run of runs) if (run.challenge !== undefined && run.goal?.met === true) met.add(run.challenge);
+  return met;
+};
+
+const NONE_MET: ReadonlySet<ChallengeId> = new Set();
+
+/**
+ * The part a part introduction meets, in the build on the canvas: the first placed part of the type `introduces` names
+ * (brief Section 5: the part appears, the child wires it, the spec card opens; task 7.27). Undefined for every other
+ * kind, and for an introduction whose part the child has yet to place (Meet the caster).
+ */
+export const introducedPartId = (challenge: Challenge | null, blueprint: Blueprint | undefined): PlacedPartId | undefined =>
+  challenge?.introduces === undefined ? undefined : blueprint?.parts.find((placed) => placed.part === challenge.introduces)?.id;
 
 /** A build kept only in this page, for a device that keeps no builds. */
 const pageBuild = (init: { readonly name: string; readonly level: Level; readonly arena: ArenaRef }): Blueprint => {
@@ -82,13 +126,14 @@ export interface HomeProps {
 type Saved = { readonly kind: 'reading' } | { readonly kind: 'read'; readonly builds: readonly BlueprintSummary[] } | { readonly kind: 'none' };
 
 export const Home = ({ challenge, onChallenge, sandboxLevel, loop, saving, parentEntry }: HomeProps) => {
-  const { content, child, load } = useShell();
+  const { content, child, load, canvas } = useShell();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const layerRef = useRef<HTMLElement>(null);
   const titleId = useId();
   const [shellRoot, setShellRoot] = useState<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
   const [saved, setSaved] = useState<Saved>({ kind: 'none' });
+  const [met, setMet] = useState<ReadonlySet<ChallengeId>>(NONE_MET);
   const [line, setLine] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -102,6 +147,7 @@ export const Home = ({ challenge, onChallenge, sandboxLevel, loop, saving, paren
     setOpen(true);
     if (!child) {
       setSaved({ kind: 'none' });
+      setMet(NONE_MET);
       return;
     }
     setSaved({ kind: 'reading' });
@@ -111,6 +157,14 @@ export const Home = ({ challenge, onChallenge, sandboxLevel, loop, saving, paren
       .catch((error: unknown) => {
         console.warn('The saved builds could not be read.', error);
         setSaved({ kind: 'read', builds: [] });
+      });
+    // The check marks come in as the records are read; the list itself never waits on them.
+    child.runs
+      .list()
+      .then((runs) => setMet(metChallenges(runs)))
+      .catch((error: unknown) => {
+        console.warn('The Runs could not be read.', error);
+        setMet(NONE_MET);
       });
   };
 
@@ -150,6 +204,9 @@ export const Home = ({ challenge, onChallenge, sandboxLevel, loop, saving, paren
         return;
       }
       onChallenge(next);
+      // A part introduction opens on its part's spec card, so the meeting starts with the part (task 7.27).
+      const introduced = introducedPartId(next, canvas?.blueprint ?? build);
+      if (introduced !== undefined) canvas?.select({ kind: 'part', partId: introduced });
       emitTelemetry(child, 'session-start', { mode: next ? 'challenge' : 'sandbox' });
       close();
     } catch (error) {
@@ -247,11 +304,26 @@ export const Home = ({ challenge, onChallenge, sandboxLevel, loop, saving, paren
                         type="button"
                         className="shell-button home-choice"
                         aria-current={challenge?.id === item.id ? 'true' : undefined}
+                        data-met={met.has(item.id) && item.kind !== 'what-if' ? 'true' : undefined}
+                        data-tried={met.has(item.id) && item.kind === 'what-if' ? 'true' : undefined}
                         disabled={busy}
                         onClick={() => openChallenge(item)}
                       >
                         <span className="home-choice-name">{item.title}</span>
-                        <span className="home-choice-detail">{KIND_WORDS[item.kind]}</span>
+                        <span className="home-choice-detail">
+                          {met.has(item.id) && item.kind === 'what-if' ? (
+                            <span className="home-choice-tried">{CHALLENGE_TEXT.tried} · </span>
+                          ) : null}
+                          {met.has(item.id) && item.kind !== 'what-if' ? (
+                            <>
+                              <svg className="home-choice-tick" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+                                <path d="M4 10.5 L8.5 15 L16 5.5" />
+                              </svg>
+                              <span className="home-choice-spoken">{CHALLENGE_TEXT.met}. </span>
+                            </>
+                          ) : null}
+                          {KIND_WORDS[item.kind]}
+                        </span>
                       </button>
                     </li>
                   ))}

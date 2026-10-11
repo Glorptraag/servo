@@ -7,12 +7,12 @@ ticks 240
 inputs none
 blueprint bab46581f5969af8
 arena wall-stop 1d8d0f6a65d48689
-part battery-pack-2-cell ac49444ad3a2e166
-part bumper-switch 07e8a283c2f64a5b
-part caster 85cad363c9f68e25
-part chassis 2b67875c3e879e19
-part dc-motor d05dc083bd1fa3f7
-part wheel-large fde3284299722f48
+part battery-pack-2-cell c100ff04528eb9e4
+part bumper-switch 099fa5b457b8c0c8
+part caster 0b2f079c73fcdf44
+part chassis 5674f8a7f4379417
+part dc-motor 1138ba0d5d8ce499
+part wheel-large 8b010b67b9166b23
 record b96fd09024a2e80d49e6a79e77b8dfa68f10f170f4669d28ea41e800214e51f2
 fault bumper outside-loop first-tick=2
 fault motor-left overload first-tick=153

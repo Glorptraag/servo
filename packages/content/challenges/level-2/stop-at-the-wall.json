@@ -43,5 +43,6 @@
   "kind": "unscripted-build",
   "kit": "circuit-crew",
   "level": 2,
+  "order": 19,
   "title": "Stop at the wall"
 }

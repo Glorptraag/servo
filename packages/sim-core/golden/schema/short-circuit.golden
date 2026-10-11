@@ -7,7 +7,7 @@ ticks 30
 inputs none
 blueprint d4dd7d7794c37e9a
 arena open-floor 297edbfc7ad9a93c
-part battery-pack-1-cell 17a1fd9ced0c9385
+part battery-pack-1-cell fb9c3f306dd7a6cf
 record a33792e5de3b3788f614dfb3369b5088656f39907d121488ff05f11f39323fab
 fault battery short-circuit first-tick=2
 subjects battery wire:w1

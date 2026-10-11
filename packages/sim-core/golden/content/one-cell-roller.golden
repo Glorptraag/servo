@@ -7,12 +7,12 @@ ticks 90
 inputs none
 blueprint ff38cfae7d6628ad
 arena open-floor 297edbfc7ad9a93c
-part battery-pack-1-cell 81b516900e0aa151
-part caster 85cad363c9f68e25
-part chassis 2b67875c3e879e19
-part dc-motor d05dc083bd1fa3f7
-part switch 0a304ca511260dde
-part wheel-large fde3284299722f48
+part battery-pack-1-cell 5fcacc27c16b45eb
+part caster 0b2f079c73fcdf44
+part chassis 5674f8a7f4379417
+part dc-motor 1138ba0d5d8ce499
+part switch f63351cbd639bb24
+part wheel-large 8b010b67b9166b23
 record 576242f99efcdc475e198da0a3af593e377a301c686384480355dd8a9b7edce8
 fault motor-left low-voltage first-tick=2
 fault motor-right low-voltage first-tick=2

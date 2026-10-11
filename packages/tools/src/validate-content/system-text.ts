@@ -10,6 +10,8 @@ export interface TextField {
   readonly partName?: true;
   /** An authored blueprint's name, which the schema does not read as system text, so the validator checks its marks. */
   readonly blueprintName?: true;
+  /** A challenge's goal line, which the header shows in two lines at most, so its length is checked. */
+  readonly goalLine?: true;
 }
 
 const items = (value: unknown): readonly unknown[] => (Array.isArray(value) ? value : []);
@@ -47,12 +49,15 @@ export const systemText = (kind: RecordKind, record: unknown): TextField[] => {
       break;
     }
     case 'arena':
+      take(field(record, 'name'), '$.name');
+      items(field(record, 'props')).forEach((prop, index) => take(field(prop, 'name'), `$.props[${index}].name`));
+      break;
     case 'kit':
       take(field(record, 'name'), '$.name');
       break;
     case 'challenge':
       take(field(record, 'title'), '$.title');
-      take(field(record, 'goalLine'), '$.goalLine');
+      if (typeof field(record, 'goalLine') === 'string') out.push({ path: '$.goalLine', text: field(record, 'goalLine') as string, goalLine: true });
       items(field(record, 'hints')).forEach((ladder, index) => {
         items(field(ladder, 'steps')).forEach((step, at) => take(field(step, 'line'), `$.hints[${index}].steps[${at}].line`));
       });

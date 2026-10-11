@@ -68,6 +68,7 @@
       "hint": "This DC motor cannot turn its load",
       "id": "overload",
       "need": "load",
+      "port": "shaft",
       "shows": [
         "stall",
         "hum",
@@ -81,6 +82,7 @@
       "hint": "This DC motor's plus and minus are swapped",
       "id": "reversed",
       "need": "power",
+      "port": "plus",
       "shows": [
         "reverse"
       ],

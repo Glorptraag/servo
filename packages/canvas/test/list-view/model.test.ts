@@ -356,6 +356,20 @@ describe('R-6.4 list-view parity (task 7.3)', () => {
     expect(bench.model.actionsFor({ kind: 'part', partId: 'chassis' }).map((action) => action.id)).toContain('turn:chassis:clockwise');
   });
 
+  it('calls a prop by its name when it has one (schema 1.1), numbers twins by it, and keeps it in the build', () => {
+    const bench = benchOf(fixture('rolling-start'));
+    const post: PropTemplate = { ...BOX, name: 'post', shape: 'cylinder', fixed: true };
+    for (const template of [post, post, BOX]) {
+      const [place] = bench.model.propPlacementsFor(template);
+      expect(bench.model.perform(place as ListAction)).toBe(true);
+    }
+    expect(bench.model.props.map((prop) => prop.description.split(',')[0])).toEqual(['post 1', 'post 2', 'box']);
+    expect(bench.model.props.map((prop) => prop.description)).toEqual(expect.arrayContaining([expect.stringContaining('fixed in place')]));
+    expect(bench.blueprint?.arena.props.map((prop) => prop.name)).toEqual(['post', 'post', undefined]);
+    const labels = bench.model.actionsFor({ kind: 'prop', propId: bench.model.props[0]?.propId as string }).map((action) => action.label);
+    expect(labels).toContain('Select post 1');
+  });
+
   it('numbers twin props as it numbers twin parts, so two boxes read apart (CAN-4)', () => {
     const bench = benchOf(fixture('rolling-start'));
     const [place] = bench.model.propPlacementsFor(BOX);

@@ -5,6 +5,8 @@ import type { ChallengeKind } from '@servo/schema';
 export const CHALLENGE_TEXT = {
   /** Read aloud when the goal's check mark appears. A plain fact, never praise. */
   met: 'Goal met',
+  /** Home's word for a what-if whose change a Run has shown. A what-if has no right answer, so nothing is met (D131). */
+  tried: 'Tried',
   home: 'Home',
   back: 'Back to the build',
   build: 'Build',

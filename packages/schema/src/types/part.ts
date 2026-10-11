@@ -203,6 +203,8 @@ export interface FailureMode {
   readonly cardLine: Text;
   /** A one-line hint naming the part or port, without a full stop: `The servo is waiting for a signal`. */
   readonly hint?: Text;
+  /** The port the failure is about, when it is about one: a servo with no signal names its signal port (schema 1.1, task 7.24). */
+  readonly port?: PortId;
 }
 
 /** The primitive parameter a setting drives. For a number setting, `range` maps [min, max] onto the parameter linearly. */

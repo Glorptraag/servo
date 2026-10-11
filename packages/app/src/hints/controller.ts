@@ -9,11 +9,19 @@
 //   is one the schema's rules allow. Its line says what it did.
 // - After two Runs in a row that miss the goal, the ladder offers its next drawn rung itself and the button pulses
 //   gently. An offer never does do-it: only a tap changes the build. A Run that meets the goal clears the ladder.
+//   A what-if never offers (D131): it has no right answer, so a Run that does not make its change misses nothing. Its
+//   ladder is there on request, and a Run that shows the change clears it as a met goal does.
 // - Runs are judged as they play by the challenge's GoalWatch over the run loop's frames: the judge the goal line, the
 //   Run bar's recorder (`judgeRun`) and `pnpm golden` use, so a missed Run here is a record with `goal.met` false.
+// - Faults teach outside a ladder too (brief Section 10, case 2; task 7.29). In the sandbox, and under a challenge
+//   whose ladders none match the build (an unscripted build), two Runs in a row of the same build (same `runKeyOf`)
+//   that show the same fault make a ladder from the part record's failure mode: pulse the part with its `hint` line,
+//   then pulse the `port` the mode names, when it names one. No ghost wire and no do-it, since the fix is the child's.
+//   The ladder is offered by the pulsing button alone (nothing is drawn until a tap), stays while the build is as it
+//   ran, and goes with the next edit. A failure mode with no `hint` makes no ladder. A challenge ladder always wins.
 // No dialogs (ground rule 9). Every step used goes to the HintLog for the run record.
 import type { CanvasHandle, DrawnHintStep } from '@servo/canvas';
-import type { Catalogue, Challenge, HintStep, HintStepKind, PlacedPartId, RunEvent, Text, Timestamp } from '@servo/schema';
+import type { Blueprint, Catalogue, Challenge, HintStep, HintStepKind, PlacedPartId, RunEvent, Text, Timestamp } from '@servo/schema';
 import { GoalWatch } from '../challenges/goal.ts';
 import { runKeyOf } from '../run-bar/run-loop.ts';
 import type { RunListener, RunLoop } from '../run-bar/run-loop.ts';
@@ -28,6 +36,8 @@ export const MISSED_RUNS_BEFORE_OFFER = 2;
 export type HintCanvas = Pick<CanvasHandle, 'mode' | 'blueprint' | 'showHint' | 'clearHints' | 'apply'>;
 
 export interface HintState {
+  /** A ladder applies to the build as it is: the challenge's, or one made from a part record's failure mode. */
+  readonly exists: boolean;
   /** A tap would draw a rung or do the last step. */
   readonly available: boolean;
   /** The ladder offered a rung after two missed Runs: the button pulses until it is tapped. */
@@ -38,12 +48,13 @@ export interface HintState {
   readonly said: Text | undefined;
 }
 
-export const NO_HINT: HintState = { available: false, offered: false, shown: undefined, said: undefined };
+export const NO_HINT: HintState = { exists: false, available: false, offered: false, shown: undefined, said: undefined };
 
 export interface HintLadderOptions {
   readonly canvas: HintCanvas;
   readonly catalogue: Catalogue;
-  readonly challenge: Challenge;
+  /** The challenge on the canvas, whose ladders come first; none in the sandbox, where only part records teach. */
+  readonly challenge: Challenge | null;
   readonly log: HintLog;
   /** The Run bar's run loop, whose Runs are judged. None, and no Run ever offers a rung. */
   readonly loop?: RunLoop | null;
@@ -62,6 +73,30 @@ interface Place {
 
 const isDrawn = (step: HintStep): step is DrawnHintStep => step.step !== 'do-it';
 
+const sameFault = (a: RunFault, b: RunFault): boolean => a.partId === b.partId && a.failure === b.failure;
+
+/**
+ * The ladder a part record gives for a fault: the failure mode's `hint` on the part, then its `port` when it names one
+ * (task 7.29). Undefined for a part no longer on the build, or a failure mode with no hint line.
+ */
+export const recordLadder = (fault: RunFault, blueprint: Blueprint, catalogue: Catalogue): LadderChoice | undefined => {
+  const placed = blueprint.parts.find((part) => part.id === fault.partId);
+  const record = placed ? catalogue.parts.get(placed.part) : undefined;
+  const failure = record?.failureModes.find((mode) => mode.id === fault.failure);
+  if (!record || !failure?.hint) return undefined;
+  const target = { placed: fault.partId };
+  const steps: HintStep[] = [{ step: 'pulse-part', target, line: failure.hint }];
+  const port = failure.port === undefined ? undefined : record.ports.find((spec) => spec.id === failure.port);
+  if (port) steps.push({ step: 'pulse-port', target: { ...target, port: port.id }, line: `${failure.hint}: ${port.label}` });
+  return {
+    source: 'part-record',
+    index: -1,
+    ladder: { when: { kind: 'fault', failure: fault.failure, target }, steps },
+    part: fault.partId,
+    key: `record ${fault.partId} ${fault.failure}`,
+  };
+};
+
 export class HintLadderController {
   private readonly options: HintLadderOptions;
   private readonly listeners = new Set<(state: HintState) => void>();
@@ -77,6 +112,10 @@ export class HintLadderController {
   private missed = 0;
   /** The faults the last Run showed. */
   private faults: readonly RunFault[] = [];
+  /** The last Run's build and faults, for the two-Runs-alike rule of the part records' ladders. */
+  private lastRun: { readonly key: string; readonly faults: readonly RunFault[] } | undefined;
+  /** A ladder made from a part record's failure mode, for the build (by run key) it was made on. */
+  private fromRecord: { readonly on: string; readonly fault: RunFault; readonly choice: LadderChoice } | undefined;
   private disposed = false;
 
   constructor(options: HintLadderOptions) {
@@ -118,8 +157,9 @@ export class HintLadderController {
     this.listeners.clear();
   }
 
-  /** Watches each Run as it plays: its faults, and whether it met the goal by the time it stopped. */
+  /** Watches each Run as it plays: its faults, and whether it met the goal by the time it stopped (no goal, never). */
   private judge(): RunListener {
+    let watching = false;
     let watch: GoalWatch | undefined;
     let last = -1;
     let stepped = false;
@@ -127,24 +167,27 @@ export class HintLadderController {
     return (state, frame) => {
       if (this.disposed) return;
       if (!frame) {
-        if (state.phase === 'build' && stepped && watch) this.ended(watch.verdict.met, [...faults.values()]);
+        if (state.phase === 'build' && stepped && watching) this.ended(watch?.verdict.met ?? false, [...faults.values()]);
         if (state.phase !== 'spin-up' && state.phase !== 'running') {
           stepped = false;
+          watching = false;
           watch = undefined;
         }
         if (state.phase === 'loading' || state.phase === 'spin-up') this.runStarts();
         return;
       }
-      if (!watch || frame.tick === 0 || frame.tick <= last) {
+      if (!watching || frame.tick === 0 || frame.tick <= last) {
         const build = this.options.canvas.blueprint;
         if (!build) return;
-        watch = new GoalWatch({ challenge: this.options.challenge, blueprint: build, catalogue: this.options.catalogue });
+        const { challenge } = this.options;
+        watch = challenge ? new GoalWatch({ challenge, blueprint: build, catalogue: this.options.catalogue }) : undefined;
+        watching = true;
         faults = new Map();
         stepped = false;
       }
       last = frame.tick;
       if (frame.tick > 0) stepped = true;
-      watch.push(frame.tick, frame.events);
+      watch?.push(frame.tick, frame.events);
       for (const event of frame.events) noteFault(faults, event);
     };
   }
@@ -157,6 +200,14 @@ export class HintLadderController {
 
   private ended(met: boolean, faults: readonly RunFault[]): void {
     this.faults = faults;
+    // Run never writes the build back (ground rule 4), so the build on the canvas now is the one that ran.
+    const build = this.options.canvas.blueprint;
+    const key = build ? runKeyOf(build) : '';
+    const alike = this.lastRun?.key === key ? faults.filter((fault) => this.lastRun?.faults.some((seen) => sameFault(seen, fault))) : [];
+    this.lastRun = { key, faults };
+    // A part record's ladder describes the last Run: a Run that meets the goal, or no longer shows its fault, ends it.
+    const kept = this.fromRecord;
+    if (kept && (met || !faults.some((fault) => sameFault(fault, kept.fault)))) this.fromRecord = undefined;
     if (met) {
       this.missed = 0;
       this.offered = false;
@@ -166,8 +217,25 @@ export class HintLadderController {
       this.sync();
       return;
     }
-    this.missed += 1;
     this.sync();
+    if (this.options.challenge?.kind === 'what-if') return;
+    this.missed += 1;
+    if (!this.choice && build) {
+      // No challenge ladder for this build: the part record's, after two Runs of this build showing the same fault.
+      for (const fault of alike) {
+        const made = recordLadder(fault, build, this.options.catalogue);
+        if (!made) continue;
+        this.fromRecord = { on: key, fault, choice: made };
+        this.sync();
+        // Offered by the pulsing button alone: the tap draws the part, so the child looks before anything is pointed at.
+        this.offered = true;
+        this.missed = 0;
+        this.emit();
+        return;
+      }
+      return;
+    }
+    if (this.choice?.source === 'part-record') return;
     if (this.missed >= MISSED_RUNS_BEFORE_OFFER && !this.step('offered') && this.stateNow.available) {
       // Only do-it is left: the button pulses, and the child decides.
       this.offered = true;
@@ -247,8 +315,10 @@ export class HintLadderController {
   private sync(): void {
     if (this.disposed) return;
     const blueprint = this.options.canvas.blueprint;
-    const choice = blueprint ? chooseLadder(this.options.challenge, blueprint, this.faults) : undefined;
     const key = blueprint ? runKeyOf(blueprint) : '';
+    if (this.fromRecord && this.fromRecord.on !== key) this.fromRecord = undefined;
+    const { challenge } = this.options;
+    const choice = (blueprint && challenge ? chooseLadder(challenge, blueprint, this.faults) : undefined) ?? this.fromRecord?.choice;
     this.choice = choice;
     if (choice?.key !== this.place?.key) {
       this.clearDrawn();
@@ -287,13 +357,14 @@ export class HintLadderController {
   private emit(): void {
     if (this.disposed) return;
     const next: HintState = {
+      exists: this.choice !== undefined,
       available: this.available(),
       offered: this.offered,
       shown: this.shown,
       said: this.said?.line,
     };
     const now = this.stateNow;
-    if (next.available === now.available && next.offered === now.offered && next.shown === now.shown && next.said === now.said) return;
+    if (next.exists === now.exists && next.available === now.available && next.offered === now.offered && next.shown === now.shown && next.said === now.said) return;
     this.stateNow = next;
     for (const listener of [...this.listeners]) listener(next);
   }

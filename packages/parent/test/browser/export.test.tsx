@@ -211,11 +211,12 @@ describe('the parts list in the parent view', () => {
     await userEvent.keyboard(' ');
     await expect.poll(() => heading(host)).toBe(EXPORT_TEXT.title('Robin bumper'));
     await expect.poll(() => document.activeElement).toBe(panel(host)?.querySelector('h3'));
-    // Tab reaches Print and Close inside the list, and Enter on Close closes it.
+    // Tab reaches Print and Close inside the list, and Enter on Close closes it. (Polled: on CI's Chromium the key
+    // sometimes lands a frame after userEvent returns, which read as a flake across unrelated pushes.)
     await userEvent.tab();
-    expect(document.activeElement?.textContent).toBe(EXPORT_TEXT.print);
+    await expect.poll(() => document.activeElement?.textContent).toBe(EXPORT_TEXT.print);
     await userEvent.tab();
-    expect(document.activeElement?.textContent).toBe(EXPORT_TEXT.close);
+    await expect.poll(() => document.activeElement?.textContent).toBe(EXPORT_TEXT.close);
     await userEvent.keyboard('{Enter}');
     await expect.poll(() => panel(host)).toBeNull();
     expect(document.activeElement).toBe(opener(host, 'Robin bumper'));

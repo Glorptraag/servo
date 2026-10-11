@@ -8,12 +8,12 @@ input 10 switch closed=false
 input 20 switch closed=true
 blueprint 7220ed337c06d7e3
 arena open-floor 297edbfc7ad9a93c
-part battery-pack-2-cell 4f06898988ddc4d3
-part caster 2a2f645fdaf6f14e
-part chassis e4dd75ff894669d7
-part dc-motor 860878b9ebd9b2f6
-part switch bcdbfddbd71ae424
-part wheel-large a38367d03cf69dba
+part battery-pack-2-cell 58782a4ff319d3fd
+part caster 0b2f079c73fcdf44
+part chassis 5674f8a7f4379417
+part dc-motor 374f944b9b5926c6
+part switch e81391b373393119
+part wheel-large b9ec730aa0846171
 record cb0850c3946adb8cdee3ba3ef006126bb607ed423da7521aff048c22f8fd5065
 fault motor-right reversed first-tick=2
 subjects battery caster chassis motor-left motor-right switch wheel-left wheel-right wire:w10 wire:w11 wire:w12 wire:w6 wire:w7 wire:w8 wire:w9

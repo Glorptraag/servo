@@ -142,4 +142,10 @@ export interface Challenge {
   /** The part a part introduction meets. Present exactly when kind is `part-introduction`. */
   readonly introduces?: PartTypeId;
   readonly hints: readonly HintLadder[];
+  /**
+   * The challenge's place among its level's on Home, a non-negative whole number, lowest first (schema 1.1, task 7.24).
+   * Within a level either every challenge has one or none does, and no two share one (`challengeOrderIssues`).
+   * Without it Home orders a level by kind along the brief's path, then by id.
+   */
+  readonly order?: number;
 }

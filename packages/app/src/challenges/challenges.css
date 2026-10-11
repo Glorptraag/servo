@@ -22,12 +22,19 @@
   margin: 0;
 }
 
+/*
+ * The goal line wraps to a second line before it is cut short: a header on a tablet gives it about a third of its width,
+ * and most Level 1–2 goal lines need more than one line of that. Two lines fit inside the header's 44 px row.
+ */
 .challenge-goal-line {
+  display: -webkit-box;
   min-width: 0;
   overflow: hidden;
   font-weight: 700;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  line-height: 1.2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .challenge-tick {
@@ -201,9 +208,34 @@
 }
 
 .home-choice-detail {
+  display: flex;
   flex: none;
+  align-items: center;
+  gap: 6px;
   color: var(--shell-muted, #5e584f);
   font-weight: 400;
+}
+
+/* The goal line's check mark again, on a challenge one of the child's Runs has met. */
+.home-choice-tick {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: var(--shell-ink, #2b2926);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* "Goal met", for screen readers; the check mark says it to everyone else. */
+.home-choice-spoken {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .home-parent-entry:empty {

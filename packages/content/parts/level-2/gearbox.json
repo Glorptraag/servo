@@ -36,6 +36,7 @@
       "hint": "This gearbox is not fixed to the chassis",
       "id": "loose",
       "need": "fixed",
+      "port": "mount",
       "shows": [
         "still"
       ],
@@ -47,6 +48,7 @@
       "hint": "This gearbox needs a turning shaft at its input",
       "id": "not-driven",
       "need": "driven",
+      "port": "input",
       "shows": [
         "still"
       ],

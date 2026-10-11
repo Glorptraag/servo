@@ -35,7 +35,7 @@ The floor `size` is in mm, with the origin at the lower left and y up. A preset 
 
 - `friction`;
 - the robot's `start` pose;
-- `walls`, `zones`, `lines`, `ramps` and `props`, which share one id space.
+- `walls`, `zones`, `lines`, `ramps` and `props`, which share one id space. A prop may carry a `name` (schema 1.1), its real name for the arena strip and the list view, `Box`, `Post`; without one its shape is said. A prop the child places keeps the name of the preset prop it came from, so a stored build may hold it too.
 
 Everything lies on the floor.
 
@@ -58,6 +58,7 @@ Each challenge holds:
 - an `arena` and a `kit`;
 - `start`, the starting blueprint, which breakdowns and what-ifs require;
 - `introduces`, for part introductions only;
+- `order`, optional (schema 1.1): the challenge's place among its level's on Home, a non-negative whole number, lowest first. Within a level either every challenge has one or none does, and no two share one; `challengeOrderIssues` checks a whole set, since one record cannot (the content validator runs it). Without it Home orders a level by kind along the brief's path, then by id;
 - `hints`: ladders of `pulse-part` → `pulse-port` → `ghost-wire` → `do-it`. A ladder may skip a rung (a call queued for Drew from review finding 14), keeps the order and ends with `do-it`. Each ladder may have a trigger, and every step has a `line`.
 
 **Measuring points:**

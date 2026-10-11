@@ -15,7 +15,8 @@ import { validateChallenge } from '@servo/schema';
 import type { Blueprint, Challenge } from '@servo/schema';
 import { exampleChallenges } from '@servo/schema/fixtures';
 import { App } from '../../src/App.tsx';
-import { CHALLENGE_TEXT, PROP_PALETTE } from '../../src/challenges/index.ts';
+import { CHALLENGE_TEXT, propPalette } from '../../src/challenges/index.ts';
+import { keysOn } from './input.ts';
 import { openStore } from '../../src/store/index.ts';
 import type { ProfileStore, ServoStore } from '../../src/store/index.ts';
 
@@ -38,7 +39,25 @@ const example = (name: string, start?: Blueprint): Challenge => {
 const CROSS = example('cross-and-stop', fixture('bumper-stops-at-wall'));
 const LIGHT = example('drive-and-light', fixture('level-1-roller'));
 const MEET = example('meet-the-switch');
-const withChallenges: Content = { ...content, challenges: [MEET, CROSS, LIGHT] };
+/** Cross and stop as a part introduction of the bumper switch, for the card that opens again when the goal is met (task 7.27). */
+const INTRO = ((): Challenge => {
+  const data = { ...CROSS, id: 'meet-the-bumper-switch', title: 'Meet the bumper switch', kind: 'part-introduction', introduces: 'bumper-switch' };
+  const result = validateChallenge(data, content.catalogue);
+  if (!result.ok) throw new Error(`INTRO: ${result.issues.map((issue) => issue.message).join(' ')}`);
+  return result.value;
+})();
+/**
+ * Content's what-if, starting from its tried fixture (the right large wheel off), so one Run shows the change (D131, task
+ * 7.28). Its ladder is about the wheel that start no longer has, so the copy carries none; hints.test.tsx covers the ladder.
+ */
+const WHAT_IF = ((): Challenge => {
+  const data = content.challenges.find((challenge) => challenge.id === 'what-if-one-wheel');
+  if (!data) throw new Error('no what-if-one-wheel in content');
+  const result = validateChallenge({ ...data, start: fixture('what-if-one-wheel-off'), hints: [] }, content.catalogue);
+  if (!result.ok) throw new Error(`WHAT_IF: ${result.issues.map((issue) => issue.message).join(' ')}`);
+  return result.value;
+})();
+const withChallenges: Content = { ...content, challenges: [MEET, CROSS, LIGHT, INTRO, WHAT_IF] };
 
 const SOON = { timeout: 10_000 };
 const RUN = { timeout: 60_000 };
@@ -91,6 +110,14 @@ const homeButton = (app: Mounted, name: string): HTMLButtonElement => {
   if (!found) throw new Error(`no ${name} on Home`);
   return found;
 };
+/** The challenge titled `name` in Home's level lists, as against a saved build named after it. */
+const challengeButton = (app: Mounted, name: string): HTMLButtonElement => {
+  const found = [...(homeOf(app)?.querySelectorAll<HTMLButtonElement>('.home-level button.home-choice') ?? [])].find(
+    (button) => button.querySelector('.home-choice-name')?.textContent === name,
+  );
+  if (!found) throw new Error(`no challenge ${name} on Home`);
+  return found;
+};
 const stripButton = (app: Mounted, name: string): HTMLButtonElement => {
   const found = [...app.host.querySelectorAll<HTMLButtonElement>('[data-region="arenaStrip"] button')].find((button) => button.textContent?.startsWith(name));
   if (!found) throw new Error(`no ${name} in the arena strip`);
@@ -103,6 +130,18 @@ const spoken = (app: Mounted): string | null | undefined => goal(app)?.querySele
 /** The build on the canvas, as the canvas's list view describes it to a screen reader. */
 const listed = (app: Mounted): number => app.host.querySelectorAll('.servo-list-view [data-toggle^="part:"]').length;
 const headerText = (app: Mounted): string => app.host.querySelector('[data-region="header"]')?.textContent ?? '';
+/** The spec card region, and the part whose card it shows now. */
+const cardRegion = (app: Mounted): HTMLElement => app.host.querySelector<HTMLElement>('[data-region="specCard"]') as HTMLElement;
+const cardPart = (app: Mounted): string | undefined => cardRegion(app).querySelector<HTMLElement>('.spec-card')?.dataset.part;
+/** Selects a part from the list view by keyboard, as app-harness's selectPart does, so the card shows it. */
+const selectByList = async (app: Mounted, id: string): Promise<void> => {
+  const toggle = (): HTMLButtonElement => app.host.querySelector<HTMLButtonElement>(`.servo-list-view button[data-toggle="part:${id}"]`) as HTMLButtonElement;
+  if (toggle().getAttribute('aria-expanded') !== 'true') await keysOn(toggle);
+  const first = (): HTMLButtonElement => app.host.querySelector<HTMLButtonElement>(`.servo-list-view button[data-subject="part:${id}"][data-action]`) as HTMLButtonElement;
+  await vi.waitFor(() => expect(first()).not.toBeNull(), SOON);
+  expect(first().dataset.action).toBe(`select:part:${id}`);
+  await keysOn(first);
+};
 
 const pageAt = (element: Element, dx = 0.5, dy = 0.5): { x: number; y: number } => {
   const box = element.getBoundingClientRect();
@@ -217,10 +256,34 @@ describe('a challenge on the canvas', () => {
     }, SOON);
     expect(ticked(app)).toBe(true);
     // A change to the build clears it: a prop brought in by keyboard, Enter on the strip's box.
-    stripButton(app, PROP_PALETTE[0]?.label ?? 'Box').focus();
+    stripButton(app, propPalette(content)[0]?.label ?? 'Box').focus();
     await userEvent.keyboard('{Enter}');
     await vi.waitFor(() => expect(ticked(app)).toBe(false), SOON);
     expect(spoken(app)).toBe('');
+
+    // Home marks the challenge met, with the same check mark and "Goal met" for a screen reader, and no other.
+    const home = await openHome(app);
+    // (The saved build the challenge made carries its title too; the challenge's own button is in the level's list.)
+    await vi.waitFor(() => expect(challengeButton(app, CROSS.title).dataset.met).toBe('true'), SOON);
+    expect(challengeButton(app, CROSS.title).textContent).toContain(CHALLENGE_TEXT.met);
+    expect(challengeButton(app, CROSS.title).querySelector('.home-choice-tick')).not.toBeNull();
+    expect(home.querySelectorAll('.home-choice[data-met="true"]').length).toBe(1);
+    expect(challengeButton(app, LIGHT.title).dataset.met).toBeUndefined();
+    expect(challengeButton(app, MEET.title).dataset.met).toBeUndefined();
+    expect(home.textContent).not.toContain('!');
+    await userEvent.click(homeButton(app, CHALLENGE_TEXT.back));
+    await vi.waitFor(() => expect(homeOf(app)).toBeNull(), SOON);
+  });
+
+  it('lists each level along the path on Home: a guided challenge before the unscripted build, whatever order content gives', async () => {
+    const app = await mount();
+    const home = await openHome(app);
+    // Content gives cross and stop before drive and light; the path puts the guided challenge first and the unscripted build last.
+    const titles = [...home.querySelectorAll('.home-choice-name')].map((name) => name.textContent);
+    expect(titles.indexOf(MEET.title)).toBeLessThan(titles.indexOf(LIGHT.title));
+    expect(titles.indexOf(LIGHT.title)).toBeLessThan(titles.indexOf(CROSS.title));
+    // Nothing met yet: no check marks.
+    expect(home.querySelectorAll('.home-choice[data-met="true"]').length).toBe(0);
   });
 
   it('shows no check for a Run that misses the goal', async () => {
@@ -245,6 +308,47 @@ describe('a challenge on the canvas', () => {
     await vi.waitFor(() => expect(goal(app)).toBeNull(), SOON);
     expect(stripButton(app, 'Open floor').disabled).toBe(false);
     expect(stripButton(app, 'Open floor').hasAttribute('aria-disabled')).toBe(false);
+  });
+});
+
+describe('a what-if (task 7.28, D131)', () => {
+  it('shows no check when a Run makes its change, and Home marks it Tried, never met', async () => {
+    const app = await mount();
+    await openHome(app);
+    await userEvent.click(homeButton(app, WHAT_IF.title));
+    await vi.waitFor(() => expect(homeOf(app)).toBeNull(), SOON);
+    await vi.waitFor(() => expect(goal(app)?.textContent).toContain(WHAT_IF.goalLine), SOON);
+    await vi.waitFor(() => expect(listed(app)).toBe(WHAT_IF.start?.parts.length), SOON);
+    // The line is the change and the thing to watch: no check mark and nothing to say, by eye or screen reader.
+    expect(goal(app)?.dataset.kind).toBe('what-if');
+    expect(goal(app)?.dataset.met).toBeUndefined();
+    expect(goal(app)?.querySelector('.challenge-tick')).toBeNull();
+    expect(goal(app)?.querySelector('[role="status"]')).toBeNull();
+    // Run: with one large wheel off the robot circles, which is the change observed; the record says so, the line stays as it is.
+    await userEvent.click(runToggle(app));
+    await vi.waitFor(() => expect(runToggle(app).dataset.run).toBe('stop'), SOON);
+    // Four seconds: the spin-up, then well past the fifteen ticks of turning the goal asks for.
+    await new Promise((resolve) => setTimeout(resolve, 4000));
+    expect(ticked(app)).toBe(false);
+    expect(goal(app)?.textContent).toBe(WHAT_IF.goalLine);
+    await userEvent.click(runToggle(app));
+    await vi.waitFor(async () => {
+      const runs = await app.child.runs.list({ challenge: WHAT_IF.id });
+      expect(runs.map((run) => [run.challenge, run.goal?.met])).toEqual([[WHAT_IF.id, true]]);
+    }, RUN);
+    expect(ticked(app)).toBe(false);
+    expect(goal(app)?.querySelector('.challenge-tick')).toBeNull();
+
+    // Home: "Tried" in words, no check mark, no "Goal met", and nothing met anywhere.
+    const home = await openHome(app);
+    await vi.waitFor(() => expect(challengeButton(app, WHAT_IF.title).dataset.tried).toBe('true'), SOON);
+    expect(challengeButton(app, WHAT_IF.title).textContent).toContain(CHALLENGE_TEXT.tried);
+    expect(challengeButton(app, WHAT_IF.title).textContent).not.toContain(CHALLENGE_TEXT.met);
+    expect(challengeButton(app, WHAT_IF.title).querySelector('.home-choice-tick')).toBeNull();
+    expect(challengeButton(app, WHAT_IF.title).dataset.met).toBeUndefined();
+    expect(home.querySelectorAll('.home-choice[data-met="true"]').length).toBe(0);
+    expect(home.querySelectorAll('.home-choice[data-tried="true"]').length).toBe(1);
+    expect(home.textContent).not.toContain('!');
   });
 });
 
@@ -296,5 +400,42 @@ describe('the arena strip', () => {
     await vi.waitFor(() => expect(stripButton(app, 'Box').disabled).toBe(true), RUN);
     expect(stripButton(app, 'Open floor').disabled).toBe(true);
     await userEvent.click(runToggle(app));
+  });
+});
+
+describe('a part introduction (task 7.27)', () => {
+  it('opens on the spec card of the part it introduces, by every path that opens a challenge', async () => {
+    const app = await mount();
+    await openHome(app);
+    await userEvent.click(homeButton(app, MEET.title));
+    await vi.waitFor(() => expect(homeOf(app)).toBeNull(), SOON);
+    await vi.waitFor(() => expect(cardRegion(app).dataset.shown).toBe('true'), SOON);
+    expect(cardPart(app)).toBe('switch');
+    // A guided challenge opens on no card.
+    await openHome(app);
+    await userEvent.click(homeButton(app, LIGHT.title));
+    await vi.waitFor(() => expect(homeOf(app)).toBeNull(), SOON);
+    await vi.waitFor(() => expect(goal(app)?.textContent).toContain(LIGHT.goalLine), SOON);
+    expect(cardRegion(app).dataset.shown).not.toBe('true');
+  });
+
+  it('ends on the card of the part it introduces when a Run meets the goal', async () => {
+    const app = await mount();
+    await openHome(app);
+    await userEvent.click(homeButton(app, INTRO.title));
+    await vi.waitFor(() => expect(homeOf(app)).toBeNull(), SOON);
+    await vi.waitFor(() => expect(cardRegion(app).dataset.shown).toBe('true'), SOON);
+    expect(cardPart(app)).toBe('bumper-switch');
+    // The child looks at another part, then Runs: the bumper robot crosses and stops, and the card comes back to the bumper switch.
+    const chassis = INTRO.start?.parts.find((placed) => placed.part === 'chassis');
+    if (!chassis) throw new Error('the bumper robot has no chassis');
+    await selectByList(app, chassis.id);
+    await vi.waitFor(() => expect(cardPart(app)).toBe('chassis'), SOON);
+    await userEvent.click(runToggle(app));
+    await vi.waitFor(() => expect(ticked(app)).toBe(true), RUN);
+    await vi.waitFor(() => expect(cardPart(app)).toBe('bumper-switch'), SOON);
+    expect(cardRegion(app).dataset.shown).toBe('true');
+    await userEvent.click(runToggle(app));
+    await vi.waitFor(() => expect(runToggle(app).dataset.run).toBe('run'), SOON);
   });
 });

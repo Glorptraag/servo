@@ -20,5 +20,6 @@
   "kind": "unscripted-build",
   "kit": "rolling-start",
   "level": 1,
+  "order": 15,
   "title": "Cross the arena"
 }

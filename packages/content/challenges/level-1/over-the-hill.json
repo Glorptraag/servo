@@ -14,7 +14,7 @@
       "zone": "far-side"
     }
   },
-  "goalLine": "Wire both DC motors back to the battery pack and drive over the hill to the far side",
+  "goalLine": "Wire both DC motors back to the battery pack and drive over the hill",
   "hints": [
     {
       "steps": [
@@ -233,6 +233,7 @@
   "kind": "guided",
   "kit": "rolling-start",
   "level": 1,
+  "order": 10,
   "start": {
     "arena": {
       "preset": "ramp",

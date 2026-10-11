@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { exampleArenas, exampleChallenges, exampleRunRecords, validKits } from '../src/fixtures.ts';
-import { validateArenaPreset, validateChallenge, validateKit, validateRunRecord } from '../src/index.ts';
+import { challengeOrderIssues, validateArenaPreset, validateChallenge, validateKit, validateRunRecord } from '../src/index.ts';
+import type { Challenge } from '../src/index.ts';
 import { catalogue, edited, push, reasons, remove, set } from './support.ts';
 import type { Change } from './support.ts';
 
@@ -22,6 +23,12 @@ describe('arena presets', () => {
   it('keeps everything on the floor', () => {
     expect(arena(set(['props', 0, 'at', 'x'], 2500))).toEqual(['arena.outside at $.props[0].at']);
     expect(arena(set(['start', 'y'], -1))).toEqual(['arena.outside at $.start']);
+  });
+
+  it('takes an optional name on a prop, as system text (schema 1.1)', () => {
+    expect(arena(set(['props', 0, 'name'], 'Box'))).toEqual([]);
+    expect(arena(set(['props', 0, 'name'], 'Box!'))).toEqual(['text.exclamation at $.props[0].name']);
+    expect(arena(set(['props', 0, 'name'], 7))).toEqual(['value.wrong_type at $.props[0].name']);
   });
 
   it('checks rectangles, cylinders, lines and headings', () => {
@@ -70,6 +77,23 @@ describe('challenges', () => {
 
   it('names the introduced part on part introductions only', () => {
     expect(challenge('meet-the-switch', remove(['introduces']))).toEqual(['challenge.introduces_required at $.introduces']);
+  });
+
+  it('takes an optional order, a non-negative whole number (schema 1.1)', () => {
+    expect(challenge('meet-the-switch', set(['order'], 3))).toEqual([]);
+    expect(challenge('meet-the-switch', set(['order'], 0))).toEqual([]);
+    expect(challenge('meet-the-switch', set(['order'], 1.5))).toEqual(['value.not_integer at $.order']);
+    expect(challenge('meet-the-switch', set(['order'], -1))).toEqual(['value.out_of_range at $.order']);
+    expect(challenge('meet-the-switch', set(['order'], 'first'))).toEqual(['value.wrong_type at $.order']);
+  });
+
+  it('checks a set of challenges for a repeated or partial order within a level', () => {
+    const of = (id: string, level: 1 | 2, order?: number): Challenge => ({ id, level, ...(order === undefined ? {} : { order }) }) as Challenge;
+    const codes = (list: readonly Challenge[]) => challengeOrderIssues(list).map((issue) => `${issue.code} at ${issue.path}`);
+    expect(codes([of('a', 1), of('b', 1), of('c', 2)])).toEqual([]);
+    expect(codes([of('a', 1, 1), of('b', 1, 2), of('c', 2, 1)])).toEqual([]);
+    expect(codes([of('a', 1, 1), of('b', 1), of('c', 2)])).toEqual(['challenge.order_partial at $.b.order']);
+    expect(codes([of('a', 1, 2), of('b', 1, 2), of('c', 2, 2)])).toEqual(['challenge.order_repeated at $.b.order']);
     expect(challenge('cross-and-stop', set(['introduces'], 'switch'))).toEqual(['challenge.introduces_unexpected at $.introduces']);
   });
 

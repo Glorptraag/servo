@@ -237,3 +237,33 @@
 {"ts": "2026-10-05T11:14:10+00:00", "event": "done", "tasks": ["7.16"], "by": "W-7.16"}
 {"ts": "2026-10-05T11:55:45+00:00", "event": "decision_add", "id": "D128", "blocks": []}
 {"ts": "2026-10-05T11:55:45+00:00", "event": "done", "tasks": ["7.10"], "by": "W-7.10"}
+{"ts": "2026-10-07T06:48:55+00:00", "event": "decision_add", "id": "D129", "blocks": []}
+{"ts": "2026-10-07T09:24:41+00:00", "event": "decision_add", "id": "D130", "blocks": []}
+{"ts": "2026-10-07T09:24:41+00:00", "event": "decision_add", "id": "D131", "blocks": []}
+{"ts": "2026-10-07T09:24:41+00:00", "event": "decision_add", "id": "D132", "blocks": []}
+{"ts": "2026-10-07T09:24:41+00:00", "event": "park", "task": "7.35", "reason": "Waits on D132 (level unlocking before or after G6)"}
+{"ts": "2026-10-11T04:30:43+00:00", "event": "dispatch", "tasks": ["7.24"]}
+{"ts": "2026-10-11T04:37:28+00:00", "event": "done", "tasks": ["7.24"], "by": "session-affectionate-sagan"}
+{"ts": "2026-10-11T04:38:11+00:00", "event": "dispatch", "tasks": ["7.26"]}
+{"ts": "2026-10-11T04:38:51+00:00", "event": "decision_add", "id": "D133", "blocks": []}
+{"ts": "2026-10-11T04:38:51+00:00", "event": "done", "tasks": ["7.26"], "by": "session-affectionate-sagan"}
+{"ts": "2026-10-11T04:40:48+00:00", "event": "dispatch", "tasks": ["7.25"]}
+{"ts": "2026-10-11T04:44:57+00:00", "event": "done", "tasks": ["7.25"], "by": "session-affectionate-sagan"}
+{"ts": "2026-10-11T04:46:06+00:00", "event": "dispatch", "tasks": ["7.30"]}
+{"ts": "2026-10-11T04:46:07+00:00", "event": "reset", "task": "7.18"}
+{"ts": "2026-10-11T04:47:17+00:00", "event": "dispatch", "tasks": ["7.27"]}
+{"ts": "2026-10-11T04:51:03+00:00", "event": "done", "tasks": ["7.27"], "by": "session-affectionate-sagan"}
+{"ts": "2026-10-11T04:51:03+00:00", "event": "done", "tasks": ["7.30"], "by": "session-affectionate-sagan"}
+{"ts": "2026-10-11T04:51:33+00:00", "event": "reset", "task": "7.12"}
+{"ts": "2026-10-11T04:51:33+00:00", "event": "reset", "task": "7.15"}
+{"ts": "2026-10-11T04:52:39+00:00", "event": "dispatch", "tasks": ["7.32"]}
+{"ts": "2026-10-11T04:52:39+00:00", "event": "dispatch", "tasks": ["7.31"]}
+{"ts": "2026-10-11T04:56:00+00:00", "event": "done", "tasks": ["7.31"], "by": "session-affectionate-sagan"}
+{"ts": "2026-10-11T04:56:00+00:00", "event": "done", "tasks": ["7.32"], "by": "session-affectionate-sagan"}
+{"ts": "2026-10-11T04:58:28+00:00", "event": "dispatch", "tasks": ["7.28"]}
+{"ts": "2026-10-11T05:06:54+00:00", "event": "done", "tasks": ["7.28"], "by": "session-affectionate-sagan"}
+{"ts": "2026-10-11T05:09:54+00:00", "event": "dispatch", "tasks": ["7.29"]}
+{"ts": "2026-10-11T05:18:14+00:00", "event": "decision_add", "id": "D134", "blocks": []}
+{"ts": "2026-10-11T05:20:01+00:00", "event": "done", "tasks": ["7.29"], "by": "session-affectionate-sagan"}
+{"ts": "2026-10-11T05:20:38+00:00", "event": "dispatch", "tasks": ["7.12"]}
+{"ts": "2026-10-11T05:31:33+00:00", "event": "done", "tasks": ["7.12"], "by": "session-affectionate-sagan"}

@@ -67,11 +67,19 @@ const partName = (content: Content, part: PartTypeId): string => {
 const failureLine = (content: Content, part: PartTypeId, failure: FailureModeId): string =>
   content.parts.find((candidate) => candidate.id === part)?.failureModes.find((mode) => mode.id === failure)?.cardLine ?? '';
 
-/** One fixed fault as a line: the part's real name, its spec card's line for the fault, and how long the fix took. */
+/** The failure mode's teaching note, written for adults: why it happens. Empty when the part or mode is unknown. */
+export const teachingLine = (content: Content, part: PartTypeId, failure: FailureModeId): string =>
+  content.parts.find((candidate) => candidate.id === part)?.failureModes.find((mode) => mode.id === failure)?.teachingNote ?? '';
+
+/**
+ * One fixed fault as a line: the part's real name, its spec card's line for the fault, the teaching note for the adult
+ * (task 7.31), and how long the fix took.
+ */
 export const faultText = (content: Content, fault: FaultFixed): string => {
   const line = failureLine(content, fault.part, fault.failure);
+  const note = teachingLine(content, fault.part, fault.failure);
   const took = PROGRESS_TEXT.fixed(fault.runs, durationText(Date.parse(fault.fixedAt) - Date.parse(fault.firstSeen)));
-  return [`${partName(content, fault.part)}.`, line, took].filter((text) => text !== '').join(' ');
+  return [`${partName(content, fault.part)}.`, line, note, took].filter((text) => text !== '').join(' ');
 };
 
 export interface ProgressSectionProps {
