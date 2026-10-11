@@ -7,8 +7,8 @@ ticks 30
 inputs none
 blueprint 3da19aa824e5bf35
 arena open-floor 297edbfc7ad9a93c
-part battery-pack-1-cell 81b516900e0aa151
-part dc-motor d05dc083bd1fa3f7
+part battery-pack-1-cell 2cc3e44ff5408e80
+part dc-motor 549f5c5fe7228521
 record d50c5abad1910c1378a1b03f4f6cd949fb80a258ceefad4c5bfde6f890ef98c3
 fault motor low-voltage first-tick=2
 subjects battery motor wire:w1 wire:w2

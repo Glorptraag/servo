@@ -7,10 +7,10 @@ ticks 60
 inputs none
 blueprint 7c9385234e55ab4f
 arena open-floor 297edbfc7ad9a93c
-part battery-pack-2-cell ac49444ad3a2e166
+part battery-pack-2-cell c0db17158e46f983
 part chassis 2b67875c3e879e19
-part dc-motor d05dc083bd1fa3f7
-part wheel-large fde3284299722f48
+part dc-motor 549f5c5fe7228521
+part wheel-large adb7c8165db4646e
 record 48d9a0ecac801aab86b997b82f795a4c1c0ffba9bb9ef06c58d554e620a301c9
 fault chassis scraping first-tick=2
 subjects battery chassis motor-left motor-right wheel-left wheel-right wire:w4 wire:w5 wire:w6 wire:w7 wire:w8 wire:w9

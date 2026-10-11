@@ -53,6 +53,7 @@
           "hint": "This battery pack has no loop back to minus",
           "id": "no-loop",
           "need": "loop",
+          "port": "minus",
           "shows": [
             "off"
           ],
@@ -296,6 +297,7 @@
           "hint": "This buzzer's plus and minus are swapped",
           "id": "reversed",
           "need": "power",
+          "port": "plus",
           "shows": [
             "silent"
           ],
@@ -414,6 +416,7 @@
           "hint": "This caster is not fixed to the chassis",
           "id": "loose",
           "need": "fixed",
+          "port": "mount",
           "shows": [
             "drag"
           ],
@@ -756,6 +759,7 @@
           "hint": "This DC motor cannot turn its load",
           "id": "overload",
           "need": "load",
+          "port": "shaft",
           "shows": [
             "stall",
             "hum",
@@ -769,6 +773,7 @@
           "hint": "This DC motor's plus and minus are swapped",
           "id": "reversed",
           "need": "power",
+          "port": "plus",
           "shows": [
             "reverse"
           ],
@@ -936,6 +941,7 @@
           "hint": "This LED's legs are swapped",
           "id": "reversed",
           "need": "power",
+          "port": "plus",
           "shows": [
             "dark"
           ],
@@ -1113,6 +1119,7 @@
           "hint": "This motor driver has no power in",
           "id": "no-power",
           "need": "power",
+          "port": "plus",
           "shows": [
             "off"
           ],
@@ -1135,6 +1142,7 @@
           "hint": "This motor driver's plus and minus are swapped",
           "id": "reversed",
           "need": "power",
+          "port": "plus",
           "shows": [
             "off"
           ],
@@ -1445,6 +1453,7 @@
           "hint": "This large wheel needs a shaft in its hub",
           "id": "not-driven",
           "need": "driven",
+          "port": "hub",
           "shows": [
             "still"
           ],

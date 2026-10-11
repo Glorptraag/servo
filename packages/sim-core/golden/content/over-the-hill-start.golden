@@ -7,11 +7,11 @@ ticks 150
 inputs none
 blueprint 962b8dbfb3423ed8
 arena ramp 221441cf1bc4861b
-part battery-pack-2-cell ac49444ad3a2e166
-part caster 85cad363c9f68e25
+part battery-pack-2-cell c0db17158e46f983
+part caster f8d6f1e4cb696e4e
 part chassis 2b67875c3e879e19
-part dc-motor d05dc083bd1fa3f7
-part wheel-large fde3284299722f48
+part dc-motor 549f5c5fe7228521
+part wheel-large adb7c8165db4646e
 record cbcdae1b6db138fff220c711fd597eedfdd73160b68642015c6bb4c0fd738ae7
 fault battery no-loop first-tick=2
 fault motor-left no-circuit first-tick=2

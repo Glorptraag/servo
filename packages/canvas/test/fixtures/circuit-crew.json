@@ -53,6 +53,7 @@
           "hint": "This battery pack has no loop back to minus",
           "id": "no-loop",
           "need": "loop",
+          "port": "minus",
           "shows": [
             "off"
           ],
@@ -102,7 +103,7 @@
         },
         {
           "id": "minus",
-          "label": "minus (−)",
+          "label": "minus (\u2212)",
           "polarity": "negative",
           "type": "power"
         },
@@ -296,6 +297,7 @@
           "hint": "This buzzer's plus and minus are swapped",
           "id": "reversed",
           "need": "power",
+          "port": "plus",
           "shows": [
             "silent"
           ],
@@ -360,7 +362,7 @@
         },
         {
           "id": "minus",
-          "label": "minus (−)",
+          "label": "minus (\u2212)",
           "polarity": "negative",
           "type": "power"
         },
@@ -414,6 +416,7 @@
           "hint": "This caster is not fixed to the chassis",
           "id": "loose",
           "need": "fixed",
+          "port": "mount",
           "shows": [
             "drag"
           ],
@@ -756,6 +759,7 @@
           "hint": "This DC motor cannot turn its load",
           "id": "overload",
           "need": "load",
+          "port": "shaft",
           "shows": [
             "stall",
             "hum",
@@ -769,6 +773,7 @@
           "hint": "This DC motor's plus and minus are swapped",
           "id": "reversed",
           "need": "power",
+          "port": "plus",
           "shows": [
             "reverse"
           ],
@@ -817,7 +822,7 @@
         },
         {
           "id": "minus",
-          "label": "minus (−)",
+          "label": "minus (\u2212)",
           "polarity": "negative",
           "type": "power"
         },
@@ -936,6 +941,7 @@
           "hint": "This LED's legs are swapped",
           "id": "reversed",
           "need": "power",
+          "port": "plus",
           "shows": [
             "dark"
           ],
@@ -1000,7 +1006,7 @@
         },
         {
           "id": "minus",
-          "label": "minus (−), short leg",
+          "label": "minus (\u2212), short leg",
           "polarity": "negative",
           "type": "power"
         },
@@ -1113,6 +1119,7 @@
           "hint": "This motor driver has no power in",
           "id": "no-power",
           "need": "power",
+          "port": "plus",
           "shows": [
             "off"
           ],
@@ -1135,6 +1142,7 @@
           "hint": "This motor driver's plus and minus are swapped",
           "id": "reversed",
           "need": "power",
+          "port": "plus",
           "shows": [
             "off"
           ],
@@ -1178,7 +1186,7 @@
         },
         {
           "id": "minus",
-          "label": "power in (−)",
+          "label": "power in (\u2212)",
           "polarity": "negative",
           "type": "power"
         },
@@ -1190,7 +1198,7 @@
         },
         {
           "id": "a-minus",
-          "label": "motor A (−)",
+          "label": "motor A (\u2212)",
           "polarity": "negative",
           "type": "power"
         },
@@ -1202,7 +1210,7 @@
         },
         {
           "id": "b-minus",
-          "label": "motor B (−)",
+          "label": "motor B (\u2212)",
           "polarity": "negative",
           "type": "power"
         },
@@ -1445,6 +1453,7 @@
           "hint": "This large wheel needs a shaft in its hub",
           "id": "not-driven",
           "need": "driven",
+          "port": "hub",
           "shows": [
             "still"
           ],
