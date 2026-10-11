@@ -43,6 +43,7 @@
       "hint": "This buzzer's plus and minus are swapped",
       "id": "reversed",
       "need": "power",
+      "port": "plus",
       "shows": [
         "silent"
       ],

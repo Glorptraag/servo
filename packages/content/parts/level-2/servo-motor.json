@@ -48,6 +48,7 @@
       "hint": "This servo motor is waiting for a signal",
       "id": "no-signal",
       "need": "signal",
+      "port": "signal",
       "shows": [
         "hold",
         "hum"
@@ -83,6 +84,7 @@
       "hint": "This servo motor's plus and minus are swapped",
       "id": "reversed",
       "need": "power",
+      "port": "plus",
       "shows": [
         "still",
         "silent"
@@ -95,6 +97,7 @@
       "hint": "This servo motor cannot move its load",
       "id": "overload",
       "need": "load",
+      "port": "arm",
       "shows": [
         "stall",
         "hum",

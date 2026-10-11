@@ -34,6 +34,7 @@
       "hint": "This small wheel needs a shaft in its hub",
       "id": "not-driven",
       "need": "driven",
+      "port": "hub",
       "shows": [
         "still"
       ],

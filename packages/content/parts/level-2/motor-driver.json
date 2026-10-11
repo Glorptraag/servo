@@ -63,6 +63,7 @@
       "hint": "This motor driver has no power in",
       "id": "no-power",
       "need": "power",
+      "port": "plus",
       "shows": [
         "off"
       ],
@@ -85,6 +86,7 @@
       "hint": "This motor driver's plus and minus are swapped",
       "id": "reversed",
       "need": "power",
+      "port": "plus",
       "shows": [
         "off"
       ],

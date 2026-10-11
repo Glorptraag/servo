@@ -50,6 +50,7 @@
       "hint": "This battery pack has no loop back to minus",
       "id": "no-loop",
       "need": "loop",
+      "port": "minus",
       "shows": [
         "off"
       ],
