@@ -29,6 +29,8 @@ import { example } from '../hints/support.ts';
 
 const { content } = loadContent();
 const MEET = example('meet-the-switch');
+/** A what-if from content: no right answer, so its ladder never offers itself (D131, task 7.28). */
+const WHAT_IF = content.challenges.find((challenge) => challenge.id === 'what-if-one-wheel') as Challenge;
 
 class TestClock implements RunClock {
   time = 0;
@@ -315,5 +317,21 @@ describe('the hint ladder', () => {
       ],
     ]);
     expect(runs.every((run) => run.goal?.met === false)).toBe(true);
+  });
+
+  it('never offers on a what-if: two Runs without the change draw nothing, and a tap still draws the first rung (D131)', async () => {
+    const app = await mount(WHAT_IF);
+    expect(hintButton(app).dataset.offered).toBe('false');
+    await runFor(app, 12);
+    await runFor(app, 12);
+    await vi.waitFor(async () => expect(await app.child.runs.list({ challenge: WHAT_IF.id })).toHaveLength(2), SOON);
+    expect(app.canvas().listView.hint).toBeUndefined();
+    expect(hintButton(app).dataset.offered).toBe('false');
+    expect(hintButton(app).getAttribute('aria-disabled')).not.toBe('true');
+    await userEvent.click(hintButton(app));
+    await vi.waitFor(() => expect(app.canvas().listView.hint?.step).toBe('pulse-part'), SOON);
+    expect(hintButton(app).dataset.offered).toBe('false');
+    const runs = await app.child.runs.list({ challenge: WHAT_IF.id });
+    expect(runs.map((run) => run.hints)).toEqual([[], []]);
   });
 });

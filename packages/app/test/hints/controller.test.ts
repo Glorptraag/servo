@@ -17,7 +17,8 @@ import { RunLoop, SPIN_UP_MS } from '../../src/run-bar/run-loop.ts';
 import type { RunClock } from '../../src/run-bar/run-loop.ts';
 import { contentFixture, example, fixture } from './support.ts';
 
-const { catalogue } = loadContent().content;
+const { content } = loadContent();
+const { catalogue } = content;
 
 /** The canvas as far as the ladder and the run loop reach it. A rung draws when something on the build matches it. */
 class StandIn {
@@ -212,6 +213,23 @@ describe('Runs that miss the goal', { timeout: 60_000 }, () => {
     await runFor(10);
     expect(canvas.applied).toEqual([]);
     expect(ladder.state).toMatchObject({ offered: true, available: true });
+    loop.dispose();
+    ladder.dispose();
+  });
+
+  it('never offers on a what-if (D131): two Runs without its change draw nothing, and a tap still climbs its ladder', async () => {
+    const whatIf = content.challenges.find((challenge) => challenge.id === 'what-if-one-wheel') as Challenge;
+    expect(whatIf.kind).toBe('what-if');
+    const { canvas, ladder, loop, runFor } = setUp(whatIf, whatIf.start as Blueprint);
+    expect(ladder.state).toMatchObject({ available: true, offered: false });
+    await runFor(20);
+    await runFor(20);
+    await runFor(20);
+    expect(canvas.shown).toBeNull();
+    expect(ladder.state).toMatchObject({ available: true, offered: false, shown: undefined });
+    expect(ladder.ask()).toBe(true);
+    expect(canvas.shown).toMatchObject({ step: 'pulse-part', target: { placed: 'wheel-right' } });
+    expect(ladder.state.offered).toBe(false);
     loop.dispose();
     ladder.dispose();
   });

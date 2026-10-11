@@ -46,7 +46,18 @@ const INTRO = ((): Challenge => {
   if (!result.ok) throw new Error(`INTRO: ${result.issues.map((issue) => issue.message).join(' ')}`);
   return result.value;
 })();
-const withChallenges: Content = { ...content, challenges: [MEET, CROSS, LIGHT, INTRO] };
+/**
+ * Content's what-if, starting from its tried fixture (the right large wheel off), so one Run shows the change (D131, task
+ * 7.28). Its ladder is about the wheel that start no longer has, so the copy carries none; hints.test.tsx covers the ladder.
+ */
+const WHAT_IF = ((): Challenge => {
+  const data = content.challenges.find((challenge) => challenge.id === 'what-if-one-wheel');
+  if (!data) throw new Error('no what-if-one-wheel in content');
+  const result = validateChallenge({ ...data, start: fixture('what-if-one-wheel-off'), hints: [] }, content.catalogue);
+  if (!result.ok) throw new Error(`WHAT_IF: ${result.issues.map((issue) => issue.message).join(' ')}`);
+  return result.value;
+})();
+const withChallenges: Content = { ...content, challenges: [MEET, CROSS, LIGHT, INTRO, WHAT_IF] };
 
 const SOON = { timeout: 10_000 };
 const RUN = { timeout: 60_000 };
@@ -297,6 +308,47 @@ describe('a challenge on the canvas', () => {
     await vi.waitFor(() => expect(goal(app)).toBeNull(), SOON);
     expect(stripButton(app, 'Open floor').disabled).toBe(false);
     expect(stripButton(app, 'Open floor').hasAttribute('aria-disabled')).toBe(false);
+  });
+});
+
+describe('a what-if (task 7.28, D131)', () => {
+  it('shows no check when a Run makes its change, and Home marks it Tried, never met', async () => {
+    const app = await mount();
+    await openHome(app);
+    await userEvent.click(homeButton(app, WHAT_IF.title));
+    await vi.waitFor(() => expect(homeOf(app)).toBeNull(), SOON);
+    await vi.waitFor(() => expect(goal(app)?.textContent).toContain(WHAT_IF.goalLine), SOON);
+    await vi.waitFor(() => expect(listed(app)).toBe(WHAT_IF.start?.parts.length), SOON);
+    // The line is the change and the thing to watch: no check mark and nothing to say, by eye or screen reader.
+    expect(goal(app)?.dataset.kind).toBe('what-if');
+    expect(goal(app)?.dataset.met).toBeUndefined();
+    expect(goal(app)?.querySelector('.challenge-tick')).toBeNull();
+    expect(goal(app)?.querySelector('[role="status"]')).toBeNull();
+    // Run: with one large wheel off the robot circles, which is the change observed; the record says so, the line stays as it is.
+    await userEvent.click(runToggle(app));
+    await vi.waitFor(() => expect(runToggle(app).dataset.run).toBe('stop'), SOON);
+    // Four seconds: the spin-up, then well past the fifteen ticks of turning the goal asks for.
+    await new Promise((resolve) => setTimeout(resolve, 4000));
+    expect(ticked(app)).toBe(false);
+    expect(goal(app)?.textContent).toBe(WHAT_IF.goalLine);
+    await userEvent.click(runToggle(app));
+    await vi.waitFor(async () => {
+      const runs = await app.child.runs.list({ challenge: WHAT_IF.id });
+      expect(runs.map((run) => [run.challenge, run.goal?.met])).toEqual([[WHAT_IF.id, true]]);
+    }, RUN);
+    expect(ticked(app)).toBe(false);
+    expect(goal(app)?.querySelector('.challenge-tick')).toBeNull();
+
+    // Home: "Tried" in words, no check mark, no "Goal met", and nothing met anywhere.
+    const home = await openHome(app);
+    await vi.waitFor(() => expect(challengeButton(app, WHAT_IF.title).dataset.tried).toBe('true'), SOON);
+    expect(challengeButton(app, WHAT_IF.title).textContent).toContain(CHALLENGE_TEXT.tried);
+    expect(challengeButton(app, WHAT_IF.title).textContent).not.toContain(CHALLENGE_TEXT.met);
+    expect(challengeButton(app, WHAT_IF.title).querySelector('.home-choice-tick')).toBeNull();
+    expect(challengeButton(app, WHAT_IF.title).dataset.met).toBeUndefined();
+    expect(home.querySelectorAll('.home-choice[data-met="true"]').length).toBe(0);
+    expect(home.querySelectorAll('.home-choice[data-tried="true"]').length).toBe(1);
+    expect(home.textContent).not.toContain('!');
   });
 });
 

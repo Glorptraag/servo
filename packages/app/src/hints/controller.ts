@@ -9,6 +9,8 @@
 //   is one the schema's rules allow. Its line says what it did.
 // - After two Runs in a row that miss the goal, the ladder offers its next drawn rung itself and the button pulses
 //   gently. An offer never does do-it: only a tap changes the build. A Run that meets the goal clears the ladder.
+//   A what-if never offers (D131): it has no right answer, so a Run that does not make its change misses nothing. Its
+//   ladder is there on request, and a Run that shows the change clears it as a met goal does.
 // - Runs are judged as they play by the challenge's GoalWatch over the run loop's frames: the judge the goal line, the
 //   Run bar's recorder (`judgeRun`) and `pnpm golden` use, so a missed Run here is a record with `goal.met` false.
 // No dialogs (ground rule 9). Every step used goes to the HintLog for the run record.
@@ -166,8 +168,9 @@ export class HintLadderController {
       this.sync();
       return;
     }
-    this.missed += 1;
     this.sync();
+    if (this.options.challenge.kind === 'what-if') return;
+    this.missed += 1;
     if (this.missed >= MISSED_RUNS_BEFORE_OFFER && !this.step('offered') && this.stateNow.available) {
       // Only do-it is left: the button pulses, and the child decides.
       this.offered = true;

@@ -1893,7 +1893,7 @@
       "dispatched_at": "2026-10-11T04:47:17+00:00"
     },
     "7.28": {
-      "status": "pending",
+      "status": "done",
       "model": "opus",
       "size": "standard",
       "batch": null,
@@ -1914,11 +1914,11 @@
       ],
       "done_when": "Browser tests: a what-if shows no tick after its change runs, Tried on Home, no auto-offer; a guided challenge still ticks and offers; golden unchanged.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-11T05:06:54+00:00",
+      "completed_by": "session-affectionate-sagan",
       "retries": 0,
       "errors": [],
-      "dispatched_at": null
+      "dispatched_at": "2026-10-11T04:58:28+00:00"
     },
     "7.29": {
       "status": "pending",

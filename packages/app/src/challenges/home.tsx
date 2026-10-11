@@ -63,7 +63,8 @@ export const challengesByLevel = (challenges: readonly Challenge[]): readonly { 
 /**
  * The challenges one of the child's Runs has met the goal of, read from the run records (each challenge Run keeps its
  * verdict, README "Challenges", decision 2). Home marks them with the goal line's own check mark, a plain fact of where
- * the child has been: no score, no streak, nothing counted (ground rule 7).
+ * the child has been: no score, no streak, nothing counted (ground rule 7). A what-if's record means its change was
+ * observed in a Run, so Home marks it "Tried" and never met: there is no right answer (D131).
  */
 export const metChallenges = (runs: readonly Pick<RunRecord, 'challenge' | 'goal'>[]): ReadonlySet<ChallengeId> => {
   const met = new Set<ChallengeId>();
@@ -303,13 +304,17 @@ export const Home = ({ challenge, onChallenge, sandboxLevel, loop, saving, paren
                         type="button"
                         className="shell-button home-choice"
                         aria-current={challenge?.id === item.id ? 'true' : undefined}
-                        data-met={met.has(item.id) ? 'true' : undefined}
+                        data-met={met.has(item.id) && item.kind !== 'what-if' ? 'true' : undefined}
+                        data-tried={met.has(item.id) && item.kind === 'what-if' ? 'true' : undefined}
                         disabled={busy}
                         onClick={() => openChallenge(item)}
                       >
                         <span className="home-choice-name">{item.title}</span>
                         <span className="home-choice-detail">
-                          {met.has(item.id) ? (
+                          {met.has(item.id) && item.kind === 'what-if' ? (
+                            <span className="home-choice-tried">{CHALLENGE_TEXT.tried} · </span>
+                          ) : null}
+                          {met.has(item.id) && item.kind !== 'what-if' ? (
                             <>
                               <svg className="home-choice-tick" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
                                 <path d="M4 10.5 L8.5 15 L16 5.5" />
