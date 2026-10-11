@@ -28,7 +28,7 @@ import {
   TERMINOLOGY_FILES,
 } from './terminology.ts';
 import type { TermMatcher } from './terminology.ts';
-import { markFindings } from './voice.ts';
+import { goalLengthFindings, markFindings } from './voice.ts';
 
 export interface ValidateContentOptions {
   /** Record files, or folders to search for `.json` records: absolute, or relative to the process's working folder. */
@@ -81,6 +81,7 @@ export const textFindings = (text: TextField, matcher: TermMatcher): Finding[] =
   ...(text.partName ? partNameFindings(text.text, matcher) : capitalFindings(text.text, matcher)),
   ...levelFindings(text.text, matcher),
   ...markFindings(text.text, { exclamations: text.blueprintName === true }),
+  ...(text.goalLine ? goalLengthFindings(text.text) : []),
 ];
 
 const unknownKind = (candidates: readonly RecordKind[]): string => {

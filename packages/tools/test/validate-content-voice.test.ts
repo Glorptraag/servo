@@ -4,10 +4,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { systemText } from '../src/validate-content/system-text.ts';
 import type { TextField } from '../src/validate-content/system-text.ts';
 import { capitalFindings, compileTerminology, levelFindings, loadTerminology } from '../src/validate-content/terminology.ts';
 import { textFindings } from '../src/validate-content/validate.ts';
-import { markFindings } from '../src/validate-content/voice.ts';
+import { GOAL_LINE_MAX, goalLengthFindings, markFindings } from '../src/validate-content/voice.ts';
 import { cli, CONTENT_TERMINOLOGY, removeTempFolders, REPO_ROOT, tempFolder, write } from './validate-content/support.ts';
 
 vi.setConfig({ testTimeout: 120_000 });
@@ -255,5 +256,29 @@ describe('the words list format', () => {
     write(folder, 'words.json', { names: [], openers: [] });
     const own = compileTerminology(loadTerminology(folder).terminology);
     expect(capitalFindings('Buzzy says hello', own)).toEqual([]);
+  });
+});
+
+describe('a goal line fits the header (task 7.32)', () => {
+  it('refuses a goal line over 80 characters, with its length, and takes one of 80', () => {
+    expect(goalLengthFindings('a'.repeat(80))).toEqual([]);
+    expect(goalLengthFindings('a'.repeat(81)).map((finding) => `${finding.code}: ${finding.message}`)).toEqual([
+      'text.goal_length: The goal line is 81 characters; the header holds 80 at most, in two lines on a tablet.',
+    ]);
+    expect(GOAL_LINE_MAX).toBe(80);
+  });
+
+  it('checks the goal line only, through the text fields the validator collects', () => {
+    const fields = systemText('challenge', { title: 'x'.repeat(90), goalLine: 'y'.repeat(90), hints: [] });
+    expect(fields.map((field) => [field.path, field.goalLine === true])).toEqual([
+      ['$.title', false],
+      ['$.goalLine', true],
+    ]);
+    expect(textFindings(fields[1] as TextField, matcher).map((finding) => finding.code)).toContain('text.goal_length');
+    expect(textFindings(fields[0] as TextField, matcher).map((finding) => finding.code)).not.toContain('text.goal_length');
+  });
+
+  it("reads an arena prop's name as system text (schema 1.1)", () => {
+    expect(systemText('arena', { name: 'Bump props', props: [{ id: 'box', name: 'box' }, { id: 'post' }] }).map((field) => field.path)).toEqual(['$.name', '$.props[0].name']);
   });
 });

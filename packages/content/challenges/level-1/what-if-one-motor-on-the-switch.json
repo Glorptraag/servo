@@ -42,7 +42,7 @@
       }
     ]
   },
-  "goalLine": "Wire one DC motor's plus straight to the battery pack, then press the switch and watch",
+  "goalLine": "Wire one DC motor's plus straight to the battery pack, then press the switch",
   "hints": [
     {
       "steps": [

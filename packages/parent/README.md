@@ -65,7 +65,7 @@ In [src/progress/](src/progress/). One child's figures, derived from their run r
 | --- | --- | --- |
 | Parts met | Each Run's `blueprint` | Each part type in the blueprint of any Run, once, from the first Run that had it, in the order met |
 | Unscripted builds passed | Runs with a `challenge` whose kind in `store.content` is `unscripted-build`, and `goal.met` | The first passing Run per challenge, with its `runNumber` (the pass-rate measure counts a pass within 3 Runs) |
-| Faults fixed | Each Run's `faults`, `ticks` and `blueprint`, in its series | Below. Per fault: the Run that fixed it, the Runs from the first showing to the fix (both counted) and the time between their `startedAt` |
+| Faults fixed | Each Run's `faults`, `ticks` and `blueprint`, in its series | Below. Per fault: the Run that fixed it, the Runs from the first showing to the fix (both counted) and the time between their `startedAt`. Each line carries the part's spec-card line for the fault and its `teachingNote`, written for adults: why it happens (task 7.31) |
 | Time in the sandbox | Task 6.2's telemetry | Absent until that telemetry exists (D39); the view says "Not measured yet." |
 | Parts named | The card-game rounds | The latest round (D40): the one played last, of two at one moment the later in the list |
 

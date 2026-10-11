@@ -36,7 +36,7 @@
       ]
     }
   },
-  "goalLine": "Join the two battery packs one after the other, so the servo motor has the power it needs",
+  "goalLine": "Join the two battery packs end to end, so the servo motor has the power it needs",
   "hints": [
     {
       "steps": [

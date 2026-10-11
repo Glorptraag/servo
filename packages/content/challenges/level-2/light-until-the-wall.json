@@ -62,7 +62,7 @@
       }
     ]
   },
-  "goalLine": "Make the LED light while the robot drives, and go dark when the bumper switch meets the wall",
+  "goalLine": "Make the LED light while driving, dark when the bumper switch meets the wall",
   "hints": [
     {
       "steps": [

@@ -1482,12 +1482,13 @@
       "errors": []
     },
     "7.12": {
-      "status": "dispatched",
+      "status": "pending",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
       "blocked_by": [
-        "7.9"
+        "7.9",
+        "7.32"
       ],
       "title": "Golden part hash covers only what the Run reads",
       "description": "R-6.4 TLS-6 and docs/reviews/copy-pass-6.5.md: a part's golden hash covers its whole record, so a card or hint text edit turns every golden red and 98 goldens were re-accepted hash-only after the copy pass. Make the golden hash cover only the fields sim-core reads (body, ports less their labels, behaviour, needs, failure-mode ids and needs, settings less labels) so content copy can change without touching the Runs. Re-accept the goldens hash-only once with an orchestrator note in the golden README; headings that round to 360 keep their current treatment, noted. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
@@ -1502,8 +1503,7 @@
       "completed_at": null,
       "completed_by": null,
       "retries": 0,
-      "errors": [],
-      "dispatched_at": "2026-10-05T10:31:35+00:00"
+      "errors": []
     },
     "7.13": {
       "status": "pending",
@@ -1511,7 +1511,8 @@
       "size": "standard",
       "batch": null,
       "blocked_by": [
-        "7.12"
+        "7.12",
+        "7.32"
       ],
       "title": "Build-structure guards: HTML entry reach, no perf page in a release",
       "description": "R-6.4 APP-10, APP-18, PAR-4, TLS-5: nothing proves that packages/app/parent.html is the only file under packages/app that reaches outside the package (and only to packages/parent/src/page/main.ts), or that a tester release carries no perf page. Add tools tests for both guards, each proven to fire on a planted violation (a probe HTML entry; a release output with a perf page) and to pass on main. Keep the existing lint-rules test as the proof for enums and namespaces; add a note in the tools README naming every guard. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
@@ -1535,7 +1536,8 @@
       "blocked_by": [
         "7.21",
         "7.13",
-        "7.15"
+        "7.15",
+        "7.32"
       ],
       "title": "Placeholder art fidelity: motor shaft at drive-out, visible driver chip",
       "description": "R-6.4 TLS-7 and R-0.6 minors: the motor-can form draws its shaft away from the record's drive-out port, so a wheel on the shaft looks mounted off it; the motor driver's strips hide its chip; show() uses process.cwd instead of the given cwd; realWorldArt keys follow D32's default (tracked, no placeholder). Draw the shaft at the drive-out port's position from the part record, shorten the driver strips so the chip shows, and fix show(). Art stays vector from the record's colours and proportions through the swap registry (rule 12). Regenerate only the screenshot references the art change moves, each named in your report. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
@@ -1553,14 +1555,15 @@
       "errors": []
     },
     "7.15": {
-      "status": "dispatched",
+      "status": "pending",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
       "blocked_by": [
         "7.9",
         "7.1",
-        "7.5"
+        "7.5",
+        "7.31"
       ],
       "title": "Schema pair rule for wire kind and direction outside schema",
       "description": "R-6.4 SCH-6 (rule 3): packages/parent/src/export/parts-list.ts decides mount or drive and the source end from port role literals, and the canvas snap and carry pre-filters in packages/canvas/src/wiring find partner sockets by role literals rather than by the schema's pair rule. Route both through checkPortPair (or a canvas-style wireKindOf built on it) so the one module in packages/schema remains the only place that knows the type rules. No visible change: parity, screenshots and the parts list output stay identical. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
@@ -1576,8 +1579,7 @@
       "completed_at": null,
       "completed_by": null,
       "retries": 0,
-      "errors": [],
-      "dispatched_at": "2026-10-05T10:31:35+00:00"
+      "errors": []
     },
     "7.16": {
       "status": "done",
@@ -1682,7 +1684,8 @@
       "blocked_by": [
         "7.18",
         "7.19",
-        "7.25"
+        "7.25",
+        "7.28"
       ],
       "title": "App content-in-code tidy and sync guards",
       "description": "R-6.4 APP-11, APP-15, APP-17 (rule 1 and docs): the sandbox arena is found by the content id 'open-floor' written twice (index.ts:50, home.tsx:33) and the prop palette's sizes and weights are written into the app instead of coming from the bump-props arena record; an unreachable sync host is not retried like a failed one; a removal change deletes runs and card games for profiles this device does not keep; settings.tsx:3, the release-page test comments and the SyncRow JSDoc are stale. Take the sandbox arena and the prop palette from content records (a content-level marker or the kit's arena, not a literal), make the unreachable host back off and retry like failed, guard removal to profiles this device keeps, and fix the comments. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
@@ -1732,7 +1735,8 @@
       "batch": null,
       "blocked_by": [
         "7.15",
-        "7.5"
+        "7.5",
+        "7.31"
       ],
       "title": "Parent copy pass table and the parent's open defaults",
       "description": "R-6.4 PAR-5 to PAR-9 and FU-PAR-6: the parent view's lines were never read against brief Section 12, the README's dependency line and the 5.3 actions slot are wrong, and several defaults were taken without a decision (servo motor on a mirrored mount, the near-twins intro line, time in the sandbox now that 6.2 records no duration). Write docs/reviews/copy-pass-parent.md reading every line of PARENT_TEXT, PROGRESS_TEXT, EXPORT_TEXT, LIST_TEXT, CARD_GAME_TEXT and PAGE_TEXT against Section 12 with a proposed line where one fails; apply the answered defaults with unit tests (a note line, an intro line, the interface comment); fix the README; list the three open defaults as questions at the end of your report for the orchestrator to queue. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
@@ -1758,7 +1762,10 @@
         "7.13",
         "7.14",
         "7.25",
-        "7.27"
+        "7.27",
+        "7.32",
+        "7.28",
+        "7.29"
       ],
       "title": "Gate page on the app's run loop, in CI",
       "description": "R-6.4 TLS-11, TLS-15, TLS-16: the G3 gate page carries its own GateRun copy of the app's run loop, so the two can drift; pnpm gate:g3:test runs nowhere in CI; perf/main.ts's comment names the microcontroller where selectPart opens the motor driver's card. Export the app's run loop through a tools-only entry on @servo/app agreed against the package map (tools depends on all; note the export in the app README), delete GateRun in favour of it, add gate:g3:test as a CI job beside e2e, and fix the comment. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
@@ -1891,9 +1898,7 @@
       "size": "standard",
       "batch": null,
       "blocked_by": [
-        "7.27",
-        "7.20",
-        "7.23"
+        "7.27"
       ],
       "title": "App: a what-if has no right answer",
       "description": "docs/reviews/content-slots.md D (brief Sections 4 and 5; decision D131 holds the default). For kind what-if: the goal line shows no tick and says no Goal met; Home marks a what-if Tried once a Run with its change has happened (the run record's goal.met keeps meaning the change was observed, so the golden harness and fixtures are unchanged); the hint button works on request but never offers itself after missed Runs. Guided challenges, breakdowns and unscripted builds are unchanged. Update the app README (Challenges, Hints) and the content README's what-if line. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
@@ -1922,8 +1927,7 @@
       "batch": null,
       "blocked_by": [
         "7.28",
-        "7.4",
-        "7.23"
+        "7.4"
       ],
       "title": "App: fault hints from the part record, outside a ladder",
       "description": "docs/reviews/content-slots.md E (brief Section 10, errors that teach, case 2). In the sandbox and in a challenge whose build state no ladder matches (the unscripted builds), after two Runs of the same build (same runKeyOf) that show the same fault, the Hint button offers a ladder made from the part's failure mode: pulse the part with its FailureMode.hint line, then pulse FailureMode.port when the mode names one; no ghost wire and no do-it. The button shows in the sandbox only while such a ladder exists; hint uses go into the run record as today. A challenge with a matching ladder is unchanged. Update the app README (Hints). Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
@@ -1964,14 +1968,12 @@
       "dispatched_at": "2026-10-11T04:46:06+00:00"
     },
     "7.31": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "micro",
       "batch": null,
       "blocked_by": [
-        "7.5",
-        "7.15",
-        "7.22"
+        "7.5"
       ],
       "title": "Parent: show the teaching note beside each fault",
       "description": "docs/reviews/content-slots.md F. The parent progress view shows FailureMode.teachingNote beside each fault seen or fixed, read from the part record; nothing in the child's app changes. Update the parent README. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
@@ -1986,20 +1988,16 @@
       "completed_by": null,
       "retries": 0,
       "errors": [],
-      "dispatched_at": null
+      "dispatched_at": "2026-10-11T04:52:39+00:00"
     },
     "7.32": {
-      "status": "pending",
+      "status": "dispatched",
       "model": "sonnet",
       "size": "small",
       "batch": null,
       "blocked_by": [
         "7.26",
-        "7.6",
-        "7.12",
-        "7.13",
-        "7.14",
-        "7.23"
+        "7.6"
       ],
       "title": "Validator: goal lines at most 80 characters; rewrite the six over",
       "description": "docs/reviews/content-slots.md G. Add a validate-content rule that a challenge's goalLine is at most 80 characters, reported with its length, and rewrite the six goal lines now over 80 (what-if-one-cell, light-until-the-wall, meet-the-1-cell-battery-pack, meet-the-servo-motor, what-if-one-motor-on-the-switch, over-the-hill) in the same voice. Note the rule in the tools README. Honour CLAUDE.md ground rules 1\u201314 (parts are data; sim-core pure and deterministic; real component names; no mascot/points/dialogs; touch + pointer + list-view paths together).",
@@ -2015,7 +2013,7 @@
       "completed_by": null,
       "retries": 0,
       "errors": [],
-      "dispatched_at": null
+      "dispatched_at": "2026-10-11T04:52:39+00:00"
     },
     "7.33": {
       "status": "pending",

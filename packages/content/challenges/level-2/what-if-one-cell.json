@@ -15,7 +15,7 @@
       }
     }
   },
-  "goalLine": "Swap the 2-cell battery pack for the 1-cell battery pack, then Run the robot and watch its speed",
+  "goalLine": "Swap in the 1-cell battery pack for the 2-cell, then Run and watch the speed",
   "hints": [
     {
       "steps": [

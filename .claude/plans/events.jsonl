@@ -254,3 +254,7 @@
 {"ts": "2026-10-11T04:47:17+00:00", "event": "dispatch", "tasks": ["7.27"]}
 {"ts": "2026-10-11T04:51:03+00:00", "event": "done", "tasks": ["7.27"], "by": "session-affectionate-sagan"}
 {"ts": "2026-10-11T04:51:03+00:00", "event": "done", "tasks": ["7.30"], "by": "session-affectionate-sagan"}
+{"ts": "2026-10-11T04:51:33+00:00", "event": "reset", "task": "7.12"}
+{"ts": "2026-10-11T04:51:33+00:00", "event": "reset", "task": "7.15"}
+{"ts": "2026-10-11T04:52:39+00:00", "event": "dispatch", "tasks": ["7.32"]}
+{"ts": "2026-10-11T04:52:39+00:00", "event": "dispatch", "tasks": ["7.31"]}

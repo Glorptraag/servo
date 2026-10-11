@@ -60,7 +60,7 @@
       }
     ]
   },
-  "goalLine": "Put the bumper switch in the power line, so the robot stops when it bumps the wall",
+  "goalLine": "Put the bumper switch in the power line, so the robot stops at the wall",
   "hints": [
     {
       "steps": [

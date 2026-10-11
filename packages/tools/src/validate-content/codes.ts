@@ -18,6 +18,7 @@ export const CONTENT_ISSUE_CODES = {
   'text.question': 'System text holds a question mark.',
   'text.symbol': 'System text holds an emoji or another celebratory symbol, such as the interrobang.',
   'text.level': 'System text names a level, which is a product word.',
+  'text.goal_length': "A challenge's goal line is longer than the header holds (80 characters).",
   'terminology.bad_file': 'A terminology file is not valid JSON or does not follow the terminology format.',
 } as const;
 

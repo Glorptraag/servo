@@ -34,3 +34,14 @@ export const markFindings = (text: string, options: { readonly exclamations?: bo
   }
   return findings;
 };
+
+/** The most characters a goal line may have: two lines of the header on a 10-inch tablet in either orientation (task 7.32). */
+export const GOAL_LINE_MAX = 80;
+
+/** A goal line over `GOAL_LINE_MAX` characters, with its length, as `text.goal_length`. */
+export const goalLengthFindings = (text: string): Finding[] => {
+  const length = [...text].length;
+  return length > GOAL_LINE_MAX
+    ? [{ code: 'text.goal_length', message: `The goal line is ${length} characters; the header holds ${GOAL_LINE_MAX} at most, in two lines on a tablet.` }]
+    : [];
+};

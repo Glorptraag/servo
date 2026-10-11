@@ -81,7 +81,7 @@ A file with the fields of no kind, or of more than one, is refused as `file.unkn
 1. **The schema.** Each record goes through its kind's validator from `@servo/schema`. Their issues are passed through unchanged, with the schema's codes, paths and messages ([validation.md](../../../schema/docs/validation.md)). The schema refuses exclamation marks and badly formed text in every system-text field.
 2. **Banned words and lone glosses.** The banned list and the glosses are checked against every system-text field of the record:
    - **Part record:** `identity.name`, `ports[].label`, `settings[].label`, `settings[].options[].label`, `failureModes[].teachingNote`, `cardLine` and `hint`, and `card.does`, `needs`, `gives`, `popularMechanics`, `specLine` and `safetyNote`.
-   - **Arena preset and kit:** `name`.
+   - **Arena preset:** `name` and each prop's `name` (schema 1.1). **Kit:** `name`.
    - **Challenge:** `title`, `goalLine`, `hints[].steps[].line`, and the name of its starting blueprint, `start.meta.name`.
    - **Blueprint:** `meta.name`.
    - **Run record:** nothing, because sim-core makes it.
@@ -94,7 +94,8 @@ A file with the fields of no kind, or of more than one, is refused as `file.unkn
    - the word `level` or `levels`, in any case, as `text.level`. A level is a product word for adults and the app's shell, not for a child's card, hint or goal (brief Section 12, R-6.5 F4). Inside a banned phrase such as `level up`, it is left to the banned list. One issue per field;
    - in a blueprint's name only (`meta.name` and a challenge's `start.meta.name`), an exclamation mark, with the schema's code `text.exclamation`. The schema checks every other field itself, but does not read a blueprint's name as system text.
 5. **Ids.** No two records of the same kind may share an `id`. Only records that pass the schema claim their id, because only they can enter a catalogue.
-6. **A level's challenge order** (schema 1.1, `challengeOrderIssues`). Over every challenge that passed the schema: within a level either every challenge has an `order` or none does (`challenge.order_partial` on each without one), and no two share one (`challenge.order_repeated` on the later id). Each issue is reported against the challenge's own file at `$.order`.
+6. **Goal line length.** A challenge's `goalLine` is at most 80 characters (`text.goal_length`, with its length): the header shows it in two lines at most on a 10-inch tablet in either orientation (task 7.32).
+7. **A level's challenge order** (schema 1.1, `challengeOrderIssues`). Over every challenge that passed the schema: within a level either every challenge has an `order` or none does (`challenge.order_partial` on each without one), and no two share one (`challenge.order_repeated` on the later id). Each issue is reported against the challenge's own file at `$.order`.
 
 ## The catalogue
 
@@ -227,6 +228,7 @@ Schema codes are listed in [validation.md](../../../schema/docs/validation.md). 
 | `text.question` | System text holds a question mark. |
 | `text.symbol` | System text holds an emoji or another celebratory symbol, such as the interrobang. |
 | `text.level` | System text names a level, which is a product word. |
+| `text.goal_length` | A challenge's goal line is longer than the header holds (80 characters). |
 | `terminology.bad_file` | A terminology file is not valid JSON or does not follow the terminology format. |
 
 ## From code
