@@ -16,6 +16,7 @@ import type { Blueprint, Challenge } from '@servo/schema';
 import { exampleChallenges } from '@servo/schema/fixtures';
 import { App } from '../../src/App.tsx';
 import { CHALLENGE_TEXT, propPalette } from '../../src/challenges/index.ts';
+import { keysOn } from './input.ts';
 import { openStore } from '../../src/store/index.ts';
 import type { ProfileStore, ServoStore } from '../../src/store/index.ts';
 
@@ -38,7 +39,14 @@ const example = (name: string, start?: Blueprint): Challenge => {
 const CROSS = example('cross-and-stop', fixture('bumper-stops-at-wall'));
 const LIGHT = example('drive-and-light', fixture('level-1-roller'));
 const MEET = example('meet-the-switch');
-const withChallenges: Content = { ...content, challenges: [MEET, CROSS, LIGHT] };
+/** Cross and stop as a part introduction of the bumper switch, for the card that opens again when the goal is met (task 7.27). */
+const INTRO = ((): Challenge => {
+  const data = { ...CROSS, id: 'meet-the-bumper-switch', title: 'Meet the bumper switch', kind: 'part-introduction', introduces: 'bumper-switch' };
+  const result = validateChallenge(data, content.catalogue);
+  if (!result.ok) throw new Error(`INTRO: ${result.issues.map((issue) => issue.message).join(' ')}`);
+  return result.value;
+})();
+const withChallenges: Content = { ...content, challenges: [MEET, CROSS, LIGHT, INTRO] };
 
 const SOON = { timeout: 10_000 };
 const RUN = { timeout: 60_000 };
@@ -111,6 +119,18 @@ const spoken = (app: Mounted): string | null | undefined => goal(app)?.querySele
 /** The build on the canvas, as the canvas's list view describes it to a screen reader. */
 const listed = (app: Mounted): number => app.host.querySelectorAll('.servo-list-view [data-toggle^="part:"]').length;
 const headerText = (app: Mounted): string => app.host.querySelector('[data-region="header"]')?.textContent ?? '';
+/** The spec card region, and the part whose card it shows now. */
+const cardRegion = (app: Mounted): HTMLElement => app.host.querySelector<HTMLElement>('[data-region="specCard"]') as HTMLElement;
+const cardPart = (app: Mounted): string | undefined => cardRegion(app).querySelector<HTMLElement>('.spec-card')?.dataset.part;
+/** Selects a part from the list view by keyboard, as app-harness's selectPart does, so the card shows it. */
+const selectByList = async (app: Mounted, id: string): Promise<void> => {
+  const toggle = (): HTMLButtonElement => app.host.querySelector<HTMLButtonElement>(`.servo-list-view button[data-toggle="part:${id}"]`) as HTMLButtonElement;
+  if (toggle().getAttribute('aria-expanded') !== 'true') await keysOn(toggle);
+  const first = (): HTMLButtonElement => app.host.querySelector<HTMLButtonElement>(`.servo-list-view button[data-subject="part:${id}"][data-action]`) as HTMLButtonElement;
+  await vi.waitFor(() => expect(first()).not.toBeNull(), SOON);
+  expect(first().dataset.action).toBe(`select:part:${id}`);
+  await keysOn(first);
+};
 
 const pageAt = (element: Element, dx = 0.5, dy = 0.5): { x: number; y: number } => {
   const box = element.getBoundingClientRect();
@@ -328,5 +348,42 @@ describe('the arena strip', () => {
     await vi.waitFor(() => expect(stripButton(app, 'Box').disabled).toBe(true), RUN);
     expect(stripButton(app, 'Open floor').disabled).toBe(true);
     await userEvent.click(runToggle(app));
+  });
+});
+
+describe('a part introduction (task 7.27)', () => {
+  it('opens on the spec card of the part it introduces, by every path that opens a challenge', async () => {
+    const app = await mount();
+    await openHome(app);
+    await userEvent.click(homeButton(app, MEET.title));
+    await vi.waitFor(() => expect(homeOf(app)).toBeNull(), SOON);
+    await vi.waitFor(() => expect(cardRegion(app).dataset.shown).toBe('true'), SOON);
+    expect(cardPart(app)).toBe('switch');
+    // A guided challenge opens on no card.
+    await openHome(app);
+    await userEvent.click(homeButton(app, LIGHT.title));
+    await vi.waitFor(() => expect(homeOf(app)).toBeNull(), SOON);
+    await vi.waitFor(() => expect(goal(app)?.textContent).toContain(LIGHT.goalLine), SOON);
+    expect(cardRegion(app).dataset.shown).not.toBe('true');
+  });
+
+  it('ends on the card of the part it introduces when a Run meets the goal', async () => {
+    const app = await mount();
+    await openHome(app);
+    await userEvent.click(homeButton(app, INTRO.title));
+    await vi.waitFor(() => expect(homeOf(app)).toBeNull(), SOON);
+    await vi.waitFor(() => expect(cardRegion(app).dataset.shown).toBe('true'), SOON);
+    expect(cardPart(app)).toBe('bumper-switch');
+    // The child looks at another part, then Runs: the bumper robot crosses and stops, and the card comes back to the bumper switch.
+    const chassis = INTRO.start?.parts.find((placed) => placed.part === 'chassis');
+    if (!chassis) throw new Error('the bumper robot has no chassis');
+    await selectByList(app, chassis.id);
+    await vi.waitFor(() => expect(cardPart(app)).toBe('chassis'), SOON);
+    await userEvent.click(runToggle(app));
+    await vi.waitFor(() => expect(ticked(app)).toBe(true), RUN);
+    await vi.waitFor(() => expect(cardPart(app)).toBe('bumper-switch'), SOON);
+    expect(cardRegion(app).dataset.shown).toBe('true');
+    await userEvent.click(runToggle(app));
+    await vi.waitFor(() => expect(runToggle(app).dataset.run).toBe('run'), SOON);
   });
 });

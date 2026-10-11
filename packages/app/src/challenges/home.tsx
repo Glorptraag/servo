@@ -10,7 +10,7 @@ import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { Content } from '@servo/content';
 import { BLUEPRINT_VERSION, LEVELS } from '@servo/schema';
-import type { ArenaRef, Blueprint, Challenge, ChallengeId, ChallengeKind, Level, RunRecord } from '@servo/schema';
+import type { ArenaRef, Blueprint, Challenge, ChallengeId, ChallengeKind, Level, PlacedPartId, RunRecord } from '@servo/schema';
 import type { RunLoop } from '../run-bar/run-loop.ts';
 import { useShell } from '../shell/context.ts';
 import type { Autosaver } from '../shell/index.ts';
@@ -73,6 +73,14 @@ export const metChallenges = (runs: readonly Pick<RunRecord, 'challenge' | 'goal
 
 const NONE_MET: ReadonlySet<ChallengeId> = new Set();
 
+/**
+ * The part a part introduction meets, in the build on the canvas: the first placed part of the type `introduces` names
+ * (brief Section 5: the part appears, the child wires it, the spec card opens; task 7.27). Undefined for every other
+ * kind, and for an introduction whose part the child has yet to place (Meet the caster).
+ */
+export const introducedPartId = (challenge: Challenge | null, blueprint: Blueprint | undefined): PlacedPartId | undefined =>
+  challenge?.introduces === undefined ? undefined : blueprint?.parts.find((placed) => placed.part === challenge.introduces)?.id;
+
 /** A build kept only in this page, for a device that keeps no builds. */
 const pageBuild = (init: { readonly name: string; readonly level: Level; readonly arena: ArenaRef }): Blueprint => {
   const at = new Date().toISOString();
@@ -117,7 +125,7 @@ export interface HomeProps {
 type Saved = { readonly kind: 'reading' } | { readonly kind: 'read'; readonly builds: readonly BlueprintSummary[] } | { readonly kind: 'none' };
 
 export const Home = ({ challenge, onChallenge, sandboxLevel, loop, saving, parentEntry }: HomeProps) => {
-  const { content, child, load } = useShell();
+  const { content, child, load, canvas } = useShell();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const layerRef = useRef<HTMLElement>(null);
   const titleId = useId();
@@ -195,6 +203,9 @@ export const Home = ({ challenge, onChallenge, sandboxLevel, loop, saving, paren
         return;
       }
       onChallenge(next);
+      // A part introduction opens on its part's spec card, so the meeting starts with the part (task 7.27).
+      const introduced = introducedPartId(next, canvas?.blueprint ?? build);
+      if (introduced !== undefined) canvas?.select({ kind: 'part', partId: introduced });
       emitTelemetry(child, 'session-start', { mode: next ? 'challenge' : 'sandbox' });
       close();
     } catch (error) {

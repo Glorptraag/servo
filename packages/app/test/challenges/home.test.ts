@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { loadContent } from '@servo/content';
 import type { Challenge } from '@servo/schema';
-import { KIND_ORDER, challengesByLevel, metChallenges, nextBuildName, sandboxArena } from '../../src/challenges/home.tsx';
+import { KIND_ORDER, challengesByLevel, introducedPartId, metChallenges, nextBuildName, sandboxArena } from '../../src/challenges/home.tsx';
 
 const { content } = loadContent();
 
@@ -51,6 +51,20 @@ describe('Home', () => {
       expect(group.challenges[0]?.kind).toBe('part-introduction');
       expect(group.challenges.at(-1)?.kind).toBe('unscripted-build');
     }
+  });
+
+  it('finds the part a part introduction meets in the build on the canvas, and nothing for other kinds', () => {
+    const meet = content.challenges.find((challenge) => challenge.id === 'meet-the-switch');
+    const guided = content.challenges.find((challenge) => challenge.id === 'drive-forward');
+    const caster = content.challenges.find((challenge) => challenge.id === 'meet-the-caster');
+    if (!meet?.start || !guided?.start || !caster?.start) throw new Error('the content challenges changed');
+    const found = introducedPartId(meet, meet.start);
+    expect(meet.start.parts.find((placed) => placed.id === found)?.part).toBe('switch');
+    expect(introducedPartId(guided, guided.start)).toBeUndefined();
+    // Meet the caster starts without its caster: nothing to show until the child places it.
+    expect(introducedPartId(caster, caster.start)).toBeUndefined();
+    expect(introducedPartId(meet, undefined)).toBeUndefined();
+    expect(introducedPartId(null, meet.start)).toBeUndefined();
   });
 
   it('reads the challenges met from the run records: a challenge Run whose goal was met, once however many times', () => {

@@ -10,6 +10,7 @@ import type { RunLoop } from '../run-bar/run-loop.ts';
 import { useShell } from '../shell/context.ts';
 import { GoalWatch, NOT_MET } from './goal.ts';
 import type { GoalVerdict } from './goal.ts';
+import { introducedPartId } from './home.tsx';
 import { CHALLENGE_TEXT } from './text.ts';
 import './challenges.css';
 
@@ -49,7 +50,12 @@ export const GoalLine = ({ challenge, loop }: GoalLineProps) => {
       last = frame.tick;
       const wasMet = watch.verdict.met;
       const now = watch.push(frame.tick, frame.events);
-      if (now.met && !wasMet) setVerdict(now);
+      if (now.met && !wasMet) {
+        setVerdict(now);
+        // A part introduction ends on its part's card, with the live readouts of the Run that met the goal (task 7.27).
+        const introduced = introducedPartId(challenge, canvas.blueprint);
+        if (introduced !== undefined) canvas.select({ kind: 'part', partId: introduced });
+      }
     });
   }, [loop, challenge, canvas, content]);
 
