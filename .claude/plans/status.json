@@ -1806,7 +1806,7 @@
       "dispatched_at": "2026-10-11T04:30:43+00:00"
     },
     "7.25": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "standard",
       "batch": null,
@@ -1829,8 +1829,8 @@
       ],
       "done_when": "PROP_PALETTE is gone; a prop added to the preset in a test appears in the strip with its name; Home's unit test covers a level with and without order; browser tests green.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-11T04:44:57+00:00",
+      "completed_by": "session-affectionate-sagan",
       "retries": 0,
       "errors": [],
       "dispatched_at": "2026-10-11T04:40:48+00:00"
