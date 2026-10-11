@@ -1968,7 +1968,7 @@
       "dispatched_at": "2026-10-11T04:46:06+00:00"
     },
     "7.31": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "micro",
       "batch": null,
@@ -1984,14 +1984,14 @@
       ],
       "done_when": "The progress view's faults list carries each fault's teaching note; tests green.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-11T04:56:00+00:00",
+      "completed_by": "session-affectionate-sagan",
       "retries": 0,
       "errors": [],
       "dispatched_at": "2026-10-11T04:52:39+00:00"
     },
     "7.32": {
-      "status": "dispatched",
+      "status": "done",
       "model": "sonnet",
       "size": "small",
       "batch": null,
@@ -2009,8 +2009,8 @@
       ],
       "done_when": "The rule fires on an over-long line in a test; every content goal line passes; validate-content clean.",
       "contracts": "",
-      "completed_at": null,
-      "completed_by": null,
+      "completed_at": "2026-10-11T04:56:00+00:00",
+      "completed_by": "session-affectionate-sagan",
       "retries": 0,
       "errors": [],
       "dispatched_at": "2026-10-11T04:52:39+00:00"
